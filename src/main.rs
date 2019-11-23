@@ -20,15 +20,15 @@ struct Cli {
     #[structopt(short = "m", long = "mode", default_value = "C")]
     mode: String,
 
-    /// Print all fields
+    /// Prints all fields
     #[structopt(short = "a", long = "all")]
     print_all: bool,
 
-    /// Output only surface form
+    /// Outputs only surface form
     #[structopt(short = "w", long = "wakati")]
     wakati: bool,
 
-    /// Debug mode: dump lattice
+    /// Debug mode: Dumps lattice
     #[structopt(short = "d", long = "debug")]
     enable_debug: bool,
 }

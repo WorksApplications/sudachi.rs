@@ -62,11 +62,11 @@ USAGE:
     sudachi [FLAGS] [OPTIONS] [file]
 
 FLAGS:
-    -d, --debug      Debug mode: dump lattice
+    -d, --debug      Debug mode: Dumps lattice
     -h, --help       Prints help information
-    -a, --all        Print all fields
+    -a, --all        Prints all fields
     -V, --version    Prints version information
-    -w, --wakati     Output only surface form
+    -w, --wakati     Outputs only surface form
 
 OPTIONS:
     -m, --mode <mode>    Split unit: "A" (short), "B" (middle), or "C" (Named Entity) [default: C]
@@ -211,11 +211,11 @@ USAGE:
     sudachi [FLAGS] [OPTIONS] [file]
 
 FLAGS:
-    -d, --debug      Debug mode: dump lattice
+    -d, --debug      Debug mode: Dumps lattice
     -h, --help       Prints help information
-    -a, --all        Print all fields
+    -a, --all        Prints all fields
     -V, --version    Prints version information
-    -w, --wakati     Output only surface form
+    -w, --wakati     Outputs only surface form
 
 OPTIONS:
     -m, --mode <mode>    Split unit: "A" (short), "B" (middle), or "C" (Named Entity) [default: C]
