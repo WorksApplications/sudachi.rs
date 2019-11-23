@@ -130,6 +130,8 @@ A Japanese tokenizer
 - [WorksApplications/Sudachi](https://github.com/WorksApplications/Sudachi)
 - [WorksApplications/SudachiDict](https://github.com/WorksApplications/SudachiDict)
 - [WorksApplications/SudachiPy](https://github.com/WorksApplications/SudachiPy)
+- [msnoigrs/gosudachi](https://github.com/msnoigrs/gosudachi)
+
 
 ### Morphological Analyzers in Rust
 
@@ -277,6 +279,7 @@ A Japanese tokenizer
 - [WorksApplications/Sudachi](https://github.com/WorksApplications/Sudachi)
 - [WorksApplications/SudachiDict](https://github.com/WorksApplications/SudachiDict)
 - [WorksApplications/SudachiPy](https://github.com/WorksApplications/SudachiPy)
+- [msnoigrs/gosudachi](https://github.com/msnoigrs/gosudachi)
 
 ### Rustによる形態素解析器の実装
 
