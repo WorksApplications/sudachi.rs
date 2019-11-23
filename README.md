@@ -2,7 +2,7 @@
 
 An unofficial [Sudachi](https://github.com/WorksApplications/Sudachi) clone in Rust 🦀
 
-[日本語 README](#sudachi.rs---日本語readme)
+[日本語 README](#sudachirs---日本語readme)
 
 
 ## Example
@@ -140,6 +140,8 @@ A Japanese tokenizer
 # sudachi.rs - 日本語README
 
 形態素解析器 [Sudachi](https://github.com/WorksApplications/Sudachi)  - 非公式 Rust 🦀 クローン
+
+[English README](#sudachirs)
 
 
 ## 利用例
