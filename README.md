@@ -2,7 +2,7 @@
 
 An unofficial [Sudachi](https://github.com/WorksApplications/Sudachi) clone in Rust 🦀
 
-[日本語 README](#sudachi.rs-日本語readme)
+[日本語 README](#sudachi.rs---日本語readme)
 
 
 ## Example
