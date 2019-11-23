@@ -265,7 +265,7 @@ A Japanese tokenizer
 
 ## ToDo
 
-- [ ] 未知語処理（[Issue #1]
+- [ ] 未知語処理
 - [ ] 簡単な辞書ファイルのインストール、管理（[SudachiPyでの方式を参考に](https://github.com/WorksApplications/SudachiPy/issues/73)）
 - [ ] crates.io への登録
 
