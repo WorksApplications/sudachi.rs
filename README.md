@@ -1,5 +1,7 @@
 # sudachi.rs
 
+<p align="center"><img width="100" src="logo.png" alt="sudachi.rs logo"></p>
+
 An unofficial [Sudachi](https://github.com/WorksApplications/Sudachi) clone in Rust 🦀
 
 [日本語 README](#sudachirs---日本語readme)
@@ -133,11 +135,18 @@ A Japanese tokenizer
 - [agatan/yoin: A Japanese Morphological Analyzer written in pure Rust](https://github.com/agatan/yoin)
 - [wareya/notmecab-rs: notmecab-rs is a very basic mecab clone, designed only to do parsing, not training.](https://github.com/wareya/notmecab-rs)
 
+### ロゴ
+
+- [Sudachiのロゴ](https://github.com/WorksApplications/Sudachi/blob/develop/docs/Sudachi.png)
+- カニのイラスト: [Pixabay](https://pixabay.com/ja/vectors/%E5%8B%95%E7%89%A9-%E3%82%AB%E3%83%8B-%E7%94%B2%E6%AE%BB%E9%A1%9E-%E6%B5%B7-2029728/)
+
 
 ***
 
 
 # sudachi.rs - 日本語README
+
+<p align="center"><img width="100" src="logo.png" alt="sudachi.rs logo"></p>
 
 形態素解析器 [Sudachi](https://github.com/WorksApplications/Sudachi)  - 非公式 Rust 🦀 クローン
 
@@ -271,3 +280,8 @@ A Japanese tokenizer
 
 - [agatan/yoin: A Japanese Morphological Analyzer written in pure Rust](https://github.com/agatan/yoin)
 - [wareya/notmecab-rs: notmecab-rs is a very basic mecab clone, designed only to do parsing, not training.](https://github.com/wareya/notmecab-rs)
+
+### ロゴ
+
+- [Sudachiのロゴ](https://github.com/WorksApplications/Sudachi/blob/develop/docs/Sudachi.png)
+- カニのイラスト: [Pixabay](https://pixabay.com/ja/vectors/%E5%8B%95%E7%89%A9-%E3%82%AB%E3%83%8B-%E7%94%B2%E6%AE%BB%E9%A1%9E-%E6%B5%B7-2029728/)
