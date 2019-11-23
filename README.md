@@ -118,7 +118,7 @@ A Japanese tokenizer
 
 ## ToDo
 
-- [ ] Out of Vocabulary handling ([Issue #1](https://github.com/sorami/sudachi.rs/issues/1))
+- [ ] Out of Vocabulary handling
 - [ ] Easy dictionary file install & management, [similar to SudachiPy](https://github.com/WorksApplications/SudachiPy/issues/73)
 - [ ] Registration to crates.io
 
@@ -265,7 +265,7 @@ A Japanese tokenizer
 
 ## ToDo
 
-- [ ] 未知語処理（[Issue #1](https://github.com/sorami/sudachi.rs/issues/1)）
+- [ ] 未知語処理（[Issue #1]
 - [ ] 簡単な辞書ファイルのインストール、管理（[SudachiPyでの方式を参考に](https://github.com/WorksApplications/SudachiPy/issues/73)）
 - [ ] crates.io への登録
 
