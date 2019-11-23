@@ -80,7 +80,7 @@ $ git clone https://github.com/sorami/sudachi.rs.git
 
 ### 2. Download a Sudachi Dictionary
 
-You can download a dictionary zip file from [WorksApplications/SudachiDict](https://github.com/WorksApplications/SudachiDict) (choose one from `small`, `core`, or `full`), unzip it, and place the `system_*.dic` file to `src/resources/system.dic` .
+You can download a dictionary zip file from [WorksApplications/SudachiDict](https://github.com/WorksApplications/SudachiDict) (choose one from `small`, `core`, or `full`), unzip it, and place the `system_*.dic` file to `src/resources/system.dic` (Note that the file name is changed to `system.dic`) .
 
 Alternatively, you can use a quick shell script in the source code; This script will download the `core` dictionary and place it to `src/resources/system.dic`.
 
