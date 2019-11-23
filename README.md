@@ -1,6 +1,6 @@
 # Sudachi.rs
 
-An unofficial Rust🦀clone of a Japanese tokenizer [Sudachi](https://github.com/WorksApplications/Sudachi).
+An unofficial [Sudachi](https://github.com/WorksApplications/Sudachi) clone in Rust 🦀
 
 
 ## Example
