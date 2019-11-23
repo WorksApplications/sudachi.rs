@@ -27,7 +27,7 @@ EOS
 Normalized Form
 
 ```
-echo 打込む かつ丼 附属 vintage | sudachi
+$ echo 打込む かつ丼 附属 vintage | sudachi
 打込む	動詞,一般,*,*,五段-マ行,終止形-一般	打ち込む
  	空白,*,*,*,*,*
 かつ丼	名詞,普通名詞,一般,*,*,*	カツ丼
@@ -174,7 +174,7 @@ EOS
 正規化表記
 
 ```
-echo 打込む かつ丼 附属 vintage | sudachi
+$ echo 打込む かつ丼 附属 vintage | sudachi
 打込む	動詞,一般,*,*,五段-マ行,終止形-一般	打ち込む
  	空白,*,*,*,*,*
 かつ丼	名詞,普通名詞,一般,*,*,*	カツ丼
