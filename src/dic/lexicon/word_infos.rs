@@ -3,15 +3,15 @@ use nom::{le_i32, le_u16, le_u32, le_u8};
 pub struct WordInfos<'a> {
     bytes: &'a [u8],
     offset: usize,
-    word_size: u32,
+    _word_size: u32,
 }
 
 impl<'a> WordInfos<'a> {
-    pub fn new(bytes: &'a [u8], offset: usize, word_size: u32) -> WordInfos {
+    pub fn new(bytes: &'a [u8], offset: usize, _word_size: u32) -> WordInfos {
         WordInfos {
             bytes,
             offset,
-            word_size,
+            _word_size,
         }
     }
 

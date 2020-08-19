@@ -4,8 +4,8 @@ use nom::le_u64;
 
 pub struct Header {
     pub version: u64,
-    create_time: u64,
-    description: String,
+    _create_time: u64,
+    _description: String,
 }
 
 impl Header {
@@ -29,8 +29,8 @@ named_args!(
         desc_buf: take!(Header::DESCRIPTION_SIZE) >>
 
         (Header{ version,
-                 create_time,
-                 description: str::from_utf8(&desc_buf).unwrap().to_string() })
+                 _create_time: create_time,
+                 _description: str::from_utf8(&desc_buf).unwrap().to_string() })
                  // alternative: lossy_utf8, unchecked
     )
 );

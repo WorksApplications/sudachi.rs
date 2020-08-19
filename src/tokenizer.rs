@@ -6,7 +6,7 @@ use crate::lattice::Lattice;
 use crate::morpheme::Morpheme;
 
 pub struct Tokenizer<'a> {
-    bytes: &'a [u8],
+    _bytes: &'a [u8],
     pub grammar: Grammar<'a>,
     pub lexicon: Lexicon<'a>,
 }
@@ -31,13 +31,13 @@ impl<'a> Tokenizer<'a> {
         let lexicon = Lexicon::new(bytes, offset);
 
         Tokenizer {
-            bytes,
+            _bytes: bytes,
             grammar,
             lexicon,
         }
     }
 
-    pub fn tokenize(&self, input: &String, mode: &Mode, enable_debug: bool) -> Vec<Morpheme> {
+    pub fn tokenize(&self, input: &str, mode: &Mode, enable_debug: bool) -> Vec<Morpheme> {
         let input_bytes = input.as_bytes();
 
         // build_lattice
@@ -95,7 +95,7 @@ impl<'a> Tokenizer<'a> {
                     _ => panic!(),
                 };
 
-                if (word_ids.len() == 0) | (word_ids.len() == 1) {
+                if word_ids.is_empty() | (word_ids.len() == 1) {
                     word_id_list.push(node_word_id);
                 } else {
                     for word_id in word_ids {
@@ -105,11 +105,9 @@ impl<'a> Tokenizer<'a> {
             }
         };
 
-        let morpheme_list = word_id_list
+        word_id_list
             .iter()
             .map(|word_id| Morpheme::new(*word_id, &self.grammar, &self.lexicon))
-            .collect::<Vec<_>>();
-
-        morpheme_list
+            .collect::<Vec<_>>()
     }
 }

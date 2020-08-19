@@ -5,7 +5,7 @@ pub struct Grammar<'a> {
     pub pos_list: Vec<Vec<String>>,
     connect_table_offset: usize,
     left_id_size: i16,
-    right_id_size: i16,
+    _right_id_size: i16,
 
     pub storage_size: usize,
 }
@@ -28,7 +28,7 @@ impl<'a> Grammar<'a> {
             pos_list,
             connect_table_offset,
             left_id_size,
-            right_id_size,
+            _right_id_size: right_id_size,
             storage_size,
         }
     }

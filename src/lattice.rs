@@ -45,10 +45,7 @@ impl<'a> Lattice<'a> {
         }
         r_node.total_cost += r_node.cost as i32;
 
-        r_node.is_connected_to_bos = match r_node.best_previous_node_index {
-            Some(_) => true,
-            None => false,
-        };
+        r_node.is_connected_to_bos = r_node.best_previous_node_index.is_some();
     }
 
     pub fn insert(&mut self, begin: usize, end: usize, mut node: Node) {
