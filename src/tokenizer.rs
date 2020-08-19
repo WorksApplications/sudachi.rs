@@ -11,10 +11,38 @@ pub struct Tokenizer<'a> {
     pub lexicon: Lexicon<'a>,
 }
 
-#[derive(PartialEq)]
+/// Unit to split text
+///
+/// Some examples:
+/// ```text
+/// A：選挙/管理/委員/会
+/// B：選挙/管理/委員会
+/// C：選挙管理委員会
+///
+/// A：客室/乗務/員
+/// B：客室/乗務員
+/// C：客室乗務員
+///
+/// A：労働/者/協同/組合
+/// B：労働者/協同/組合
+/// C：労働者協同組合
+///
+/// A：機能/性/食品
+/// B：機能性/食品
+/// C：機能性食品
+/// ```
+///
+/// See [Sudachi documentation](https://github.com/WorksApplications/Sudachi#the-modes-of-splitting)
+/// for more details
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Mode {
+    /// Short
     A,
+
+    /// Middle (similar to "word")
     B,
+
+    /// Named Entity
     C,
 }
 
