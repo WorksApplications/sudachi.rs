@@ -7,6 +7,23 @@ An unofficial [Sudachi](https://github.com/WorksApplications/Sudachi) clone in R
 [日本語 README](#sudachirs---日本語readme)
 
 
+## Caution
+
+This is my hobby project to try out Rust, and the implementation is incomplete; One fatal problem is that it will throw an error when there is an Out-of-Vocabulary word (i.e., when there is no lattice path from the beginning to the end).
+
+```sh
+$ echo "あ" | sudachi
+あ      感動詞,フィラー,*,*,*,* あー
+EOS
+
+$ echo "阿" | sudachi
+thread 'main' panicked at 'EOS isn't connected to BOS', src/lattice.rs:70:13
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+```
+
+Please also have a look at an alternative by another person, [Yasu-umi/sudachiclone-rs](https://github.com/Yasu-umi/sudachiclone-rs).
+
+
 ## Example
 
 Multi-granular Tokenization
@@ -154,6 +171,22 @@ A Japanese tokenizer
 形態素解析器 [Sudachi](https://github.com/WorksApplications/Sudachi)  - 非公式 Rust 🦀 クローン
 
 [English README](#sudachirs)
+
+## 注意
+
+これはRust勉強のための趣味実装で、実装が未完の部分があります。特に、未知語が存在するときにエラーが発生します（ラティスで最初から最後までパスが存在しない場合）。
+
+```sh
+$ echo "あ" | sudachi
+あ      感動詞,フィラー,*,*,*,* あー
+EOS
+
+$ echo "阿" | sudachi
+thread 'main' panicked at 'EOS isn't connected to BOS', src/lattice.rs:70:13
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+```
+
+他の方によるRust実装も参照ください; [Yasu-umi/sudachiclone-rs](https://github.com/Yasu-umi/sudachiclone-rs)
 
 
 ## 利用例
