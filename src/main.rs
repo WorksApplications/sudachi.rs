@@ -63,7 +63,7 @@ fn main() {
 
     for line in reader.lines() {
         let input = line.unwrap().to_string();
-        let morpheme_list = tokenizer.tokenize(&input, &mode, enable_debug);
+        let morpheme_list = tokenizer.tokenize(&input, mode, enable_debug);
 
         if wakati {
             let surface_list = morpheme_list

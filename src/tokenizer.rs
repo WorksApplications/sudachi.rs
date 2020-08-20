@@ -65,7 +65,7 @@ impl<'a> Tokenizer<'a> {
         }
     }
 
-    pub fn tokenize(&self, input: &str, mode: &Mode, enable_debug: bool) -> Vec<Morpheme> {
+    pub fn tokenize(&self, input: &str, mode: Mode, enable_debug: bool) -> Vec<Morpheme> {
         let input_bytes = input.as_bytes();
 
         // build_lattice
@@ -109,7 +109,7 @@ impl<'a> Tokenizer<'a> {
         let node_list = lattice.get_best_path();
 
         let mut word_id_list = Vec::new();
-        if *mode == Mode::C {
+        if mode == Mode::C {
             word_id_list = node_list
                 .iter()
                 .map(|node| node.word_id.unwrap() as usize)
@@ -117,7 +117,7 @@ impl<'a> Tokenizer<'a> {
         } else {
             for node in &node_list {
                 let node_word_id = node.word_id.unwrap() as usize;
-                let word_ids = match *mode {
+                let word_ids = match mode {
                     Mode::A => self.lexicon.get_word_info(node_word_id).a_unit_split,
                     Mode::B => self.lexicon.get_word_info(node_word_id).b_unit_split,
                     _ => panic!(),
