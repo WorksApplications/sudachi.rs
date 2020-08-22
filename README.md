@@ -75,7 +75,7 @@ sudachi 0.1.0
 A Japanese tokenizer
 
 USAGE:
-    sudachi [FLAGS] [OPTIONS] [file]
+    sudachi [FLAGS] [OPTIONS] --dict <dictionary_path> [file]
 
 FLAGS:
     -d, --debug      Debug mode: Dumps lattice
@@ -85,7 +85,8 @@ FLAGS:
     -w, --wakati     Outputs only surface form
 
 OPTIONS:
-    -m, --mode <mode>    Split unit: "A" (short), "B" (middle), or "C" (Named Entity) [default: C]
+    -l, --dict <dictionary_path>    Path to sudachi dictionary
+    -m, --mode <mode>               Split unit: "A" (short), "B" (middle), or "C" (Named Entity) [default: C]
 
 ARGS:
     <file>    Input text file: If not present, read from STDIN
@@ -101,23 +102,50 @@ $ git clone https://github.com/sorami/sudachi.rs.git
 
 ### 2. Download a Sudachi Dictionary
 
-You can download a dictionary zip file from [WorksApplications/SudachiDict](https://github.com/WorksApplications/SudachiDict) (choose one from `small`, `core`, or `full`), unzip it, and place the `system_*.dic` file to `src/resources/system.dic` (Note that the file name is changed to `system.dic`) .
+Sudachi requires a dictionary to operate.
+You can download a dictionary ZIP file from [WorksApplications/SudachiDict](https://github.com/WorksApplications/SudachiDict) (choose one from `small`, `core`, or `full`), unzip it, and place the `system_*.dic` file somewhere.
 
-Alternatively, you can use a quick shell script in the source code; This script will download the `core` dictionary and place it to `src/resources/system.dic`.
+#### Convenience Script
+
+Optionally, you can use the [`fetch_dictionary.sh`](fetch_dictionary.sh) shell script to download the `core` dictionary and install it to `src/resources/system.dic`.
 
 ```
 $ ./fetch_dictionary.sh
 ```
 
-### 3. Build, Install
+### 3. Build
 
-The built executable will **contain the dictionary binary**.
+#### Build (default)
 
 ```
-$ cargo build
+$ cargo build --release
 ```
 
-or
+#### Build (bake dictionary into binary)
+
+Specify the `bake_dictionary` feature to avoid the requirement for the `--dict` argument with each invocation.
+The `sudachi` executable will **contain the dictionary binary**.
+The `--dict` option will be optional (default to using the integrated dictionary).
+
+You must specify the path the dictionary file in the `SUDACHI_DICT_PATH` environment variable when building.
+`SUDACHI_DICT_PATH` is relative to the `src/` directory (or absolute).
+
+Example on Unix-like system:
+```sh
+# Download dictionary to src/resources/system.dic
+$ ./fetch_dictionary.sh
+
+# Build with bake_dictionary feature (relative to src/ path)
+$ env SUDACHI_DICT_PATH=resources/system.dic cargo build --release --features bake_dictionary
+
+# or
+
+# Build with bake_dictionary feature (absolute path)
+$ env SUDACHI_DICT_PATH=/path/to/my-sudachi.dic cargo build --release --features bake_dictionary
+```
+
+
+### 4. Install
 
 ```
 sudachi.rs/ $ cargo install --path .

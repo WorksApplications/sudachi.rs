@@ -75,7 +75,7 @@ sudachi 0.1.0
 A Japanese tokenizer
 
 USAGE:
-    sudachi [FLAGS] [OPTIONS] [file]
+    sudachi [FLAGS] [OPTIONS] --dict <dictionary_path> [file]
 
 FLAGS:
     -d, --debug      Debug mode: Dumps lattice
@@ -85,7 +85,8 @@ FLAGS:
     -w, --wakati     Outputs only surface form
 
 OPTIONS:
-    -m, --mode <mode>    Split unit: "A" (short), "B" (middle), or "C" (Named Entity) [default: C]
+    -l, --dict <dictionary_path>    Path to sudachi dictionary
+    -m, --mode <mode>               Split unit: "A" (short), "B" (middle), or "C" (Named Entity) [default: C]
 
 ARGS:
     <file>    Input text file: If not present, read from STDIN
@@ -99,26 +100,56 @@ ARGS:
 $ git clone https://github.com/sorami/sudachi.rs.git
 ```
 
-### 2. Sudachi辞書のダウンロード 
+### 2. Sudachi辞書のダウンロード
 
+<!-- START: translate from english -->
 [WorksApplications/SudachiDict](https://github.com/WorksApplications/SudachiDict)から辞書のzipファイル（ `small` 、 `core` 、 `full` から一つ選択）し、解凍して、中にある `system_*.dic` ファイルを `src/resources/system.dic` として置いてください （ファイル名が `system.dic` に変わっていることに注意）。
 
 上記のように手動で設置する以外に、レポジトリにあるスクリプトを使って自動的に `core` 辞書をダウンロードし `src/resources/system.dic` として設置することもできます。
+
+#### Convenience Script
+
+Optionally, you can use the [`fetch_dictionary.sh`](fetch_dictionary.sh) shell script to download the `core` dictionary and install it to `src/resources/system.dic`.
 
 ```
 $ ./fetch_dictionary.sh
 ```
 
-### 3. ビルド、インストール
+### 3. ビルド
 
+#### Build (default)
+
+```
+$ cargo build --release
+```
+
+#### Build (bake dictionary into binary)
+
+Specify the `bake_dictionary` feature to avoid the requirement for the `--dict` argument with each invocation.
 ビルドされた実行ファイルは、**辞書バイナリを内包しています**。
+The `--dict` option will be optional (default to using the integrated dictionary).
 
+You must specify the path the dictionary file in the `SUDACHI_DICT_PATH` environment variable when building.
+`SUDACHI_DICT_PATH` is relative to the `src/` directory (or absolute).
+
+Example on Unix-like system:
+```sh
+# Download dictionary to src/resources/system.dic
+$ ./fetch_dictionary.sh
+
+# Build with bake_dictionary feature (relative to src/ path)
+$ env SUDACHI_DICT_PATH=resources/system.dic cargo build --release --features bake_dictionary
+
+# もしくは
+
+# Build with bake_dictionary feature (absolute path)
+$ env SUDACHI_DICT_PATH=/path/to/my-sudachi.dic cargo build --release --features bake_dictionary
 ```
-$ cargo build
-```
 
-もしくは
+<!-- END: translate from english -->
 
+
+### 4. インストール
 ```
 sudachi.rs/ $ cargo install --path .
 
