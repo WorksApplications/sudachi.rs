@@ -1,5 +1,6 @@
-use std::fs;
-use std::io::{self, BufRead, BufReader};
+use std::borrow::Cow;
+use std::fs::{self, File};
+use std::io::{self, BufRead, BufReader, Read};
 use std::path::PathBuf;
 use std::process;
 
@@ -7,6 +8,9 @@ use structopt::StructOpt;
 
 use sudachi::tokenizer::Mode;
 use sudachi::tokenizer::Tokenizer;
+
+#[cfg(feature = "bake_dictionary")]
+const BAKED_DICTIONARY_BYTES: &[u8] = include_bytes!("resources/system.dic");
 
 /// A Japanese tokenizer
 #[derive(StructOpt)]
@@ -31,6 +35,42 @@ struct Cli {
     /// Debug mode: Dumps lattice
     #[structopt(short = "d", long = "debug")]
     enable_debug: bool,
+
+    // Dictionary is optional if baked in
+    /// Path to sudachi dictionary
+    #[cfg(feature = "bake_dictionary")]
+    #[structopt(short = "l", long = "dict")]
+    dictionary_path: Option<PathBuf>,
+
+    // Dictionary is not baked in, so it must be specified
+    /// Path to sudachi dictionary
+    #[cfg(not(feature = "bake_dictionary"))]
+    #[structopt(short = "l", long = "dict")]
+    dictionary_path: PathBuf,
+}
+
+fn get_dictionary_bytes(args: &Cli) -> Cow<'static, [u8]> {
+    let dictionary_path = {
+        cfg_if::cfg_if! {
+            if #[cfg(feature="bake_dictionary")] {
+                if let Some(dictionary_path) = &args.dictionary_path {
+                    dictionary_path
+                } else {
+                    return Cow::Borrowed(BAKED_DICTIONARY_BYTES);
+                }
+            } else {
+                &args.dictionary_path
+            }
+        }
+    };
+
+    let dictionary_stat = fs::metadata(&dictionary_path).expect("Unable to stat dictionary");
+    let mut dictionary_file = File::open(dictionary_path).expect("Unable to open dictionary");
+    let mut storage_buf = Vec::with_capacity(dictionary_stat.len() as usize);
+    dictionary_file
+        .read_to_end(&mut storage_buf)
+        .expect("Failed to read from dictionary file");
+    Cow::Owned(storage_buf)
 }
 
 fn main() {
@@ -50,10 +90,8 @@ fn main() {
 
     // load and parse dictionary binary to create a tokenizer
 
-    // embed dictionary binary file
-    let bytes = include_bytes!("resources/system.dic");
-
-    let tokenizer = Tokenizer::new(bytes);
+    let dictionary_bytes = get_dictionary_bytes(&args);
+    let tokenizer = Tokenizer::from_dictionary_bytes(&dictionary_bytes);
 
     // input: stdin or file
     let reader: Box<dyn BufRead> = match args.file {

@@ -5,8 +5,9 @@ use crate::lattice::node::Node;
 use crate::lattice::Lattice;
 use crate::morpheme::Morpheme;
 
+/// Tokenizes Japanese text
 pub struct Tokenizer<'a> {
-    _bytes: &'a [u8],
+    _dictionary_bytes: &'a [u8],
     pub grammar: Grammar<'a>,
     pub lexicon: Lexicon<'a>,
 }
@@ -47,19 +48,19 @@ pub enum Mode {
 }
 
 impl<'a> Tokenizer<'a> {
-    pub fn new(bytes: &'a [u8]) -> Tokenizer<'a> {
+    pub fn from_dictionary_bytes(dictionary_bytes: &'a [u8]) -> Tokenizer<'a> {
         let mut offset = 0;
 
-        let _header = Header::new(bytes, offset);
+        let _header = Header::new(dictionary_bytes, offset);
         offset += Header::STORAGE_SIZE;
 
-        let grammar = Grammar::new(bytes, offset);
+        let grammar = Grammar::new(dictionary_bytes, offset);
         offset += grammar.storage_size;
 
-        let lexicon = Lexicon::new(bytes, offset);
+        let lexicon = Lexicon::new(dictionary_bytes, offset);
 
         Tokenizer {
-            _bytes: bytes,
+            _dictionary_bytes: dictionary_bytes,
             grammar,
             lexicon,
         }

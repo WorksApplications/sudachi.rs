@@ -6,5 +6,10 @@ edition = "2018"
 license = "Apache-2.0"
 
 [dependencies]
+cfg-if = "0.1"
 structopt = "0.2"
 nom = "4.2.2"
+
+[features]
+# Compile dictionary into executable (specifying dictionary becomes optional)
+bake_dictionary = []
