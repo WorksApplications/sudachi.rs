@@ -4,7 +4,7 @@
 
 形態素解析器 [Sudachi](https://github.com/WorksApplications/Sudachi)  - 非公式 Rust 🦀 クローン
 
-[English README](#sudachirs)
+[English README](README.md)
 
 ## 注意
 

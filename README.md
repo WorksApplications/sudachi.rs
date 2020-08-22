@@ -1,11 +1,10 @@
-# sudachi.rs
+# sudachi.rs - English README
 
 <p align="center"><img width="100" src="logo.png" alt="sudachi.rs logo"></p>
 
 An unofficial [Sudachi](https://github.com/WorksApplications/Sudachi) clone in Rust 🦀
 
-[日本語 README](#sudachirs---日本語readme)
-
+[日本語 README](README.ja.md)
 
 ## Caution
 
