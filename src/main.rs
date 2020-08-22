@@ -10,7 +10,7 @@ use sudachi::tokenizer::Mode;
 use sudachi::tokenizer::Tokenizer;
 
 #[cfg(feature = "bake_dictionary")]
-const BAKED_DICTIONARY_BYTES: &[u8] = include_bytes!("resources/system.dic");
+const BAKED_DICTIONARY_BYTES: &[u8] = include_bytes!(env!("SUDACHI_DICT_PATH"));
 
 /// A Japanese tokenizer
 #[derive(StructOpt)]
