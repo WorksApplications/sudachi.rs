@@ -2,6 +2,7 @@ use crate::dic::grammar::Grammar;
 use crate::dic::lexicon::word_infos::WordInfo;
 use crate::dic::lexicon::Lexicon;
 
+/// Basic semantic unit of language
 pub struct Morpheme<'a> {
     word_info: WordInfo,
     grammar: &'a Grammar<'a>,

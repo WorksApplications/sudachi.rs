@@ -10,6 +10,9 @@ cfg-if = "0.1"
 structopt = "0.2"
 nom = "4.2.2"
 
+[dev-dependencies]
+lazy_static = "1.4.0"
+
 [features]
 # Compile dictionary into executable (specifying dictionary becomes optional)
 bake_dictionary = []

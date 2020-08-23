@@ -5,9 +5,14 @@ use crate::lattice::node::Node;
 use crate::lattice::Lattice;
 use crate::morpheme::Morpheme;
 
+/// Able to tokenize Japanese text
+pub trait Tokenize {
+    /// Break text into `Morpheme`s
+    fn tokenize(&self, input: &str, mode: Mode, enable_debug: bool) -> Vec<Morpheme>;
+}
+
 /// Tokenizes Japanese text
 pub struct Tokenizer<'a> {
-    _dictionary_bytes: &'a [u8],
     pub grammar: Grammar<'a>,
     pub lexicon: Lexicon<'a>,
 }
@@ -59,14 +64,11 @@ impl<'a> Tokenizer<'a> {
 
         let lexicon = Lexicon::new(dictionary_bytes, offset);
 
-        Tokenizer {
-            _dictionary_bytes: dictionary_bytes,
-            grammar,
-            lexicon,
-        }
+        Tokenizer { grammar, lexicon }
     }
-
-    pub fn tokenize(&self, input: &str, mode: Mode, enable_debug: bool) -> Vec<Morpheme> {
+}
+impl<'a> Tokenize for Tokenizer<'a> {
+    fn tokenize(&self, input: &str, mode: Mode, enable_debug: bool) -> Vec<Morpheme> {
         let input_bytes = input.as_bytes();
 
         // build_lattice

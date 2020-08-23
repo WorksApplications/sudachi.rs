@@ -7,7 +7,7 @@ use std::process;
 use structopt::StructOpt;
 
 use sudachi::tokenizer::Mode;
-use sudachi::tokenizer::Tokenizer;
+use sudachi::tokenizer::{Tokenize, Tokenizer};
 
 #[cfg(feature = "bake_dictionary")]
 const BAKED_DICTIONARY_BYTES: &[u8] = include_bytes!(env!("SUDACHI_DICT_PATH"));
