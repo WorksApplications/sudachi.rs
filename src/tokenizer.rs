@@ -4,6 +4,7 @@ use crate::dic::lexicon::Lexicon;
 use crate::lattice::node::Node;
 use crate::lattice::Lattice;
 use crate::morpheme::Morpheme;
+use crate::SudachiResult;
 
 /// Able to tokenize Japanese text
 pub trait Tokenize {
@@ -53,10 +54,9 @@ pub enum Mode {
 }
 
 impl<'a> Tokenizer<'a> {
-    pub fn from_dictionary_bytes(dictionary_bytes: &'a [u8]) -> Tokenizer<'a> {
+    pub fn from_dictionary_bytes(dictionary_bytes: &'a [u8]) -> SudachiResult<Tokenizer<'a>> {
+        let (_rest, _header) = Header::new(&dictionary_bytes[..Header::STORAGE_SIZE])?;
         let mut offset = 0;
-
-        let _header = Header::new(dictionary_bytes, offset);
         offset += Header::STORAGE_SIZE;
 
         let grammar = Grammar::new(dictionary_bytes, offset);
@@ -64,7 +64,7 @@ impl<'a> Tokenizer<'a> {
 
         let lexicon = Lexicon::new(dictionary_bytes, offset);
 
-        Tokenizer { grammar, lexicon }
+        Ok(Tokenizer { grammar, lexicon })
     }
 }
 impl<'a> Tokenize for Tokenizer<'a> {

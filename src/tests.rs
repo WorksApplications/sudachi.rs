@@ -17,7 +17,8 @@ lazy_static! {
             .expect("Failed to read from dictionary file");
         storage_buf
     };
-    static ref TOKENIZER: Tokenizer<'static> = Tokenizer::from_dictionary_bytes(&DICTIONARY_BYTES);
+    static ref TOKENIZER: Tokenizer<'static> = Tokenizer::from_dictionary_bytes(&DICTIONARY_BYTES)
+        .expect("Failed to create Tokenizer for tests");
 }
 
 /// Expected chunks for a text in a given mode

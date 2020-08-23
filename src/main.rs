@@ -6,8 +6,7 @@ use std::process;
 
 use structopt::StructOpt;
 
-use sudachi::tokenizer::Mode;
-use sudachi::tokenizer::{Tokenize, Tokenizer};
+use sudachi::prelude::*;
 
 #[cfg(feature = "bake_dictionary")]
 const BAKED_DICTIONARY_BYTES: &[u8] = include_bytes!(env!("SUDACHI_DICT_PATH"));
@@ -91,7 +90,8 @@ fn main() {
     // load and parse dictionary binary to create a tokenizer
 
     let dictionary_bytes = get_dictionary_bytes(&args);
-    let tokenizer = Tokenizer::from_dictionary_bytes(&dictionary_bytes);
+    let tokenizer = Tokenizer::from_dictionary_bytes(&dictionary_bytes)
+        .expect("Failed to create Tokenizer from dictionary bytes");
 
     // input: stdin or file
     let reader: Box<dyn BufRead> = match args.file {
