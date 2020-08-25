@@ -1,5 +1,9 @@
 //! Clone of [Sudachi](https://github.com/WorksApplications/Sudachi),
 //! a Japanese morphological analyzer
+//!
+//! The main entry point of the library is the
+//! [`Tokenizer`](tokenizer/struct.Tokenizer.html) struct, which
+//! implements [`Tokenize`](tokenizer/trait.Tokenize.html).
 
 #[cfg(test)]
 #[macro_use]

@@ -3,13 +3,14 @@ use crate::dic::lexicon::word_infos::WordInfo;
 use crate::dic::lexicon::Lexicon;
 use crate::prelude::*;
 
-/// Basic semantic unit of language
+/// A morpheme (basic semantic unit of language)
 pub struct Morpheme<'a> {
     word_info: WordInfo,
     grammar: &'a Grammar<'a>,
 }
 
 impl<'a> Morpheme<'a> {
+    /// Create a new `Morpheme`
     pub fn new(
         word_id: usize,
         grammar: &'a Grammar<'a>,
@@ -19,10 +20,14 @@ impl<'a> Morpheme<'a> {
         Ok(Morpheme { word_info, grammar })
     }
 
+    /// Returns the text of morpheme.
+    ///
+    /// When the input text is normalized, some morphemes have the same surface.
     pub fn surface(&self) -> &String {
         &self.word_info.surface
     }
 
+    /// Part of speech
     pub fn pos(&self) -> SudachiResult<&Vec<String>> {
         let res = &self
             .grammar
@@ -32,14 +37,24 @@ impl<'a> Morpheme<'a> {
         Ok(res)
     }
 
+    /// Normalized form of morpheme
+    ///
+    /// This method returns the form normalizing inconsistent spellings and
+    /// inflected forms.
     pub fn normalized_form(&self) -> &String {
         &self.word_info.normalized_form
     }
 
+    /// Returns the reading form of morpheme.
+    ///
+    /// Returns Japanese syllabaries 'フリガナ' in katakana.
     pub fn reading_form(&self) -> &String {
         &self.word_info.reading_form
     }
 
+    /// Returns the dictionary form of morpheme.
+    ///
+    /// "Dictionary form" means a word's lemma and "終止形" in Japanese.
     pub fn dictionary_form(&self) -> &String {
         &self.word_info.dictionary_form
     }
