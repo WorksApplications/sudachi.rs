@@ -1,5 +1,7 @@
 use nom::{le_u32, le_u8};
 
+use crate::prelude::*;
+
 pub struct WordIdTable<'a> {
     bytes: &'a [u8],
     size: u32,
@@ -19,9 +21,9 @@ impl<'a> WordIdTable<'a> {
         4 + self.size as usize
     }
 
-    pub fn get(&self, index: usize) -> Vec<u32> {
-        let (_rest, result) = word_id_table_parser(self.bytes, self.offset, index).unwrap();
-        result
+    pub fn get(&self, index: usize) -> SudachiResult<Vec<u32>> {
+        let (_rest, result) = word_id_table_parser(self.bytes, self.offset, index)?;
+        Ok(result)
     }
 }
 

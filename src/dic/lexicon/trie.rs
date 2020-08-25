@@ -1,3 +1,5 @@
+use crate::prelude::*;
+
 pub struct Trie {
     array: Vec<u32>,
     size: u32, // number of elements
@@ -12,32 +14,48 @@ impl Trie {
         4 * self.size as usize
     }
 
-    pub fn common_prefix_search(&self, input: &[u8], offset: usize) -> Vec<(usize, usize)> {
+    pub fn common_prefix_search(
+        &self,
+        input: &[u8],
+        offset: usize,
+    ) -> SudachiResult<Vec<(usize, usize)>> {
         let mut result = Vec::new();
 
         let mut node_pos: usize = 0;
-        let mut unit: usize = *self.array.get(node_pos).unwrap() as usize;
+        let mut unit: usize = *self
+            .array
+            .get(node_pos)
+            .ok_or(SudachiError::MissingDictionaryTrie)? as usize;
         node_pos ^= Trie::offset(unit);
 
         for i in offset..input.len() {
-            let k = input.get(i).unwrap();
+            let k = input.get(i).ok_or(SudachiError::MissingDictionaryTrie)?;
             node_pos ^= *k as usize;
-            unit = *self.array.get(node_pos).unwrap() as usize;
+            unit = *self
+                .array
+                .get(node_pos)
+                .ok_or(SudachiError::MissingDictionaryTrie)? as usize;
             if Trie::label(unit) != *k as usize {
-                return result;
+                return Ok(result);
             }
 
             node_pos ^= Trie::offset(unit);
             if Trie::has_leaf(unit) {
                 let r = (
-                    Trie::value(*self.array.get(node_pos).unwrap() as usize),
+                    Trie::value(
+                        *self
+                            .array
+                            .get(node_pos)
+                            .ok_or(SudachiError::MissingDictionaryTrie)?
+                            as usize,
+                    ),
                     i + 1,
                 );
                 result.push(r);
             }
         }
 
-        result
+        Ok(result)
     }
 
     fn has_leaf(unit: usize) -> bool {

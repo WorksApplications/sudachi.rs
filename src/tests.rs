@@ -31,7 +31,9 @@ struct ChunkExpectation<'a> {
 
 /// Get text chunks from text
 fn tokenized_chunks(text: &str, mode: Mode) -> Vec<String> {
-    let tokens = TOKENIZER.tokenize(text, mode, false);
+    let tokens = TOKENIZER
+        .tokenize(text, mode, false)
+        .expect("Failed to get tokens");
     tokens
         .iter()
         .map(|tok| tok.surface().clone())

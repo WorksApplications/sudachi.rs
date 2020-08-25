@@ -1,5 +1,7 @@
 use nom::le_i16;
 
+use crate::prelude::*;
+
 pub struct WordParams<'a> {
     bytes: &'a [u8],
     size: u32,
@@ -25,28 +27,26 @@ impl<'a> WordParams<'a> {
         self.size
     }
 
-    pub fn get_left_id(&self, word_id: usize) -> i16 {
+    pub fn get_left_id(&self, word_id: usize) -> SudachiResult<i16> {
         let (_rest, num) =
-            i16_parser(self.bytes, self.offset + WordParams::ELEMENT_SIZE * word_id).unwrap();
-        num
+            i16_parser(self.bytes, self.offset + WordParams::ELEMENT_SIZE * word_id)?;
+        Ok(num)
     }
 
-    pub fn get_right_id(&self, word_id: usize) -> i16 {
+    pub fn get_right_id(&self, word_id: usize) -> SudachiResult<i16> {
         let (_rest, num) = i16_parser(
             self.bytes,
             self.offset + WordParams::ELEMENT_SIZE * word_id + 2,
-        )
-        .unwrap();
-        num
+        )?;
+        Ok(num)
     }
 
-    pub fn get_cost(&self, word_id: usize) -> i16 {
+    pub fn get_cost(&self, word_id: usize) -> SudachiResult<i16> {
         let (_rest, num) = i16_parser(
             self.bytes,
             self.offset + WordParams::ELEMENT_SIZE * word_id + 4,
-        )
-        .unwrap();
-        num
+        )?;
+        Ok(num)
     }
 }
 

@@ -4,6 +4,7 @@ use std::i32;
 
 use self::node::Node;
 use crate::dic::grammar::Grammar;
+use crate::prelude::*;
 
 pub struct Lattice<'a> {
     grammar: &'a Grammar<'a>,
@@ -25,7 +26,7 @@ impl<'a> Lattice<'a> {
         }
     }
 
-    fn connect_node(&self, r_node: &mut Node) {
+    fn connect_node(&self, r_node: &mut Node) -> SudachiResult<()> {
         let begin = r_node.begin;
         r_node.total_cost = i32::MAX;
 
@@ -36,7 +37,7 @@ impl<'a> Lattice<'a> {
 
             let connect_cost = self
                 .grammar
-                .get_connect_cost(l_node.right_id, r_node.left_id);
+                .get_connect_cost(l_node.right_id, r_node.left_id)?;
             let cost = l_node.total_cost + connect_cost as i32;
             if cost < r_node.total_cost {
                 r_node.total_cost = cost;
@@ -46,39 +47,49 @@ impl<'a> Lattice<'a> {
         r_node.total_cost += r_node.cost as i32;
 
         r_node.is_connected_to_bos = r_node.best_previous_node_index.is_some();
+
+        Ok(())
     }
 
-    pub fn insert(&mut self, begin: usize, end: usize, mut node: Node) {
+    pub fn insert(&mut self, begin: usize, end: usize, mut node: Node) -> SudachiResult<()> {
         node.set_range(begin, end);
-        self.connect_node(&mut node);
+        self.connect_node(&mut node)?;
         self.end_lists[end].push(node);
+
+        Ok(())
     }
 
-    pub fn connect_eos_node(&mut self) {
+    pub fn connect_eos_node(&mut self) -> SudachiResult<()> {
         let eos_node = Node::new_eos(self.size);
-        self.insert(eos_node.begin, eos_node.end, eos_node);
+        self.insert(eos_node.begin, eos_node.end, eos_node)
     }
 
-    pub fn get_best_path(&self) -> Vec<&Node> {
+    pub fn get_best_path(&self) -> SudachiResult<Vec<&Node>> {
         // TODO: reference of eos_node in struct `Lattice` ?
-        let eos_node = self.end_lists[self.size].last().unwrap();
+        let eos_node = self.end_lists[self.size]
+            .last()
+            .ok_or(SudachiError::MissingLaticePath)?;
 
         if !eos_node.is_connected_to_bos {
-            panic!("EOS isn't connected to BOS");
+            return Err(SudachiError::EosBosDisconnect);
         }
 
         let mut path = Vec::new();
 
         let mut node = eos_node;
         // todo
-        let (i, j) = node.best_previous_node_index.unwrap();
+        let (i, j) = node
+            .best_previous_node_index
+            .ok_or(SudachiError::MissingLaticePath)?;
         let mut i = i;
         let mut j = j;
         while (i, j) != (0, 0) {
             path.push(node);
 
             // todo
-            let (a, b) = node.best_previous_node_index.unwrap();
+            let (a, b) = node
+                .best_previous_node_index
+                .ok_or(SudachiError::MissingLaticePath)?;
             i = a;
             j = b;
             node = &self.end_lists[i][j];
@@ -87,6 +98,6 @@ impl<'a> Lattice<'a> {
         path.reverse();
         path.pop(); // EOS
 
-        path
+        Ok(path)
     }
 }

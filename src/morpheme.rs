@@ -1,6 +1,7 @@
 use crate::dic::grammar::Grammar;
 use crate::dic::lexicon::word_infos::WordInfo;
 use crate::dic::lexicon::Lexicon;
+use crate::prelude::*;
 
 /// Basic semantic unit of language
 pub struct Morpheme<'a> {
@@ -9,21 +10,26 @@ pub struct Morpheme<'a> {
 }
 
 impl<'a> Morpheme<'a> {
-    pub fn new(word_id: usize, grammar: &'a Grammar<'a>, lexicon: &Lexicon) -> Morpheme<'a> {
-        let word_info = lexicon.get_word_info(word_id);
-        Morpheme { word_info, grammar }
+    pub fn new(
+        word_id: usize,
+        grammar: &'a Grammar<'a>,
+        lexicon: &Lexicon,
+    ) -> SudachiResult<Morpheme<'a>> {
+        let word_info = lexicon.get_word_info(word_id)?;
+        Ok(Morpheme { word_info, grammar })
     }
 
     pub fn surface(&self) -> &String {
         &self.word_info.surface
     }
 
-    pub fn pos(&self) -> &Vec<String> {
-        &self
+    pub fn pos(&self) -> SudachiResult<&Vec<String>> {
+        let res = &self
             .grammar
             .pos_list
             .get(self.word_info.pos_id as usize)
-            .unwrap()
+            .ok_or(SudachiError::MissingPartOfSpeech)?;
+        Ok(res)
     }
 
     pub fn normalized_form(&self) -> &String {

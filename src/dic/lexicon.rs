@@ -9,6 +9,7 @@ use self::trie::Trie;
 use self::word_id_table::WordIdTable;
 use self::word_infos::{WordInfo, WordInfos};
 use self::word_params::WordParams;
+use crate::prelude::*;
 
 pub struct Lexicon<'a> {
     trie: Trie,
@@ -18,57 +19,57 @@ pub struct Lexicon<'a> {
 }
 
 impl<'a> Lexicon<'a> {
-    pub fn new(buf: &[u8], original_offset: usize) -> Lexicon {
+    pub fn new(buf: &[u8], original_offset: usize) -> SudachiResult<Lexicon> {
         let mut offset = original_offset;
 
-        let (_rest, trie_size) = parse_size(buf, offset).unwrap();
+        let (_rest, trie_size) = parse_size(buf, offset)?;
         offset += 4;
-        let (_rest, trie_array) = parse_trie_array(buf, offset, trie_size).unwrap();
+        let (_rest, trie_array) = parse_trie_array(buf, offset, trie_size)?;
         let trie = Trie::new(trie_array, trie_size);
         offset += trie.total_size();
 
-        let (_rest, word_id_table_size) = parse_size(buf, offset).unwrap();
+        let (_rest, word_id_table_size) = parse_size(buf, offset)?;
         let word_id_table = WordIdTable::new(buf, word_id_table_size, offset + 4);
         offset += word_id_table.storage_size();
 
-        let (_rest, word_params_size) = parse_size(buf, offset).unwrap();
+        let (_rest, word_params_size) = parse_size(buf, offset)?;
         let word_params = WordParams::new(buf, word_params_size, offset + 4);
         offset += word_params.storage_size();
 
         let word_infos = WordInfos::new(buf, offset, word_params.size());
 
-        Lexicon {
+        Ok(Lexicon {
             trie,
             word_id_table,
             word_params,
             word_infos,
-        }
+        })
     }
 
-    pub fn lookup(&self, input: &[u8], offset: usize) -> Vec<(u32, usize)> {
-        let result = self.trie.common_prefix_search(input, offset);
+    pub fn lookup(&self, input: &[u8], offset: usize) -> SudachiResult<Vec<(u32, usize)>> {
+        let result = self.trie.common_prefix_search(input, offset)?;
 
         let mut l: Vec<(u32, usize)> = Vec::new(); // (word_id, length)
         for item in result {
             let length = item.1;
-            for word_id in self.word_id_table.get(item.0) {
+            for word_id in self.word_id_table.get(item.0)? {
                 l.push((word_id, length));
             }
         }
 
-        l
+        Ok(l)
     }
 
-    pub fn get_word_info(&self, word_id: usize) -> WordInfo {
+    pub fn get_word_info(&self, word_id: usize) -> SudachiResult<WordInfo> {
         self.word_infos.get_word_info(word_id)
     }
 
-    pub fn get_word_param(&self, word_id: usize) -> (i16, i16, i16) {
-        let left_id = self.word_params.get_left_id(word_id);
-        let right_id = self.word_params.get_right_id(word_id);
-        let cost = self.word_params.get_cost(word_id);
+    pub fn get_word_param(&self, word_id: usize) -> SudachiResult<(i16, i16, i16)> {
+        let left_id = self.word_params.get_left_id(word_id)?;
+        let right_id = self.word_params.get_right_id(word_id)?;
+        let cost = self.word_params.get_cost(word_id)?;
 
-        (left_id, right_id, cost)
+        Ok((left_id, right_id, cost))
     }
 }
 

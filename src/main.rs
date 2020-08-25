@@ -96,12 +96,17 @@ fn main() {
     // input: stdin or file
     let reader: Box<dyn BufRead> = match args.file {
         None => Box::new(BufReader::new(io::stdin())),
-        Some(input_path) => Box::new(BufReader::new(fs::File::open(input_path).unwrap())),
+        Some(input_path) => Box::new(BufReader::new(
+            fs::File::open(&input_path)
+                .unwrap_or_else(|_| panic!("Failed to open file {:?}", &input_path)),
+        )),
     };
 
     for line in reader.lines() {
-        let input = line.unwrap().to_string();
-        let morpheme_list = tokenizer.tokenize(&input, mode, enable_debug);
+        let input = line.expect("Failed to reead line").to_string();
+        let morpheme_list = tokenizer
+            .tokenize(&input, mode, enable_debug)
+            .expect("failed to tokenize input");
 
         if wakati {
             let surface_list = morpheme_list
@@ -114,7 +119,7 @@ fn main() {
                 print!(
                     "{}\t{}\t{}",
                     morpheme.surface(),
-                    morpheme.pos().join(","),
+                    morpheme.pos().expect("Missing part of speech").join(","),
                     morpheme.normalized_form(),
                 );
                 if print_all {

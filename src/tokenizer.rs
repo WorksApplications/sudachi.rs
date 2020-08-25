@@ -4,12 +4,13 @@ use crate::dic::lexicon::Lexicon;
 use crate::lattice::node::Node;
 use crate::lattice::Lattice;
 use crate::morpheme::Morpheme;
-use crate::SudachiResult;
+use crate::prelude::*;
 
 /// Able to tokenize Japanese text
 pub trait Tokenize {
     /// Break text into `Morpheme`s
-    fn tokenize(&self, input: &str, mode: Mode, enable_debug: bool) -> Vec<Morpheme>;
+    fn tokenize(&self, input: &str, mode: Mode, enable_debug: bool)
+        -> SudachiResult<Vec<Morpheme>>;
 }
 
 /// Tokenizes Japanese text
@@ -56,19 +57,23 @@ pub enum Mode {
 impl<'a> Tokenizer<'a> {
     pub fn from_dictionary_bytes(dictionary_bytes: &'a [u8]) -> SudachiResult<Tokenizer<'a>> {
         let (_rest, _header) = Header::new(&dictionary_bytes[..Header::STORAGE_SIZE])?;
-        let mut offset = 0;
-        offset += Header::STORAGE_SIZE;
+        let mut offset = Header::STORAGE_SIZE;
 
-        let grammar = Grammar::new(dictionary_bytes, offset);
+        let grammar = Grammar::new(dictionary_bytes, offset)?;
         offset += grammar.storage_size;
 
-        let lexicon = Lexicon::new(dictionary_bytes, offset);
+        let lexicon = Lexicon::new(dictionary_bytes, offset)?;
 
         Ok(Tokenizer { grammar, lexicon })
     }
 }
 impl<'a> Tokenize for Tokenizer<'a> {
-    fn tokenize(&self, input: &str, mode: Mode, enable_debug: bool) -> Vec<Morpheme> {
+    fn tokenize(
+        &self,
+        input: &str,
+        mode: Mode,
+        enable_debug: bool,
+    ) -> SudachiResult<Vec<Morpheme>> {
         let input_bytes = input.as_bytes();
 
         // build_lattice
@@ -80,13 +85,13 @@ impl<'a> Tokenize for Tokenizer<'a> {
                 continue;
             }
 
-            for (word_id, end) in self.lexicon.lookup(&input_bytes, i) {
-                let (left_id, right_id, cost) = self.lexicon.get_word_param(word_id as usize);
+            for (word_id, end) in self.lexicon.lookup(&input_bytes, i)? {
+                let (left_id, right_id, cost) = self.lexicon.get_word_param(word_id as usize)?;
                 let node = Node::new(left_id, right_id, cost, word_id);
-                lattice.insert(i, end, node);
+                lattice.insert(i, end, node)?;
             }
         }
-        lattice.connect_eos_node();
+        lattice.connect_eos_node()?;
 
         // lattice dump
         if enable_debug {
@@ -98,7 +103,7 @@ impl<'a> Tokenize for Tokenizer<'a> {
                     for l_node in &lattice.end_lists[r_node.begin] {
                         let connect_cost = self
                             .grammar
-                            .get_connect_cost(l_node.right_id, r_node.left_id);
+                            .get_connect_cost(l_node.right_id, r_node.left_id)?;
                         let cost = l_node.total_cost + connect_cost as i32;
                         print!("{} ", cost);
                     }
@@ -109,21 +114,23 @@ impl<'a> Tokenize for Tokenizer<'a> {
             println!("===");
         };
 
-        let node_list = lattice.get_best_path();
+        let node_list = lattice.get_best_path()?;
 
         let mut word_id_list = Vec::new();
         if mode == Mode::C {
             word_id_list = node_list
                 .iter()
-                .map(|node| node.word_id.unwrap() as usize)
-                .collect::<Vec<_>>();
+                .map(|node| node.word_id.map(|x| x as usize))
+                .collect::<Option<Vec<_>>>()
+                .ok_or_else(|| SudachiError::MissingWordId)?;
         } else {
             for node in &node_list {
-                let node_word_id = node.word_id.unwrap() as usize;
+                let node_word_id =
+                    node.word_id.ok_or_else(|| SudachiError::MissingWordId)? as usize;
                 let word_ids = match mode {
-                    Mode::A => self.lexicon.get_word_info(node_word_id).a_unit_split,
-                    Mode::B => self.lexicon.get_word_info(node_word_id).b_unit_split,
-                    _ => panic!(),
+                    Mode::A => self.lexicon.get_word_info(node_word_id)?.a_unit_split,
+                    Mode::B => self.lexicon.get_word_info(node_word_id)?.b_unit_split,
+                    _ => unreachable!(),
                 };
 
                 if word_ids.is_empty() | (word_ids.len() == 1) {
@@ -139,6 +146,6 @@ impl<'a> Tokenize for Tokenizer<'a> {
         word_id_list
             .iter()
             .map(|word_id| Morpheme::new(*word_id, &self.grammar, &self.lexicon))
-            .collect::<Vec<_>>()
+            .collect::<SudachiResult<Vec<_>>>()
     }
 }

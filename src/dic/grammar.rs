@@ -1,4 +1,7 @@
-use nom::{le_i16, le_u16, le_u8};
+use nom::{le_i16, le_u16};
+
+use crate::dic::utf16_string;
+use crate::prelude::*;
 
 pub struct Grammar<'a> {
     bytes: &'a [u8],
@@ -16,46 +19,36 @@ impl<'a> Grammar<'a> {
     pub const BOS_PARAMETER: (i16, i16, i16) = (0, 0, 0); // left_id, right_id, cost
     pub const EOS_PARAMETER: (i16, i16, i16) = (0, 0, 0); // left_id, right_id, cost
 
-    pub fn new(buf: &[u8], offset: usize) -> Grammar {
-        let (rest, (pos_list, left_id_size, right_id_size)) = grammar_parser(buf, offset).unwrap();
+    pub fn new(buf: &[u8], offset: usize) -> SudachiResult<Grammar> {
+        let (rest, (pos_list, left_id_size, right_id_size)) =
+            grammar_parser(buf, offset).map_err(|_| SudachiError::InvalidDictionaryGrammar)?;
 
         let connect_table_offset = buf.len() - rest.len();
         let storage_size =
             (connect_table_offset - offset) + 2 * left_id_size as usize * right_id_size as usize;
 
-        Grammar {
+        Ok(Grammar {
             bytes: buf,
             pos_list,
             connect_table_offset,
             left_id_size,
             _right_id_size: right_id_size,
             storage_size,
-        }
+        })
     }
 
-    pub fn get_connect_cost(&self, left_id: i16, right_id: i16) -> i16 {
+    pub fn get_connect_cost(&self, left_id: i16, right_id: i16) -> SudachiResult<i16> {
         let (_rest, connect_cost) = connect_cost_parser(
             self.bytes,
             self.connect_table_offset,
             left_id as usize,
             self.left_id_size as usize,
             right_id as usize,
-        )
-        .unwrap();
+        )?;
 
-        connect_cost
+        Ok(connect_cost)
     }
 }
-
-named!(
-    utf16_string<&[u8], String>,
-    do_parse!(
-        length: le_u8 >>
-        v: count!(le_u16, length as usize) >>
-
-        (String::from_utf16(&v).unwrap())
-    )
-);
 
 named_args!(
     grammar_parser(offset: usize)<&[u8], (Vec<Vec<String>>, i16, i16)>,
