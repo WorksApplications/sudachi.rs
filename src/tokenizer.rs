@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use crate::dic::grammar::Grammar;
 use crate::dic::header::Header;
 use crate::dic::lexicon::Lexicon;
@@ -52,6 +54,19 @@ pub enum Mode {
 
     /// Named Entity
     C,
+}
+
+impl FromStr for Mode {
+    type Err = &'static str;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "A" | "a" => Ok(Mode::A),
+            "B" | "b" => Ok(Mode::B),
+            "C" | "c" => Ok(Mode::C),
+            _ => Err("Mode must be one of \"A\", \"B\", or \"C\" (in lower or upper case)."),
+        }
+    }
 }
 
 impl<'a> Tokenizer<'a> {

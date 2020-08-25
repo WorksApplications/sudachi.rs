@@ -74,12 +74,10 @@ fn get_dictionary_bytes(args: &Cli) -> Cow<'static, [u8]> {
 
 fn main() {
     let args = Cli::from_args();
-    let mode = match args.mode.as_str() {
-        "A" | "a" => Mode::A,
-        "B" | "b" => Mode::B,
-        "C" | "c" => Mode::C,
-        _ => {
-            eprintln!("Invalid mode: Mode must be one of \"A\", \"B\", or \"C\" (in lower or upper case).");
+    let mode = match args.mode.as_str().parse() {
+        Ok(mode) => mode,
+        Err(err) => {
+            eprintln!("Invalid mode: {}", err);
             process::exit(1);
         }
     };

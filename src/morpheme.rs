@@ -1,3 +1,5 @@
+use std::fmt;
+
 use crate::dic::grammar::Grammar;
 use crate::dic::lexicon::word_infos::WordInfo;
 use crate::dic::lexicon::Lexicon;
@@ -57,5 +59,17 @@ impl<'a> Morpheme<'a> {
     /// "Dictionary form" means a word's lemma and "終止形" in Japanese.
     pub fn dictionary_form(&self) -> &String {
         &self.word_info.dictionary_form
+    }
+}
+
+impl<'a> fmt::Debug for Morpheme<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Morpheme")
+            .field("surface", self.surface())
+            .field("pos", &self.pos())
+            .field("normalized_form", self.normalized_form())
+            .field("reading_form", self.reading_form())
+            .field("dictionary_form", self.dictionary_form())
+            .finish()
     }
 }
