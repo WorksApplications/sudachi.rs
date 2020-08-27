@@ -26,7 +26,7 @@ mod tests;
 pub mod prelude {
     pub use crate::{
         morpheme::Morpheme,
-        tokenizer::{Mode, Tokenize, Tokenizer},
+        tokenizer::{dictionary_bytes_from_path, Mode, Tokenize, Tokenizer},
         SudachiError, SudachiResult,
     };
 }

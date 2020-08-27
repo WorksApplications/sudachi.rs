@@ -1,6 +1,6 @@
 use std::borrow::Cow;
-use std::fs::{self, File};
-use std::io::{self, BufRead, BufReader, Read};
+use std::fs;
+use std::io::{self, BufRead, BufReader};
 use std::path::PathBuf;
 use std::process;
 
@@ -63,12 +63,8 @@ fn get_dictionary_bytes(args: &Cli) -> Cow<'static, [u8]> {
         }
     };
 
-    let dictionary_stat = fs::metadata(&dictionary_path).expect("Unable to stat dictionary");
-    let mut dictionary_file = File::open(dictionary_path).expect("Unable to open dictionary");
-    let mut storage_buf = Vec::with_capacity(dictionary_stat.len() as usize);
-    dictionary_file
-        .read_to_end(&mut storage_buf)
-        .expect("Failed to read from dictionary file");
+    let storage_buf = dictionary_bytes_from_path(&dictionary_path)
+        .expect("Failed to get dictionary bytes from file");
     Cow::Owned(storage_buf)
 }
 

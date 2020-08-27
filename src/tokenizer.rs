@@ -1,3 +1,6 @@
+use std::fs::{self, File};
+use std::io::Read;
+use std::path::Path;
 use std::str::FromStr;
 
 use crate::dic::grammar::Grammar;
@@ -83,6 +86,18 @@ impl<'a> Tokenizer<'a> {
         Ok(Tokenizer { grammar, lexicon })
     }
 }
+
+/// Return bytes of a `dictionary_path`
+pub fn dictionary_bytes_from_path<P: AsRef<Path>>(dictionary_path: P) -> SudachiResult<Vec<u8>> {
+    let dictionary_path = dictionary_path.as_ref();
+    let dictionary_stat = fs::metadata(&dictionary_path)?;
+    let mut dictionary_file = File::open(dictionary_path)?;
+    let mut dictionary_bytes = Vec::with_capacity(dictionary_stat.len() as usize);
+    dictionary_file.read_to_end(&mut dictionary_bytes)?;
+
+    Ok(dictionary_bytes)
+}
+
 impl<'a> Tokenize for Tokenizer<'a> {
     fn tokenize(
         &self,

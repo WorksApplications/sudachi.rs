@@ -1,21 +1,15 @@
 //! Crate tests
 
 use std::env;
-use std::fs::{self, File};
-use std::io::Read;
 
 use crate::prelude::*;
 
 lazy_static! {
     static ref DICTIONARY_BYTES: Vec<u8> = {
         let dictionary_path = env::var_os("SUDACHI_DICT_PATH").expect("Must set env var SUDACHI_DICT_PATH with path to Sudachi dictionary (relative to current dir)");
-        let dictionary_stat = fs::metadata(&dictionary_path).expect("Unable to stat dictionary");
-        let mut dictionary_file = File::open(dictionary_path).expect("Unable to open dictionary");
-        let mut storage_buf = Vec::with_capacity(dictionary_stat.len() as usize);
-        dictionary_file
-            .read_to_end(&mut storage_buf)
-            .expect("Failed to read from dictionary file");
-        storage_buf
+        let dictionary_bytes = dictionary_bytes_from_path(dictionary_path)
+            .expect("Failed to read dictionary from path");
+        dictionary_bytes
     };
     static ref TOKENIZER: Tokenizer<'static> = Tokenizer::from_dictionary_bytes(&DICTIONARY_BYTES)
         .expect("Failed to create Tokenizer for tests");
