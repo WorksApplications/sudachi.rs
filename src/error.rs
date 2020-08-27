@@ -41,7 +41,7 @@ pub enum SudachiError {
     #[error("Invalid UTF-16 from nom")]
     FromUtf16Nom,
 
-    #[error("EOS isn't connected to BOS")]
+    #[error("End of sentence (EOS) is not connected to beginning of sentence (BOS)")]
     EosBosDisconnect,
 }
 
