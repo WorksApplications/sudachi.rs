@@ -5,7 +5,7 @@
 
 <p align="center"><img width="100" src="logo.png" alt="sudachi.rs logo"></p>
 
-An unofficial [Sudachi](https://github.com/WorksApplications/Sudachi) clone in Rust 🦀
+An official [Sudachi](https://github.com/WorksApplications/Sudachi) clone in Rust 🦀
 
 [日本語 README](#sudachirs---日本語readme)
 
@@ -171,7 +171,7 @@ A Japanese tokenizer
 
 <p align="center"><img width="100" src="logo.png" alt="sudachi.rs logo"></p>
 
-形態素解析器 [Sudachi](https://github.com/WorksApplications/Sudachi)  - 非公式 Rust 🦀 クローン
+形態素解析器 [Sudachi](https://github.com/WorksApplications/Sudachi)  - 公式 Rust 🦀 クローン
 
 [English README](#sudachirs)
 
