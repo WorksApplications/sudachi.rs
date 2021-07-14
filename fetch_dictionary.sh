@@ -1,18 +1,19 @@
 #!/bin/sh
 
 DICT_NAME_BASE="sudachi-dictionary-20200722"
-DICT_NAME="${DICT_NAME_BASE}-core"
+DICT_TYPE="core"
+DICT_NAME="${DICT_NAME_BASE}-${DICT_TYPE}"
 
 echo "Downloading a dictionary file \`${DICT_NAME}\` ..."
 echo
 
 curl \
-    https://object-storage.tyo2.conoha.io/v1/nc_2520839e1f9641b08211a5c85243124a/sudachi/${DICT_NAME}.zip \
+    http://sudachi.s3-website-ap-northeast-1.amazonaws.com/sudachidict/${DICT_NAME}.zip \
     > ${DICT_NAME}.zip
 
 unzip ${DICT_NAME}.zip
 
-mv ${DICT_NAME_BASE}/system_core.dic src/resources/system.dic
+mv ${DICT_NAME_BASE}/system_${DICT_TYPE}.dic src/resources/system.dic
 
 rm -rf ${DICT_NAME}.zip ${DICT_NAME_BASE}
 
