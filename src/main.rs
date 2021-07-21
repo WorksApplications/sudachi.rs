@@ -66,10 +66,12 @@ fn main() {
         let morpheme_list = tokenizer.tokenize(&input, &mode, enable_debug);
 
         if wakati {
-            let surface_list = morpheme_list.iter().map(|m| m.surface().to_string()).collect::<Vec<_>>();
+            let surface_list = morpheme_list
+                .iter()
+                .map(|m| m.surface().to_string())
+                .collect::<Vec<_>>();
             println!("{}", surface_list.join(" "));
-        }
-        else {
+        } else {
             for morpheme in morpheme_list {
                 print!(
                     "{}\t{}\t{}",
