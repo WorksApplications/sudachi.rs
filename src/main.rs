@@ -31,10 +31,20 @@ struct Cli {
     /// Debug mode: Dumps lattice
     #[structopt(short = "d", long = "debug")]
     enable_debug: bool,
+
+    /// Prints sudachi.rs version
+    #[structopt(short = "v", long = "version")]
+    print_version: bool,
 }
 
 fn main() {
     let args = Cli::from_args();
+
+    if args.print_version {
+        println!("sudachi.rs {}", env!("CARGO_PKG_VERSION"));
+        return;
+    }
+
     let mode = match args.mode.as_str() {
         "A" | "a" => Mode::A,
         "B" | "b" => Mode::B,
