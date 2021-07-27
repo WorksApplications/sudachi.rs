@@ -1,8 +1,9 @@
 # sudachi.rs - English README
+**2021-07-07 UPDATE: The official Sudachi team will take over this project** (cf. [日本語形態素解析器 SudachiPy の 現状と今後について - Speaker Deck](https://speakerdeck.com/waptech/ri-ben-yu-xing-tai-su-jie-xi-qi-sudachipy-false-xian-zhuang-tojin-hou-nituite?slide=28))
 
 <p align="center"><img width="100" src="logo.png" alt="sudachi.rs logo"></p>
 
-An unofficial [Sudachi](https://github.com/WorksApplications/Sudachi) clone in Rust 🦀
+An official [Sudachi](https://github.com/WorksApplications/Sudachi) clone in Rust 🦀
 
 [日本語 README](README.ja.md)
 
