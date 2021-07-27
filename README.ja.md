@@ -1,15 +1,14 @@
-# sudachi.rs - English README
-**2021-07-07 UPDATE: The official Sudachi team will take over this project** (cf. [日本語形態素解析器 SudachiPy の 現状と今後について - Speaker Deck](https://speakerdeck.com/waptech/ri-ben-yu-xing-tai-su-jie-xi-qi-sudachipy-false-xian-zhuang-tojin-hou-nituite?slide=28))
+# sudachi.rs - 日本語README
 
 <p align="center"><img width="100" src="logo.png" alt="sudachi.rs logo"></p>
 
-An official [Sudachi](https://github.com/WorksApplications/Sudachi) clone in Rust 🦀
+形態素解析器 [Sudachi](https://github.com/WorksApplications/Sudachi)  - 非公式 Rust 🦀 クローン
 
-[日本語 README](README.ja.md)
+[English README](README.md)
 
-## Caution
+## 注意
 
-This is my hobby project to try out Rust, and the implementation is incomplete; One fatal problem is that it will throw an error when there is an Out-of-Vocabulary word (i.e., when there is no lattice path from the beginning to the end).
+これはRust勉強のための趣味実装で、実装が未完の部分があります。特に、未知語が存在するときにエラーが発生します（ラティスで最初から最後までパスが存在しない場合）。
 
 ```sh
 $ echo "あ" | sudachi
@@ -21,12 +20,12 @@ thread 'main' panicked at 'EOS isn't connected to BOS', src/lattice.rs:70:13
 note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 ```
 
-Please also have a look at an alternative by another person, [Yasu-umi/sudachiclone-rs](https://github.com/Yasu-umi/sudachiclone-rs).
+他の方によるRust実装も参照ください; [Yasu-umi/sudachiclone-rs](https://github.com/Yasu-umi/sudachiclone-rs)
 
 
-## Example
+## 利用例
 
-Multi-granular Tokenization
+複数粒度での分割
 
 ```
 $ echo 選挙管理委員会 | sudachi
@@ -41,7 +40,7 @@ $ echo 選挙管理委員会 | sudachi --mode A
 EOS
 ```
 
-Normalized Form
+正規化表記
 
 ```
 $ echo 打込む かつ丼 附属 vintage | sudachi
@@ -54,7 +53,7 @@ $ echo 打込む かつ丼 附属 vintage | sudachi
 vintage	名詞,普通名詞,一般,*,*,*	ビンテージ
 ```
 
-Wakati (space-delimited surface form) Output
+分かち書き出力
 
 ```
 $ cat lemon.txt
@@ -68,7 +67,7 @@ $ sudachi --wakati lemon.txt
 それ が 来 た の だ 。 これ は ちょっと いけ なかっ た 。
 ```
 
-## Usage
+## 利用方法
 
 ```
 $ sudachi -h
@@ -93,18 +92,20 @@ ARGS:
     <file>    Input text file: If not present, read from STDIN
 ```
 
-## Setup
+## セットアップ
 
-### 1. Get the source code
+### 1. ソースコードの取得
 
 ```
 $ git clone https://github.com/sorami/sudachi.rs.git
 ```
 
-### 2. Download a Sudachi Dictionary
+### 2. Sudachi辞書のダウンロード
 
-Sudachi requires a dictionary to operate.
-You can download a dictionary ZIP file from [WorksApplications/SudachiDict](https://github.com/WorksApplications/SudachiDict) (choose one from `small`, `core`, or `full`), unzip it, and place the `system_*.dic` file somewhere.
+<!-- START: translate from english -->
+[WorksApplications/SudachiDict](https://github.com/WorksApplications/SudachiDict)から辞書のzipファイル（ `small` 、 `core` 、 `full` から一つ選択）し、解凍して、中にある `system_*.dic` ファイルを `src/resources/system.dic` として置いてください （ファイル名が `system.dic` に変わっていることに注意）。
+
+上記のように手動で設置する以外に、レポジトリにあるスクリプトを使って自動的に `core` 辞書をダウンロードし `src/resources/system.dic` として設置することもできます。
 
 #### Convenience Script
 
@@ -114,7 +115,7 @@ Optionally, you can use the [`fetch_dictionary.sh`](fetch_dictionary.sh) shell s
 $ ./fetch_dictionary.sh
 ```
 
-### 3. Build
+### 3. ビルド
 
 #### Build (default)
 
@@ -125,7 +126,7 @@ $ cargo build --release
 #### Build (bake dictionary into binary)
 
 Specify the `bake_dictionary` feature to avoid the requirement for the `--dict` argument with each invocation.
-The `sudachi` executable will **contain the dictionary binary**.
+ビルドされた実行ファイルは、**辞書バイナリを内包しています**。
 The `--dict` option will be optional (default to using the integrated dictionary).
 
 You must specify the path the dictionary file in the `SUDACHI_DICT_PATH` environment variable when building.
@@ -139,15 +140,16 @@ $ ./fetch_dictionary.sh
 # Build with bake_dictionary feature (relative to src/ path)
 $ env SUDACHI_DICT_PATH=resources/system.dic cargo build --release --features bake_dictionary
 
-# or
+# もしくは
 
 # Build with bake_dictionary feature (absolute path)
 $ env SUDACHI_DICT_PATH=/path/to/my-sudachi.dic cargo build --release --features bake_dictionary
 ```
 
+<!-- END: translate from english -->
 
-### 4. Install
 
+### 4. インストール
 ```
 sudachi.rs/ $ cargo install --path .
 
@@ -163,12 +165,12 @@ A Japanese tokenizer
 
 ## ToDo
 
-- [ ] Out of Vocabulary handling
-- [ ] Easy dictionary file install & management, [similar to SudachiPy](https://github.com/WorksApplications/SudachiPy/issues/73)
-- [ ] Registration to crates.io
+- [ ] 未知語処理
+- [ ] 簡単な辞書ファイルのインストール、管理（[SudachiPyでの方式を参考に](https://github.com/WorksApplications/SudachiPy/issues/73)）
+- [ ] crates.io への登録
 
 
-## References
+## リファレンス
 
 ### Sudachi
 
@@ -177,13 +179,12 @@ A Japanese tokenizer
 - [WorksApplications/SudachiPy](https://github.com/WorksApplications/SudachiPy)
 - [msnoigrs/gosudachi](https://github.com/msnoigrs/gosudachi)
 
-
-### Morphological Analyzers in Rust
+### Rustによる形態素解析器の実装
 
 - [agatan/yoin: A Japanese Morphological Analyzer written in pure Rust](https://github.com/agatan/yoin)
 - [wareya/notmecab-rs: notmecab-rs is a very basic mecab clone, designed only to do parsing, not training.](https://github.com/wareya/notmecab-rs)
 
-### Logo
+### ロゴ
 
-- [Sudachi Logo](https://github.com/WorksApplications/Sudachi/blob/develop/docs/Sudachi.png)
-- Crab illustration: [Pixabay](https://pixabay.com/ja/vectors/%E5%8B%95%E7%89%A9-%E3%82%AB%E3%83%8B-%E7%94%B2%E6%AE%BB%E9%A1%9E-%E6%B5%B7-2029728/)
+- [Sudachiのロゴ](https://github.com/WorksApplications/Sudachi/blob/develop/docs/Sudachi.png)
+- カニのイラスト: [Pixabay](https://pixabay.com/ja/vectors/%E5%8B%95%E7%89%A9-%E3%82%AB%E3%83%8B-%E7%94%B2%E6%AE%BB%E9%A1%9E-%E6%B5%B7-2029728/)

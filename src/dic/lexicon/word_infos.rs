@@ -1,47 +1,38 @@
 use nom::{le_i32, le_u16, le_u32, le_u8};
 
+use crate::dic::utf16_string;
+use crate::prelude::*;
+
 pub struct WordInfos<'a> {
     bytes: &'a [u8],
     offset: usize,
-    word_size: u32,
+    _word_size: u32,
 }
 
 impl<'a> WordInfos<'a> {
-    pub fn new(bytes: &'a [u8], offset: usize, word_size: u32) -> WordInfos {
+    pub fn new(bytes: &'a [u8], offset: usize, _word_size: u32) -> WordInfos {
         WordInfos {
             bytes,
             offset,
-            word_size,
+            _word_size,
         }
     }
 
-    pub fn get_word_info(&self, word_id: usize) -> WordInfo {
-        let index = le_u32(&self.bytes[self.offset + (4 * word_id)..])
-            .unwrap()
-            .1 as usize; // wordIdToOffset()
-        let mut word_info = word_info_parser(self.bytes, index).unwrap().1;
+    pub fn get_word_info(&self, word_id: usize) -> SudachiResult<WordInfo> {
+        let index = le_u32(&self.bytes[self.offset + (4 * word_id)..])?.1 as usize; // wordIdToOffset()
+        let mut word_info = word_info_parser(self.bytes, index)?.1;
 
         // TODO: can we set dictionary_form within the word_info_parser?
         let dfwi = word_info.dictionary_form_word_id;
         if (dfwi >= 0) & (dfwi != word_id as i32) {
-            word_info.dictionary_form = self.get_word_info(dfwi as usize).surface;
+            word_info.dictionary_form = self.get_word_info(dfwi as usize)?.surface;
         };
 
-        word_info
+        Ok(word_info)
     }
 
     // TODO: is_valid_split()
 }
-
-named!(
-    utf16_string<&[u8], String>,
-    do_parse!(
-        length: le_u8 >>
-        v: count!(le_u16, length as usize) >>
-
-        (String::from_utf16(&v).unwrap())
-    )
-);
 
 named_args!(
     word_info_parser(index: usize)<&[u8], WordInfo>,
