@@ -10,12 +10,17 @@ use crate::lattice::node::Node;
 use crate::lattice::Lattice;
 use crate::morpheme::Morpheme;
 use crate::prelude::*;
+use crate::utf8inputtext::Utf8InputText;
 
 /// Able to tokenize Japanese text
 pub trait Tokenize {
     /// Break text into `Morpheme`s
-    fn tokenize(&self, input: &str, mode: Mode, enable_debug: bool)
-        -> SudachiResult<Vec<Morpheme>>;
+    fn tokenize(
+        &self,
+        input: &Utf8InputText,
+        mode: Mode,
+        enable_debug: bool,
+    ) -> SudachiResult<Vec<Morpheme>>;
 }
 
 /// Tokenizes Japanese text
@@ -101,18 +106,16 @@ pub fn dictionary_bytes_from_path<P: AsRef<Path>>(dictionary_path: P) -> Sudachi
 impl<'a> Tokenize for Tokenizer<'a> {
     fn tokenize(
         &self,
-        input: &str,
+        input: &Utf8InputText,
         mode: Mode,
         enable_debug: bool,
     ) -> SudachiResult<Vec<Morpheme>> {
-        let input_bytes = input.as_bytes();
-
         // build_lattice
+        let input_bytes = input.modified.as_bytes();
         let mut lattice = Lattice::new(&self.grammar, input_bytes.len());
-
-        for (i, b) in input_bytes.iter().enumerate() {
-            // TODO: if (!input.canBow(i) || !lattice.hasPreviousNode(i)) { continue; }
-            if (b & 0xC0) == 0x80 {
+        for (i, _) in input_bytes.iter().enumerate() {
+            if !input.can_bow(i) {
+                // TODO: if (!input.canBow(i) || !lattice.hasPreviousNode(i)) { continue; }
                 continue;
             }
 

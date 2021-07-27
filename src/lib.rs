@@ -17,6 +17,7 @@ pub mod error;
 pub mod lattice;
 pub mod morpheme;
 pub mod tokenizer;
+pub mod utf8inputtext;
 
 pub use error::*;
 

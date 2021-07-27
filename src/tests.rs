@@ -3,6 +3,7 @@
 use std::env;
 
 use crate::prelude::*;
+use crate::utf8inputtext::Utf8InputText;
 
 lazy_static! {
     static ref DICTIONARY_BYTES: Vec<u8> = {
@@ -24,9 +25,9 @@ struct ChunkExpectation<'a> {
 }
 
 /// Get text chunks from text
-fn tokenized_chunks(text: &str, mode: Mode) -> Vec<String> {
+fn tokenized_chunks(text: &Utf8InputText, mode: Mode) -> Vec<String> {
     let tokens = TOKENIZER
-        .tokenize(text, mode, false)
+        .tokenize(&text, mode, false)
         .expect("Failed to get tokens");
     tokens
         .iter()
@@ -35,20 +36,22 @@ fn tokenized_chunks(text: &str, mode: Mode) -> Vec<String> {
 }
 
 fn assert_tokenized_chunk_modes(text: &str, expected_chunks: ChunkExpectation) {
+    let text = Utf8InputText::new(String::from(text));
+
     assert_eq!(
-        tokenized_chunks(text, Mode::A),
+        tokenized_chunks(&text, Mode::A),
         expected_chunks.a,
         "failed for mode A, text={:?}",
         text
     );
     assert_eq!(
-        tokenized_chunks(text, Mode::B),
+        tokenized_chunks(&text, Mode::B),
         expected_chunks.b,
         "failed for mode B, text={:?}",
         text
     );
     assert_eq!(
-        tokenized_chunks(text, Mode::C),
+        tokenized_chunks(&text, Mode::C),
         expected_chunks.c,
         "failed for mode C, text={:?}",
         text
