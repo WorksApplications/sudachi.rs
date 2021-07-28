@@ -7,7 +7,6 @@ use std::process;
 use structopt::StructOpt;
 
 use sudachi::prelude::*;
-use sudachi::utf8inputtext::Utf8InputText;
 
 #[cfg(feature = "bake_dictionary")]
 const BAKED_DICTIONARY_BYTES: &[u8] = include_bytes!(env!("SUDACHI_DICT_PATH"));
@@ -107,7 +106,7 @@ fn main() {
     };
 
     for line in reader.lines() {
-        let input = Utf8InputText::new(line.expect("Failed to reead line"));
+        let input = line.expect("Failed to reead line");
         let morpheme_list = tokenizer
             .tokenize(&input, mode, enable_debug)
             .expect("failed to tokenize input");

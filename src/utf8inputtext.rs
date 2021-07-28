@@ -1,18 +1,31 @@
-#[derive(Debug)]
-pub struct Utf8InputText {
-    pub original: String,
+pub struct Utf8InputTextBuilder<'a> {
+    pub original: &'a str,
     pub modified: String,
 }
 
-impl Utf8InputText {
-    pub fn new(original: String) -> Utf8InputText {
-        let modified = original.clone();
+impl Utf8InputTextBuilder<'_> {
+    pub fn new(original: &str) -> Utf8InputTextBuilder {
+        let modified = String::from(original);
 
-        Utf8InputText { original, modified }
+        Utf8InputTextBuilder { original, modified }
     }
 
-    pub fn can_bow(&self, idx: usize) -> bool {
-        // todo: construct can_bow_list
-        (self.modified.as_bytes()[idx] & 0xC0) != 0x80
+    pub fn build(&self) -> Utf8InputText {
+        Utf8InputText {
+            original: self.original,
+            modified: self.modified.as_str(),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct Utf8InputText<'a> {
+    pub original: &'a str,
+    pub modified: &'a str,
+}
+
+impl Utf8InputText<'_> {
+    pub fn can_bow(&self, byte_idx: usize) -> bool {
+        (self.modified.as_bytes()[byte_idx] & 0xC0) != 0x80
     }
 }
