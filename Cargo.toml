@@ -7,7 +7,9 @@ license = "Apache-2.0"
 
 [dependencies]
 cfg-if = "0.1"
+multiset = "0.0.5"
 nom = "4.2.2"
+regex = "1.5"
 structopt = "0.2"
 thiserror = "1.0"
 

@@ -1,5 +1,6 @@
 use nom::{le_i16, le_u16};
 
+use crate::dic::character_category::CharacterCategory;
 use crate::dic::utf16_string;
 use crate::prelude::*;
 
@@ -11,6 +12,8 @@ pub struct Grammar<'a> {
     _right_id_size: i16,
 
     pub storage_size: usize,
+
+    pub character_category: CharacterCategory,
 }
 
 impl<'a> Grammar<'a> {
@@ -27,6 +30,10 @@ impl<'a> Grammar<'a> {
         let storage_size =
             (connect_table_offset - offset) + 2 * left_id_size as usize * right_id_size as usize;
 
+        // todo?: mv outside of grammar
+        // todo: read from file
+        let character_category = CharacterCategory::from_file(None)?;
+
         Ok(Grammar {
             bytes: buf,
             pos_list,
@@ -34,6 +41,7 @@ impl<'a> Grammar<'a> {
             left_id_size,
             _right_id_size: right_id_size,
             storage_size,
+            character_category,
         })
     }
 

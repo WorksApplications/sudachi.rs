@@ -3,6 +3,7 @@ use std::fmt::Debug;
 
 use thiserror::Error;
 
+use crate::dic::character_category::Error as CharacterCategoryError;
 use crate::dic::header::HeaderError;
 
 pub type SudachiResult<T> = Result<T, SudachiError>;
@@ -13,6 +14,9 @@ pub type SudachiResult<T> = Result<T, SudachiError>;
 pub enum SudachiError {
     #[error("IO Error: {0}")]
     Io(#[from] std::io::Error),
+
+    #[error("Parse Int Error")]
+    ParseIntError(#[from] std::num::ParseIntError),
 
     #[error("Invalid header: {0}")]
     InvalidHeader(#[from] HeaderError),
@@ -34,6 +38,9 @@ pub enum SudachiError {
 
     #[error("Missing dictionary trie")]
     MissingDictionaryTrie,
+
+    #[error("Invalid character category definition: {0}")]
+    InvalidCharacterCategory(#[from] CharacterCategoryError),
 
     #[error("Invalid UTF-16: {0}")]
     FromUtf16(#[from] std::string::FromUtf16Error),

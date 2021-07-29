@@ -2,6 +2,8 @@ use nom::{le_u16, le_u8};
 
 use crate::error::SudachiNomCustomError;
 
+pub mod category_type;
+pub mod character_category;
 pub mod grammar;
 pub mod header;
 pub mod lexicon;

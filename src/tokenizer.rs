@@ -106,7 +106,7 @@ impl<'a> Tokenize for Tokenizer<'a> {
         mode: Mode,
         enable_debug: bool,
     ) -> SudachiResult<Vec<Morpheme>> {
-        let builder = Utf8InputTextBuilder::new(input);
+        let builder = Utf8InputTextBuilder::new(input, &self.grammar);
         let input = builder.build();
 
         // build_lattice
