@@ -1,5 +1,4 @@
 use multiset::HashMultiSet;
-use regex::Regex;
 use std::cmp::{Ordering, Reverse};
 use std::collections::BinaryHeap;
 use std::fs;
@@ -58,30 +57,25 @@ impl CharacterCategory {
         let path = path.unwrap_or(DEFAULT_CHAR_DEF_FILE_PATH);
         let reader = BufReader::new(fs::File::open(&path)?);
 
-        let blank_line: Regex = Regex::new(r"^\s*$").unwrap();
-        let comment: Regex = Regex::new(r"^#").unwrap();
-        let white_spaces: Regex = Regex::new(r"\s+").unwrap();
-        let mapping_line: Regex = Regex::new(r"^0x").unwrap();
-        let dots: Regex = Regex::new(r"\.\.").unwrap();
-
         let mut ranges: Vec<Range> = Vec::new();
         for (i, line) in reader.lines().enumerate() {
             let line = line?;
-            if blank_line.is_match(&line) || comment.is_match(&line) {
+            let line = line.trim();
+            if line.is_empty()
+                || line.chars().next().unwrap() == '#'
+                || line.chars().take(2).collect::<Vec<_>>() != vec!['0', 'x']
+            {
                 continue;
             }
 
-            let cols: Vec<_> = white_spaces.split(&line).collect();
+            let cols: Vec<_> = line.split_whitespace().collect();
             if cols.len() < 2 {
                 return Err(SudachiError::InvalidCharacterCategory(
                     Error::InvalidFormat(i),
                 ));
             }
-            if !mapping_line.is_match(cols[0]) {
-                continue;
-            }
 
-            let r: Vec<_> = dots.split(cols[0]).collect();
+            let r: Vec<_> = cols[0].split("..").collect();
             let begin = u32::from_str_radix(String::from(r[0]).trim_start_matches("0x"), 16)?;
             let end = if r.len() > 1 {
                 u32::from_str_radix(String::from(r[1]).trim_start_matches("0x"), 16)? + 1
@@ -95,7 +89,10 @@ impl CharacterCategory {
             }
 
             let mut categories = CategoryTypes::new();
-            for elem in cols[1..].iter().take_while(|elem| !comment.is_match(elem)) {
+            for elem in cols[1..]
+                .iter()
+                .take_while(|elem| elem.chars().next().unwrap() != '#')
+            {
                 categories.insert(match elem.parse() {
                     Ok(t) => t,
                     Err(_) => {
