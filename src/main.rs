@@ -46,10 +46,6 @@ struct Cli {
     #[cfg(not(feature = "bake_dictionary"))]
     #[structopt(short = "l", long = "dict")]
     dictionary_path: PathBuf,
-
-    /// Prints sudachi.rs version
-    #[structopt(short = "v", long = "version")]
-    print_version: bool,
 }
 
 fn get_dictionary_bytes(args: &Cli) -> Cow<'static, [u8]> {
@@ -74,11 +70,6 @@ fn get_dictionary_bytes(args: &Cli) -> Cow<'static, [u8]> {
 
 fn main() {
     let args = Cli::from_args();
-
-    if args.print_version {
-        println!("sudachi.rs {}", env!("CARGO_PKG_VERSION"));
-        return;
-    }
 
     let mode = match args.mode.as_str().parse() {
         Ok(mode) => mode,
