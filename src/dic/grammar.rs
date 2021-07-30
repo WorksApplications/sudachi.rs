@@ -56,6 +56,15 @@ impl<'a> Grammar<'a> {
 
         Ok(connect_cost)
     }
+
+    pub fn get_part_of_speech_id(&self, pos1: &[&str]) -> Option<u16> {
+        for (i, pos2) in self.pos_list.iter().enumerate() {
+            if pos1.len() == pos2.len() && pos1.iter().zip(pos2).all(|(a, b)| a == b) {
+                return Some(i as u16);
+            }
+        }
+        None
+    }
 }
 
 named_args!(

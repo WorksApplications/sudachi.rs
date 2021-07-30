@@ -16,6 +16,7 @@ pub mod dic;
 pub mod error;
 pub mod lattice;
 pub mod morpheme;
+pub mod plugin;
 pub mod tokenizer;
 pub mod utf8inputtext;
 

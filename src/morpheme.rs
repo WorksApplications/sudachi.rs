@@ -3,23 +3,37 @@ use std::fmt;
 use crate::dic::grammar::Grammar;
 use crate::dic::lexicon::word_infos::WordInfo;
 use crate::dic::lexicon::Lexicon;
+use crate::lattice::node::Node;
 use crate::prelude::*;
 
 /// A morpheme (basic semantic unit of language)
 pub struct Morpheme<'a> {
     word_info: WordInfo,
+    pub is_oov: bool,
     grammar: &'a Grammar<'a>,
 }
 
 impl<'a> Morpheme<'a> {
     /// Create a new `Morpheme`
     pub fn new(
-        word_id: usize,
+        node: &Node,
         grammar: &'a Grammar<'a>,
         lexicon: &Lexicon,
     ) -> SudachiResult<Morpheme<'a>> {
-        let word_info = lexicon.get_word_info(word_id)?;
-        Ok(Morpheme { word_info, grammar })
+        let is_oov = node.is_oov;
+        let word_info = match node.word_info.clone() {
+            Some(wi) => wi,
+            None => {
+                let word_id = node.word_id.ok_or(SudachiError::MissingWordId)?;
+                lexicon.get_word_info(word_id as usize)?
+            }
+        };
+
+        Ok(Morpheme {
+            word_info,
+            is_oov,
+            grammar,
+        })
     }
 
     /// Returns the text of morpheme.

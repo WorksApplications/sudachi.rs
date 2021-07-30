@@ -1,9 +1,11 @@
 use std::fmt;
 
 use crate::dic::grammar::Grammar;
+use crate::dic::lexicon::{word_infos::WordInfo, Lexicon};
+use crate::prelude::*;
 
 // TODO: clone?
-#[derive(Clone)]
+#[derive(Clone, Debug, Default)]
 pub struct Node {
     pub begin: usize,
     pub end: usize,
@@ -13,6 +15,9 @@ pub struct Node {
     pub cost: i16,
 
     pub word_id: Option<u32>,
+    // todo: memoize
+    pub word_info: Option<WordInfo>,
+    pub is_oov: bool,
 
     pub total_cost: i32,
     //pub best_previous_node: Option<&'a Node<'a>>, // TODO: lifetime problem
@@ -23,15 +28,11 @@ pub struct Node {
 impl Node {
     pub fn new(left_id: i16, right_id: i16, cost: i16, word_id: u32) -> Node {
         Node {
-            begin: 0,
-            end: 0,
             left_id,
             right_id,
             cost,
             word_id: Some(word_id),
-            total_cost: 0,
-            best_previous_node_index: None,
-            is_connected_to_bos: false,
+            ..Default::default()
         }
     }
 
@@ -40,18 +41,22 @@ impl Node {
         self.end = end;
     }
 
+    pub fn fill_word_info(&mut self, lexicon: &Lexicon) -> SudachiResult<()> {
+        if let None = &self.word_info {
+            let word_id = self.word_id.ok_or(SudachiError::MissingWordId)?;
+            self.word_info = Some(lexicon.get_word_info(word_id as usize)?);
+        }
+        Ok(())
+    }
+
     pub fn new_bos() -> Node {
         let (left_id, right_id, cost) = Grammar::BOS_PARAMETER;
         Node {
-            begin: 0,
-            end: 0,
             left_id,
             right_id,
             cost,
-            word_id: None,
-            total_cost: 0,
-            best_previous_node_index: None,
             is_connected_to_bos: true,
+            ..Default::default()
         }
     }
 
@@ -63,10 +68,19 @@ impl Node {
             left_id,
             right_id,
             cost,
+            ..Default::default()
+        }
+    }
+
+    pub fn new_oov(left_id: i16, right_id: i16, cost: i16, word_info: WordInfo) -> Node {
+        Node {
+            left_id,
+            right_id,
+            cost,
             word_id: None,
-            total_cost: 0,
-            best_previous_node_index: None,
-            is_connected_to_bos: false,
+            word_info: Some(word_info),
+            is_oov: true,
+            ..Default::default()
         }
     }
 }

@@ -9,8 +9,9 @@ use crate::dic::lexicon::Lexicon;
 use crate::lattice::node::Node;
 use crate::lattice::Lattice;
 use crate::morpheme::Morpheme;
+use crate::plugin::oov::{OovProviderPlugin, SimpleOovPlugin};
 use crate::prelude::*;
-use crate::utf8inputtext::Utf8InputTextBuilder;
+use crate::utf8inputtext::{Utf8InputText, Utf8InputTextBuilder};
 
 /// Able to tokenize Japanese text
 pub trait Tokenize {
@@ -23,6 +24,7 @@ pub trait Tokenize {
 pub struct Tokenizer<'a> {
     pub grammar: Grammar<'a>,
     pub lexicon: Lexicon<'a>,
+    default_oov_provider: Box<dyn OovProviderPlugin>,
 }
 
 /// Unit to split text
@@ -84,7 +86,14 @@ impl<'a> Tokenizer<'a> {
 
         let lexicon = Lexicon::new(dictionary_bytes, offset)?;
 
-        Ok(Tokenizer { grammar, lexicon })
+        // todo: load plugins
+        let oov = SimpleOovPlugin::new(&grammar)?;
+
+        Ok(Tokenizer {
+            grammar,
+            lexicon,
+            default_oov_provider: Box::new(oov),
+        })
     }
 }
 
@@ -99,17 +108,8 @@ pub fn dictionary_bytes_from_path<P: AsRef<Path>>(dictionary_path: P) -> Sudachi
     Ok(dictionary_bytes)
 }
 
-impl<'a> Tokenize for Tokenizer<'a> {
-    fn tokenize(
-        &self,
-        input: &str,
-        mode: Mode,
-        enable_debug: bool,
-    ) -> SudachiResult<Vec<Morpheme>> {
-        let builder = Utf8InputTextBuilder::new(input, &self.grammar);
-        let input = builder.build();
-
-        // build_lattice
+impl<'a> Tokenizer<'a> {
+    fn build_lattice(&self, input: &Utf8InputText) -> SudachiResult<Lattice> {
         let input_bytes = input.modified.as_bytes();
         let mut lattice = Lattice::new(&self.grammar, input_bytes.len());
         for (i, _) in input_bytes.iter().enumerate() {
@@ -118,67 +118,115 @@ impl<'a> Tokenize for Tokenizer<'a> {
                 continue;
             }
 
+            let mut has_word = false;
             for (word_id, end) in self.lexicon.lookup(&input_bytes, i)? {
+                if (end < input_bytes.len()) && !input.can_bow(end) {
+                    continue;
+                }
+                has_word = true;
                 let (left_id, right_id, cost) = self.lexicon.get_word_param(word_id as usize)?;
                 let node = Node::new(left_id, right_id, cost, word_id);
                 lattice.insert(i, end, node)?;
             }
+
+            // OOV
+            if !has_word {
+                for node in self.default_oov_provider.get_oov(&input, i, has_word)? {
+                    has_word = true;
+                    lattice.insert(node.begin, node.end, node)?;
+                }
+            }
+
+            if !has_word {
+                panic!("no morpheme found at {}", i);
+            }
         }
         lattice.connect_eos_node()?;
 
-        // lattice dump
+        Ok(lattice)
+    }
+
+    fn split_path(&self, mut path: Vec<Node>, mode: Mode) -> SudachiResult<Vec<Node>> {
+        if mode == Mode::C {
+            return Ok(path);
+        }
+
+        for node in &mut path {
+            node.fill_word_info(&self.lexicon)?;
+        }
+
+        let mut new_path = Vec::with_capacity(path.len());
+        for node in path {
+            let word_info = node
+                .word_info
+                .clone()
+                .ok_or(SudachiError::MissingWordInfo)?;
+            let word_ids = match mode {
+                Mode::A => &word_info.a_unit_split,
+                Mode::B => &word_info.b_unit_split,
+                _ => unreachable!(),
+            };
+
+            if word_ids.len() >= 2 {
+                new_path.push(node);
+            } else {
+                let mut offset = node.begin;
+                for wid in word_ids {
+                    let mut n = Node::new(0, 0, 0, *wid);
+                    n.fill_word_info(&self.lexicon)?;
+                    let length = n
+                        .word_info
+                        .clone()
+                        .ok_or(SudachiError::MissingWordInfo)?
+                        .head_word_length as usize;
+                    n.set_range(offset, offset + length);
+                    new_path.push(n);
+
+                    offset += length;
+                }
+            }
+        }
+
+        new_path.shrink_to_fit();
+        Ok(new_path)
+    }
+}
+
+impl<'a> Tokenize for Tokenizer<'a> {
+    fn tokenize(
+        &self,
+        input: &str,
+        mode: Mode,
+        enable_debug: bool,
+    ) -> SudachiResult<Vec<Morpheme>> {
+        let builder = Utf8InputTextBuilder::new(input, &self.grammar);
+        // todo: plugin: input text
+        let input = builder.build();
+
+        let lattice = self.build_lattice(&input)?;
+
         if enable_debug {
             println!("=== Lattice dump:");
-            let mut i = 0;
-            for r_nodes in lattice.end_lists.iter().rev() {
-                for r_node in r_nodes {
-                    print!("{}: {}: ", i, r_node);
-                    for l_node in &lattice.end_lists[r_node.begin] {
-                        let connect_cost = self
-                            .grammar
-                            .get_connect_cost(l_node.right_id, r_node.left_id)?;
-                        let cost = l_node.total_cost + connect_cost as i32;
-                        print!("{} ", cost);
-                    }
-                    println!();
-                    i += 1;
-                }
-            }
-            println!("===");
+            lattice.dump(&self.grammar)?;
         };
 
-        let node_list = lattice.get_best_path()?;
+        let path = lattice.get_best_path()?;
 
-        let mut word_id_list = Vec::new();
-        if mode == Mode::C {
-            word_id_list = node_list
-                .iter()
-                .map(|node| node.word_id.map(|x| x as usize))
-                .collect::<Option<Vec<_>>>()
-                .ok_or_else(|| SudachiError::MissingWordId)?;
-        } else {
-            for node in &node_list {
-                let node_word_id =
-                    node.word_id.ok_or_else(|| SudachiError::MissingWordId)? as usize;
-                let word_ids = match mode {
-                    Mode::A => self.lexicon.get_word_info(node_word_id)?.a_unit_split,
-                    Mode::B => self.lexicon.get_word_info(node_word_id)?.b_unit_split,
-                    _ => unreachable!(),
-                };
-
-                if word_ids.is_empty() | (word_ids.len() == 1) {
-                    word_id_list.push(node_word_id);
-                } else {
-                    for word_id in word_ids {
-                        word_id_list.push(word_id as usize);
-                    }
-                }
-            }
+        if enable_debug {
+            println!("=== Before Rewriting:");
+            println!("{:?}", path);
         };
 
-        word_id_list
-            .iter()
-            .map(|word_id| Morpheme::new(*word_id, &self.grammar, &self.lexicon))
+        // todo: plugin: rewrite path
+        let path = self.split_path(path, mode)?;
+
+        if enable_debug {
+            println!("=== After Rewriting:");
+            println!("{:?}", path);
+        };
+
+        path.iter()
+            .map(|node| Morpheme::new(&node, &self.grammar, &self.lexicon))
             .collect::<SudachiResult<Vec<_>>>()
     }
 }

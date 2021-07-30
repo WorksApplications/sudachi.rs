@@ -72,10 +72,10 @@ named_args!(
     )
 );
 
-#[derive(Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct WordInfo {
     pub surface: String,
-    head_word_length: u8,
+    pub head_word_length: u8,
     pub pos_id: u16,
     pub normalized_form: String,
     pub reading_form: String,
@@ -84,4 +84,5 @@ pub struct WordInfo {
     pub word_structure: Vec<u32>,
     pub dictionary_form_word_id: i32,
     pub dictionary_form: String,
+    // todo: add synonym_group_id
 }

@@ -64,7 +64,7 @@ impl<'a> Lattice<'a> {
         self.insert(eos_node.begin, eos_node.end, eos_node)
     }
 
-    pub fn get_best_path(&self) -> SudachiResult<Vec<&Node>> {
+    pub fn get_best_path(&self) -> SudachiResult<Vec<Node>> {
         // TODO: reference of eos_node in struct `Lattice` ?
         let eos_node = self.end_lists[self.size]
             .last()
@@ -75,29 +75,39 @@ impl<'a> Lattice<'a> {
         }
 
         let mut path = Vec::new();
-
         let mut node = eos_node;
-        // todo
-        let (i, j) = node
-            .best_previous_node_index
-            .ok_or(SudachiError::MissingLaticePath)?;
-        let mut i = i;
-        let mut j = j;
-        while (i, j) != (0, 0) {
-            path.push(node);
+        loop {
+            path.push(node.clone());
 
-            // todo
-            let (a, b) = node
+            let (i, j) = node
                 .best_previous_node_index
                 .ok_or(SudachiError::MissingLaticePath)?;
-            i = a;
-            j = b;
+
+            if (i, j) == (0, 0) {
+                break;
+            }
             node = &self.end_lists[i][j];
         }
-
         path.reverse();
-        path.pop(); // EOS
+        path.pop(); // remove EOS
 
         Ok(path)
+    }
+
+    pub fn dump(&self, grammar: &Grammar) -> SudachiResult<()> {
+        let mut i = 0;
+        for r_nodes in self.end_lists.iter().rev() {
+            for r_node in r_nodes {
+                print!("{}: {}: ", i, r_node);
+                for l_node in &self.end_lists[r_node.begin] {
+                    let connect_cost = grammar.get_connect_cost(l_node.right_id, r_node.left_id)?;
+                    let cost = l_node.total_cost + connect_cost as i32;
+                    print!("{} ", cost);
+                }
+                println!();
+                i += 1;
+            }
+        }
+        Ok(())
     }
 }

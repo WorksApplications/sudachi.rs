@@ -18,6 +18,9 @@ pub enum SudachiError {
     #[error("Parse Int Error")]
     ParseIntError(#[from] std::num::ParseIntError),
 
+    #[error("Invalid range: {0}..{1}")]
+    InvalidRange(usize, usize),
+
     #[error("Invalid header: {0}")]
     InvalidHeader(#[from] HeaderError),
 
@@ -29,6 +32,9 @@ pub enum SudachiError {
 
     #[error("Missing word_id")]
     MissingWordId,
+
+    #[error("Missing word_info")]
+    MissingWordInfo,
 
     #[error("Missing part of speech")]
     MissingPartOfSpeech,
@@ -50,6 +56,9 @@ pub enum SudachiError {
 
     #[error("End of sentence (EOS) is not connected to beginning of sentence (BOS)")]
     EosBosDisconnect,
+
+    #[error("Invalid part of speech")]
+    InvalidPartOfSpeech,
 }
 
 /// Define `SudachiNomCustomError` error and conversion to `SudachiError`.

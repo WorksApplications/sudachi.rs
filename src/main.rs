@@ -118,6 +118,7 @@ fn main() {
                 .collect::<Vec<_>>();
             println!("{}", surface_list.join(" "));
         } else {
+            // todo? print at once to speed up?
             for morpheme in morpheme_list {
                 print!(
                     "{}\t{}\t{}",
@@ -130,8 +131,10 @@ fn main() {
                         "\t{}\t{}",
                         morpheme.dictionary_form(),
                         morpheme.reading_form(),
-                        // TODO: is_oov
                     );
+                    if morpheme.is_oov {
+                        print!("\t(OOV)");
+                    }
                 }
                 println!();
             }

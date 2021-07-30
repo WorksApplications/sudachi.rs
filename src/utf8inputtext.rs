@@ -1,5 +1,6 @@
 use crate::dic::category_type::{CategoryType, CategoryTypes};
 use crate::dic::grammar::Grammar;
+use crate::prelude::*;
 
 pub struct Utf8InputTextBuilder<'a> {
     grammar: &'a Grammar<'a>,
@@ -106,5 +107,22 @@ impl Utf8InputText<'_> {
     pub fn can_bow(&self, byte_idx: usize) -> bool {
         (self.modified.as_bytes()[byte_idx] & 0xC0) != 0x80
             && self.can_bow_list[self.byte_indexes[byte_idx]]
+    }
+
+    pub fn get_substring(&self, start: usize, end: usize) -> SudachiResult<String> {
+        if end < start || self.modified.len() < end {
+            return Err(SudachiError::InvalidRange(start, end));
+        }
+        Ok(String::from(&self.modified[start..end]))
+    }
+
+    pub fn get_word_candidate_length(&self, byte_idx: usize) -> usize {
+        let byte_length = self.modified.len();
+        for i in (byte_idx + 1)..byte_length {
+            if self.can_bow(i) {
+                return i - byte_idx;
+            }
+        }
+        byte_length - byte_idx
     }
 }
