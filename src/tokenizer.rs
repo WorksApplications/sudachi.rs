@@ -9,7 +9,7 @@ use crate::dic::lexicon::Lexicon;
 use crate::lattice::node::Node;
 use crate::lattice::Lattice;
 use crate::morpheme::Morpheme;
-use crate::plugin::oov::{OovProviderPlugin, SimpleOovPlugin};
+use crate::plugin::oov::{simple_oov::SimpleOovPlugin, OovProviderPlugin};
 use crate::prelude::*;
 use crate::utf8inputtext::{Utf8InputText, Utf8InputTextBuilder};
 
