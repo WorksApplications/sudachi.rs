@@ -8,17 +8,7 @@
 
 ## 注意
 
-これはRust勉強のための趣味実装で、実装が未完の部分があります。特に、未知語が存在するときにエラーが発生します（ラティスで最初から最後までパスが存在しない場合）。
-
-```sh
-$ echo "あ" | sudachi
-あ      感動詞,フィラー,*,*,*,* あー
-EOS
-
-$ echo "阿" | sudachi
-thread 'main' panicked at 'EOS isn't connected to BOS', src/lattice.rs:70:13
-note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
-```
+実装が未完の部分があります。
 
 他の方によるRust実装も参照ください; [Yasu-umi/sudachiclone-rs](https://github.com/Yasu-umi/sudachiclone-rs)
 
@@ -102,14 +92,11 @@ $ git clone https://github.com/sorami/sudachi.rs.git
 
 ### 2. Sudachi辞書のダウンロード
 
-<!-- START: translate from english -->
 [WorksApplications/SudachiDict](https://github.com/WorksApplications/SudachiDict)から辞書のzipファイル（ `small` 、 `core` 、 `full` から一つ選択）し、解凍して、中にある `system_*.dic` ファイルを `src/resources/system.dic` として置いてください （ファイル名が `system.dic` に変わっていることに注意）。
 
+#### ダウンロードスクリプト
+
 上記のように手動で設置する以外に、レポジトリにあるスクリプトを使って自動的に `core` 辞書をダウンロードし `src/resources/system.dic` として設置することもできます。
-
-#### Convenience Script
-
-Optionally, you can use the [`fetch_dictionary.sh`](fetch_dictionary.sh) shell script to download the `core` dictionary and install it to `src/resources/system.dic`.
 
 ```
 $ ./fetch_dictionary.sh
@@ -117,36 +104,34 @@ $ ./fetch_dictionary.sh
 
 ### 3. ビルド
 
-#### Build (default)
+#### ビルド（デフォルト）
 
 ```
 $ cargo build --release
 ```
 
-#### Build (bake dictionary into binary)
+#### ビルド（辞書バイナリの埋め込み）
 
-Specify the `bake_dictionary` feature to avoid the requirement for the `--dict` argument with each invocation.
-ビルドされた実行ファイルは、**辞書バイナリを内包しています**。
-The `--dict` option will be optional (default to using the integrated dictionary).
+`bake_dictionary` フィーチャーフラグを立ててビルドすることで、`--dict` オプションなしでの実行が可能になります。
+これによってビルドされた実行ファイルは、**辞書バイナリを内包しています**。
+また `--dict` オプションは任意となります（デフォルトで内包辞書を使用します）。
 
-You must specify the path the dictionary file in the `SUDACHI_DICT_PATH` environment variable when building.
-`SUDACHI_DICT_PATH` is relative to the `src/` directory (or absolute).
+ビルド時、埋め込む辞書へのパスを `SUDACHI_DICT_PATH` 環境変数によって指定する必要があります。
+このパスは絶対パスもしくは `src/` ディレクトリからの相対パスで指定してください。
 
-Example on Unix-like system:
+Unix-likeシステムでの例:
 ```sh
-# Download dictionary to src/resources/system.dic
+# src/resources/system.dic への辞書ダウンロード
 $ ./fetch_dictionary.sh
 
-# Build with bake_dictionary feature (relative to src/ path)
+# bake_dictionary フィーチャーフラグ付きでビルド (辞書を相対パスで指定)
 $ env SUDACHI_DICT_PATH=resources/system.dic cargo build --release --features bake_dictionary
 
 # もしくは
 
-# Build with bake_dictionary feature (absolute path)
+# bake_dictionary フィーチャーフラグ付きでビルド (辞書を絶対パスで指定)
 $ env SUDACHI_DICT_PATH=/path/to/my-sudachi.dic cargo build --release --features bake_dictionary
 ```
-
-<!-- END: translate from english -->
 
 
 ### 4. インストール
@@ -165,7 +150,7 @@ A Japanese tokenizer
 
 ## ToDo
 
-- [ ] 未知語処理
+- [x] 未知語処理
 - [ ] 簡単な辞書ファイルのインストール、管理（[SudachiPyでの方式を参考に](https://github.com/WorksApplications/SudachiPy/issues/73)）
 - [ ] crates.io への登録
 

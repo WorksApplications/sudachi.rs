@@ -9,17 +9,7 @@ An official [Sudachi](https://github.com/WorksApplications/Sudachi) clone in Rus
 
 ## Caution
 
-This is my hobby project to try out Rust, and the implementation is incomplete; One fatal problem is that it will throw an error when there is an Out-of-Vocabulary word (i.e., when there is no lattice path from the beginning to the end).
-
-```sh
-$ echo "あ" | sudachi
-あ      感動詞,フィラー,*,*,*,* あー
-EOS
-
-$ echo "阿" | sudachi
-thread 'main' panicked at 'EOS isn't connected to BOS', src/lattice.rs:70:13
-note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
-```
+This project is under development.
 
 Please also have a look at an alternative by another person, [Yasu-umi/sudachiclone-rs](https://github.com/Yasu-umi/sudachiclone-rs).
 
@@ -163,7 +153,7 @@ A Japanese tokenizer
 
 ## ToDo
 
-- [ ] Out of Vocabulary handling
+- [x] Out of Vocabulary handling
 - [ ] Easy dictionary file install & management, [similar to SudachiPy](https://github.com/WorksApplications/SudachiPy/issues/73)
 - [ ] Registration to crates.io
 
