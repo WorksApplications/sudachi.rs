@@ -26,6 +26,14 @@ impl<'a> Lattice<'a> {
         }
     }
 
+    pub fn insert(&mut self, begin: usize, end: usize, mut node: Node) -> SudachiResult<()> {
+        node.set_range(begin, end);
+        self.connect_node(&mut node)?;
+        self.end_lists[end].push(node);
+
+        Ok(())
+    }
+
     fn connect_node(&self, r_node: &mut Node) -> SudachiResult<()> {
         let begin = r_node.begin;
         r_node.total_cost = i32::MAX;
@@ -51,17 +59,13 @@ impl<'a> Lattice<'a> {
         Ok(())
     }
 
-    pub fn insert(&mut self, begin: usize, end: usize, mut node: Node) -> SudachiResult<()> {
-        node.set_range(begin, end);
-        self.connect_node(&mut node)?;
-        self.end_lists[end].push(node);
-
-        Ok(())
-    }
-
     pub fn connect_eos_node(&mut self) -> SudachiResult<()> {
         let eos_node = Node::new_eos(self.size);
         self.insert(eos_node.begin, eos_node.end, eos_node)
+    }
+
+    pub fn has_previous_node(&self, index: usize) -> bool {
+        !self.end_lists[index].is_empty()
     }
 
     pub fn get_best_path(&self) -> SudachiResult<Vec<Node>> {

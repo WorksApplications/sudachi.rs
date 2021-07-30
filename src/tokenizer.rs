@@ -113,8 +113,7 @@ impl<'a> Tokenizer<'a> {
         let input_bytes = input.modified.as_bytes();
         let mut lattice = Lattice::new(&self.grammar, input_bytes.len());
         for (i, _) in input_bytes.iter().enumerate() {
-            if !input.can_bow(i) {
-                // TODO: if (!input.canBow(i) || !lattice.hasPreviousNode(i)) { continue; }
+            if !input.can_bow(i) || !lattice.has_previous_node(i) {
                 continue;
             }
 
