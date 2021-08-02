@@ -34,10 +34,6 @@ impl SimpleOovPlugin {
 }
 
 impl OovProviderPlugin for SimpleOovPlugin {
-    fn set_up(&self, _grammar: &Grammar) -> () {
-        // todo ?
-    }
-
     fn provide_oov(
         &self,
         input_text: &Utf8InputText,

@@ -144,10 +144,6 @@ impl MeCabOovPlugin {
 }
 
 impl OovProviderPlugin for MeCabOovPlugin {
-    fn set_up(&self, _grammar: &Grammar) -> () {
-        // todo? : merge with fn new?
-    }
-
     fn provide_oov(
         &self,
         input_text: &Utf8InputText,

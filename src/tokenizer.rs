@@ -3,13 +3,14 @@ use std::io::Read;
 use std::path::Path;
 use std::str::FromStr;
 
+use crate::dic::category_type::CategoryType;
 use crate::dic::grammar::Grammar;
 use crate::dic::header::Header;
 use crate::dic::lexicon::Lexicon;
 use crate::lattice::node::Node;
 use crate::lattice::Lattice;
 use crate::morpheme::Morpheme;
-use crate::plugin::oov::{simple_oov::SimpleOovPlugin, OovProviderPlugin};
+use crate::plugin::oov::{self, OovProviderPlugin};
 use crate::prelude::*;
 use crate::utf8inputtext::{Utf8InputText, Utf8InputTextBuilder};
 
@@ -24,7 +25,7 @@ pub trait Tokenize {
 pub struct Tokenizer<'a> {
     pub grammar: Grammar<'a>,
     pub lexicon: Lexicon<'a>,
-    default_oov_provider: Box<dyn OovProviderPlugin>,
+    oov_providers: Vec<Box<dyn OovProviderPlugin>>,
 }
 
 /// Unit to split text
@@ -87,12 +88,15 @@ impl<'a> Tokenizer<'a> {
         let lexicon = Lexicon::new(dictionary_bytes, offset)?;
 
         // todo: load plugins
-        let oov = SimpleOovPlugin::new(&grammar)?;
+        let oov_providers = oov::get_oov_plugins(&grammar)?;
+        if oov_providers.is_empty() {
+            return Err(SudachiError::NoOOVPluginProvided);
+        }
 
         Ok(Tokenizer {
             grammar,
             lexicon,
-            default_oov_provider: Box::new(oov),
+            oov_providers,
         })
     }
 }
@@ -129,8 +133,25 @@ impl<'a> Tokenizer<'a> {
             }
 
             // OOV
+            if !input
+                .get_char_category_types(i)
+                .contains(&CategoryType::NOOOVBOW)
+            {
+                for oov_provider in &self.oov_providers {
+                    for node in oov_provider.get_oov(&input, i, has_word)? {
+                        has_word = true;
+                        lattice.insert(node.begin, node.end, node)?;
+                    }
+                }
+            }
             if !has_word {
-                for node in self.default_oov_provider.get_oov(&input, i, has_word)? {
+                // use last oov_provider as default
+                for node in self
+                    .oov_providers
+                    .last()
+                    .unwrap()
+                    .get_oov(&input, i, has_word)?
+                {
                     has_word = true;
                     lattice.insert(node.begin, node.end, node)?;
                 }
