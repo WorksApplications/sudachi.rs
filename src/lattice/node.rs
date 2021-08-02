@@ -36,15 +36,23 @@ impl Node {
         }
     }
 
+    pub fn new_default() -> Node {
+        Default::default()
+    }
+
     pub fn set_range(&mut self, begin: usize, end: usize) {
         self.begin = begin;
         self.end = end;
     }
 
+    pub fn set_word_info(&mut self, word_info: WordInfo) {
+        self.word_info = Some(word_info);
+    }
+
     pub fn fill_word_info(&mut self, lexicon: &Lexicon) -> SudachiResult<()> {
         if let None = &self.word_info {
             let word_id = self.word_id.ok_or(SudachiError::MissingWordId)?;
-            self.word_info = Some(lexicon.get_word_info(word_id as usize)?);
+            self.set_word_info(lexicon.get_word_info(word_id as usize)?);
         }
         Ok(())
     }

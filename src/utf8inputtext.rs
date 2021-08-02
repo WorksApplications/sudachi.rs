@@ -189,6 +189,18 @@ impl Utf8InputText<'_> {
         self.char_category_types[self.byte_indexes[byte_idx]].clone()
     }
 
+    pub fn get_char_category_types_range(&self, begin: usize, end: usize) -> CategoryTypes {
+        // for path_rewrite
+        let b = self.byte_indexes[begin];
+        let e = self.byte_indexes[end];
+
+        self.char_category_types[b..e]
+            .iter()
+            .fold(CategoryTypes::new(), |acc, set| {
+                acc.intersection(&set).map(|v| *v).collect()
+            })
+    }
+
     pub fn get_char_category_continuous_length(&self, byte_idx: usize) -> usize {
         // for MeCabOOV
         // returns byte length from byte_idx to index where category continuity ends
