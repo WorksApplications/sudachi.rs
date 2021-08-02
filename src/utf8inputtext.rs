@@ -185,7 +185,7 @@ impl Utf8InputText<'_> {
     }
 
     pub fn get_char_category_types(&self, byte_idx: usize) -> CategoryTypes {
-        // for OOV
+        // for OOV and path_rewrite
         self.char_category_types[self.byte_indexes[byte_idx]].clone()
     }
 
@@ -212,7 +212,7 @@ impl Utf8InputText<'_> {
         byte_idx: usize,
         code_point_offset: usize,
     ) -> usize {
-        // for MeCabOOV
+        // for MeCabOOV and JoinKatakanaOOV
         // return byte length from byte_idx to char code_point_offset after
         let target = self.byte_indexes[byte_idx] + code_point_offset;
         for i in byte_idx..self.modified.len() {
@@ -221,5 +221,10 @@ impl Utf8InputText<'_> {
             }
         }
         self.modified.len() - byte_idx
+    }
+
+    pub fn code_point_count(&self, begin: usize, end: usize) -> usize {
+        // for JoinKatakanaOOV
+        self.byte_indexes[end] - self.byte_indexes[begin]
     }
 }

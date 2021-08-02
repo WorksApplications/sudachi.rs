@@ -3,6 +3,8 @@ use crate::lattice::{node::Node, Lattice};
 use crate::prelude::*;
 use crate::utf8inputtext::Utf8InputText;
 
+pub mod join_katakana_oov;
+
 pub trait PathRewritePlugin {
     fn rewrite(
         &self,
