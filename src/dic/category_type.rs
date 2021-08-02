@@ -1,6 +1,8 @@
 use std::collections::HashSet;
 use std::str::FromStr;
 
+use crate::error::SudachiError;
+
 /// Categories of characters.
 ///
 /// These categories are used in the
@@ -48,7 +50,7 @@ pub enum CategoryType {
 pub type CategoryTypes = HashSet<CategoryType>;
 
 impl FromStr for CategoryType {
-    type Err = &'static str;
+    type Err = SudachiError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_uppercase().as_str() {
@@ -68,7 +70,7 @@ impl FromStr for CategoryType {
             "USER3" => Ok(CategoryType::USER3),
             "USER4" => Ok(CategoryType::USER4),
             "NOOOVBOW" => Ok(CategoryType::NOOOVBOW),
-            _ => Err("Invalid category type"),
+            _ => Err(SudachiError::InvalidCharacterCategoryType(String::from(s))),
         }
     }
 }

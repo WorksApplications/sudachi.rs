@@ -48,6 +48,9 @@ pub enum SudachiError {
     #[error("Invalid character category definition: {0}")]
     InvalidCharacterCategory(#[from] CharacterCategoryError),
 
+    #[error("Invalid character category type: {0}")]
+    InvalidCharacterCategoryType(String),
+
     #[error("Invalid UTF-16: {0}")]
     FromUtf16(#[from] std::string::FromUtf16Error),
 
@@ -59,6 +62,12 @@ pub enum SudachiError {
 
     #[error("Invalid part of speech")]
     InvalidPartOfSpeech,
+
+    #[error("Invalid data format: {1} at line {0}")]
+    InvalidDataFormat(usize, String),
+
+    #[error("No out of vocabulary plugin provided")]
+    NoOOVPluginProvided,
 }
 
 /// Define `SudachiNomCustomError` error and conversion to `SudachiError`.

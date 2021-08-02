@@ -46,19 +46,23 @@ impl<'a> Utf8InputTextBuilder<'a> {
         byte_indexes[byte_length] = self.modified_to_original.len();
         offsets[byte_length] = *self.modified_to_original.last().unwrap();
 
-        let char_category_types = self.get_char_category_types();
+        let char_category_types = self.build_char_category_types();
         let can_bow_list = self.build_can_bow_list(&char_category_types);
+        let char_category_continuities =
+            self.build_char_category_continuities(&char_category_types);
 
         Utf8InputText {
             original: self.original,
             modified: &self.modified,
             offsets,
             byte_indexes,
+            char_category_types,
             can_bow_list,
+            char_category_continuities,
         }
     }
 
-    fn get_char_category_types(&self) -> Vec<CategoryTypes> {
+    fn build_char_category_types(&self) -> Vec<CategoryTypes> {
         self.modified
             .chars()
             .map(|c| self.grammar.character_category.get_category_types(c))
@@ -90,17 +94,70 @@ impl<'a> Utf8InputTextBuilder<'a> {
 
         can_bow_list
     }
+
+    fn get_char_category_continuous_length(
+        char_category_types: &Vec<CategoryTypes>,
+        c_offset: usize,
+    ) -> usize {
+        let mut continuous_cat = char_category_types[c_offset].clone();
+        for length in 1..char_category_types.len() - c_offset {
+            continuous_cat = continuous_cat
+                .intersection(&char_category_types[c_offset + length])
+                .map(|v| *v)
+                .collect();
+            if continuous_cat.is_empty() {
+                return length;
+            }
+        }
+        char_category_types.len() - c_offset
+    }
+
+    fn build_char_category_continuities(
+        &self,
+        char_category_types: &Vec<CategoryTypes>,
+    ) -> Vec<usize> {
+        if self.modified.is_empty() {
+            return vec![];
+        }
+
+        let char_bound: Vec<_> = self
+            .modified
+            .char_indices()
+            .map(|v| v.0)
+            .chain([self.modified.len()])
+            .collect();
+        let mut continuities = vec![0; self.modified.len()];
+        let mut ci = 0;
+        while ci < char_category_types.len() {
+            let clen =
+                Utf8InputTextBuilder::get_char_category_continuous_length(&char_category_types, ci);
+            let begin = char_bound[ci];
+            let end = char_bound[ci + clen];
+            for (i, v) in (0..end - begin).rev().enumerate() {
+                continuities[begin + i] = v + 1;
+            }
+            ci += clen;
+        }
+        continuities
+    }
 }
 
 #[derive(Debug)]
 pub struct Utf8InputText<'a> {
     pub original: &'a str,
     pub modified: &'a str,
+
+    // byte_idx to char_idx
+    // todo?: rename?
     offsets: Vec<usize>,
-    // todo?: rename to byte2char_index
     byte_indexes: Vec<usize>,
 
+    // per char
+    char_category_types: Vec<CategoryTypes>,
     can_bow_list: Vec<bool>,
+
+    // per byte
+    char_category_continuities: Vec<usize>,
 }
 
 impl Utf8InputText<'_> {
@@ -117,6 +174,7 @@ impl Utf8InputText<'_> {
     }
 
     pub fn get_word_candidate_length(&self, byte_idx: usize) -> usize {
+        // for SimpleOOV
         let byte_length = self.modified.len();
         for i in (byte_idx + 1)..byte_length {
             if self.can_bow(i) {
@@ -124,5 +182,32 @@ impl Utf8InputText<'_> {
             }
         }
         byte_length - byte_idx
+    }
+
+    pub fn get_char_category_types(&self, byte_idx: usize) -> CategoryTypes {
+        // for OOV
+        self.char_category_types[self.byte_indexes[byte_idx]].clone()
+    }
+
+    pub fn get_char_category_continuous_length(&self, byte_idx: usize) -> usize {
+        // for MeCabOOV
+        // returns byte length from byte_idx to index where category continuity ends
+        self.char_category_continuities[byte_idx]
+    }
+
+    pub fn get_code_points_offset_length(
+        &self,
+        byte_idx: usize,
+        code_point_offset: usize,
+    ) -> usize {
+        // for MeCabOOV
+        // return byte length from byte_idx to char code_point_offset after
+        let target = self.byte_indexes[byte_idx] + code_point_offset;
+        for i in byte_idx..self.modified.len() {
+            if self.byte_indexes[i] >= target {
+                return i - byte_idx;
+            }
+        }
+        self.modified.len() - byte_idx
     }
 }

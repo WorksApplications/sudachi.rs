@@ -21,6 +21,9 @@ pub enum Error {
 
     #[error("Invalid type {1} at line {0}")]
     InvalidCategoryType(usize, String),
+
+    #[error("Multiple definition for type {1} at line {0}")]
+    MultipleTypeDefinition(usize, String),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
