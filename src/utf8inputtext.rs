@@ -43,7 +43,7 @@ impl<'a> Utf8InputTextBuilder<'a> {
             }
             left = right;
         }
-        byte_indexes[byte_length] = self.modified_to_original.len();
+        byte_indexes[byte_length] = self.modified_to_original.len() - 1;
         offsets[byte_length] = *self.modified_to_original.last().unwrap();
 
         let char_category_types = self.build_char_category_types();
