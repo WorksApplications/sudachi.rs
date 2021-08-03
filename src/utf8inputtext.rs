@@ -196,9 +196,9 @@ impl Utf8InputText<'_> {
 
         self.char_category_types[b..e]
             .iter()
-            .fold(CategoryTypes::new(), |acc, set| {
-                acc.intersection(&set).map(|v| *v).collect()
-            })
+            .map(|v| v.clone())
+            .reduce(|a, b| a.intersection(&b).map(|v| *v).collect::<CategoryTypes>())
+            .unwrap()
     }
 
     pub fn get_char_category_continuous_length(&self, byte_idx: usize) -> usize {
