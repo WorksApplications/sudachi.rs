@@ -11,6 +11,7 @@ use crate::lattice::node::Node;
 use crate::lattice::Lattice;
 use crate::morpheme::Morpheme;
 use crate::plugin::oov::{self, OovProviderPlugin};
+use crate::plugin::path_rewrite::{self, PathRewritePlugin};
 use crate::prelude::*;
 use crate::utf8inputtext::{Utf8InputText, Utf8InputTextBuilder};
 
@@ -25,7 +26,8 @@ pub trait Tokenize {
 pub struct Tokenizer<'a> {
     pub grammar: Grammar<'a>,
     pub lexicon: Lexicon<'a>,
-    oov_providers: Vec<Box<dyn OovProviderPlugin>>,
+    oov_provider_plugins: Vec<Box<dyn OovProviderPlugin>>,
+    path_rewrite_plugins: Vec<Box<dyn PathRewritePlugin>>,
 }
 
 /// Unit to split text
@@ -88,15 +90,17 @@ impl<'a> Tokenizer<'a> {
         let lexicon = Lexicon::new(dictionary_bytes, offset)?;
 
         // todo: load plugins
-        let oov_providers = oov::get_oov_plugins(&grammar)?;
-        if oov_providers.is_empty() {
+        let oov_provider_plugins = oov::get_oov_plugins(&grammar)?;
+        if oov_provider_plugins.is_empty() {
             return Err(SudachiError::NoOOVPluginProvided);
         }
+        let path_rewrite_plugins = path_rewrite::get_path_rewrite_plugins(&grammar)?;
 
         Ok(Tokenizer {
             grammar,
             lexicon,
-            oov_providers,
+            oov_provider_plugins,
+            path_rewrite_plugins,
         })
     }
 }
@@ -137,7 +141,7 @@ impl<'a> Tokenizer<'a> {
                 .get_char_category_types(i)
                 .contains(&CategoryType::NOOOVBOW)
             {
-                for oov_provider in &self.oov_providers {
+                for oov_provider in &self.oov_provider_plugins {
                     for node in oov_provider.get_oov(&input, i, has_word)? {
                         has_word = true;
                         lattice.insert(node.begin, node.end, node)?;
@@ -147,7 +151,7 @@ impl<'a> Tokenizer<'a> {
             if !has_word {
                 // use last oov_provider as default
                 for node in self
-                    .oov_providers
+                    .oov_provider_plugins
                     .last()
                     .unwrap()
                     .get_oov(&input, i, has_word)?
@@ -166,13 +170,9 @@ impl<'a> Tokenizer<'a> {
         Ok(lattice)
     }
 
-    fn split_path(&self, mut path: Vec<Node>, mode: Mode) -> SudachiResult<Vec<Node>> {
+    fn split_path(&self, path: Vec<Node>, mode: Mode) -> SudachiResult<Vec<Node>> {
         if mode == Mode::C {
             return Ok(path);
-        }
-
-        for node in &mut path {
-            node.fill_word_info(&self.lexicon)?;
         }
 
         let mut new_path = Vec::with_capacity(path.len());
@@ -230,14 +230,22 @@ impl<'a> Tokenize for Tokenizer<'a> {
             lattice.dump(&self.grammar)?;
         };
 
-        let path = lattice.get_best_path()?;
+        let mut path = lattice.get_best_path()?;
+
+        // fill word_info to safry unwrap during path_rewrite and split_path
+        // todo: remove this process
+        for node in &mut path {
+            node.fill_word_info(&self.lexicon)?;
+        }
 
         if enable_debug {
             println!("=== Before Rewriting:");
             println!("{:?}", path);
         };
 
-        // todo: plugin: rewrite path
+        for plugin in &self.path_rewrite_plugins {
+            path = plugin.rewrite(&input, path, &lattice)?;
+        }
         let path = self.split_path(path, mode)?;
 
         if enable_debug {

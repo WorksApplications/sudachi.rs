@@ -1,3 +1,4 @@
+use crate::dic::grammar::Grammar;
 use crate::dic::lexicon::word_infos::WordInfo;
 use crate::lattice::{node::Node, Lattice};
 use crate::prelude::*;
@@ -109,9 +110,15 @@ pub trait PathRewritePlugin {
     }
 }
 
-pub fn get_path_rewrite_plugins() -> SudachiResult<Vec<Box<dyn PathRewritePlugin>>> {
+pub fn get_path_rewrite_plugins(
+    grammar: &Grammar,
+) -> SudachiResult<Vec<Box<dyn PathRewritePlugin>>> {
     // todo load from config
-    let vs = vec![];
+    let mut plugins: Vec<Box<dyn PathRewritePlugin>> = vec![];
 
-    Ok(vs)
+    plugins.push(Box::new(join_katakana_oov::JoinKarakanaOovPlugin::new(
+        grammar,
+    )?));
+
+    Ok(plugins)
 }
