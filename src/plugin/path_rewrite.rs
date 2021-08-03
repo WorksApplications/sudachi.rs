@@ -5,6 +5,7 @@ use crate::prelude::*;
 use crate::utf8inputtext::Utf8InputText;
 
 pub mod join_katakana_oov;
+pub mod join_numeric;
 
 pub trait PathRewritePlugin {
     fn rewrite(
@@ -119,6 +120,7 @@ pub fn get_path_rewrite_plugins(
     plugins.push(Box::new(join_katakana_oov::JoinKarakanaOovPlugin::new(
         grammar,
     )?));
+    plugins.push(Box::new(join_numeric::JoinNumericPlugin::new(grammar)?));
 
     Ok(plugins)
 }
