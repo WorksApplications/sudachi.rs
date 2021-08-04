@@ -12,6 +12,7 @@ nom = "4.2.2"
 regex = "1.5"
 structopt = "0.2"
 thiserror = "1.0"
+unicode-normalization = "0.1.19"
 
 [dev-dependencies]
 lazy_static = "1.4.0"
