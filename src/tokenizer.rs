@@ -254,7 +254,7 @@ impl<'a> Tokenize for Tokenizer<'a> {
         };
 
         path.iter()
-            .map(|node| Morpheme::new(&node, &self.grammar, &self.lexicon))
+            .map(|node| Morpheme::new(&node, &input, &self.grammar, &self.lexicon))
             .collect::<SudachiResult<Vec<_>>>()
     }
 }

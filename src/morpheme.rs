@@ -5,9 +5,11 @@ use crate::dic::lexicon::word_infos::WordInfo;
 use crate::dic::lexicon::Lexicon;
 use crate::lattice::node::Node;
 use crate::prelude::*;
+use crate::utf8inputtext::Utf8InputText;
 
 /// A morpheme (basic semantic unit of language)
 pub struct Morpheme<'a> {
+    surface: String,
     word_info: WordInfo,
     pub is_oov: bool,
     grammar: &'a Grammar<'a>,
@@ -17,10 +19,11 @@ impl<'a> Morpheme<'a> {
     /// Create a new `Morpheme`
     pub fn new(
         node: &Node,
+        input: &Utf8InputText,
         grammar: &'a Grammar<'a>,
         lexicon: &Lexicon,
     ) -> SudachiResult<Morpheme<'a>> {
-        let is_oov = node.is_oov;
+        let surface = input.get_original_substring(node.begin..node.end);
         let word_info = match node.word_info.clone() {
             Some(wi) => wi,
             None => {
@@ -28,8 +31,10 @@ impl<'a> Morpheme<'a> {
                 lexicon.get_word_info(word_id as usize)?
             }
         };
+        let is_oov = node.is_oov;
 
         Ok(Morpheme {
+            surface,
             word_info,
             is_oov,
             grammar,
@@ -40,7 +45,7 @@ impl<'a> Morpheme<'a> {
     ///
     /// When the input text is normalized, some morphemes have the same surface.
     pub fn surface(&self) -> &String {
-        &self.word_info.surface
+        &self.surface
     }
 
     /// Part of speech

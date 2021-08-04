@@ -1,3 +1,5 @@
+use std::ops::Range;
+
 use crate::dic::category_type::{CategoryType, CategoryTypes};
 use crate::dic::grammar::Grammar;
 use crate::prelude::*;
@@ -13,8 +15,12 @@ impl<'a> Utf8InputTextBuilder<'a> {
     pub fn new(original: &'a str, grammar: &'a Grammar) -> Utf8InputTextBuilder<'a> {
         let modified = String::from(original);
 
-        let char_length = modified.chars().count();
-        let modified_to_original: Vec<usize> = (0..char_length + 1).collect();
+        let modified_to_original: Vec<usize> = modified
+            .char_indices()
+            .map(|(i, c)| vec![i; c.len_utf8()])
+            .flatten()
+            .chain([modified.len()])
+            .collect();
 
         Utf8InputTextBuilder {
             grammar,
@@ -25,26 +31,15 @@ impl<'a> Utf8InputTextBuilder<'a> {
     }
 
     pub fn build(&self) -> Utf8InputText {
-        let byte_length = self.modified.len();
-        let mut byte_indexes = vec![0; byte_length + 1];
-        let mut offsets = vec![0; byte_length + 1];
-        let mut left = 0;
-        for (char_idx, right) in self
+        let byte_indexes: Vec<usize> = self
             .modified
-            .char_indices()
-            .map(|v| v.0)
-            .chain([byte_length + 1])
-            .skip(1)
+            .chars()
             .enumerate()
-        {
-            for i in left..right {
-                byte_indexes[i] = char_idx;
-                offsets[i] = self.modified_to_original[char_idx];
-            }
-            left = right;
-        }
-        byte_indexes[byte_length] = self.modified_to_original.len() - 1;
-        offsets[byte_length] = *self.modified_to_original.last().unwrap();
+            .map(|(i, c)| vec![i; c.len_utf8()])
+            .flatten()
+            .chain([self.modified.chars().count()])
+            .collect();
+        let offsets = self.modified_to_original.clone();
 
         let char_category_types = self.build_char_category_types();
         let can_bow_list = self.build_can_bow_list(&char_category_types);
@@ -164,6 +159,10 @@ impl Utf8InputText<'_> {
     pub fn can_bow(&self, byte_idx: usize) -> bool {
         (self.modified.as_bytes()[byte_idx] & 0xC0) != 0x80
             && self.can_bow_list[self.byte_indexes[byte_idx]]
+    }
+
+    pub fn get_original_substring(&self, range: Range<usize>) -> String {
+        String::from(&self.original[self.offsets[range.start]..self.offsets[range.end]])
     }
 
     pub fn get_substring(&self, start: usize, end: usize) -> SudachiResult<String> {
