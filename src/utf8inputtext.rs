@@ -30,6 +30,45 @@ impl<'a> Utf8InputTextBuilder<'a> {
         }
     }
 
+    fn char_range_to_byte_range(&self, char_range: Range<usize>) -> Range<usize> {
+        let mut byte_start = 0;
+        let mut byte_end = 0;
+        for (char_idx, byte_idx) in self
+            .modified
+            .char_indices()
+            .map(|v| v.0)
+            .chain([self.modified.len()])
+            .enumerate()
+        {
+            if char_idx == char_range.start {
+                byte_start = byte_idx;
+            }
+            if char_idx == char_range.end {
+                byte_end = byte_idx;
+                break;
+            }
+        }
+        byte_start..byte_end
+    }
+
+    pub fn replace(&mut self, char_range: Range<usize>, str_: &str) {
+        let Range { start, end } = self.char_range_to_byte_range(char_range);
+
+        // replace modified text
+        self.modified.replace_range(start..end, str_);
+
+        // update modified_to_original
+        let length = str_.len();
+        if length == 0 {
+            self.modified_to_original.drain(start..end);
+        } else {
+            // the first char of replacing string will correspond with whole replaced string
+            let modified_end = self.modified_to_original[end];
+            self.modified_to_original
+                .splice(start + 1..end, vec![modified_end; length - 1]);
+        }
+    }
+
     pub fn build(&self) -> Utf8InputText {
         let byte_indexes: Vec<usize> = self
             .modified

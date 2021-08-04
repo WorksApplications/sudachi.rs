@@ -10,6 +10,7 @@ use crate::dic::lexicon::Lexicon;
 use crate::lattice::node::Node;
 use crate::lattice::Lattice;
 use crate::morpheme::Morpheme;
+use crate::plugin::input_text::{self, InputTextPlugin};
 use crate::plugin::oov::{self, OovProviderPlugin};
 use crate::plugin::path_rewrite::{self, PathRewritePlugin};
 use crate::prelude::*;
@@ -26,6 +27,7 @@ pub trait Tokenize {
 pub struct Tokenizer<'a> {
     pub grammar: Grammar<'a>,
     pub lexicon: Lexicon<'a>,
+    input_text_plugins: Vec<Box<dyn InputTextPlugin>>,
     oov_provider_plugins: Vec<Box<dyn OovProviderPlugin>>,
     path_rewrite_plugins: Vec<Box<dyn PathRewritePlugin>>,
 }
@@ -90,6 +92,7 @@ impl<'a> Tokenizer<'a> {
         let lexicon = Lexicon::new(dictionary_bytes, offset)?;
 
         // todo: load plugins
+        let input_text_plugins = input_text::get_input_text_plugins()?;
         let oov_provider_plugins = oov::get_oov_plugins(&grammar)?;
         if oov_provider_plugins.is_empty() {
             return Err(SudachiError::NoOOVPluginProvided);
@@ -99,6 +102,7 @@ impl<'a> Tokenizer<'a> {
         Ok(Tokenizer {
             grammar,
             lexicon,
+            input_text_plugins,
             oov_provider_plugins,
             path_rewrite_plugins,
         })
@@ -219,25 +223,25 @@ impl<'a> Tokenize for Tokenizer<'a> {
         mode: Mode,
         enable_debug: bool,
     ) -> SudachiResult<Vec<Morpheme>> {
-        let builder = Utf8InputTextBuilder::new(input, &self.grammar);
-        // todo: plugin: input text
+        let mut builder = Utf8InputTextBuilder::new(input, &self.grammar);
+
+        for plugin in &self.input_text_plugins {
+            plugin.rewrite(&mut builder);
+        }
         let input = builder.build();
 
         let lattice = self.build_lattice(&input)?;
-
         if enable_debug {
             println!("=== Lattice dump:");
             lattice.dump(&self.grammar)?;
         };
 
         let mut path = lattice.get_best_path()?;
-
         // fill word_info to safry unwrap during path_rewrite and split_path
         // todo: remove this process
         for node in &mut path {
             node.fill_word_info(&self.lexicon)?;
         }
-
         if enable_debug {
             println!("=== Before Rewriting:");
             println!("{:?}", path);
@@ -247,7 +251,6 @@ impl<'a> Tokenize for Tokenizer<'a> {
             path = plugin.rewrite(&input, path, &lattice)?;
         }
         let path = self.split_path(path, mode)?;
-
         if enable_debug {
             println!("=== After Rewriting:");
             println!("{:?}", path);
