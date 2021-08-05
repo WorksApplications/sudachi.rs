@@ -1,4 +1,6 @@
 use nom::{le_i16, le_u16};
+use std::collections::HashMap;
+use std::i16;
 
 use crate::dic::character_category::CharacterCategory;
 use crate::dic::utf16_string;
@@ -8,6 +10,7 @@ pub struct Grammar<'a> {
     bytes: &'a [u8],
     pub pos_list: Vec<Vec<String>>,
     connect_table_offset: usize,
+    connect_cost_map: HashMap<(i16, i16), i16>,
     left_id_size: i16,
     _right_id_size: i16,
 
@@ -17,6 +20,7 @@ pub struct Grammar<'a> {
 }
 
 impl<'a> Grammar<'a> {
+    pub const INHIBITED_CONNECTION: i16 = i16::MAX;
     const POS_DEPTH: usize = 6;
 
     pub const BOS_PARAMETER: (i16, i16, i16) = (0, 0, 0); // left_id, right_id, cost
@@ -30,6 +34,9 @@ impl<'a> Grammar<'a> {
         let storage_size =
             (connect_table_offset - offset) + 2 * left_id_size as usize * right_id_size as usize;
 
+        // todo: better way to have table? (e.g. make table rewritable)
+        let connect_cost_map = HashMap::new();
+
         // todo?: mv outside of grammar
         // todo: read from file
         let character_category = CharacterCategory::from_file(None)?;
@@ -38,6 +45,7 @@ impl<'a> Grammar<'a> {
             bytes: buf,
             pos_list,
             connect_table_offset,
+            connect_cost_map,
             left_id_size,
             _right_id_size: right_id_size,
             storage_size,
@@ -46,6 +54,10 @@ impl<'a> Grammar<'a> {
     }
 
     pub fn get_connect_cost(&self, left_id: i16, right_id: i16) -> SudachiResult<i16> {
+        if let Some(v) = self.connect_cost_map.get(&(left_id, right_id)) {
+            return Ok(*v);
+        }
+
         let (_rest, connect_cost) = connect_cost_parser(
             self.bytes,
             self.connect_table_offset,
@@ -55,6 +67,11 @@ impl<'a> Grammar<'a> {
         )?;
 
         Ok(connect_cost)
+    }
+
+    pub fn set_connect_cost(&mut self, left_id: i16, right_id: i16, cost: i16) {
+        // for edit connection cose plugin
+        self.connect_cost_map.insert((left_id, right_id), cost);
     }
 
     pub fn get_part_of_speech_id(&self, pos1: &[&str]) -> Option<u16> {

@@ -10,6 +10,7 @@ use crate::dic::lexicon::Lexicon;
 use crate::lattice::node::Node;
 use crate::lattice::Lattice;
 use crate::morpheme::Morpheme;
+use crate::plugin::connect_cost;
 use crate::plugin::input_text::{self, InputTextPlugin};
 use crate::plugin::oov::{self, OovProviderPlugin};
 use crate::plugin::path_rewrite::{self, PathRewritePlugin};
@@ -86,12 +87,18 @@ impl<'a> Tokenizer<'a> {
         let (_rest, _header) = Header::new(&dictionary_bytes[..Header::STORAGE_SIZE])?;
         let mut offset = Header::STORAGE_SIZE;
 
-        let grammar = Grammar::new(dictionary_bytes, offset)?;
+        let mut grammar = Grammar::new(dictionary_bytes, offset)?;
         offset += grammar.storage_size;
 
         let lexicon = Lexicon::new(dictionary_bytes, offset)?;
 
         // todo: load plugins
+        let edit_connection_cost_plugins =
+            connect_cost::get_edit_connection_cost_plugins(&grammar)?;
+        for plugin in edit_connection_cost_plugins {
+            plugin.edit(&mut grammar);
+        }
+
         let input_text_plugins = input_text::get_input_text_plugins(&grammar)?;
         let oov_provider_plugins = oov::get_oov_plugins(&grammar)?;
         if oov_provider_plugins.is_empty() {
