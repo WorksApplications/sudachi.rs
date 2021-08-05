@@ -92,7 +92,7 @@ impl<'a> Tokenizer<'a> {
         let lexicon = Lexicon::new(dictionary_bytes, offset)?;
 
         // todo: load plugins
-        let input_text_plugins = input_text::get_input_text_plugins()?;
+        let input_text_plugins = input_text::get_input_text_plugins(&grammar)?;
         let oov_provider_plugins = oov::get_oov_plugins(&grammar)?;
         if oov_provider_plugins.is_empty() {
             return Err(SudachiError::NoOOVPluginProvided);
