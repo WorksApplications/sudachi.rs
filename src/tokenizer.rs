@@ -198,7 +198,7 @@ impl<'a> Tokenizer<'a> {
                 _ => unreachable!(),
             };
 
-            if word_ids.len() >= 2 {
+            if word_ids.len() <= 1 {
                 new_path.push(node);
             } else {
                 let mut offset = node.begin;
