@@ -29,9 +29,9 @@ pub trait OovProviderPlugin {
     }
 }
 
-pub fn get_oov_plugins(grammar: &Grammar) -> SudachiResult<Vec<Box<dyn OovProviderPlugin>>> {
+pub fn get_oov_plugins(grammar: &Grammar) -> SudachiResult<Vec<Box<dyn OovProviderPlugin + Sync>>> {
     // todo load from config
-    let mut oovs: Vec<Box<dyn OovProviderPlugin>> = vec![];
+    let mut oovs: Vec<Box<dyn OovProviderPlugin + Sync>> = vec![];
 
     oovs.push(Box::new(mecab_oov::MeCabOovPlugin::new(grammar)?));
     oovs.push(Box::new(simple_oov::SimpleOovPlugin::new(grammar)?));

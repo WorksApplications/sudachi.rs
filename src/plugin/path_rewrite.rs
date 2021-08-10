@@ -113,9 +113,9 @@ pub trait PathRewritePlugin {
 
 pub fn get_path_rewrite_plugins(
     grammar: &Grammar,
-) -> SudachiResult<Vec<Box<dyn PathRewritePlugin>>> {
+) -> SudachiResult<Vec<Box<dyn PathRewritePlugin + Sync>>> {
     // todo load from config
-    let mut plugins: Vec<Box<dyn PathRewritePlugin>> = vec![];
+    let mut plugins: Vec<Box<dyn PathRewritePlugin + Sync>> = vec![];
 
     plugins.push(Box::new(join_katakana_oov::JoinKarakanaOovPlugin::new(
         grammar,

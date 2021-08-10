@@ -28,9 +28,9 @@ pub trait Tokenize {
 pub struct Tokenizer<'a> {
     pub grammar: Grammar<'a>,
     pub lexicon: Lexicon<'a>,
-    input_text_plugins: Vec<Box<dyn InputTextPlugin>>,
-    oov_provider_plugins: Vec<Box<dyn OovProviderPlugin>>,
-    path_rewrite_plugins: Vec<Box<dyn PathRewritePlugin>>,
+    input_text_plugins: Vec<Box<dyn InputTextPlugin + Sync>>,
+    oov_provider_plugins: Vec<Box<dyn OovProviderPlugin + Sync>>,
+    path_rewrite_plugins: Vec<Box<dyn PathRewritePlugin + Sync>>,
 }
 
 /// Unit to split text
