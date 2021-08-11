@@ -8,9 +8,11 @@ pub struct Utf8InputText<'a> {
     pub original: &'a str,
     pub modified: &'a str,
 
+    // modified byte_idx to original byte_idx
+    offsets: Vec<usize>,
+
     // byte_idx to char_idx
     // todo?: rename?
-    offsets: Vec<usize>,
     byte_indexes: Vec<usize>,
 
     // per char
@@ -113,5 +115,12 @@ impl Utf8InputText<'_> {
     pub fn code_point_count(&self, begin: usize, end: usize) -> usize {
         // for JoinKatakanaOOV
         self.byte_indexes[end] - self.byte_indexes[begin]
+    }
+}
+
+#[cfg(test)]
+impl Utf8InputText<'_> {
+    pub fn get_original_index(&self, byte_idx: usize) -> usize {
+        self.offsets[byte_idx]
     }
 }
