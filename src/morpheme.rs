@@ -10,7 +10,7 @@ use crate::utf8inputtext::Utf8InputText;
 /// A morpheme (basic semantic unit of language)
 pub struct Morpheme<'a> {
     surface: String,
-    word_info: WordInfo,
+    pub word_info: WordInfo,
     pub is_oov: bool,
     grammar: &'a Grammar<'a>,
 }
