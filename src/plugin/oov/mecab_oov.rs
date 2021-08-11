@@ -6,10 +6,10 @@ use crate::dic::category_type::CategoryType;
 use crate::dic::character_category::Error as CharacterCategoryError;
 use crate::dic::grammar::Grammar;
 use crate::dic::lexicon::word_infos::WordInfo;
+use crate::input_text::utf8_input_text::Utf8InputText;
 use crate::lattice::node::Node;
 use crate::plugin::oov::OovProviderPlugin;
 use crate::prelude::*;
-use crate::utf8inputtext::Utf8InputText;
 
 const DEFAULT_CHAR_DEF_FILE_PATH: &str = "./src/resources/char.def";
 const DEFAULT_UNK_DEF_FILE_PATH: &str = "./src/resources/unk.def";

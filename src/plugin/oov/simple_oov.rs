@@ -1,9 +1,9 @@
 use crate::dic::grammar::Grammar;
 use crate::dic::lexicon::word_infos::WordInfo;
+use crate::input_text::utf8_input_text::Utf8InputText;
 use crate::lattice::node::Node;
 use crate::plugin::oov::OovProviderPlugin;
 use crate::prelude::*;
-use crate::utf8inputtext::Utf8InputText;
 
 pub struct SimpleOovPlugin {
     left_id: i16,

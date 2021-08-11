@@ -2,9 +2,9 @@ pub mod mecab_oov;
 pub mod simple_oov;
 
 use crate::dic::grammar::Grammar;
+use crate::input_text::utf8_input_text::Utf8InputText;
 use crate::lattice::node::Node;
 use crate::prelude::*;
-use crate::utf8inputtext::Utf8InputText;
 
 pub trait OovProviderPlugin {
     fn provide_oov(

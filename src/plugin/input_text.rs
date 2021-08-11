@@ -1,6 +1,6 @@
 use crate::dic::grammar::Grammar;
+use crate::input_text::utf8_input_text_builder::Utf8InputTextBuilder;
 use crate::prelude::*;
-use crate::utf8inputtext::Utf8InputTextBuilder;
 
 pub mod default_input_text;
 pub mod ignore_yomigana;

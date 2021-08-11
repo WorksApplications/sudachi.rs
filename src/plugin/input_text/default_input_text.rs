@@ -4,9 +4,9 @@ use std::fs;
 use std::io::{BufRead, BufReader};
 use unicode_normalization::UnicodeNormalization;
 
+use crate::input_text::utf8_input_text_builder::Utf8InputTextBuilder;
 use crate::plugin::input_text::InputTextPlugin;
 use crate::prelude::*;
-use crate::utf8inputtext::Utf8InputTextBuilder;
 
 const DEFAULT_REWRITE_DEF_FILE_PATH: &str = "./src/resources/rewrite.def";
 

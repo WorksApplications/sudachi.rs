@@ -2,10 +2,10 @@ pub mod numeric_parser;
 
 use crate::dic::category_type::CategoryType;
 use crate::dic::grammar::Grammar;
+use crate::input_text::utf8_input_text::Utf8InputText;
 use crate::lattice::{node::Node, Lattice};
 use crate::plugin::path_rewrite::PathRewritePlugin;
 use crate::prelude::*;
-use crate::utf8inputtext::Utf8InputText;
 use numeric_parser::NumericParser;
 
 pub struct JoinNumericPlugin {

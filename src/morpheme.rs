@@ -3,9 +3,9 @@ use std::fmt;
 use crate::dic::grammar::Grammar;
 use crate::dic::lexicon::word_infos::WordInfo;
 use crate::dic::lexicon::Lexicon;
+use crate::input_text::utf8_input_text::Utf8InputText;
 use crate::lattice::node::Node;
 use crate::prelude::*;
-use crate::utf8inputtext::Utf8InputText;
 
 /// A morpheme (basic semantic unit of language)
 pub struct Morpheme<'a> {

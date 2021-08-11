@@ -3,9 +3,9 @@ use std::collections::HashSet;
 use crate::dic::category_type::CategoryType;
 use crate::dic::character_category::CharacterCategory;
 use crate::dic::grammar::Grammar;
+use crate::input_text::utf8_input_text_builder::Utf8InputTextBuilder;
 use crate::plugin::input_text::InputTextPlugin;
 use crate::prelude::*;
-use crate::utf8inputtext::Utf8InputTextBuilder;
 
 pub struct IgnoreYomiganaPlugin<'a> {
     character_category: CharacterCategory,

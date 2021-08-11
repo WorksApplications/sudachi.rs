@@ -1,8 +1,8 @@
 use crate::dic::grammar::Grammar;
 use crate::dic::lexicon::word_infos::WordInfo;
+use crate::input_text::utf8_input_text::Utf8InputText;
 use crate::lattice::{node::Node, Lattice};
 use crate::prelude::*;
-use crate::utf8inputtext::Utf8InputText;
 
 pub mod join_katakana_oov;
 pub mod join_numeric;

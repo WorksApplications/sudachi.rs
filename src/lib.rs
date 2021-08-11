@@ -10,11 +10,11 @@ extern crate nom;
 
 pub mod dic;
 pub mod error;
+pub mod input_text;
 pub mod lattice;
 pub mod morpheme;
 pub mod plugin;
 pub mod tokenizer;
-pub mod utf8inputtext;
 
 pub use error::*;
 

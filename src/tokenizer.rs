@@ -7,6 +7,9 @@ use crate::dic::category_type::CategoryType;
 use crate::dic::grammar::Grammar;
 use crate::dic::header::Header;
 use crate::dic::lexicon::Lexicon;
+use crate::input_text::{
+    utf8_input_text::Utf8InputText, utf8_input_text_builder::Utf8InputTextBuilder,
+};
 use crate::lattice::node::Node;
 use crate::lattice::Lattice;
 use crate::morpheme::Morpheme;
@@ -15,7 +18,6 @@ use crate::plugin::input_text::{self, InputTextPlugin};
 use crate::plugin::oov::{self, OovProviderPlugin};
 use crate::plugin::path_rewrite::{self, PathRewritePlugin};
 use crate::prelude::*;
-use crate::utf8inputtext::{Utf8InputText, Utf8InputTextBuilder};
 
 /// Able to tokenize Japanese text
 pub trait Tokenize {
