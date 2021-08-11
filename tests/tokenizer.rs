@@ -2,7 +2,12 @@
 
 use std::env;
 
-use crate::prelude::*;
+#[cfg(test)]
+#[macro_use]
+extern crate lazy_static;
+
+extern crate sudachi;
+use sudachi::prelude::*;
 
 lazy_static! {
     static ref DICTIONARY_BYTES: Vec<u8> = {

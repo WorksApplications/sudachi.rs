@@ -5,10 +5,6 @@
 //! [`Tokenizer`](tokenizer/struct.Tokenizer.html) struct, which
 //! implements [`Tokenize`](tokenizer/trait.Tokenize.html).
 
-#[cfg(test)]
-#[macro_use]
-extern crate lazy_static;
-
 #[macro_use]
 extern crate nom;
 
@@ -21,9 +17,6 @@ pub mod tokenizer;
 pub mod utf8inputtext;
 
 pub use error::*;
-
-#[cfg(test)]
-mod tests;
 
 pub mod prelude {
     pub use crate::{
