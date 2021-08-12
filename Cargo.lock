@@ -44,6 +44,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4785bdd1c96b2a846b2bd7cc02e86b6b3dbf14e7e53446c4f54c92a361040822"
 
 [[package]]
+name = "cfg-if"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
+
+[[package]]
 name = "clap"
 version = "2.32.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -59,12 +65,48 @@ dependencies = [
 ]
 
 [[package]]
+name = "default_input_text"
+version = "0.1.0"
+dependencies = [
+ "sudachi",
+ "unicode-normalization",
+]
+
+[[package]]
 name = "heck"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "20564e78d53d2bb135c343b3f47714a56af2061f1c928fdb541dc7b9fdd94205"
 dependencies = [
  "unicode-segmentation",
+]
+
+[[package]]
+name = "ignore_yomigana"
+version = "0.1.0"
+dependencies = [
+ "sudachi",
+]
+
+[[package]]
+name = "inhibit_connection"
+version = "0.1.0"
+dependencies = [
+ "sudachi",
+]
+
+[[package]]
+name = "join_katakana_oov"
+version = "0.1.0"
+dependencies = [
+ "sudachi",
+]
+
+[[package]]
+name = "join_numeric"
+version = "0.1.0"
+dependencies = [
+ "sudachi",
 ]
 
 [[package]]
@@ -78,6 +120,23 @@ name = "libc"
 version = "0.2.50"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "aab692d7759f5cd8c859e169db98ae5b52c924add2af5fbbca11d12fefb567c1"
+
+[[package]]
+name = "libloading"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6f84d96438c15fcd6c3f244c8fce01d1e2b9c6b5623e9c711dc9286d8fc92d6a"
+dependencies = [
+ "cfg-if 1.0.0",
+ "winapi",
+]
+
+[[package]]
+name = "mecab_oov"
+version = "0.1.0"
+dependencies = [
+ "sudachi",
+]
 
 [[package]]
 name = "memchr"
@@ -117,6 +176,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "04f5f085b5d71e2188cb8271e5da0161ad52c3f227a661a3c135fdf28e258b12"
 dependencies = [
  "unicode-xid 0.2.1",
+]
+
+[[package]]
+name = "prolonged_sound_mark"
+version = "0.1.0"
+dependencies = [
+ "sudachi",
 ]
 
 [[package]]
@@ -170,6 +236,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f497285884f3fcff424ffc933e56d7cbca511def0c9831a7f9b5f6153e3cc89b"
 
 [[package]]
+name = "simple_oov"
+version = "0.1.0"
+dependencies = [
+ "sudachi",
+]
+
+[[package]]
 name = "strsim"
 version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -201,14 +274,14 @@ dependencies = [
 name = "sudachi"
 version = "0.1.0"
 dependencies = [
- "cfg-if",
+ "cfg-if 0.1.10",
  "lazy_static",
+ "libloading",
  "multiset",
  "nom",
  "regex",
  "structopt",
  "thiserror",
- "unicode-normalization",
 ]
 
 [[package]]

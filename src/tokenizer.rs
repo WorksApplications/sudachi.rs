@@ -14,9 +14,9 @@ use crate::lattice::node::Node;
 use crate::lattice::Lattice;
 use crate::morpheme::Morpheme;
 use crate::plugin::connect_cost;
-use crate::plugin::input_text::{self, InputTextPlugin};
-use crate::plugin::oov::{self, OovProviderPlugin};
-use crate::plugin::path_rewrite::{self, PathRewritePlugin};
+use crate::plugin::input_text::{self, InputTextPluginManager};
+use crate::plugin::oov::{self, OovProviderPluginManager};
+use crate::plugin::path_rewrite::{self, PathRewritePluginManager};
 use crate::prelude::*;
 
 /// Able to tokenize Japanese text
@@ -30,9 +30,9 @@ pub trait Tokenize {
 pub struct Tokenizer<'a> {
     pub grammar: Grammar<'a>,
     pub lexicon: Lexicon<'a>,
-    input_text_plugins: Vec<Box<dyn InputTextPlugin + Sync>>,
-    oov_provider_plugins: Vec<Box<dyn OovProviderPlugin + Sync>>,
-    path_rewrite_plugins: Vec<Box<dyn PathRewritePlugin + Sync>>,
+    input_text_plugins: InputTextPluginManager,
+    oov_provider_plugins: OovProviderPluginManager,
+    path_rewrite_plugins: PathRewritePluginManager,
 }
 
 /// Unit to split text
@@ -97,7 +97,7 @@ impl<'a> Tokenizer<'a> {
         // todo: load plugins
         let edit_connection_cost_plugins =
             connect_cost::get_edit_connection_cost_plugins(&grammar)?;
-        for plugin in edit_connection_cost_plugins {
+        for plugin in edit_connection_cost_plugins.plugins() {
             plugin.edit(&mut grammar);
         }
 
@@ -154,7 +154,7 @@ impl<'a> Tokenizer<'a> {
                 .get_char_category_types(i)
                 .contains(&CategoryType::NOOOVBOW)
             {
-                for oov_provider in &self.oov_provider_plugins {
+                for oov_provider in self.oov_provider_plugins.plugins() {
                     for node in oov_provider.get_oov(&input, i, has_word)? {
                         has_word = true;
                         lattice.insert(node.begin, node.end, node)?;
@@ -165,6 +165,7 @@ impl<'a> Tokenizer<'a> {
                 // use last oov_provider as default
                 for node in self
                     .oov_provider_plugins
+                    .plugins()
                     .last()
                     .unwrap()
                     .get_oov(&input, i, has_word)?
@@ -234,7 +235,7 @@ impl<'a> Tokenize for Tokenizer<'a> {
     ) -> SudachiResult<Vec<Morpheme>> {
         let mut builder = Utf8InputTextBuilder::new(input, &self.grammar);
 
-        for plugin in &self.input_text_plugins {
+        for plugin in self.input_text_plugins.plugins() {
             plugin.rewrite(&mut builder);
         }
         let input = builder.build();
@@ -256,7 +257,7 @@ impl<'a> Tokenize for Tokenizer<'a> {
             println!("{:?}", path);
         };
 
-        for plugin in &self.path_rewrite_plugins {
+        for plugin in self.path_rewrite_plugins.plugins() {
             path = plugin.rewrite(&input, path, &lattice)?;
         }
         let path = self.split_path(path, mode)?;

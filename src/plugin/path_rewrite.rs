@@ -1,3 +1,8 @@
+use std::path::{Path, PathBuf};
+
+use libloading::{Library, Symbol};
+
+use super::PluginError;
 use crate::dic::grammar::Grammar;
 use crate::dic::lexicon::word_infos::WordInfo;
 use crate::input_text::utf8_input_text::Utf8InputText;
@@ -5,6 +10,7 @@ use crate::lattice::{node::Node, Lattice};
 use crate::prelude::*;
 
 pub trait PathRewritePlugin {
+    fn set_up(&mut self, grammar: &Grammar) -> SudachiResult<()>;
     fn rewrite(
         &self,
         text: &Utf8InputText,
@@ -108,16 +114,76 @@ pub trait PathRewritePlugin {
     }
 }
 
-pub fn get_path_rewrite_plugins(
-    _grammar: &Grammar,
-) -> SudachiResult<Vec<Box<dyn PathRewritePlugin + Sync>>> {
+/// Declare a plugin type and its constructor.
+///
+/// # Notes
+/// This works by automatically generating an `extern "C"` function with a
+/// pre-defined signature and symbol name. Therefore you will only be able to
+/// declare one plugin per library.
+#[macro_export]
+macro_rules! declare_path_rewrite_plugin {
+    ($plugin_type:ty, $constructor:path) => {
+        #[no_mangle]
+        pub extern "C" fn load_plugin() -> *mut PathRewritePlugin {
+            // make sure the constructor is the correct type.
+            let constructor: fn() -> $plugin_type = $constructor;
+
+            let object = constructor();
+            let boxed: Box<PathRewritePlugin> = Box::new(object);
+            Box::into_raw(boxed)
+        }
+    };
+}
+
+#[derive(Default)]
+pub struct PathRewritePluginManager {
+    plugins: Vec<Box<dyn PathRewritePlugin>>,
+    libraries: Vec<Library>,
+}
+impl PathRewritePluginManager {
+    pub fn load(&mut self, path: &Path) -> Result<(), PluginError> {
+        type PluginCreate = unsafe fn() -> *mut dyn PathRewritePlugin;
+
+        let lib = unsafe { Library::new(path) }?;
+        let load_plugin: Symbol<PluginCreate> = unsafe { lib.get(b"load_plugin") }?;
+        let plugin = unsafe { Box::from_raw(load_plugin()) };
+
+        self.plugins.push(plugin);
+        self.libraries.push(lib);
+
+        Ok(())
+    }
+
+    pub fn set_up(&mut self, grammar: &Grammar) -> SudachiResult<()> {
+        for plugin in &mut self.plugins {
+            plugin.set_up(grammar)?;
+        }
+        Ok(())
+    }
+
+    pub fn plugins(&self) -> &[Box<dyn PathRewritePlugin>] {
+        &self.plugins
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.plugins.is_empty()
+    }
+}
+impl Drop for PathRewritePluginManager {
+    fn drop(&mut self) {
+        // Plugin drop must be called before Library drop.
+        self.plugins.clear();
+        self.libraries.clear();
+    }
+}
+
+pub fn get_path_rewrite_plugins(grammar: &Grammar) -> SudachiResult<PathRewritePluginManager> {
     // todo load from config
-    let mut plugins: Vec<Box<dyn PathRewritePlugin + Sync>> = vec![];
+    let mut manager = PathRewritePluginManager::default();
 
-    // plugins.push(Box::new(join_katakana_oov::JoinKarakanaOovPlugin::new(
-    //     grammar,
-    // )?));
-    // plugins.push(Box::new(join_numeric::JoinNumericPlugin::new(grammar)?));
+    manager.load(&PathBuf::from("./target/debug/libjoin_katakana_oov.so"))?;
+    manager.load(&PathBuf::from("./target/debug/libjoin_numeric.so"))?;
 
-    Ok(plugins)
+    manager.set_up(grammar)?;
+    Ok(manager)
 }

@@ -5,6 +5,7 @@ use thiserror::Error;
 
 use crate::dic::character_category::Error as CharacterCategoryError;
 use crate::dic::header::HeaderError;
+use crate::plugin::PluginError;
 
 pub type SudachiResult<T> = Result<T, SudachiError>;
 
@@ -68,6 +69,9 @@ pub enum SudachiError {
 
     #[error("No out of vocabulary plugin provided")]
     NoOOVPluginProvided,
+
+    #[error("Plugin error")]
+    PluginError(#[from] PluginError),
 }
 
 /// Define `SudachiNomCustomError` error and conversion to `SudachiError`.

@@ -45,7 +45,7 @@ impl Range {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Default, Clone)]
 pub struct CharacterCategory {
     ranges: Vec<Range>,
 }
