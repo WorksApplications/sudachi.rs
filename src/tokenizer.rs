@@ -86,7 +86,7 @@ impl FromStr for Mode {
 impl<'a> Tokenizer<'a> {
     /// Create `Tokenizer` from the raw bytes of a Sudachi dictionary.
     pub fn from_dictionary_bytes(dictionary_bytes: &'a [u8]) -> SudachiResult<Tokenizer<'a>> {
-        let (_rest, _header) = Header::new(&dictionary_bytes[..Header::STORAGE_SIZE])?;
+        let _header = Header::new(&dictionary_bytes[..Header::STORAGE_SIZE])?;
         let mut offset = Header::STORAGE_SIZE;
 
         let mut grammar = Grammar::new(dictionary_bytes, offset)?;

@@ -12,26 +12,100 @@ pub enum HeaderError {
     CannotParse,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum HeaderVersion {
+    SystemDict(SystemDictVersion),
+    UserDict(UserDictVersion),
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum SystemDictVersion {
+    // we cannot set value since value can be larger than isize
+    Version1,
+    Version2,
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum UserDictVersion {
+    Version1,
+    Version2,
+    Version3,
+}
+impl HeaderVersion {
+    /// the first version of system dictionaries
+    const SYSTEM_DICT_VERSION_1: u64 = 0x7366d3f18bd111e7;
+    /// the second version of system dictionaries
+    const SYSTEM_DICT_VERSION_2: u64 = 0xce9f011a92394434;
+    /// the first version of user dictionaries
+    const USER_DICT_VERSION_1: u64 = 0xa50f31188bd211e7;
+    /// the second version of user dictionaries
+    const USER_DICT_VERSION_2: u64 = 0x9fdeb5a90168d868;
+    /// the third version of user dictionaries
+    const USER_DICT_VERSION_3: u64 = 0xca9811756ff64fb0;
+
+    pub fn from_u64(v: u64) -> Option<Self> {
+        match v {
+            HeaderVersion::SYSTEM_DICT_VERSION_1 => {
+                Some(Self::SystemDict(SystemDictVersion::Version1))
+            }
+            HeaderVersion::SYSTEM_DICT_VERSION_2 => {
+                Some(Self::SystemDict(SystemDictVersion::Version2))
+            }
+            HeaderVersion::USER_DICT_VERSION_1 => Some(Self::UserDict(UserDictVersion::Version1)),
+            HeaderVersion::USER_DICT_VERSION_2 => Some(Self::UserDict(UserDictVersion::Version2)),
+            HeaderVersion::USER_DICT_VERSION_3 => Some(Self::UserDict(UserDictVersion::Version3)),
+            _ => None,
+        }
+    }
+
+    pub fn has_grammar(&self) -> bool {
+        match self {
+            HeaderVersion::UserDict(UserDictVersion::Version2) => true,
+            HeaderVersion::UserDict(UserDictVersion::Version3) => true,
+            _ => false,
+        }
+    }
+
+    pub fn has_synonym_group_ids(&self) -> bool {
+        match self {
+            HeaderVersion::SystemDict(SystemDictVersion::Version2) => true,
+            HeaderVersion::UserDict(UserDictVersion::Version3) => true,
+            _ => false,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Header {
-    pub version: u64,
-    _create_time: u64,
-    description: String,
+    pub version: HeaderVersion,
+    pub create_time: u64,
+    pub description: String,
 }
 
 impl Header {
     const DESCRIPTION_SIZE: usize = 256;
-    const EXPECTED_VERSION: u64 = 0x7366d3f18bd111e7;
+    const EXPECTED_VERSION: HeaderVersion = HeaderVersion::SystemDict(SystemDictVersion::Version1);
     pub const STORAGE_SIZE: usize = 8 + 8 + Header::DESCRIPTION_SIZE;
 
-    pub fn new(bytes: &[u8]) -> Result<(&[u8], Header), HeaderError> {
-        let (rest, header) = header_parser(bytes).map_err(|_| HeaderError::CannotParse)?;
+    pub fn new(bytes: &[u8]) -> Result<Header, HeaderError> {
+        let (_rest, (version, create_time, description)) =
+            header_parser(bytes).map_err(|_| HeaderError::CannotParse)?;
 
-        if header.version != Self::EXPECTED_VERSION {
-            return Err(HeaderError::InvalidVersion);
-        }
+        let version = match HeaderVersion::from_u64(version) {
+            Some(v) => {
+                if Header::EXPECTED_VERSION != v {
+                    return Err(HeaderError::InvalidVersion);
+                }
+                v
+            }
+            None => {
+                return Err(HeaderError::InvalidVersion);
+            }
+        };
 
-        Ok((rest, header))
+        Ok(Header {
+            version,
+            create_time,
+            description,
+        })
     }
 }
 
@@ -46,15 +120,13 @@ fn nul_terminated_str_from_slice(buf: &[u8]) -> String {
 }
 
 named_args!(
-    header_parser()<&[u8], Header>,
+    header_parser()<&[u8], (u64, u64, String)>,
     do_parse!(
         version: le_u64 >>
         create_time: le_u64 >>
         desc_buf: take!(Header::DESCRIPTION_SIZE) >>
 
-        (Header{ version,
-                 _create_time: create_time,
-                 description: nul_terminated_str_from_slice(&desc_buf) })
+        (version, create_time, nul_terminated_str_from_slice(&desc_buf))
     )
 );
 
@@ -72,7 +144,7 @@ mod tests {
         bytes.extend(&create_time.to_le_bytes());
         bytes.extend(description.as_ref());
 
-        Header::new(&bytes).map(|(_rest, header)| header)
+        Header::new(&bytes)
     }
 
     #[test]
@@ -94,11 +166,11 @@ mod tests {
         description.extend(&vec![0; Header::DESCRIPTION_SIZE]);
 
         assert_eq!(
-            header_from_parts(Header::EXPECTED_VERSION, 1337, &description),
+            header_from_parts(HeaderVersion::SYSTEM_DICT_VERSION_1, 1337, &description),
             Ok(Header {
-                version: Header::EXPECTED_VERSION,
+                version: HeaderVersion::SystemDict(SystemDictVersion::Version1),
                 description: description_str.to_string(),
-                _create_time: 1337,
+                create_time: 1337,
             })
         );
     }
