@@ -59,7 +59,7 @@ named_args!(
 );
 
 #[cfg(test)]
-mod test {
+mod tests {
     use super::*;
 
     fn header_from_parts<T: AsRef<[u8]>>(

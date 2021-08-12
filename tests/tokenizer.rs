@@ -1,24 +1,11 @@
-//! Crate tests
-
-use std::env;
-
-#[cfg(test)]
 #[macro_use]
 extern crate lazy_static;
 
 extern crate sudachi;
 use sudachi::prelude::*;
 
-lazy_static! {
-    static ref DICTIONARY_BYTES: Vec<u8> = {
-        let dictionary_path = env::var_os("SUDACHI_DICT_PATH").expect("Must set env var SUDACHI_DICT_PATH with path to Sudachi dictionary (relative to current dir)");
-        let dictionary_bytes = dictionary_bytes_from_path(dictionary_path)
-            .expect("Failed to read dictionary from path");
-        dictionary_bytes
-    };
-    static ref TOKENIZER: Tokenizer<'static> = Tokenizer::from_dictionary_bytes(&DICTIONARY_BYTES)
-        .expect("Failed to create Tokenizer for tests");
-}
+mod common;
+use common::TOKENIZER;
 
 /// Expected chunks for a text in a given mode
 #[derive(Debug, Clone)]
@@ -116,7 +103,7 @@ fn part_of_speech() {
     let m = &ms[0];
     // we do not have pos_id field in Morpheme and skip testing.
     // let pid = m.word_info.pos_id as usize;
-    // assert_eq!(true, TOKENIZER.grammar.pos_list.len() > pid);
+    // assert!(TOKENIZER.grammar.pos_list.len() > pid);
     // assert_eq!(pos, TOKENIZER.grammar.pos_list[pid]);
     let pos = m.pos().expect("failed to get pos");
 }
@@ -150,7 +137,7 @@ fn get_dictionary_id() {
 
     let ms = tokenize("京", Mode::C);
     assert_eq!(1, ms.len());
-    assert_eq!(true, 0 > ms[0].word_info.dictionary_form_word_id);
+    assert!(ms[0].word_info.dictionary_form_word_id < 0);
 }
 
 #[test]
