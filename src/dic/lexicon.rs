@@ -71,6 +71,10 @@ impl<'a> Lexicon<'a> {
 
         Ok((left_id, right_id, cost))
     }
+
+    pub fn size(&self) -> u32 {
+        self.word_params.size()
+    }
 }
 
 named_args!(

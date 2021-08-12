@@ -1,7 +1,7 @@
 use std::env;
 
 extern crate sudachi;
-use sudachi::dic::{grammar::Grammar, header::Header};
+use sudachi::dic::{grammar::Grammar, header::Header, lexicon::Lexicon};
 use sudachi::prelude::*;
 
 lazy_static! {
@@ -16,6 +16,7 @@ lazy_static! {
     pub static ref GRAMMAR: Grammar<'static> =
         Grammar::new(&DICTIONARY_BYTES, Header::STORAGE_SIZE)
             .expect("Failed to create Grammar for tests");
+    pub static ref LEXICON: &'static Lexicon<'static> = &TOKENIZER.lexicon;
     pub static ref TOKENIZER: Tokenizer<'static> =
         Tokenizer::from_dictionary_bytes(&DICTIONARY_BYTES)
             .expect("Failed to create Tokenizer for tests");

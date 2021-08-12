@@ -39,6 +39,7 @@ named_args!(
     do_parse!(
         _seek: take!(index) >>
         surface: utf16_string >>
+        // todo: word length can be 2 bytes
         head_word_length: le_u8 >>
         pos_id: le_u16 >>
         normalized_form: utf16_string >>
