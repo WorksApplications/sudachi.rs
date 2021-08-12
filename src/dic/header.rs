@@ -5,8 +5,14 @@ use thiserror::Error;
 #[derive(Error, Debug, Eq, PartialEq)]
 #[non_exhaustive]
 pub enum HeaderError {
-    #[error("Invalid header")]
+    #[error("Invalid header version")]
     InvalidVersion,
+
+    #[error("Invalid system dictionary version")]
+    InvalidSystemDictVersion,
+
+    #[error("Invalid user dictionary version")]
+    InvalidUserDictVersion,
 
     #[error("Unable to parse")]
     CannotParse,
@@ -82,24 +88,17 @@ pub struct Header {
 
 impl Header {
     const DESCRIPTION_SIZE: usize = 256;
-    const EXPECTED_VERSION: HeaderVersion = HeaderVersion::SystemDict(SystemDictVersion::Version1);
     pub const STORAGE_SIZE: usize = 8 + 8 + Header::DESCRIPTION_SIZE;
 
     pub fn new(bytes: &[u8]) -> Result<Header, HeaderError> {
         let (_rest, (version, create_time, description)) =
             header_parser(bytes).map_err(|_| HeaderError::CannotParse)?;
 
-        let version = match HeaderVersion::from_u64(version) {
-            Some(v) => {
-                if Header::EXPECTED_VERSION != v {
-                    return Err(HeaderError::InvalidVersion);
-                }
-                v
-            }
-            None => {
-                return Err(HeaderError::InvalidVersion);
-            }
-        };
+        let version = HeaderVersion::from_u64(version).ok_or(HeaderError::InvalidVersion)?;
+        if let HeaderVersion::SystemDict(_) = version {
+        } else {
+            return Err(HeaderError::InvalidSystemDictVersion);
+        }
 
         Ok(Header {
             version,
