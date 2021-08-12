@@ -4,12 +4,17 @@ use std::fs;
 use std::io::{BufRead, BufReader};
 use unicode_normalization::UnicodeNormalization;
 
-use crate::input_text::utf8_input_text_builder::Utf8InputTextBuilder;
-use crate::plugin::input_text::InputTextPlugin;
-use crate::prelude::*;
+use sudachi::declare_input_text_plugin;
+use sudachi::dic::grammar::Grammar;
+use sudachi::input_text::utf8_input_text_builder::Utf8InputTextBuilder;
+use sudachi::plugin::input_text::InputTextPlugin;
+use sudachi::prelude::*;
 
 const DEFAULT_REWRITE_DEF_FILE_PATH: &str = "./src/resources/rewrite.def";
 
+declare_input_text_plugin!(DefaultInputTextPlugin, DefaultInputTextPlugin::default);
+
+#[derive(Default)]
 pub struct DefaultInputTextPlugin {
     ignore_normalize_set: HashSet<char>,
     key_lengths: HashMap<char, usize>,
@@ -17,12 +22,7 @@ pub struct DefaultInputTextPlugin {
 }
 
 impl DefaultInputTextPlugin {
-    pub fn new() -> SudachiResult<DefaultInputTextPlugin> {
-        // todo: load from config
-        DefaultInputTextPlugin::read_rewrite_lists(DEFAULT_REWRITE_DEF_FILE_PATH)
-    }
-
-    fn read_rewrite_lists(path: &str) -> SudachiResult<DefaultInputTextPlugin> {
+    fn read_rewrite_lists(&mut self, path: &str) -> SudachiResult<()> {
         let mut ignore_normalize_set = HashSet::new();
         let mut key_lengths = HashMap::new();
         let mut replace_char_map = HashMap::new();
@@ -65,15 +65,22 @@ impl DefaultInputTextPlugin {
             return Err(SudachiError::InvalidDataFormat(i, "".to_string()));
         }
 
-        Ok(DefaultInputTextPlugin {
-            ignore_normalize_set,
-            key_lengths,
-            replace_char_map,
-        })
+        self.ignore_normalize_set = ignore_normalize_set;
+        self.key_lengths = key_lengths;
+        self.replace_char_map = replace_char_map;
+
+        Ok(())
     }
 }
 
 impl InputTextPlugin for DefaultInputTextPlugin {
+    fn set_up(&mut self, _grammar: &Grammar) -> SudachiResult<()> {
+        // todo: load from config
+        self.read_rewrite_lists(DEFAULT_REWRITE_DEF_FILE_PATH)?;
+
+        Ok(())
+    }
+
     fn rewrite(&self, builder: &mut Utf8InputTextBuilder) {
         let mut offset: i32 = 0;
         let mut next_offset: i32 = 0;

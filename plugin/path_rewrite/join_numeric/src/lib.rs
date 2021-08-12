@@ -1,34 +1,23 @@
-pub mod numeric_parser;
+use sudachi::declare_path_rewrite_plugin;
+use sudachi::dic::category_type::CategoryType;
+use sudachi::dic::grammar::Grammar;
+use sudachi::input_text::utf8_input_text::Utf8InputText;
+use sudachi::lattice::{node::Node, Lattice};
+use sudachi::plugin::path_rewrite::PathRewritePlugin;
+use sudachi::prelude::*;
 
-use crate::dic::category_type::CategoryType;
-use crate::dic::grammar::Grammar;
-use crate::input_text::utf8_input_text::Utf8InputText;
-use crate::lattice::{node::Node, Lattice};
-use crate::plugin::path_rewrite::PathRewritePlugin;
-use crate::prelude::*;
+pub mod numeric_parser;
 use numeric_parser::NumericParser;
 
+declare_path_rewrite_plugin!(JoinNumericPlugin, JoinNumericPlugin::default);
+
+#[derive(Default)]
 pub struct JoinNumericPlugin {
     numeric_pos_id: u16,
     enable_normalize: bool,
 }
 
 impl JoinNumericPlugin {
-    pub fn new(grammar: &Grammar) -> SudachiResult<JoinNumericPlugin> {
-        // todo: load from config
-        let numeric_pos_string = vec!["名詞", "数詞", "*", "*", "*", "*"];
-        let numeric_pos_id = grammar
-            .get_part_of_speech_id(&numeric_pos_string)
-            .ok_or(SudachiError::InvalidPartOfSpeech)?;
-
-        let enable_normalize = true;
-
-        Ok(JoinNumericPlugin {
-            numeric_pos_id,
-            enable_normalize,
-        })
-    }
-
     fn concat(
         &self,
         mut path: Vec<Node>,
@@ -61,6 +50,21 @@ impl JoinNumericPlugin {
 }
 
 impl PathRewritePlugin for JoinNumericPlugin {
+    fn set_up(&mut self, grammar: &Grammar) -> SudachiResult<()> {
+        // todo: load from config
+        let numeric_pos_string = vec!["名詞", "数詞", "*", "*", "*", "*"];
+        let numeric_pos_id = grammar
+            .get_part_of_speech_id(&numeric_pos_string)
+            .ok_or(SudachiError::InvalidPartOfSpeech)?;
+
+        let enable_normalize = true;
+
+        self.numeric_pos_id = numeric_pos_id;
+        self.enable_normalize = enable_normalize;
+
+        Ok(())
+    }
+
     fn rewrite(
         &self,
         text: &Utf8InputText,

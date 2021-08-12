@@ -1,28 +1,31 @@
 use std::collections::HashSet;
 
-use crate::input_text::utf8_input_text_builder::Utf8InputTextBuilder;
-use crate::plugin::input_text::InputTextPlugin;
-use crate::prelude::*;
+use sudachi::declare_input_text_plugin;
+use sudachi::dic::grammar::Grammar;
+use sudachi::input_text::utf8_input_text_builder::Utf8InputTextBuilder;
+use sudachi::plugin::input_text::InputTextPlugin;
+use sudachi::prelude::*;
 
+declare_input_text_plugin!(ProlongedSoundMarkPlugin, ProlongedSoundMarkPlugin::default);
+
+#[derive(Default)]
 pub struct ProlongedSoundMarkPlugin {
     psm_set: HashSet<char>,
     replace_symbol: String,
 }
 
-impl ProlongedSoundMarkPlugin {
-    pub fn new() -> SudachiResult<ProlongedSoundMarkPlugin> {
+impl InputTextPlugin for ProlongedSoundMarkPlugin {
+    fn set_up(&mut self, _grammar: &Grammar) -> SudachiResult<()> {
         // todo: load from config
         let psm_set: HashSet<_> = ['ー', '-', '⁓', '〜', '〰'].iter().map(|v| *v).collect();
         let replace_symbol = String::from('ー');
 
-        Ok(ProlongedSoundMarkPlugin {
-            psm_set,
-            replace_symbol,
-        })
-    }
-}
+        self.psm_set = psm_set;
+        self.replace_symbol = replace_symbol;
 
-impl InputTextPlugin for ProlongedSoundMarkPlugin {
+        Ok(())
+    }
+
     fn rewrite(&self, builder: &mut Utf8InputTextBuilder) {
         let text = builder.modified.clone();
         let n = builder.modified.chars().count();

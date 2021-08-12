@@ -1,35 +1,24 @@
 use std::collections::HashSet;
 
-use crate::dic::category_type::CategoryType;
-use crate::dic::character_category::CharacterCategory;
-use crate::dic::grammar::Grammar;
-use crate::input_text::utf8_input_text_builder::Utf8InputTextBuilder;
-use crate::plugin::input_text::InputTextPlugin;
-use crate::prelude::*;
+use sudachi::declare_input_text_plugin;
+use sudachi::dic::category_type::CategoryType;
+use sudachi::dic::character_category::CharacterCategory;
+use sudachi::dic::grammar::Grammar;
+use sudachi::input_text::utf8_input_text_builder::Utf8InputTextBuilder;
+use sudachi::plugin::input_text::InputTextPlugin;
+use sudachi::prelude::*;
 
-pub struct IgnoreYomiganaPlugin<'a> {
+declare_input_text_plugin!(IgnoreYomiganaPlugin, IgnoreYomiganaPlugin::default);
+
+#[derive(Default)]
+pub struct IgnoreYomiganaPlugin {
     character_category: CharacterCategory,
-    left_bracket_set: HashSet<&'a char>,
-    right_bracket_set: HashSet<&'a char>,
+    left_bracket_set: HashSet<char>,
+    right_bracket_set: HashSet<char>,
     max_yomigana_length: usize,
 }
 
-impl<'a> IgnoreYomiganaPlugin<'a> {
-    pub fn new(grammar: &Grammar) -> SudachiResult<IgnoreYomiganaPlugin<'a>> {
-        // todo: load from config
-        let left_bracket_set = ['(', '（'].iter().collect();
-        let right_bracket_set = [')', '）'].iter().collect();
-        let max_yomigana_length = 4;
-
-        Ok(IgnoreYomiganaPlugin {
-            // todo: better way to use char_category map?
-            character_category: grammar.character_category.clone(),
-            left_bracket_set,
-            right_bracket_set,
-            max_yomigana_length,
-        })
-    }
-
+impl IgnoreYomiganaPlugin {
     fn has_category_type(&self, c: char, t: &CategoryType) -> bool {
         self.character_category.get_category_types(c).contains(t)
     }
@@ -44,7 +33,21 @@ impl<'a> IgnoreYomiganaPlugin<'a> {
     }
 }
 
-impl<'a> InputTextPlugin for IgnoreYomiganaPlugin<'a> {
+impl InputTextPlugin for IgnoreYomiganaPlugin {
+    fn set_up(&mut self, grammar: &Grammar) -> SudachiResult<()> {
+        // todo: load from config
+        let left_bracket_set = ['(', '（'].iter().map(|c| *c).collect();
+        let right_bracket_set = [')', '）'].iter().map(|c| *c).collect();
+        let max_yomigana_length = 4;
+
+        self.character_category = grammar.character_category.clone();
+        self.left_bracket_set = left_bracket_set;
+        self.right_bracket_set = right_bracket_set;
+        self.max_yomigana_length = max_yomigana_length;
+
+        Ok(())
+    }
+
     fn rewrite(&self, builder: &mut Utf8InputTextBuilder) {
         let chars: Vec<_> = builder.modified.chars().collect();
         let mut start_bracket_point = None;

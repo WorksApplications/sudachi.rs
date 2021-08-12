@@ -1,31 +1,20 @@
-use crate::dic::category_type::CategoryType;
-use crate::dic::grammar::Grammar;
-use crate::input_text::utf8_input_text::Utf8InputText;
-use crate::lattice::{node::Node, Lattice};
-use crate::plugin::path_rewrite::PathRewritePlugin;
-use crate::prelude::*;
+use sudachi::declare_path_rewrite_plugin;
+use sudachi::dic::category_type::CategoryType;
+use sudachi::dic::grammar::Grammar;
+use sudachi::input_text::utf8_input_text::Utf8InputText;
+use sudachi::lattice::{node::Node, Lattice};
+use sudachi::plugin::path_rewrite::PathRewritePlugin;
+use sudachi::prelude::*;
 
+declare_path_rewrite_plugin!(JoinKarakanaOovPlugin, JoinKarakanaOovPlugin::default);
+
+#[derive(Default)]
 pub struct JoinKarakanaOovPlugin {
     oov_pos_id: u16,
     min_length: usize,
 }
 
 impl JoinKarakanaOovPlugin {
-    pub fn new(grammar: &Grammar) -> SudachiResult<JoinKarakanaOovPlugin> {
-        // todo: load from config
-        let oov_pos_string = vec!["名詞", "普通名詞", "一般", "*", "*", "*"];
-        let oov_pos_id = grammar
-            .get_part_of_speech_id(&oov_pos_string)
-            .ok_or(SudachiError::InvalidPartOfSpeech)?;
-
-        let min_length = 3;
-
-        Ok(JoinKarakanaOovPlugin {
-            oov_pos_id,
-            min_length,
-        })
-    }
-
     fn is_katakana_node(&self, text: &Utf8InputText, node: &Node) -> bool {
         text.get_char_category_types_range(node.begin, node.end)
             .contains(&CategoryType::KATAKANA)
@@ -48,6 +37,21 @@ impl JoinKarakanaOovPlugin {
 }
 
 impl PathRewritePlugin for JoinKarakanaOovPlugin {
+    fn set_up(&mut self, grammar: &Grammar) -> SudachiResult<()> {
+        // todo: load from config
+        let oov_pos_string = vec!["名詞", "普通名詞", "一般", "*", "*", "*"];
+        let oov_pos_id = grammar
+            .get_part_of_speech_id(&oov_pos_string)
+            .ok_or(SudachiError::InvalidPartOfSpeech)?;
+
+        let min_length = 3;
+
+        self.oov_pos_id = oov_pos_id;
+        self.min_length = min_length;
+
+        Ok(())
+    }
+
     fn rewrite(
         &self,
         text: &Utf8InputText,

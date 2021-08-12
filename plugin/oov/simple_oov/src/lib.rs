@@ -1,10 +1,14 @@
-use crate::dic::grammar::Grammar;
-use crate::dic::lexicon::word_infos::WordInfo;
-use crate::input_text::utf8_input_text::Utf8InputText;
-use crate::lattice::node::Node;
-use crate::plugin::oov::OovProviderPlugin;
-use crate::prelude::*;
+use sudachi::declare_oov_provider_plugin;
+use sudachi::dic::grammar::Grammar;
+use sudachi::dic::lexicon::word_infos::WordInfo;
+use sudachi::input_text::utf8_input_text::Utf8InputText;
+use sudachi::lattice::node::Node;
+use sudachi::plugin::oov::OovProviderPlugin;
+use sudachi::prelude::*;
 
+declare_oov_provider_plugin!(SimpleOovPlugin, SimpleOovPlugin::default);
+
+#[derive(Default)]
 pub struct SimpleOovPlugin {
     left_id: i16,
     right_id: i16,
@@ -12,8 +16,8 @@ pub struct SimpleOovPlugin {
     oov_pos_id: u16,
 }
 
-impl SimpleOovPlugin {
-    pub fn new(grammar: &Grammar) -> SudachiResult<SimpleOovPlugin> {
+impl OovProviderPlugin for SimpleOovPlugin {
+    fn set_up(&mut self, grammar: &Grammar) -> SudachiResult<()> {
         // todo: load from file
         let left_id = 5968;
         let right_id = 5968;
@@ -24,16 +28,14 @@ impl SimpleOovPlugin {
             .get_part_of_speech_id(&oov_pos_string)
             .ok_or(SudachiError::InvalidPartOfSpeech)?;
 
-        Ok(SimpleOovPlugin {
-            left_id,
-            right_id,
-            cost,
-            oov_pos_id,
-        })
-    }
-}
+        self.left_id = left_id;
+        self.right_id = right_id;
+        self.cost = cost;
+        self.oov_pos_id = oov_pos_id;
 
-impl OovProviderPlugin for SimpleOovPlugin {
+        Ok(())
+    }
+
     fn provide_oov(
         &self,
         input_text: &Utf8InputText,
