@@ -4,9 +4,6 @@ use crate::input_text::utf8_input_text::Utf8InputText;
 use crate::lattice::{node::Node, Lattice};
 use crate::prelude::*;
 
-pub mod join_katakana_oov;
-pub mod join_numeric;
-
 pub trait PathRewritePlugin {
     fn rewrite(
         &self,
@@ -112,15 +109,15 @@ pub trait PathRewritePlugin {
 }
 
 pub fn get_path_rewrite_plugins(
-    grammar: &Grammar,
+    _grammar: &Grammar,
 ) -> SudachiResult<Vec<Box<dyn PathRewritePlugin + Sync>>> {
     // todo load from config
     let mut plugins: Vec<Box<dyn PathRewritePlugin + Sync>> = vec![];
 
-    plugins.push(Box::new(join_katakana_oov::JoinKarakanaOovPlugin::new(
-        grammar,
-    )?));
-    plugins.push(Box::new(join_numeric::JoinNumericPlugin::new(grammar)?));
+    // plugins.push(Box::new(join_katakana_oov::JoinKarakanaOovPlugin::new(
+    //     grammar,
+    // )?));
+    // plugins.push(Box::new(join_numeric::JoinNumericPlugin::new(grammar)?));
 
     Ok(plugins)
 }

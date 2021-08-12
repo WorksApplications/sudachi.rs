@@ -1,6 +1,3 @@
-pub mod mecab_oov;
-pub mod simple_oov;
-
 use crate::dic::grammar::Grammar;
 use crate::input_text::utf8_input_text::Utf8InputText;
 use crate::lattice::node::Node;
@@ -29,12 +26,14 @@ pub trait OovProviderPlugin {
     }
 }
 
-pub fn get_oov_plugins(grammar: &Grammar) -> SudachiResult<Vec<Box<dyn OovProviderPlugin + Sync>>> {
+pub fn get_oov_plugins(
+    _grammar: &Grammar,
+) -> SudachiResult<Vec<Box<dyn OovProviderPlugin + Sync>>> {
     // todo load from config
     let mut oovs: Vec<Box<dyn OovProviderPlugin + Sync>> = vec![];
 
-    oovs.push(Box::new(mecab_oov::MeCabOovPlugin::new(grammar)?));
-    oovs.push(Box::new(simple_oov::SimpleOovPlugin::new(grammar)?));
+    // oovs.push(Box::new(mecab_oov::MeCabOovPlugin::new(grammar)?));
+    // oovs.push(Box::new(simple_oov::SimpleOovPlugin::new(grammar)?));
 
     Ok(oovs)
 }
