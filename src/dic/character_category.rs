@@ -227,3 +227,63 @@ impl CharacterCategory {
         FromIterator::from_iter([CategoryType::DEFAULT])
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    const TEST_RESOURCE_DIR: &str = "./tests/resources/";
+
+    impl Range {
+        pub fn containing_length(&self, text: &str) -> usize {
+            for (i, c) in text.chars().enumerate() {
+                let code_point = c as u32;
+                if code_point < self.begin || self.end < code_point {
+                    return i;
+                }
+            }
+            text.chars().count()
+        }
+    }
+
+    #[test]
+    fn range_containing_length() {
+        let range = Range {
+            begin: 0x41u32,
+            end: 0x54u32,
+            categories: CategoryTypes::default(),
+        };
+        assert_eq!(3, range.containing_length("ABC12"));
+        assert_eq!(0, range.containing_length("熙"));
+    }
+
+    #[test]
+    fn get_category_types() {
+        // todo: pass correct path
+        let path = TEST_RESOURCE_DIR;
+        let cat =
+            CharacterCategory::from_file(Some(path)).expect("failed to load char.def for test");
+        let cats = cat.get_category_types('熙');
+        assert_eq!(1, cats.len());
+        assert!(cats.contains(&CategoryType::KANJI));
+    }
+
+    #[test]
+    fn read_character_definition() {
+        // todo: immpl after file read
+    }
+
+    #[test]
+    fn read_character_definition_with_invalid_format() {
+        // todo: immpl after file read
+    }
+
+    #[test]
+    fn read_character_definition_with_invalid_range() {
+        // todo: immpl after file read
+    }
+
+    #[test]
+    fn read_character_definition_with_invalid_type() {
+        // todo: immpl after file read
+    }
+}
