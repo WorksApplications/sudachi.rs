@@ -259,9 +259,9 @@ mod tests {
     #[test]
     fn get_category_types() {
         // todo: pass correct path
-        let path = TEST_RESOURCE_DIR;
+        let path = String::from(TEST_RESOURCE_DIR) + "char.def";
         let cat =
-            CharacterCategory::from_file(Some(path)).expect("failed to load char.def for test");
+            CharacterCategory::from_file(Some(&path)).expect("failed to load char.def for test");
         let cats = cat.get_category_types('熙');
         assert_eq!(1, cats.len());
         assert!(cats.contains(&CategoryType::KANJI));
