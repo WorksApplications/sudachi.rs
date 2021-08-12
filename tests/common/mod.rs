@@ -11,6 +11,8 @@ lazy_static! {
             .expect("Failed to read dictionary from path");
         dictionary_bytes
     };
+    pub static ref HEADER: Header =
+        Header::new(&DICTIONARY_BYTES).expect("Failed to create Header for tests");
     pub static ref GRAMMAR: Grammar<'static> =
         Grammar::new(&DICTIONARY_BYTES, Header::STORAGE_SIZE)
             .expect("Failed to create Grammar for tests");
