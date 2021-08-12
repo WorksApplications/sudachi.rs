@@ -97,18 +97,6 @@ fn tokenize_small_katakana_only() {
 }
 
 #[test]
-fn part_of_speech() {
-    let ms = tokenize("京都", Mode::C);
-    assert_eq!(1, ms.len());
-    let m = &ms[0];
-    // we do not have pos_id field in Morpheme and skip testing.
-    // let pid = m.word_info.pos_id as usize;
-    // assert!(TOKENIZER.grammar.pos_list.len() > pid);
-    // assert_eq!(pos, TOKENIZER.grammar.pos_list[pid]);
-    let pos = m.pos().expect("failed to get pos");
-}
-
-#[test]
 fn get_word_id() {
     let ms = tokenize("京都", Mode::C);
     assert_eq!(1, ms.len());
