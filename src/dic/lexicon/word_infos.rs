@@ -18,14 +18,14 @@ impl<'a> WordInfos<'a> {
         }
     }
 
-    pub fn get_word_info(&self, word_id: usize) -> SudachiResult<WordInfo> {
-        let index = le_u32(&self.bytes[self.offset + (4 * word_id)..])?.1 as usize; // wordIdToOffset()
+    pub fn get_word_info(&self, word_id: u32) -> SudachiResult<WordInfo> {
+        let index = le_u32(&self.bytes[self.offset + (4 * word_id as usize)..])?.1 as usize; // wordIdToOffset()
         let mut word_info = word_info_parser(self.bytes, index)?.1;
 
         // TODO: can we set dictionary_form within the word_info_parser?
         let dfwi = word_info.dictionary_form_word_id;
-        if (dfwi >= 0) & (dfwi != word_id as i32) {
-            word_info.dictionary_form = self.get_word_info(dfwi as usize)?.surface;
+        if (dfwi >= 0) && (dfwi != word_id as i32) {
+            word_info.dictionary_form = self.get_word_info(dfwi as u32)?.surface;
         };
 
         Ok(word_info)

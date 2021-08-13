@@ -5,6 +5,7 @@ use thiserror::Error;
 
 use crate::dic::character_category::Error as CharacterCategoryError;
 use crate::dic::header::HeaderError;
+use crate::dic::lexicon_set::LexiconSetError;
 use crate::plugin::PluginError;
 
 pub type SudachiResult<T> = Result<T, SudachiError>;
@@ -72,6 +73,9 @@ pub enum SudachiError {
 
     #[error("Plugin error")]
     PluginError(#[from] PluginError),
+
+    #[error("Lecicon error")]
+    LexiconSetError(#[from] LexiconSetError),
 }
 
 /// Define `SudachiNomCustomError` error and conversion to `SudachiError`.

@@ -8,27 +8,47 @@ pub mod character_category;
 pub mod grammar;
 pub mod header;
 pub mod lexicon;
+pub mod lexicon_set;
 
 use grammar::Grammar;
 use header::Header;
 use lexicon::Lexicon;
+use lexicon_set::LexiconSet;
 
 /// A dictionary consists of one system_dict and zero or more user_dicts
 pub struct Dictionary<'a> {
     pub grammar: Grammar<'a>,
-    pub lexicon_set: Lexicon<'a>,
+    pub lexicon_set: LexiconSet<'a>,
 }
 
 impl<'a> Dictionary<'a> {
-    pub fn new(system_dictionary_bytes: &[u8]) -> SudachiResult<Dictionary> {
-        // todo: load user dict
-        // todo: load based on config
-        let binary_dict = BinaryDictionary::from_system_dicrionary(system_dictionary_bytes)?;
+    pub fn from_system_dicrionary(dictionary_bytes: &[u8]) -> SudachiResult<Dictionary> {
+        let system_dict = BinaryDictionary::from_system_dicrionary(dictionary_bytes)?;
 
         Ok(Dictionary {
-            grammar: binary_dict.grammar.unwrap(),
-            lexicon_set: binary_dict.lexicon,
+            grammar: system_dict.grammar.unwrap(),
+            lexicon_set: LexiconSet::new(system_dict.lexicon),
         })
+    }
+
+    pub fn merge_user_dictionary(
+        &mut self,
+        dictionary_bytes: &'a [u8],
+        tokenizer: Tokenizer,
+    ) -> SudachiResult<()> {
+        let user_dict = BinaryDictionary::from_user_dicrionary(dictionary_bytes)?;
+
+        // we need to update lexicon first, since it needs the current number of pos
+        let mut user_lexicon = user_dict.lexicon;
+        user_lexicon.update_cost(tokenizer)?;
+        self.lexicon_set
+            .append(user_lexicon, self.grammar.pos_list.len())?;
+
+        if let Some(g) = user_dict.grammar {
+            self.grammar.merge(&g);
+        }
+
+        Ok(())
     }
 }
 

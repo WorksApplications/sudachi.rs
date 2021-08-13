@@ -1,7 +1,8 @@
 use std::fmt;
 
 use crate::dic::grammar::Grammar;
-use crate::dic::lexicon::{word_infos::WordInfo, Lexicon};
+use crate::dic::lexicon::word_infos::WordInfo;
+use crate::dic::lexicon_set::LexiconSet;
 use crate::prelude::*;
 
 // TODO: clone?
@@ -49,10 +50,10 @@ impl Node {
         self.word_info = Some(word_info);
     }
 
-    pub fn fill_word_info(&mut self, lexicon: &Lexicon) -> SudachiResult<()> {
+    pub fn fill_word_info(&mut self, lexicon: &LexiconSet) -> SudachiResult<()> {
         if let None = &self.word_info {
             let word_id = self.word_id.ok_or(SudachiError::MissingWordId)?;
-            self.set_word_info(lexicon.get_word_info(word_id as usize)?);
+            self.set_word_info(lexicon.get_word_info(word_id)?);
         }
         Ok(())
     }

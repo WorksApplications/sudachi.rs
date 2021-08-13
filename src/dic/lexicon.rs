@@ -4,6 +4,7 @@ pub mod word_infos;
 pub mod word_params;
 
 use nom::le_u32;
+use std::cmp;
 
 use self::trie::Trie;
 use self::word_id_table::WordIdTable;
@@ -19,6 +20,8 @@ pub struct Lexicon<'a> {
 }
 
 impl<'a> Lexicon<'a> {
+    const USER_DICT_COST_PER_MORPH: i32 = -20;
+
     pub fn new(buf: &[u8], original_offset: usize) -> SudachiResult<Lexicon> {
         let mut offset = original_offset;
 
@@ -60,16 +63,34 @@ impl<'a> Lexicon<'a> {
         Ok(l)
     }
 
-    pub fn get_word_info(&self, word_id: usize) -> SudachiResult<WordInfo> {
+    pub fn get_word_info(&self, word_id: u32) -> SudachiResult<WordInfo> {
         self.word_infos.get_word_info(word_id)
     }
 
-    pub fn get_word_param(&self, word_id: usize) -> SudachiResult<(i16, i16, i16)> {
+    pub fn get_word_param(&self, word_id: u32) -> SudachiResult<(i16, i16, i16)> {
         let left_id = self.word_params.get_left_id(word_id)?;
         let right_id = self.word_params.get_right_id(word_id)?;
         let cost = self.word_params.get_cost(word_id)?;
 
         Ok((left_id, right_id, cost))
+    }
+
+    /// update word_param cost based on current tokenizer
+    pub fn update_cost(&mut self, tokenizer: Tokenizer) -> SudachiResult<()> {
+        for wid in 0..self.word_params.size() as u32 {
+            if self.word_params.get_cost(wid)? != std::i16::MIN {
+                continue;
+            }
+            let surface = self.get_word_info(wid)?.surface;
+            let ms = tokenizer.tokenize(&surface, Mode::C, false)?;
+            let internal_cost = (ms.last().unwrap().cost - ms[0].cost) as i32;
+            let cost = internal_cost + Lexicon::USER_DICT_COST_PER_MORPH * ms.len() as i32;
+            let cost = cmp::min(cost, std::i16::MAX as i32);
+            let cost = cmp::max(cost, std::i16::MIN as i32);
+            self.word_params.set_cost(wid, cost as i16);
+        }
+
+        Ok(())
     }
 
     pub fn size(&self) -> u32 {

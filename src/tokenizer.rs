@@ -5,7 +5,7 @@ use std::str::FromStr;
 
 use crate::dic::category_type::CategoryType;
 use crate::dic::grammar::Grammar;
-use crate::dic::lexicon::Lexicon;
+use crate::dic::lexicon_set::LexiconSet;
 use crate::dic::Dictionary;
 use crate::input_text::{
     utf8_input_text::Utf8InputText, utf8_input_text_builder::Utf8InputTextBuilder,
@@ -29,7 +29,7 @@ pub trait Tokenize {
 /// Tokenizes Japanese text
 pub struct Tokenizer<'a> {
     pub grammar: Grammar<'a>,
-    pub lexicon: Lexicon<'a>,
+    pub lexicon: LexiconSet<'a>,
     input_text_plugins: InputTextPluginManager,
     oov_provider_plugins: OovProviderPluginManager,
     path_rewrite_plugins: PathRewritePluginManager,
@@ -86,7 +86,7 @@ impl FromStr for Mode {
 impl<'a> Tokenizer<'a> {
     /// Create `Tokenizer` from the raw bytes of a Sudachi dictionary.
     pub fn from_dictionary_bytes(dictionary_bytes: &'a [u8]) -> SudachiResult<Tokenizer<'a>> {
-        let dictionary = Dictionary::new(dictionary_bytes)?;
+        let dictionary = Dictionary::from_system_dicrionary(dictionary_bytes)?;
         let mut grammar = dictionary.grammar;
         let lexicon = dictionary.lexicon_set;
 
@@ -103,6 +103,8 @@ impl<'a> Tokenizer<'a> {
             return Err(SudachiError::NoOOVPluginProvided);
         }
         let path_rewrite_plugins = path_rewrite::get_path_rewrite_plugins(&grammar)?;
+
+        // todo: load user dict
 
         Ok(Tokenizer {
             grammar,
@@ -140,7 +142,7 @@ impl<'a> Tokenizer<'a> {
                     continue;
                 }
                 has_word = true;
-                let (left_id, right_id, cost) = self.lexicon.get_word_param(word_id as usize)?;
+                let (left_id, right_id, cost) = self.lexicon.get_word_param(word_id)?;
                 let node = Node::new(left_id, right_id, cost, word_id);
                 lattice.insert(i, end, node)?;
             }

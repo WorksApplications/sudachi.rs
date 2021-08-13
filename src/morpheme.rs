@@ -2,7 +2,7 @@ use std::fmt;
 
 use crate::dic::grammar::Grammar;
 use crate::dic::lexicon::word_infos::WordInfo;
-use crate::dic::lexicon::Lexicon;
+use crate::dic::lexicon_set::LexiconSet;
 use crate::input_text::utf8_input_text::Utf8InputText;
 use crate::lattice::node::Node;
 use crate::prelude::*;
@@ -11,6 +11,7 @@ use crate::prelude::*;
 pub struct Morpheme<'a> {
     surface: String,
     pub word_info: WordInfo,
+    pub cost: i16,
     pub is_oov: bool,
     grammar: &'a Grammar<'a>,
 }
@@ -21,23 +22,25 @@ impl<'a> Morpheme<'a> {
         node: &Node,
         input: &Utf8InputText,
         grammar: &'a Grammar<'a>,
-        lexicon: &Lexicon,
+        lexicon: &LexiconSet,
     ) -> SudachiResult<Morpheme<'a>> {
         let surface = input.get_original_substring(node.begin..node.end);
         let word_info = match node.word_info.clone() {
             Some(wi) => wi,
             None => {
                 let word_id = node.word_id.ok_or(SudachiError::MissingWordId)?;
-                lexicon.get_word_info(word_id as usize)?
+                lexicon.get_word_info(word_id)?
             }
         };
         let is_oov = node.is_oov;
+        let cost = node.cost;
 
         Ok(Morpheme {
             surface,
             word_info,
             is_oov,
             grammar,
+            cost,
         })
     }
 

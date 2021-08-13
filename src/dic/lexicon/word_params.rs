@@ -1,4 +1,5 @@
 use nom::le_i16;
+use std::collections::HashMap;
 
 use crate::prelude::*;
 
@@ -6,6 +7,7 @@ pub struct WordParams<'a> {
     bytes: &'a [u8],
     size: u32,
     offset: usize,
+    cost_map: HashMap<u32, i16>,
 }
 
 impl<'a> WordParams<'a> {
@@ -16,6 +18,7 @@ impl<'a> WordParams<'a> {
             bytes,
             size,
             offset,
+            cost_map: HashMap::new(),
         }
     }
 
@@ -27,26 +30,36 @@ impl<'a> WordParams<'a> {
         self.size
     }
 
-    pub fn get_left_id(&self, word_id: usize) -> SudachiResult<i16> {
-        let (_rest, num) =
-            i16_parser(self.bytes, self.offset + WordParams::ELEMENT_SIZE * word_id)?;
-        Ok(num)
-    }
-
-    pub fn get_right_id(&self, word_id: usize) -> SudachiResult<i16> {
+    pub fn get_left_id(&self, word_id: u32) -> SudachiResult<i16> {
         let (_rest, num) = i16_parser(
             self.bytes,
-            self.offset + WordParams::ELEMENT_SIZE * word_id + 2,
+            self.offset + WordParams::ELEMENT_SIZE * word_id as usize,
         )?;
         Ok(num)
     }
 
-    pub fn get_cost(&self, word_id: usize) -> SudachiResult<i16> {
+    pub fn get_right_id(&self, word_id: u32) -> SudachiResult<i16> {
         let (_rest, num) = i16_parser(
             self.bytes,
-            self.offset + WordParams::ELEMENT_SIZE * word_id + 4,
+            self.offset + WordParams::ELEMENT_SIZE * word_id as usize + 2,
         )?;
         Ok(num)
+    }
+
+    pub fn get_cost(&self, word_id: u32) -> SudachiResult<i16> {
+        if let Some(v) = self.cost_map.get(&word_id) {
+            return Ok(*v);
+        }
+
+        let (_rest, num) = i16_parser(
+            self.bytes,
+            self.offset + WordParams::ELEMENT_SIZE * word_id as usize + 4,
+        )?;
+        Ok(num)
+    }
+
+    pub fn set_cost(&mut self, word_id: u32, cost: i16) {
+        self.cost_map.insert(word_id, cost);
     }
 }
 
