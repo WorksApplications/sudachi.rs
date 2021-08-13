@@ -124,12 +124,12 @@ pub trait PathRewritePlugin {
 macro_rules! declare_path_rewrite_plugin {
     ($plugin_type:ty, $constructor:path) => {
         #[no_mangle]
-        pub extern "C" fn load_plugin() -> *mut PathRewritePlugin {
+        pub extern "C" fn load_plugin() -> *mut (dyn PathRewritePlugin + Sync) {
             // make sure the constructor is the correct type.
             let constructor: fn() -> $plugin_type = $constructor;
 
             let object = constructor();
-            let boxed: Box<PathRewritePlugin> = Box::new(object);
+            let boxed: Box<dyn PathRewritePlugin + Sync> = Box::new(object);
             Box::into_raw(boxed)
         }
     };
@@ -137,12 +137,12 @@ macro_rules! declare_path_rewrite_plugin {
 
 #[derive(Default)]
 pub struct PathRewritePluginManager {
-    plugins: Vec<Box<dyn PathRewritePlugin>>,
+    plugins: Vec<Box<dyn PathRewritePlugin + Sync>>,
     libraries: Vec<Library>,
 }
 impl PathRewritePluginManager {
     pub fn load(&mut self, path: &Path) -> Result<(), PluginError> {
-        type PluginCreate = unsafe fn() -> *mut dyn PathRewritePlugin;
+        type PluginCreate = unsafe fn() -> *mut (dyn PathRewritePlugin + Sync);
 
         let lib = unsafe { Library::new(path) }?;
         let load_plugin: Symbol<PluginCreate> = unsafe { lib.get(b"load_plugin") }?;
@@ -161,7 +161,7 @@ impl PathRewritePluginManager {
         Ok(())
     }
 
-    pub fn plugins(&self) -> &[Box<dyn PathRewritePlugin>] {
+    pub fn plugins(&self) -> &[Box<dyn PathRewritePlugin + Sync>] {
         &self.plugins
     }
 

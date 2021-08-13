@@ -22,12 +22,12 @@ pub trait InputTextPlugin {
 macro_rules! declare_input_text_plugin {
     ($plugin_type:ty, $constructor:path) => {
         #[no_mangle]
-        pub extern "C" fn load_plugin() -> *mut InputTextPlugin {
+        pub extern "C" fn load_plugin() -> *mut (dyn InputTextPlugin + Sync) {
             // make sure the constructor is the correct type.
             let constructor: fn() -> $plugin_type = $constructor;
 
             let object = constructor();
-            let boxed: Box<InputTextPlugin> = Box::new(object);
+            let boxed: Box<dyn InputTextPlugin + Sync> = Box::new(object);
             Box::into_raw(boxed)
         }
     };
@@ -35,12 +35,12 @@ macro_rules! declare_input_text_plugin {
 
 #[derive(Default)]
 pub struct InputTextPluginManager {
-    plugins: Vec<Box<dyn InputTextPlugin>>,
+    plugins: Vec<Box<dyn InputTextPlugin + Sync>>,
     libraries: Vec<Library>,
 }
 impl InputTextPluginManager {
     pub fn load(&mut self, path: &Path) -> Result<(), PluginError> {
-        type PluginCreate = unsafe fn() -> *mut dyn InputTextPlugin;
+        type PluginCreate = unsafe fn() -> *mut (dyn InputTextPlugin + Sync);
 
         let lib = unsafe { Library::new(path) }?;
         let load_plugin: Symbol<PluginCreate> = unsafe { lib.get(b"load_plugin") }?;
@@ -59,7 +59,7 @@ impl InputTextPluginManager {
         Ok(())
     }
 
-    pub fn plugins(&self) -> &[Box<dyn InputTextPlugin>] {
+    pub fn plugins(&self) -> &[Box<dyn InputTextPlugin + Sync>] {
         &self.plugins
     }
 

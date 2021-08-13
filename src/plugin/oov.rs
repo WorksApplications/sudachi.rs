@@ -42,12 +42,12 @@ pub trait OovProviderPlugin {
 macro_rules! declare_oov_provider_plugin {
     ($plugin_type:ty, $constructor:path) => {
         #[no_mangle]
-        pub extern "C" fn load_plugin() -> *mut OovProviderPlugin {
+        pub extern "C" fn load_plugin() -> *mut (dyn OovProviderPlugin + Sync) {
             // make sure the constructor is the correct type.
             let constructor: fn() -> $plugin_type = $constructor;
 
             let object = constructor();
-            let boxed: Box<OovProviderPlugin> = Box::new(object);
+            let boxed: Box<dyn OovProviderPlugin + Sync> = Box::new(object);
             Box::into_raw(boxed)
         }
     };
@@ -55,12 +55,12 @@ macro_rules! declare_oov_provider_plugin {
 
 #[derive(Default)]
 pub struct OovProviderPluginManager {
-    plugins: Vec<Box<dyn OovProviderPlugin>>,
+    plugins: Vec<Box<dyn OovProviderPlugin + Sync>>,
     libraries: Vec<Library>,
 }
 impl OovProviderPluginManager {
     pub fn load(&mut self, path: &Path) -> Result<(), PluginError> {
-        type PluginCreate = unsafe fn() -> *mut dyn OovProviderPlugin;
+        type PluginCreate = unsafe fn() -> *mut (dyn OovProviderPlugin + Sync);
 
         let lib = unsafe { Library::new(path) }?;
         let load_plugin: Symbol<PluginCreate> = unsafe { lib.get(b"load_plugin") }?;
@@ -79,7 +79,7 @@ impl OovProviderPluginManager {
         Ok(())
     }
 
-    pub fn plugins(&self) -> &[Box<dyn OovProviderPlugin>] {
+    pub fn plugins(&self) -> &[Box<dyn OovProviderPlugin + Sync>] {
         &self.plugins
     }
 
