@@ -1,6 +1,6 @@
 use std::borrow::Cow;
-use std::fs;
-use std::io::{self, BufRead, BufReader};
+use std::fs::File;
+use std::io::{self, BufRead, BufReader, BufWriter, Write};
 use std::path::PathBuf;
 use std::process;
 
@@ -19,6 +19,10 @@ struct Cli {
     #[structopt(parse(from_os_str))]
     file: Option<PathBuf>,
 
+    // Output text file: If not present, use stdout
+    #[structopt(short = "o", long = "output", parse(from_os_str))]
+    output_file: Option<PathBuf>,
+
     /// Split unit: "A" (short), "B" (middle), or "C" (Named Entity)
     #[structopt(short = "m", long = "mode", default_value = "C")]
     mode: String,
@@ -31,7 +35,7 @@ struct Cli {
     #[structopt(short = "w", long = "wakati")]
     wakati: bool,
 
-    /// Debug mode: Dumps lattice
+    /// Debug mode: Print the debug information
     #[structopt(short = "d", long = "debug")]
     enable_debug: bool,
 
@@ -82,54 +86,80 @@ fn main() {
     let wakati = args.wakati;
     let enable_debug = args.enable_debug;
 
+    // input: stdin or file
+    let reader: Box<dyn BufRead> = match &args.file {
+        Some(input_path) => Box::new(BufReader::new(
+            File::open(&input_path)
+                .unwrap_or_else(|_| panic!("Failed to open input file {:?}", &input_path)),
+        )),
+        None => Box::new(BufReader::new(io::stdin())),
+    };
+
+    // output: stdout or file
+    let mut writer: Box<dyn Write> = match &args.output_file {
+        Some(output_path) => Box::new(BufWriter::new(
+            File::create(&output_path)
+                .unwrap_or_else(|_| panic!("Failed to open output file {:?}", &output_path)),
+        )),
+        None => Box::new(BufWriter::new(io::stdout())),
+    };
+
     // load and parse dictionary binary to create a tokenizer
     let dictionary_bytes = get_dictionary_bytes(&args);
     let tokenizer = Tokenizer::from_dictionary_bytes(&dictionary_bytes)
         .expect("Failed to create Tokenizer from dictionary bytes");
 
-    // input: stdin or file
-    let reader: Box<dyn BufRead> = match args.file {
-        None => Box::new(BufReader::new(io::stdin())),
-        Some(input_path) => Box::new(BufReader::new(
-            fs::File::open(&input_path)
-                .unwrap_or_else(|_| panic!("Failed to open file {:?}", &input_path)),
-        )),
-    };
-
+    // tokenize and output results
     for line in reader.lines() {
         let input = line.expect("Failed to reead line");
         let morpheme_list = tokenizer
             .tokenize(&input, mode, enable_debug)
-            .expect("failed to tokenize input");
+            .expect("Failed to tokenize input");
+        write_results(&mut writer, morpheme_list, print_all, wakati)
+            .expect("Failed to write output");
+    }
+}
 
-        if wakati {
-            let surface_list = morpheme_list
-                .iter()
-                .map(|m| m.surface().to_string())
-                .collect::<Vec<_>>();
-            println!("{}", surface_list.join(" "));
-        } else {
-            // todo? print at once to speed up?
-            for morpheme in morpheme_list {
-                print!(
+fn write_results(
+    writer: &mut Box<dyn Write>,
+    morpheme_list: Vec<Morpheme>,
+    print_all: bool,
+    wakati: bool,
+) -> io::Result<()> {
+    if wakati {
+        let surface_list = morpheme_list
+            .iter()
+            .map(|m| m.surface().to_string())
+            .collect::<Vec<_>>();
+        writer.write(surface_list.join(" ").as_bytes())?;
+    } else {
+        for morpheme in morpheme_list {
+            writer.write(
+                format!(
                     "{}\t{}\t{}",
                     morpheme.surface(),
                     morpheme.pos().expect("Missing part of speech").join(","),
-                    morpheme.normalized_form(),
-                );
-                if print_all {
-                    print!(
+                    morpheme.normalized_form()
+                )
+                .as_bytes(),
+            )?;
+            if print_all {
+                writer.write(
+                    format!(
                         "\t{}\t{}",
                         morpheme.dictionary_form(),
                         morpheme.reading_form(),
-                    );
-                    if morpheme.is_oov {
-                        print!("\t(OOV)");
-                    }
+                    )
+                    .as_bytes(),
+                )?;
+                if morpheme.is_oov {
+                    writer.write("\t(OOV)".as_bytes())?;
                 }
-                println!();
             }
-            println!("EOS");
+            writer.write("\n".as_bytes())?;
         }
+        writer.write("EOS\n".as_bytes())?;
     }
+
+    Ok(())
 }
