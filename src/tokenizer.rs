@@ -5,8 +5,8 @@ use std::str::FromStr;
 
 use crate::dic::category_type::CategoryType;
 use crate::dic::grammar::Grammar;
-use crate::dic::header::Header;
 use crate::dic::lexicon::Lexicon;
+use crate::dic::Dictionary;
 use crate::input_text::{
     utf8_input_text::Utf8InputText, utf8_input_text_builder::Utf8InputTextBuilder,
 };
@@ -86,13 +86,9 @@ impl FromStr for Mode {
 impl<'a> Tokenizer<'a> {
     /// Create `Tokenizer` from the raw bytes of a Sudachi dictionary.
     pub fn from_dictionary_bytes(dictionary_bytes: &'a [u8]) -> SudachiResult<Tokenizer<'a>> {
-        let _header = Header::new(&dictionary_bytes[..Header::STORAGE_SIZE])?;
-        let mut offset = Header::STORAGE_SIZE;
-
-        let mut grammar = Grammar::new(dictionary_bytes, offset)?;
-        offset += grammar.storage_size;
-
-        let lexicon = Lexicon::new(dictionary_bytes, offset)?;
+        let dictionary = Dictionary::new(dictionary_bytes)?;
+        let mut grammar = dictionary.grammar;
+        let lexicon = dictionary.lexicon_set;
 
         // todo: load plugins
         let edit_connection_cost_plugins =

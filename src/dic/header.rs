@@ -61,22 +61,6 @@ impl HeaderVersion {
             _ => None,
         }
     }
-
-    pub fn has_grammar(&self) -> bool {
-        match self {
-            HeaderVersion::UserDict(UserDictVersion::Version2) => true,
-            HeaderVersion::UserDict(UserDictVersion::Version3) => true,
-            _ => false,
-        }
-    }
-
-    pub fn has_synonym_group_ids(&self) -> bool {
-        match self {
-            HeaderVersion::SystemDict(SystemDictVersion::Version2) => true,
-            HeaderVersion::UserDict(UserDictVersion::Version3) => true,
-            _ => false,
-        }
-    }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -105,6 +89,22 @@ impl Header {
             create_time,
             description,
         })
+    }
+
+    pub fn has_grammar(&self) -> bool {
+        match self.version {
+            HeaderVersion::SystemDict(_) => true,
+            HeaderVersion::UserDict(UserDictVersion::Version2) => true,
+            HeaderVersion::UserDict(UserDictVersion::Version3) => true,
+            _ => false,
+        }
+    }
+    pub fn has_synonym_group_ids(&self) -> bool {
+        match self.version {
+            HeaderVersion::SystemDict(SystemDictVersion::Version2) => true,
+            HeaderVersion::UserDict(UserDictVersion::Version3) => true,
+            _ => false,
+        }
     }
 }
 

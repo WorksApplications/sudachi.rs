@@ -82,6 +82,11 @@ impl<'a> Grammar<'a> {
         }
         None
     }
+
+    pub fn merge(&mut self, other: &Grammar) {
+        // todo? consume other
+        self.pos_list.extend(other.pos_list.clone());
+    }
 }
 
 named_args!(
