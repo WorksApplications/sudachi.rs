@@ -13,7 +13,7 @@ const BAKED_DICTIONARY_BYTES: &[u8] = include_bytes!(env!("SUDACHI_DICT_PATH"));
 
 /// A Japanese tokenizer
 #[derive(StructOpt)]
-#[structopt(name = "sudachi", author = "")]
+#[structopt(name = "sudachi")]
 struct Cli {
     /// Input text file: If not present, read from STDIN
     #[structopt(parse(from_os_str))]

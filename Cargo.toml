@@ -14,12 +14,12 @@ members = [
 ]
 
 [dependencies]
-cfg-if = "0.1"
+cfg-if = "1.0.0"
 libloading = "0.7"
 multiset = "0.0.5"
-nom = "4.2.2"
+nom = "4"
 regex = "1.5"
-structopt = "0.2"
+structopt = "0.3"
 thiserror = "1.0"
 
 [dev-dependencies]
