@@ -3,6 +3,7 @@ use std::fmt::Debug;
 
 use thiserror::Error;
 
+use crate::config::ConfigError;
 use crate::dic::character_category::Error as CharacterCategoryError;
 use crate::dic::header::HeaderError;
 use crate::dic::lexicon_set::LexiconSetError;
@@ -16,6 +17,9 @@ pub type SudachiResult<T> = Result<T, SudachiError>;
 pub enum SudachiError {
     #[error("IO Error: {0}")]
     Io(#[from] std::io::Error),
+
+    #[error("Config Error: {0}")]
+    ConfigError(#[from] ConfigError),
 
     #[error("Parse Int Error")]
     ParseIntError(#[from] std::num::ParseIntError),

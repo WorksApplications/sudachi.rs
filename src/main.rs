@@ -6,6 +6,7 @@ use std::process;
 
 use structopt::StructOpt;
 
+use sudachi::config::Config;
 use sudachi::prelude::*;
 
 #[cfg(feature = "bake_dictionary")]
@@ -19,13 +20,21 @@ struct Cli {
     #[structopt(parse(from_os_str))]
     file: Option<PathBuf>,
 
-    // Output text file: If not present, use stdout
-    #[structopt(short = "o", long = "output", parse(from_os_str))]
-    output_file: Option<PathBuf>,
+    /// Path to the setting file in JSON format
+    #[structopt(short = "r", long = "config-file", parse(from_os_str))]
+    config_file: Option<PathBuf>,
+
+    /// Path to the root directory of resources
+    #[structopt(short = "p", long = "resource_dir", parse(from_os_str))]
+    resource_dir: Option<PathBuf>,
 
     /// Split unit: "A" (short), "B" (middle), or "C" (Named Entity)
     #[structopt(short = "m", long = "mode", default_value = "C")]
     mode: String,
+
+    // Output text file: If not present, use stdout
+    #[structopt(short = "o", long = "output", parse(from_os_str))]
+    output_file: Option<PathBuf>,
 
     /// Prints all fields
     #[structopt(short = "a", long = "all")]
@@ -49,27 +58,31 @@ struct Cli {
     /// Path to sudachi dictionary
     #[cfg(not(feature = "bake_dictionary"))]
     #[structopt(short = "l", long = "dict")]
-    dictionary_path: PathBuf,
+    dictionary_path: Option<PathBuf>,
 }
 
-fn get_dictionary_bytes(args: &Cli) -> Cow<'static, [u8]> {
+fn get_dictionary_bytes(system_dict: Option<PathBuf>) -> Option<Cow<'static, [u8]>> {
     let dictionary_path = {
         cfg_if::cfg_if! {
             if #[cfg(feature="bake_dictionary")] {
-                if let Some(dictionary_path) = &args.dictionary_path {
+                if let Some(dictionary_path) = system_dict {
                     dictionary_path
                 } else {
-                    return Cow::Borrowed(BAKED_DICTIONARY_BYTES);
+                    return Some(Cow::Borrowed(BAKED_DICTIONARY_BYTES));
                 }
             } else {
-                &args.dictionary_path
+                if let Some(dictionary_path) = system_dict {
+                    dictionary_path
+                }else {
+                    return None;
+                }
             }
         }
     };
 
     let storage_buf = dictionary_bytes_from_path(&dictionary_path)
         .expect("Failed to get dictionary bytes from file");
-    Cow::Owned(storage_buf)
+    Some(Cow::Owned(storage_buf))
 }
 
 fn main() {
@@ -104,8 +117,17 @@ fn main() {
         None => Box::new(BufWriter::new(io::stdout())),
     };
 
+    let config = Config::new(
+        args.config_file.clone(),
+        args.resource_dir.clone(),
+        args.dictionary_path.clone(),
+    )
+    .expect("Failed to load config file");
+    println!("{:?}", config);
+
     // load and parse dictionary binary to create a tokenizer
-    let dictionary_bytes = get_dictionary_bytes(&args);
+    let dictionary_bytes =
+        get_dictionary_bytes(config.system_dict).expect("No system dictionary found");
     let tokenizer = Tokenizer::from_dictionary_bytes(&dictionary_bytes)
         .expect("Failed to create Tokenizer from dictionary bytes");
 

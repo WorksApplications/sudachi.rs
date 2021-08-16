@@ -8,6 +8,7 @@
 #[macro_use]
 extern crate nom;
 
+pub mod config;
 pub mod dic;
 pub mod error;
 pub mod input_text;
