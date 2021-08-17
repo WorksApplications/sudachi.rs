@@ -1,8 +1,9 @@
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use libloading::{Library, Symbol};
+use serde_json::Value;
 
-use super::PluginError;
+use crate::config::Config;
 use crate::dic::grammar::Grammar;
 use crate::dic::lexicon::word_infos::WordInfo;
 use crate::input_text::utf8_input_text::Utf8InputText;
@@ -10,7 +11,8 @@ use crate::lattice::{node::Node, Lattice};
 use crate::prelude::*;
 
 pub trait PathRewritePlugin {
-    fn set_up(&mut self, grammar: &Grammar) -> SudachiResult<()>;
+    fn set_up(&mut self, settings: &Value, config: &Config, grammar: &Grammar)
+        -> SudachiResult<()>;
     fn rewrite(
         &self,
         text: &Utf8InputText,
@@ -141,23 +143,22 @@ pub struct PathRewritePluginManager {
     libraries: Vec<Library>,
 }
 impl PathRewritePluginManager {
-    pub fn load(&mut self, path: &Path) -> Result<(), PluginError> {
+    pub fn load(
+        &mut self,
+        path: &Path,
+        settings: &Value,
+        config: &Config,
+        grammar: &Grammar,
+    ) -> SudachiResult<()> {
         type PluginCreate = unsafe fn() -> *mut (dyn PathRewritePlugin + Sync);
 
         let lib = unsafe { Library::new(path) }?;
         let load_plugin: Symbol<PluginCreate> = unsafe { lib.get(b"load_plugin") }?;
-        let plugin = unsafe { Box::from_raw(load_plugin()) };
+        let mut plugin = unsafe { Box::from_raw(load_plugin()) };
+        plugin.set_up(settings, config, grammar)?;
 
         self.plugins.push(plugin);
         self.libraries.push(lib);
-
-        Ok(())
-    }
-
-    pub fn set_up(&mut self, grammar: &Grammar) -> SudachiResult<()> {
-        for plugin in &mut self.plugins {
-            plugin.set_up(grammar)?;
-        }
         Ok(())
     }
 
@@ -177,13 +178,16 @@ impl Drop for PathRewritePluginManager {
     }
 }
 
-pub fn get_path_rewrite_plugins(grammar: &Grammar) -> SudachiResult<PathRewritePluginManager> {
-    // todo load from config
+pub fn get_path_rewrite_plugins(
+    config: &Config,
+    grammar: &Grammar,
+) -> SudachiResult<PathRewritePluginManager> {
     let mut manager = PathRewritePluginManager::default();
 
-    manager.load(&PathBuf::from("./target/debug/libjoin_katakana_oov.so"))?;
-    manager.load(&PathBuf::from("./target/debug/libjoin_numeric.so"))?;
+    for plugin in &config.path_rewrite_plugins {
+        let lib = super::get_plugin_path(plugin)?;
+        manager.load(lib, plugin, config, grammar)?;
+    }
 
-    manager.set_up(grammar)?;
     Ok(manager)
 }

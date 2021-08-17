@@ -18,6 +18,12 @@ pub enum SudachiError {
     #[error("IO Error: {0}")]
     Io(#[from] std::io::Error),
 
+    #[error("Libloading Error: {0}")]
+    Libloading(#[from] libloading::Error),
+
+    #[error("Serde error: {0}")]
+    SerdeError(#[from] serde_json::Error),
+
     #[error("Config Error: {0}")]
     ConfigError(#[from] ConfigError),
 
@@ -30,7 +36,7 @@ pub enum SudachiError {
     #[error("Invalid header: {0}")]
     InvalidHeader(#[from] HeaderError),
 
-    #[error("Invalid header")]
+    #[error("Invalid grammar")]
     InvalidDictionaryGrammar,
 
     #[error("Error parsing nom: {}", .0.description())]

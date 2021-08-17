@@ -4,6 +4,7 @@ use std::collections::BinaryHeap;
 use std::fs;
 use std::io::{BufRead, BufReader};
 use std::iter::FromIterator;
+use std::path::PathBuf;
 use std::u32;
 use thiserror::Error;
 
@@ -51,13 +52,13 @@ pub struct CharacterCategory {
 }
 
 impl CharacterCategory {
-    pub fn from_file(path: Option<&str>) -> SudachiResult<CharacterCategory> {
+    pub fn from_file(path: Option<PathBuf>) -> SudachiResult<CharacterCategory> {
         let ranges = CharacterCategory::read_character_definition(path)?;
         Ok(CharacterCategory::compile(ranges))
     }
 
-    fn read_character_definition(path: Option<&str>) -> SudachiResult<Vec<Range>> {
-        let path = path.unwrap_or(DEFAULT_CHAR_DEF_FILE_PATH);
+    fn read_character_definition(path: Option<PathBuf>) -> SudachiResult<Vec<Range>> {
+        let path = path.unwrap_or(PathBuf::from(DEFAULT_CHAR_DEF_FILE_PATH));
         let reader = BufReader::new(fs::File::open(&path)?);
 
         let mut ranges: Vec<Range> = Vec::new();
@@ -259,9 +260,9 @@ mod tests {
     #[test]
     fn get_category_types() {
         // todo: pass correct path
-        let path = String::from(TEST_RESOURCE_DIR) + "char.def";
+        let path = PathBuf::from(TEST_RESOURCE_DIR).join("char.def");
         let cat =
-            CharacterCategory::from_file(Some(&path)).expect("failed to load char.def for test");
+            CharacterCategory::from_file(Some(path)).expect("failed to load char.def for test");
         let cats = cat.get_category_types('熙');
         assert_eq!(1, cats.len());
         assert!(cats.contains(&CategoryType::KANJI));

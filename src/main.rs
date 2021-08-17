@@ -117,18 +117,18 @@ fn main() {
         None => Box::new(BufWriter::new(io::stdout())),
     };
 
+    // load config file
     let config = Config::new(
         args.config_file.clone(),
         args.resource_dir.clone(),
         args.dictionary_path.clone(),
     )
     .expect("Failed to load config file");
-    println!("{:?}", config);
 
     // load and parse dictionary binary to create a tokenizer
     let dictionary_bytes =
-        get_dictionary_bytes(config.system_dict).expect("No system dictionary found");
-    let tokenizer = Tokenizer::from_dictionary_bytes(&dictionary_bytes)
+        get_dictionary_bytes(config.system_dict.clone()).expect("No system dictionary found");
+    let tokenizer = Tokenizer::from_dictionary_bytes(&dictionary_bytes, &config)
         .expect("Failed to create Tokenizer from dictionary bytes");
 
     // tokenize and output results

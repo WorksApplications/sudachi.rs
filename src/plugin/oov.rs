@@ -1,15 +1,17 @@
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use libloading::{Library, Symbol};
+use serde_json::Value;
 
-use super::PluginError;
+use crate::config::Config;
 use crate::dic::grammar::Grammar;
 use crate::input_text::utf8_input_text::Utf8InputText;
 use crate::lattice::node::Node;
 use crate::prelude::*;
 
 pub trait OovProviderPlugin {
-    fn set_up(&mut self, grammar: &Grammar) -> SudachiResult<()>;
+    fn set_up(&mut self, settings: &Value, config: &Config, grammar: &Grammar)
+        -> SudachiResult<()>;
     fn provide_oov(
         &self,
         input_text: &Utf8InputText,
@@ -59,23 +61,22 @@ pub struct OovProviderPluginManager {
     libraries: Vec<Library>,
 }
 impl OovProviderPluginManager {
-    pub fn load(&mut self, path: &Path) -> Result<(), PluginError> {
+    pub fn load(
+        &mut self,
+        path: &Path,
+        settings: &Value,
+        config: &Config,
+        grammar: &Grammar,
+    ) -> SudachiResult<()> {
         type PluginCreate = unsafe fn() -> *mut (dyn OovProviderPlugin + Sync);
 
         let lib = unsafe { Library::new(path) }?;
         let load_plugin: Symbol<PluginCreate> = unsafe { lib.get(b"load_plugin") }?;
-        let plugin = unsafe { Box::from_raw(load_plugin()) };
+        let mut plugin = unsafe { Box::from_raw(load_plugin()) };
+        plugin.set_up(settings, config, grammar)?;
 
         self.plugins.push(plugin);
         self.libraries.push(lib);
-
-        Ok(())
-    }
-
-    pub fn set_up(&mut self, grammar: &Grammar) -> SudachiResult<()> {
-        for plugin in &mut self.plugins {
-            plugin.set_up(grammar)?;
-        }
         Ok(())
     }
 
@@ -95,13 +96,16 @@ impl Drop for OovProviderPluginManager {
     }
 }
 
-pub fn get_oov_plugins(grammar: &Grammar) -> SudachiResult<OovProviderPluginManager> {
-    // todo load from config
+pub fn get_oov_plugins(
+    config: &Config,
+    grammar: &Grammar,
+) -> SudachiResult<OovProviderPluginManager> {
     let mut manager = OovProviderPluginManager::default();
 
-    manager.load(&PathBuf::from("./target/debug/libsimple_oov.so"))?;
-    manager.load(&PathBuf::from("./target/debug/libmecab_oov.so"))?;
+    for plugin in &config.oov_provider_plugins {
+        let lib = super::get_plugin_path(plugin)?;
+        manager.load(lib, plugin, config, grammar)?;
+    }
 
-    manager.set_up(grammar)?;
     Ok(manager)
 }

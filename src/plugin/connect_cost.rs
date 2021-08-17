@@ -1,13 +1,15 @@
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use libloading::{Library, Symbol};
+use serde_json::Value;
 
-use super::PluginError;
+use crate::config::Config;
 use crate::dic::grammar::Grammar;
 use crate::prelude::*;
 
 pub trait EditConnectionCostPlugin {
-    fn set_up(&mut self, grammar: &Grammar) -> SudachiResult<()>;
+    fn set_up(&mut self, settings: &Value, config: &Config, grammar: &Grammar)
+        -> SudachiResult<()>;
     fn edit(&self, grammar: &mut Grammar);
 }
 
@@ -38,23 +40,22 @@ pub struct EditConnectionCostPluginManager {
     libraries: Vec<Library>,
 }
 impl EditConnectionCostPluginManager {
-    pub fn load(&mut self, path: &Path) -> Result<(), PluginError> {
+    pub fn load(
+        &mut self,
+        path: &Path,
+        settings: &Value,
+        config: &Config,
+        grammar: &Grammar,
+    ) -> SudachiResult<()> {
         type PluginCreate = unsafe fn() -> *mut dyn EditConnectionCostPlugin;
 
         let lib = unsafe { Library::new(path) }?;
         let load_plugin: Symbol<PluginCreate> = unsafe { lib.get(b"load_plugin") }?;
-        let plugin = unsafe { Box::from_raw(load_plugin()) };
+        let mut plugin = unsafe { Box::from_raw(load_plugin()) };
+        plugin.set_up(settings, config, grammar)?;
 
         self.plugins.push(plugin);
         self.libraries.push(lib);
-
-        Ok(())
-    }
-
-    pub fn set_up(&mut self, grammar: &Grammar) -> SudachiResult<()> {
-        for plugin in &mut self.plugins {
-            plugin.set_up(grammar)?;
-        }
         Ok(())
     }
 
@@ -75,13 +76,15 @@ impl Drop for EditConnectionCostPluginManager {
 }
 
 pub fn get_edit_connection_cost_plugins(
+    config: &Config,
     grammar: &Grammar,
 ) -> SudachiResult<EditConnectionCostPluginManager> {
-    // todo load from config
     let mut manager = EditConnectionCostPluginManager::default();
 
-    manager.load(&PathBuf::from("./target/debug/libinhibit_connection.so"))?;
+    for plugin in &config.connection_cost_plugins {
+        let lib = super::get_plugin_path(plugin)?;
+        manager.load(lib, plugin, config, grammar)?;
+    }
 
-    manager.set_up(grammar)?;
     Ok(manager)
 }

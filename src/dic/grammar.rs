@@ -37,10 +37,6 @@ impl<'a> Grammar<'a> {
         // todo: better way to have table? (e.g. make table rewritable)
         let connect_cost_map = HashMap::new();
 
-        // todo?: mv outside of grammar
-        // todo: read from file
-        let character_category = CharacterCategory::from_file(None)?;
-
         Ok(Grammar {
             bytes: buf,
             pos_list,
@@ -49,7 +45,7 @@ impl<'a> Grammar<'a> {
             left_id_size,
             _right_id_size: right_id_size,
             storage_size,
-            character_category,
+            character_category: CharacterCategory::default(),
         })
     }
 
@@ -67,6 +63,10 @@ impl<'a> Grammar<'a> {
         )?;
 
         Ok(connect_cost)
+    }
+
+    pub fn set_character_category(&mut self, character_category: CharacterCategory) {
+        self.character_category = character_category;
     }
 
     pub fn set_connect_cost(&mut self, left_id: i16, right_id: i16, cost: i16) {

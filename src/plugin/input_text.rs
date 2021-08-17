@@ -1,14 +1,16 @@
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use libloading::{Library, Symbol};
+use serde_json::Value;
 
-use super::PluginError;
+use crate::config::Config;
 use crate::dic::grammar::Grammar;
 use crate::input_text::utf8_input_text_builder::Utf8InputTextBuilder;
 use crate::prelude::*;
 
 pub trait InputTextPlugin {
-    fn set_up(&mut self, grammar: &Grammar) -> SudachiResult<()>;
+    fn set_up(&mut self, settings: &Value, config: &Config, grammar: &Grammar)
+        -> SudachiResult<()>;
     fn rewrite(&self, builder: &mut Utf8InputTextBuilder);
 }
 
@@ -39,23 +41,22 @@ pub struct InputTextPluginManager {
     libraries: Vec<Library>,
 }
 impl InputTextPluginManager {
-    pub fn load(&mut self, path: &Path) -> Result<(), PluginError> {
+    pub fn load(
+        &mut self,
+        path: &Path,
+        settings: &Value,
+        config: &Config,
+        grammar: &Grammar,
+    ) -> SudachiResult<()> {
         type PluginCreate = unsafe fn() -> *mut (dyn InputTextPlugin + Sync);
 
         let lib = unsafe { Library::new(path) }?;
         let load_plugin: Symbol<PluginCreate> = unsafe { lib.get(b"load_plugin") }?;
-        let plugin = unsafe { Box::from_raw(load_plugin()) };
+        let mut plugin = unsafe { Box::from_raw(load_plugin()) };
+        plugin.set_up(settings, config, grammar)?;
 
         self.plugins.push(plugin);
         self.libraries.push(lib);
-
-        Ok(())
-    }
-
-    pub fn set_up(&mut self, grammar: &Grammar) -> SudachiResult<()> {
-        for plugin in &mut self.plugins {
-            plugin.set_up(grammar)?;
-        }
         Ok(())
     }
 
@@ -75,14 +76,16 @@ impl Drop for InputTextPluginManager {
     }
 }
 
-pub fn get_input_text_plugins(grammar: &Grammar) -> SudachiResult<InputTextPluginManager> {
-    // todo load from config
+pub fn get_input_text_plugins(
+    config: &Config,
+    grammar: &Grammar,
+) -> SudachiResult<InputTextPluginManager> {
     let mut manager = InputTextPluginManager::default();
 
-    manager.load(&PathBuf::from("./target/debug/libdefault_input_text.so"))?;
-    manager.load(&PathBuf::from("./target/debug/libprolonged_sound_mark.so"))?;
-    manager.load(&PathBuf::from("./target/debug/libignore_yomigana.so"))?;
+    for plugin in &config.input_text_plugins {
+        let lib = super::get_plugin_path(plugin)?;
+        manager.load(lib, plugin, config, grammar)?;
+    }
 
-    manager.set_up(grammar)?;
     Ok(manager)
 }

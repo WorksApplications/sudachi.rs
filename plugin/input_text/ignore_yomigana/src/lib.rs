@@ -1,5 +1,8 @@
+use serde::Deserialize;
+use serde_json::Value;
 use std::collections::HashSet;
 
+use sudachi::config::Config;
 use sudachi::declare_input_text_plugin;
 use sudachi::dic::category_type::CategoryType;
 use sudachi::dic::character_category::CharacterCategory;
@@ -18,6 +21,14 @@ pub struct IgnoreYomiganaPlugin {
     max_yomigana_length: usize,
 }
 
+#[allow(non_snake_case)]
+#[derive(Deserialize)]
+struct PluginSettings {
+    leftBrackets: Vec<char>,
+    rightBrackets: Vec<char>,
+    maxYomiganaLength: usize,
+}
+
 impl IgnoreYomiganaPlugin {
     fn has_category_type(&self, c: char, t: &CategoryType) -> bool {
         self.character_category.get_category_types(c).contains(t)
@@ -34,11 +45,17 @@ impl IgnoreYomiganaPlugin {
 }
 
 impl InputTextPlugin for IgnoreYomiganaPlugin {
-    fn set_up(&mut self, grammar: &Grammar) -> SudachiResult<()> {
-        // todo: load from config
-        let left_bracket_set = ['(', '（'].iter().map(|c| *c).collect();
-        let right_bracket_set = [')', '）'].iter().map(|c| *c).collect();
-        let max_yomigana_length = 4;
+    fn set_up(
+        &mut self,
+        settings: &Value,
+        _config: &Config,
+        grammar: &Grammar,
+    ) -> SudachiResult<()> {
+        let settings: PluginSettings = serde_json::from_value(settings.clone())?;
+
+        let left_bracket_set = settings.leftBrackets.into_iter().collect();
+        let right_bracket_set = settings.rightBrackets.into_iter().collect();
+        let max_yomigana_length = settings.maxYomiganaLength;
 
         self.character_category = grammar.character_category.clone();
         self.left_bracket_set = left_bracket_set;

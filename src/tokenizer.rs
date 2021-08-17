@@ -3,6 +3,7 @@ use std::io::Read;
 use std::path::Path;
 use std::str::FromStr;
 
+use crate::config::Config;
 use crate::dic::category_type::CategoryType;
 use crate::dic::grammar::Grammar;
 use crate::dic::lexicon_set::LexiconSet;
@@ -85,24 +86,29 @@ impl FromStr for Mode {
 
 impl<'a> Tokenizer<'a> {
     /// Create `Tokenizer` from the raw bytes of a Sudachi dictionary.
-    pub fn from_dictionary_bytes(dictionary_bytes: &'a [u8]) -> SudachiResult<Tokenizer<'a>> {
-        let dictionary = Dictionary::from_system_dicrionary(dictionary_bytes)?;
+    pub fn from_dictionary_bytes(
+        dictionary_bytes: &'a [u8],
+        config: &Config,
+    ) -> SudachiResult<Tokenizer<'a>> {
+        let dictionary = Dictionary::from_system_dicrionary(
+            dictionary_bytes,
+            config.character_definition_file.clone(),
+        )?;
         let mut grammar = dictionary.grammar;
         let lexicon = dictionary.lexicon_set;
 
-        // todo: load plugins
         let edit_connection_cost_plugins =
-            connect_cost::get_edit_connection_cost_plugins(&grammar)?;
+            connect_cost::get_edit_connection_cost_plugins(&config, &grammar)?;
         for plugin in edit_connection_cost_plugins.plugins() {
             plugin.edit(&mut grammar);
         }
 
-        let input_text_plugins = input_text::get_input_text_plugins(&grammar)?;
-        let oov_provider_plugins = oov::get_oov_plugins(&grammar)?;
+        let input_text_plugins = input_text::get_input_text_plugins(config, &grammar)?;
+        let oov_provider_plugins = oov::get_oov_plugins(config, &grammar)?;
         if oov_provider_plugins.is_empty() {
             return Err(SudachiError::NoOOVPluginProvided);
         }
-        let path_rewrite_plugins = path_rewrite::get_path_rewrite_plugins(&grammar)?;
+        let path_rewrite_plugins = path_rewrite::get_path_rewrite_plugins(config, &grammar)?;
 
         // todo: load user dict
 

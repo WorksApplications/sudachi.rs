@@ -1,7 +1,11 @@
+use serde::Deserialize;
+use serde_json::Value;
 use std::collections::HashMap;
 use std::fs;
 use std::io::{BufRead, BufReader};
+use std::path::{Path, PathBuf};
 
+use sudachi::config::Config;
 use sudachi::declare_oov_provider_plugin;
 use sudachi::dic::category_type::CategoryType;
 use sudachi::dic::character_category::Error as CharacterCategoryError;
@@ -23,9 +27,15 @@ pub struct MeCabOovPlugin {
     oov_list: HashMap<CategoryType, Vec<OOV>>,
 }
 
+#[allow(non_snake_case)]
+#[derive(Deserialize)]
+struct PluginSettings {
+    charDef: Option<PathBuf>,
+    unkDef: Option<PathBuf>,
+}
+
 impl MeCabOovPlugin {
-    fn read_character_property(path: &str) -> SudachiResult<HashMap<CategoryType, CategoryInfo>> {
-        // todo: mv to dic/char_category
+    fn read_character_property(path: &Path) -> SudachiResult<HashMap<CategoryType, CategoryInfo>> {
         let mut categories = HashMap::new();
 
         let reader = BufReader::new(fs::File::open(&path)?);
@@ -74,7 +84,7 @@ impl MeCabOovPlugin {
     }
 
     fn read_oov(
-        path: &str,
+        path: &Path,
         categories: &HashMap<CategoryType, CategoryInfo>,
         grammar: &Grammar,
     ) -> SudachiResult<HashMap<CategoryType, Vec<OOV>>> {
@@ -137,10 +147,25 @@ impl MeCabOovPlugin {
 }
 
 impl OovProviderPlugin for MeCabOovPlugin {
-    fn set_up(&mut self, grammar: &Grammar) -> SudachiResult<()> {
-        // todo: load from file
-        let categories = MeCabOovPlugin::read_character_property(DEFAULT_CHAR_DEF_FILE_PATH)?;
-        let oov_list = MeCabOovPlugin::read_oov(DEFAULT_UNK_DEF_FILE_PATH, &categories, grammar)?;
+    fn set_up(
+        &mut self,
+        settings: &Value,
+        config: &Config,
+        grammar: &Grammar,
+    ) -> SudachiResult<()> {
+        let settings: PluginSettings = serde_json::from_value(settings.clone())?;
+
+        let char_def_path = settings
+            .charDef
+            .map(|pb| config.complete_path(pb))
+            .unwrap_or_else(|| PathBuf::from(DEFAULT_CHAR_DEF_FILE_PATH));
+        let categories = MeCabOovPlugin::read_character_property(&char_def_path)?;
+
+        let unk_def_path = settings
+            .unkDef
+            .map(|pb| config.complete_path(pb))
+            .unwrap_or_else(|| PathBuf::from(DEFAULT_UNK_DEF_FILE_PATH));
+        let oov_list = MeCabOovPlugin::read_oov(&unk_def_path, &categories, grammar)?;
 
         self.categories = categories;
         self.oov_list = oov_list;

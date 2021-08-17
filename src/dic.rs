@@ -1,4 +1,5 @@
 use nom::{le_u16, le_u8};
+use std::path::PathBuf;
 
 use crate::error::SudachiNomCustomError;
 use crate::prelude::*;
@@ -10,6 +11,7 @@ pub mod header;
 pub mod lexicon;
 pub mod lexicon_set;
 
+use character_category::CharacterCategory;
 use grammar::Grammar;
 use header::Header;
 use lexicon::Lexicon;
@@ -22,11 +24,20 @@ pub struct Dictionary<'a> {
 }
 
 impl<'a> Dictionary<'a> {
-    pub fn from_system_dicrionary(dictionary_bytes: &[u8]) -> SudachiResult<Dictionary> {
+    pub fn from_system_dicrionary(
+        dictionary_bytes: &'a [u8],
+        character_category_file: Option<PathBuf>,
+    ) -> SudachiResult<Dictionary<'a>> {
         let system_dict = BinaryDictionary::from_system_dicrionary(dictionary_bytes)?;
 
+        let character_category = CharacterCategory::from_file(character_category_file)?;
+        let mut grammar = system_dict
+            .grammar
+            .ok_or(SudachiError::InvalidDictionaryGrammar)?;
+        grammar.set_character_category(character_category);
+
         Ok(Dictionary {
-            grammar: system_dict.grammar.unwrap(),
+            grammar,
             lexicon_set: LexiconSet::new(system_dict.lexicon),
         })
     }

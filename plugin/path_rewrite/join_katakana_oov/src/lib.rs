@@ -1,3 +1,7 @@
+use serde::Deserialize;
+use serde_json::Value;
+
+use sudachi::config::Config;
 use sudachi::declare_path_rewrite_plugin;
 use sudachi::dic::category_type::CategoryType;
 use sudachi::dic::grammar::Grammar;
@@ -12,6 +16,13 @@ declare_path_rewrite_plugin!(JoinKarakanaOovPlugin, JoinKarakanaOovPlugin::defau
 pub struct JoinKarakanaOovPlugin {
     oov_pos_id: u16,
     min_length: usize,
+}
+
+#[allow(non_snake_case)]
+#[derive(Deserialize)]
+struct PluginSettings {
+    oovPOS: Vec<String>,
+    minLength: usize,
 }
 
 impl JoinKarakanaOovPlugin {
@@ -37,14 +48,19 @@ impl JoinKarakanaOovPlugin {
 }
 
 impl PathRewritePlugin for JoinKarakanaOovPlugin {
-    fn set_up(&mut self, grammar: &Grammar) -> SudachiResult<()> {
-        // todo: load from config
-        let oov_pos_string = vec!["名詞", "普通名詞", "一般", "*", "*", "*"];
+    fn set_up(
+        &mut self,
+        settings: &Value,
+        _config: &Config,
+        grammar: &Grammar,
+    ) -> SudachiResult<()> {
+        let settings: PluginSettings = serde_json::from_value(settings.clone())?;
+
+        let oov_pos_string: Vec<&str> = settings.oovPOS.iter().map(|s| s.as_str()).collect();
         let oov_pos_id = grammar
             .get_part_of_speech_id(&oov_pos_string)
             .ok_or(SudachiError::InvalidPartOfSpeech)?;
-
-        let min_length = 3;
+        let min_length = settings.minLength;
 
         self.oov_pos_id = oov_pos_id;
         self.min_length = min_length;

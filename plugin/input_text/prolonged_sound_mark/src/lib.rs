@@ -1,5 +1,8 @@
+use serde::Deserialize;
+use serde_json::Value;
 use std::collections::HashSet;
 
+use sudachi::config::Config;
 use sudachi::declare_input_text_plugin;
 use sudachi::dic::grammar::Grammar;
 use sudachi::input_text::utf8_input_text_builder::Utf8InputTextBuilder;
@@ -14,11 +17,24 @@ pub struct ProlongedSoundMarkPlugin {
     replace_symbol: String,
 }
 
+#[allow(non_snake_case)]
+#[derive(Deserialize)]
+struct PluginSettings {
+    prolongedSoundMarks: Vec<char>,
+    replacementSymbol: String,
+}
+
 impl InputTextPlugin for ProlongedSoundMarkPlugin {
-    fn set_up(&mut self, _grammar: &Grammar) -> SudachiResult<()> {
-        // todo: load from config
-        let psm_set: HashSet<_> = ['ー', '-', '⁓', '〜', '〰'].iter().map(|v| *v).collect();
-        let replace_symbol = String::from('ー');
+    fn set_up(
+        &mut self,
+        settings: &Value,
+        _config: &Config,
+        _grammar: &Grammar,
+    ) -> SudachiResult<()> {
+        let settings: PluginSettings = serde_json::from_value(settings.clone())?;
+
+        let psm_set = settings.prolongedSoundMarks.into_iter().collect();
+        let replace_symbol = settings.replacementSymbol;
 
         self.psm_set = psm_set;
         self.replace_symbol = replace_symbol;

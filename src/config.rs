@@ -16,11 +16,20 @@ pub enum ConfigError {
 
     #[error("Config file not found")]
     FileNotFound,
+
+    #[error("Invalid format: {0}")]
+    InvalidFormat(String),
+
+    #[error("Argument {0} is missing")]
+    MissingArgument(String),
 }
 
 const DEFAULT_RESOURCE_DIR: &str = "./src/resources";
 const DEFAULT_SETTING_FILE: &str = "sudachi.json";
 
+/// Struct corresponds with raw config json file.
+/// You must use filed names defined here as json object key.
+/// For plugins, refer to each plugin's source.
 #[allow(non_snake_case)]
 #[derive(Deserialize, Debug)]
 pub struct RawConfig {
@@ -65,9 +74,12 @@ impl Config {
         let resource_dir = resource_dir
             .or_else(|| raw_config.resourcePath.clone())
             .unwrap_or_else(|| PathBuf::from(DEFAULT_RESOURCE_DIR));
-        let system_dict = dictionary_path
-            .or_else(|| raw_config.systemDict.clone())
-            .map(|p| Config::join_if_relative(&resource_dir, p));
+        let system_dict = dictionary_path.or_else(|| {
+            raw_config
+                .systemDict
+                .clone()
+                .map(|p| Config::join_if_relative(&resource_dir, p))
+        });
         let user_dicts = raw_config
             .userDict
             .unwrap_or(Vec::new())

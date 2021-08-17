@@ -1,9 +1,13 @@
+use serde::Deserialize;
+use serde_json::Value;
 use std::cmp;
 use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::io::{BufRead, BufReader};
+use std::path::{Path, PathBuf};
 use unicode_normalization::UnicodeNormalization;
 
+use sudachi::config::Config;
 use sudachi::declare_input_text_plugin;
 use sudachi::dic::grammar::Grammar;
 use sudachi::input_text::utf8_input_text_builder::Utf8InputTextBuilder;
@@ -21,8 +25,14 @@ pub struct DefaultInputTextPlugin {
     replace_char_map: HashMap<String, String>,
 }
 
+#[allow(non_snake_case)]
+#[derive(Deserialize)]
+struct PluginSettings {
+    rewriteDef: Option<PathBuf>,
+}
+
 impl DefaultInputTextPlugin {
-    fn read_rewrite_lists(&mut self, path: &str) -> SudachiResult<()> {
+    fn read_rewrite_lists(&mut self, path: &Path) -> SudachiResult<()> {
         let mut ignore_normalize_set = HashSet::new();
         let mut key_lengths = HashMap::new();
         let mut replace_char_map = HashMap::new();
@@ -74,9 +84,20 @@ impl DefaultInputTextPlugin {
 }
 
 impl InputTextPlugin for DefaultInputTextPlugin {
-    fn set_up(&mut self, _grammar: &Grammar) -> SudachiResult<()> {
-        // todo: load from config
-        self.read_rewrite_lists(DEFAULT_REWRITE_DEF_FILE_PATH)?;
+    fn set_up(
+        &mut self,
+        settings: &Value,
+        config: &Config,
+        _grammar: &Grammar,
+    ) -> SudachiResult<()> {
+        let settings: PluginSettings = serde_json::from_value(settings.clone())?;
+
+        let rewrite_file_path = settings
+            .rewriteDef
+            .map(|pb| config.complete_path(pb))
+            .unwrap_or(PathBuf::from(DEFAULT_REWRITE_DEF_FILE_PATH));
+
+        self.read_rewrite_lists(&rewrite_file_path)?;
 
         Ok(())
     }

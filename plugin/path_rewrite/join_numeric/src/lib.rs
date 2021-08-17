@@ -1,3 +1,7 @@
+use serde::Deserialize;
+use serde_json::Value;
+
+use sudachi::config::Config;
 use sudachi::declare_path_rewrite_plugin;
 use sudachi::dic::category_type::CategoryType;
 use sudachi::dic::grammar::Grammar;
@@ -15,6 +19,12 @@ declare_path_rewrite_plugin!(JoinNumericPlugin, JoinNumericPlugin::default);
 pub struct JoinNumericPlugin {
     numeric_pos_id: u16,
     enable_normalize: bool,
+}
+
+#[allow(non_snake_case)]
+#[derive(Deserialize)]
+struct PluginSettings {
+    enableNormalize: bool,
 }
 
 impl JoinNumericPlugin {
@@ -50,14 +60,20 @@ impl JoinNumericPlugin {
 }
 
 impl PathRewritePlugin for JoinNumericPlugin {
-    fn set_up(&mut self, grammar: &Grammar) -> SudachiResult<()> {
-        // todo: load from config
+    fn set_up(
+        &mut self,
+        settings: &Value,
+        _config: &Config,
+        grammar: &Grammar,
+    ) -> SudachiResult<()> {
+        let settings: PluginSettings = serde_json::from_value(settings.clone())?;
+
+        // this pos is fixed
         let numeric_pos_string = vec!["名詞", "数詞", "*", "*", "*", "*"];
         let numeric_pos_id = grammar
             .get_part_of_speech_id(&numeric_pos_string)
             .ok_or(SudachiError::InvalidPartOfSpeech)?;
-
-        let enable_normalize = true;
+        let enable_normalize = settings.enableNormalize;
 
         self.numeric_pos_id = numeric_pos_id;
         self.enable_normalize = enable_normalize;
