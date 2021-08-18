@@ -26,6 +26,7 @@ pub enum ConfigError {
 
 const DEFAULT_RESOURCE_DIR: &str = "./src/resources";
 const DEFAULT_SETTING_FILE: &str = "sudachi.json";
+const DEFAULT_CHAR_DEF_FILE: &str = "char.def";
 
 /// Struct corresponds with raw config json file.
 /// You must use filed names defined here as json object key.
@@ -49,7 +50,7 @@ pub struct Config {
     pub resource_dir: PathBuf,
     pub system_dict: Option<PathBuf>,
     pub user_dicts: Vec<PathBuf>,
-    pub character_definition_file: Option<PathBuf>,
+    pub character_definition_file: PathBuf,
 
     pub connection_cost_plugins: Vec<Value>,
     pub input_text_plugins: Vec<Value>,
@@ -86,9 +87,12 @@ impl Config {
             .into_iter()
             .map(|p| Config::join_if_relative(&resource_dir, p))
             .collect();
-        let character_definition_file = raw_config
-            .characterDefinitionFile
-            .map(|p| Config::join_if_relative(&resource_dir, p));
+        let character_definition_file = Config::join_if_relative(
+            &resource_dir,
+            raw_config
+                .characterDefinitionFile
+                .unwrap_or(PathBuf::from(DEFAULT_CHAR_DEF_FILE)),
+        );
 
         Ok(Config {
             resource_dir,

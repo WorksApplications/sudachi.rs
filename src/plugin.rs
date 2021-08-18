@@ -5,10 +5,10 @@ pub mod path_rewrite;
 
 use libloading::Error as LLError;
 use serde_json::Value;
-use std::path::Path;
+use std::path::PathBuf;
 use thiserror::Error;
 
-use crate::config::ConfigError;
+use crate::config::{Config, ConfigError};
 use crate::prelude::*;
 
 #[derive(Error, Debug)]
@@ -26,7 +26,7 @@ pub enum PluginError {
     InvalidDataFormat(String),
 }
 
-pub fn get_plugin_path(plugin_config: &Value) -> SudachiResult<&Path> {
+pub fn get_plugin_path(plugin_config: &Value, config: &Config) -> SudachiResult<PathBuf> {
     let obj = match plugin_config {
         Value::Object(v) => v,
         _ => {
@@ -43,5 +43,5 @@ pub fn get_plugin_path(plugin_config: &Value) -> SudachiResult<&Path> {
             )));
         }
     };
-    Ok(Path::new(lib))
+    Ok(config.complete_path(PathBuf::from(lib)))
 }

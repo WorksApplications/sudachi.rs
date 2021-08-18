@@ -11,8 +11,6 @@ use thiserror::Error;
 use crate::dic::category_type::{CategoryType, CategoryTypes};
 use crate::prelude::*;
 
-const DEFAULT_CHAR_DEF_FILE_PATH: &str = "./src/resources/char.def";
-
 /// Sudachi error
 #[derive(Error, Debug, Eq, PartialEq)]
 #[non_exhaustive]
@@ -52,13 +50,12 @@ pub struct CharacterCategory {
 }
 
 impl CharacterCategory {
-    pub fn from_file(path: Option<PathBuf>) -> SudachiResult<CharacterCategory> {
+    pub fn from_file(path: PathBuf) -> SudachiResult<CharacterCategory> {
         let ranges = CharacterCategory::read_character_definition(path)?;
         Ok(CharacterCategory::compile(ranges))
     }
 
-    fn read_character_definition(path: Option<PathBuf>) -> SudachiResult<Vec<Range>> {
-        let path = path.unwrap_or(PathBuf::from(DEFAULT_CHAR_DEF_FILE_PATH));
+    fn read_character_definition(path: PathBuf) -> SudachiResult<Vec<Range>> {
         let reader = BufReader::new(fs::File::open(&path)?);
 
         let mut ranges: Vec<Range> = Vec::new();
@@ -233,6 +230,7 @@ impl CharacterCategory {
 mod tests {
     use super::*;
     const TEST_RESOURCE_DIR: &str = "./tests/resources/";
+    const TEST_CHAR_DEF_FILE: &str = "char.def";
 
     impl Range {
         pub fn containing_length(&self, text: &str) -> usize {
@@ -260,9 +258,8 @@ mod tests {
     #[test]
     fn get_category_types() {
         // todo: pass correct path
-        let path = PathBuf::from(TEST_RESOURCE_DIR).join("char.def");
-        let cat =
-            CharacterCategory::from_file(Some(path)).expect("failed to load char.def for test");
+        let path = PathBuf::from(TEST_RESOURCE_DIR).join(TEST_CHAR_DEF_FILE);
+        let cat = CharacterCategory::from_file(path).expect("failed to load char.def for test");
         let cats = cat.get_category_types('熙');
         assert_eq!(1, cats.len());
         assert!(cats.contains(&CategoryType::KANJI));

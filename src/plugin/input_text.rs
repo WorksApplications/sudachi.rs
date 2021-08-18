@@ -83,8 +83,8 @@ pub fn get_input_text_plugins(
     let mut manager = InputTextPluginManager::default();
 
     for plugin in &config.input_text_plugins {
-        let lib = super::get_plugin_path(plugin)?;
-        manager.load(lib, plugin, config, grammar)?;
+        let lib = super::get_plugin_path(plugin, config)?;
+        manager.load(lib.as_path(), plugin, config, grammar)?;
     }
 
     Ok(manager)

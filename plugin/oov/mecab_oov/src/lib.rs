@@ -16,8 +16,8 @@ use sudachi::lattice::node::Node;
 use sudachi::plugin::oov::OovProviderPlugin;
 use sudachi::prelude::*;
 
-const DEFAULT_CHAR_DEF_FILE_PATH: &str = "./src/resources/char.def";
-const DEFAULT_UNK_DEF_FILE_PATH: &str = "./src/resources/unk.def";
+const DEFAULT_CHAR_DEF_FILE: &str = "char.def";
+const DEFAULT_UNK_DEF_FILE: &str = "unk.def";
 
 declare_oov_provider_plugin!(MeCabOovPlugin, MeCabOovPlugin::default);
 
@@ -155,16 +155,18 @@ impl OovProviderPlugin for MeCabOovPlugin {
     ) -> SudachiResult<()> {
         let settings: PluginSettings = serde_json::from_value(settings.clone())?;
 
-        let char_def_path = settings
-            .charDef
-            .map(|pb| config.complete_path(pb))
-            .unwrap_or_else(|| PathBuf::from(DEFAULT_CHAR_DEF_FILE_PATH));
+        let char_def_path = config.complete_path(
+            settings
+                .charDef
+                .unwrap_or_else(|| PathBuf::from(DEFAULT_CHAR_DEF_FILE)),
+        );
         let categories = MeCabOovPlugin::read_character_property(&char_def_path)?;
 
-        let unk_def_path = settings
-            .unkDef
-            .map(|pb| config.complete_path(pb))
-            .unwrap_or_else(|| PathBuf::from(DEFAULT_UNK_DEF_FILE_PATH));
+        let unk_def_path = config.complete_path(
+            settings
+                .unkDef
+                .unwrap_or_else(|| PathBuf::from(DEFAULT_UNK_DEF_FILE)),
+        );
         let oov_list = MeCabOovPlugin::read_oov(&unk_def_path, &categories, grammar)?;
 
         self.categories = categories;

@@ -103,8 +103,8 @@ pub fn get_oov_plugins(
     let mut manager = OovProviderPluginManager::default();
 
     for plugin in &config.oov_provider_plugins {
-        let lib = super::get_plugin_path(plugin)?;
-        manager.load(lib, plugin, config, grammar)?;
+        let lib = super::get_plugin_path(plugin, config)?;
+        manager.load(lib.as_path(), plugin, config, grammar)?;
     }
 
     Ok(manager)

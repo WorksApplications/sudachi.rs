@@ -14,7 +14,7 @@ use sudachi::input_text::utf8_input_text_builder::Utf8InputTextBuilder;
 use sudachi::plugin::input_text::InputTextPlugin;
 use sudachi::prelude::*;
 
-const DEFAULT_REWRITE_DEF_FILE_PATH: &str = "./src/resources/rewrite.def";
+const DEFAULT_REWRITE_DEF_FILE: &str = "rewrite.def";
 
 declare_input_text_plugin!(DefaultInputTextPlugin, DefaultInputTextPlugin::default);
 
@@ -92,10 +92,11 @@ impl InputTextPlugin for DefaultInputTextPlugin {
     ) -> SudachiResult<()> {
         let settings: PluginSettings = serde_json::from_value(settings.clone())?;
 
-        let rewrite_file_path = settings
-            .rewriteDef
-            .map(|pb| config.complete_path(pb))
-            .unwrap_or(PathBuf::from(DEFAULT_REWRITE_DEF_FILE_PATH));
+        let rewrite_file_path = config.complete_path(
+            settings
+                .rewriteDef
+                .unwrap_or(PathBuf::from(DEFAULT_REWRITE_DEF_FILE)),
+        );
 
         self.read_rewrite_lists(&rewrite_file_path)?;
 

@@ -26,7 +26,7 @@ pub struct Dictionary<'a> {
 impl<'a> Dictionary<'a> {
     pub fn from_system_dictionary(
         dictionary_bytes: &'a [u8],
-        character_category_file: Option<PathBuf>,
+        character_category_file: PathBuf,
     ) -> SudachiResult<Dictionary<'a>> {
         let system_dict = BinaryDictionary::from_system_dictionary(dictionary_bytes)?;
 

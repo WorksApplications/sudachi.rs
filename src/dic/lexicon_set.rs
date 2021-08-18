@@ -37,12 +37,6 @@ impl<'a> LexiconSet<'a> {
         lexicon: Lexicon<'a>,
         pos_offset: usize,
     ) -> Result<(), LexiconSetError> {
-        println!(
-            "append: {}, {}",
-            self.lexicons.len(),
-            LexiconSet::MAX_DICTIONARIES
-        );
-
         if self.is_full() {
             return Err(LexiconSetError::TooManyDictionaries);
         }

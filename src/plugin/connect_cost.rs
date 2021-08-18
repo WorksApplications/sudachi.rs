@@ -82,8 +82,8 @@ pub fn get_edit_connection_cost_plugins(
     let mut manager = EditConnectionCostPluginManager::default();
 
     for plugin in &config.connection_cost_plugins {
-        let lib = super::get_plugin_path(plugin)?;
-        manager.load(lib, plugin, config, grammar)?;
+        let lib = super::get_plugin_path(plugin, config)?;
+        manager.load(lib.as_path(), plugin, config, grammar)?;
     }
 
     Ok(manager)
