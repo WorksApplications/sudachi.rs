@@ -24,11 +24,11 @@ pub struct Dictionary<'a> {
 }
 
 impl<'a> Dictionary<'a> {
-    pub fn from_system_dicrionary(
+    pub fn from_system_dictionary(
         dictionary_bytes: &'a [u8],
         character_category_file: Option<PathBuf>,
     ) -> SudachiResult<Dictionary<'a>> {
-        let system_dict = BinaryDictionary::from_system_dicrionary(dictionary_bytes)?;
+        let system_dict = BinaryDictionary::from_system_dictionary(dictionary_bytes)?;
 
         let character_category = CharacterCategory::from_file(character_category_file)?;
         let mut grammar = system_dict
@@ -40,26 +40,6 @@ impl<'a> Dictionary<'a> {
             grammar,
             lexicon_set: LexiconSet::new(system_dict.lexicon),
         })
-    }
-
-    pub fn merge_user_dictionary(
-        &mut self,
-        dictionary_bytes: &'a [u8],
-        tokenizer: Tokenizer,
-    ) -> SudachiResult<()> {
-        let user_dict = BinaryDictionary::from_user_dicrionary(dictionary_bytes)?;
-
-        // we need to update lexicon first, since it needs the current number of pos
-        let mut user_lexicon = user_dict.lexicon;
-        user_lexicon.update_cost(tokenizer)?;
-        self.lexicon_set
-            .append(user_lexicon, self.grammar.pos_list.len())?;
-
-        if let Some(g) = user_dict.grammar {
-            self.grammar.merge(&g);
-        }
-
-        Ok(())
     }
 }
 
@@ -91,7 +71,7 @@ impl<'a> BinaryDictionary<'a> {
             lexicon,
         })
     }
-    pub fn from_system_dicrionary(dictionary_bytes: &[u8]) -> SudachiResult<BinaryDictionary> {
+    pub fn from_system_dictionary(dictionary_bytes: &[u8]) -> SudachiResult<BinaryDictionary> {
         let dict = Self::read_dictionary(dictionary_bytes)?;
         match dict.header.version {
             header::HeaderVersion::SystemDict(_) => Ok(dict),
@@ -100,7 +80,7 @@ impl<'a> BinaryDictionary<'a> {
             )),
         }
     }
-    pub fn from_user_dicrionary(dictionary_bytes: &[u8]) -> SudachiResult<BinaryDictionary> {
+    pub fn from_user_dictionary(dictionary_bytes: &[u8]) -> SudachiResult<BinaryDictionary> {
         let dict = Self::read_dictionary(dictionary_bytes)?;
         match dict.header.version {
             header::HeaderVersion::UserDict(_) => Ok(dict),

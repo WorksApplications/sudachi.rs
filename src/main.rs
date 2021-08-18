@@ -128,8 +128,15 @@ fn main() {
     // load and parse dictionary binary to create a tokenizer
     let dictionary_bytes =
         get_dictionary_bytes(config.system_dict.clone()).expect("No system dictionary found");
-    let tokenizer = Tokenizer::from_dictionary_bytes(&dictionary_bytes, &config)
-        .expect("Failed to create Tokenizer from dictionary bytes");
+    let mut user_dictionary_bytes = Vec::with_capacity(config.user_dicts.len());
+    for pb in &config.user_dicts {
+        let storage_buf =
+            dictionary_bytes_from_path(pb).expect("Failed to get user dictionary bytes from file");
+        user_dictionary_bytes.push(storage_buf.into_boxed_slice());
+    }
+    let tokenizer =
+        Tokenizer::from_dictionary_bytes(&dictionary_bytes, &user_dictionary_bytes, &config)
+            .expect("Failed to create Tokenizer from dictionary bytes");
 
     // tokenize and output results
     for line in reader.lines() {

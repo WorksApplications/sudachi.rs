@@ -7,7 +7,7 @@ use crate::config::Config;
 use crate::dic::category_type::CategoryType;
 use crate::dic::grammar::Grammar;
 use crate::dic::lexicon_set::LexiconSet;
-use crate::dic::Dictionary;
+use crate::dic::{BinaryDictionary, Dictionary};
 use crate::input_text::{
     utf8_input_text::Utf8InputText, utf8_input_text_builder::Utf8InputTextBuilder,
 };
@@ -88,9 +88,10 @@ impl<'a> Tokenizer<'a> {
     /// Create `Tokenizer` from the raw bytes of a Sudachi dictionary.
     pub fn from_dictionary_bytes(
         dictionary_bytes: &'a [u8],
+        user_dictionary_bytes: &'a Vec<Box<[u8]>>,
         config: &Config,
     ) -> SudachiResult<Tokenizer<'a>> {
-        let dictionary = Dictionary::from_system_dicrionary(
+        let dictionary = Dictionary::from_system_dictionary(
             dictionary_bytes,
             config.character_definition_file.clone(),
         )?;
@@ -110,15 +111,35 @@ impl<'a> Tokenizer<'a> {
         }
         let path_rewrite_plugins = path_rewrite::get_path_rewrite_plugins(config, &grammar)?;
 
-        // todo: load user dict
-
-        Ok(Tokenizer {
+        let mut tokenizer = Tokenizer {
             grammar,
             lexicon,
             input_text_plugins,
             oov_provider_plugins,
             path_rewrite_plugins,
-        })
+        };
+
+        for user_dict in user_dictionary_bytes {
+            tokenizer.merge_user_dictionary(user_dict)?;
+        }
+
+        Ok(tokenizer)
+    }
+
+    fn merge_user_dictionary(&mut self, dictionary_bytes: &'a [u8]) -> SudachiResult<()> {
+        let user_dict = BinaryDictionary::from_user_dictionary(dictionary_bytes)?;
+
+        // we need to update lexicon first, since it needs the current number of pos
+        let mut user_lexicon = user_dict.lexicon;
+        user_lexicon.update_cost(self)?;
+        self.lexicon
+            .append(user_lexicon, self.grammar.pos_list.len())?;
+
+        if let Some(g) = user_dict.grammar {
+            self.grammar.merge(&g);
+        }
+
+        Ok(())
     }
 }
 
