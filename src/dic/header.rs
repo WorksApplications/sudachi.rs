@@ -79,10 +79,6 @@ impl Header {
             header_parser(bytes).map_err(|_| HeaderError::CannotParse)?;
 
         let version = HeaderVersion::from_u64(version).ok_or(HeaderError::InvalidVersion)?;
-        if let HeaderVersion::SystemDict(_) = version {
-        } else {
-            return Err(HeaderError::InvalidSystemDictVersion);
-        }
 
         Ok(Header {
             version,

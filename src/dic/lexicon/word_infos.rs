@@ -39,8 +39,8 @@ named_args!(
     do_parse!(
         _seek: take!(index) >>
         surface: utf16_string >>
-        // todo: word length can be 2 bytes
         head_word_length: le_u8 >>
+        head_word_length_low: count!(le_u8, if head_word_length < 128 { 0 } else { 1 }) >>
         pos_id: le_u16 >>
         normalized_form: utf16_string >>
         dictionary_form_word_id: le_i32 >>
@@ -60,9 +60,14 @@ named_args!(
                 "" => surface.clone(),
                 _ => normalized_form
             },
-            dictionary_form: surface.clone(), // TODO: can we set this within the parser?
+            dictionary_form: surface.clone(),
             surface, // after normalized_form and dictionary_form, as it may be cloned there
-            head_word_length,
+            // word length can be 1 or 2 bytes
+            head_word_length: if head_word_length_low.is_empty() {
+                head_word_length as u16
+            } else {
+                ((head_word_length as u16 & 0x7F) << 8) | head_word_length_low[0] as u16
+            },
             pos_id,
             reading_form,
             a_unit_split,
@@ -76,7 +81,7 @@ named_args!(
 #[derive(Clone, Debug, Default)]
 pub struct WordInfo {
     pub surface: String,
-    pub head_word_length: u8,
+    pub head_word_length: u16,
     pub pos_id: u16,
     pub normalized_form: String,
     pub reading_form: String,
