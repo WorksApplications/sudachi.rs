@@ -70,9 +70,9 @@ impl PathRewritePlugin for JoinNumericPlugin {
 
         // this pos is fixed
         let numeric_pos_string = vec!["名詞", "数詞", "*", "*", "*", "*"];
-        let numeric_pos_id = grammar
-            .get_part_of_speech_id(&numeric_pos_string)
-            .ok_or(SudachiError::InvalidPartOfSpeech)?;
+        let numeric_pos_id = grammar.get_part_of_speech_id(&numeric_pos_string).ok_or(
+            SudachiError::InvalidPartOfSpeech(format!("{:?}", numeric_pos_string)),
+        )?;
         let enable_normalize = settings.enableNormalize;
 
         self.numeric_pos_id = numeric_pos_id;

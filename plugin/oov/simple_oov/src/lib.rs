@@ -39,9 +39,9 @@ impl OovProviderPlugin for SimpleOovPlugin {
         let settings: PluginSettings = serde_json::from_value(settings.clone())?;
 
         let oov_pos_string: Vec<&str> = settings.oovPOS.iter().map(|s| s.as_str()).collect();
-        let oov_pos_id = grammar
-            .get_part_of_speech_id(&oov_pos_string)
-            .ok_or(SudachiError::InvalidPartOfSpeech)?;
+        let oov_pos_id = grammar.get_part_of_speech_id(&oov_pos_string).ok_or(
+            SudachiError::InvalidPartOfSpeech(format!("{:?}", oov_pos_string)),
+        )?;
         let left_id = settings.leftId;
         let right_id = settings.rightId;
         let cost = settings.cost;
@@ -75,7 +75,7 @@ impl OovProviderPlugin for SimpleOovPlugin {
                 normalized_form: surface.clone(),
                 dictionary_form: surface.clone(),
                 surface,
-                head_word_length: length as u8,
+                head_word_length: length as u16,
                 pos_id: self.oov_pos_id,
                 dictionary_form_word_id: -1,
                 ..Default::default()

@@ -72,8 +72,8 @@ pub enum SudachiError {
     #[error("End of sentence (EOS) is not connected to beginning of sentence (BOS)")]
     EosBosDisconnect,
 
-    #[error("Invalid part of speech")]
-    InvalidPartOfSpeech,
+    #[error("Invalid part of speech: {0}")]
+    InvalidPartOfSpeech(String),
 
     #[error("Invalid data format: {1} at line {0}")]
     InvalidDataFormat(usize, String),

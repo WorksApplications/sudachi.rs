@@ -57,9 +57,9 @@ impl PathRewritePlugin for JoinKarakanaOovPlugin {
         let settings: PluginSettings = serde_json::from_value(settings.clone())?;
 
         let oov_pos_string: Vec<&str> = settings.oovPOS.iter().map(|s| s.as_str()).collect();
-        let oov_pos_id = grammar
-            .get_part_of_speech_id(&oov_pos_string)
-            .ok_or(SudachiError::InvalidPartOfSpeech)?;
+        let oov_pos_id = grammar.get_part_of_speech_id(&oov_pos_string).ok_or(
+            SudachiError::InvalidPartOfSpeech(format!("{:?}", oov_pos_string)),
+        )?;
         let min_length = settings.minLength;
 
         self.oov_pos_id = oov_pos_id;

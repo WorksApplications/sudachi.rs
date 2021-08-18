@@ -114,9 +114,9 @@ impl MeCabOovPlugin {
                 left_id: cols[1].parse()?,
                 right_id: cols[2].parse()?,
                 cost: cols[3].parse()?,
-                pos_id: grammar
-                    .get_part_of_speech_id(&cols[4..10])
-                    .ok_or(SudachiError::InvalidPartOfSpeech)?,
+                pos_id: grammar.get_part_of_speech_id(&cols[4..10]).ok_or(
+                    SudachiError::InvalidPartOfSpeech(format!("{:?}", &cols[4..10])),
+                )?,
             };
             match oov_list.get_mut(&category_type) {
                 None => {
@@ -131,7 +131,7 @@ impl MeCabOovPlugin {
         Ok(oov_list)
     }
 
-    fn get_oov_node(&self, text: &str, oov: &OOV, length: u8) -> Node {
+    fn get_oov_node(&self, text: &str, oov: &OOV, length: u16) -> Node {
         let surface = String::from(text);
         let word_info = WordInfo {
             normalized_form: surface.clone(),
@@ -203,7 +203,7 @@ impl OovProviderPlugin for MeCabOovPlugin {
             if cinfo.is_group {
                 let s = input_text.get_substring(offset, offset + byte_len)?;
                 for oov in oovs {
-                    nodes.push(self.get_oov_node(&s, oov, byte_len as u8));
+                    nodes.push(self.get_oov_node(&s, oov, byte_len as u16));
                 }
                 llength -= 1;
             }
@@ -214,7 +214,7 @@ impl OovProviderPlugin for MeCabOovPlugin {
                 }
                 let s = input_text.get_substring(offset, offset + sublength)?;
                 for oov in oovs {
-                    nodes.push(self.get_oov_node(&s, oov, sublength as u8));
+                    nodes.push(self.get_oov_node(&s, oov, sublength as u16));
                 }
             }
         }
