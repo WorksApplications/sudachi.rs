@@ -7,20 +7,31 @@ pub struct WordInfos<'a> {
     bytes: &'a [u8],
     offset: usize,
     _word_size: u32,
+    has_synonym_group_ids: bool,
 }
 
 impl<'a> WordInfos<'a> {
-    pub fn new(bytes: &'a [u8], offset: usize, _word_size: u32) -> WordInfos {
+    pub fn new(
+        bytes: &'a [u8],
+        offset: usize,
+        _word_size: u32,
+        has_synonym_group_ids: bool,
+    ) -> WordInfos {
         WordInfos {
             bytes,
             offset,
             _word_size,
+            has_synonym_group_ids,
         }
     }
 
+    fn word_id_to_offset(&self, word_id: u32) -> SudachiResult<usize> {
+        Ok(le_u32(&self.bytes[self.offset + (4 * word_id as usize)..])?.1 as usize)
+    }
+
     pub fn get_word_info(&self, word_id: u32) -> SudachiResult<WordInfo> {
-        let index = le_u32(&self.bytes[self.offset + (4 * word_id as usize)..])?.1 as usize; // wordIdToOffset()
-        let mut word_info = word_info_parser(self.bytes, index)?.1;
+        let index = self.word_id_to_offset(word_id)?;
+        let mut word_info = word_info_parser(self.bytes, index, self.has_synonym_group_ids)?.1;
 
         // TODO: can we set dictionary_form within the word_info_parser?
         let dfwi = word_info.dictionary_form_word_id;
@@ -34,8 +45,17 @@ impl<'a> WordInfos<'a> {
     // TODO: is_valid_split()
 }
 
+named!(
+    u32_array<&[u8], Vec<u32>>,
+    do_parse!(
+        length: le_u8 >>
+        v: count!(le_u32, length as usize) >>
+        (v)
+    )
+);
+
 named_args!(
-    word_info_parser(index: usize)<&[u8], WordInfo>,
+    word_info_parser(index: usize, has_synonym_group_ids: bool)<&[u8], WordInfo>,
     do_parse!(
         _seek: take!(index) >>
         surface: utf16_string >>
@@ -46,22 +66,12 @@ named_args!(
         dictionary_form_word_id: le_i32 >>
         reading_form: utf16_string >>
 
-        a_unit_split_count: le_u8 >>
-        a_unit_split: count!(le_u32, a_unit_split_count as usize) >>
-
-        b_unit_split_count: le_u8 >>
-        b_unit_split: count!(le_u32, b_unit_split_count as usize) >>
-
-        word_structure_count: le_u8 >>
-        word_structure: count!(le_u32, word_structure_count as usize) >>
+        a_unit_split: u32_array >>
+        b_unit_split: u32_array >>
+        word_structure: u32_array >>
+        synonym_group_ids: cond!(has_synonym_group_ids, u32_array) >>
 
         (WordInfo{
-            normalized_form: match normalized_form.as_str() {
-                "" => surface.clone(),
-                _ => normalized_form
-            },
-            dictionary_form: surface.clone(),
-            surface, // after normalized_form and dictionary_form, as it may be cloned there
             // word length can be 1 or 2 bytes
             head_word_length: if head_word_length_low.is_empty() {
                 head_word_length as u16
@@ -69,11 +79,18 @@ named_args!(
                 ((head_word_length as u16 & 0x7F) << 8) | head_word_length_low[0] as u16
             },
             pos_id,
+            normalized_form: match normalized_form.as_str() {
+                "" => surface.clone(),
+                _ => normalized_form
+            },
+            dictionary_form_word_id,
+            dictionary_form: surface.clone(),
+            surface, // after normalized_form and dictionary_form, as it may be cloned there
             reading_form,
             a_unit_split,
             b_unit_split,
             word_structure,
-            dictionary_form_word_id,
+            synonym_group_ids: synonym_group_ids.unwrap_or_else(|| Vec::new()),
         })
     )
 );
@@ -84,11 +101,11 @@ pub struct WordInfo {
     pub head_word_length: u16,
     pub pos_id: u16,
     pub normalized_form: String,
+    pub dictionary_form_word_id: i32,
+    pub dictionary_form: String,
     pub reading_form: String,
     pub a_unit_split: Vec<u32>,
     pub b_unit_split: Vec<u32>,
     pub word_structure: Vec<u32>,
-    pub dictionary_form_word_id: i32,
-    pub dictionary_form: String,
-    // todo: add synonym_group_id
+    pub synonym_group_ids: Vec<u32>,
 }

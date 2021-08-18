@@ -22,7 +22,11 @@ pub struct Lexicon<'a> {
 impl<'a> Lexicon<'a> {
     const USER_DICT_COST_PER_MORPH: i32 = -20;
 
-    pub fn new(buf: &[u8], original_offset: usize) -> SudachiResult<Lexicon> {
+    pub fn new(
+        buf: &[u8],
+        original_offset: usize,
+        has_synonym_group_ids: bool,
+    ) -> SudachiResult<Lexicon> {
         let mut offset = original_offset;
 
         let (_rest, trie_size) = parse_size(buf, offset)?;
@@ -39,7 +43,7 @@ impl<'a> Lexicon<'a> {
         let word_params = WordParams::new(buf, word_params_size, offset + 4);
         offset += word_params.storage_size();
 
-        let word_infos = WordInfos::new(buf, offset, word_params.size());
+        let word_infos = WordInfos::new(buf, offset, word_params.size(), has_synonym_group_ids);
 
         Ok(Lexicon {
             trie,

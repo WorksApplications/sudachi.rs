@@ -63,7 +63,7 @@ impl<'a> BinaryDictionary<'a> {
             None
         };
 
-        let lexicon = Lexicon::new(dictionary_bytes, offset)?;
+        let lexicon = Lexicon::new(dictionary_bytes, offset, header.has_synonym_group_ids())?;
 
         Ok(BinaryDictionary {
             header,

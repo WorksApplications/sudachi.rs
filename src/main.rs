@@ -175,9 +175,10 @@ fn write_results(
             if print_all {
                 writer.write(
                     format!(
-                        "\t{}\t{}",
+                        "\t{}\t{}\t{:?}",
                         morpheme.dictionary_form(),
                         morpheme.reading_form(),
+                        morpheme.word_info.synonym_group_ids,
                     )
                     .as_bytes(),
                 )?;
