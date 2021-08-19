@@ -5,8 +5,11 @@ pub mod utf8_input_text_builder;
 mod tests {
     use super::utf8_input_text_builder::Utf8InputTextBuilder;
     use crate::dic::category_type::CategoryType;
+    use crate::dic::character_category::CharacterCategory;
     use crate::dic::grammar::Grammar;
+    use std::path::PathBuf;
 
+    const CHAR_CATEGORY_FILE_PATH: &str = "./src/resources/char.def";
     const TEXT: &str = "âｂC1あ234漢字𡈽アｺﾞ";
     // const BYTES: &[u8] = &[
     //     0xC3u8, 0xA2u8, 0xEFu8, 0xBDu8, 0x82u8, 0x43u8, 0x31u8, 0xE3u8, 0x81u8, 0x82u8, 0x32u8,
@@ -23,8 +26,12 @@ mod tests {
         buf
     }
     fn build_mock_grammar(bytes: &[u8]) -> Grammar {
-        // charactor category will be loaded
-        Grammar::new(bytes, 0).expect("failed to create grammar")
+        let mut grammar = Grammar::new(bytes, 0).expect("Failed to create grammar");
+        let character_category =
+            CharacterCategory::from_file(PathBuf::from(CHAR_CATEGORY_FILE_PATH))
+                .expect("Failed to load character category");
+        grammar.set_character_category(character_category);
+        grammar
     }
     fn set_up_builder<'a>(grammar: &'a Grammar) -> Utf8InputTextBuilder<'a> {
         Utf8InputTextBuilder::new(TEXT, grammar)

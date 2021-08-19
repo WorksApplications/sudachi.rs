@@ -10,7 +10,7 @@ use common::HEADER;
 #[test]
 fn version() {
     assert_eq!(
-        HeaderVersion::SystemDict(SystemDictVersion::Version1),
+        HeaderVersion::SystemDict(SystemDictVersion::Version2),
         HEADER.version
     );
 }
@@ -22,7 +22,6 @@ fn create_time() {
 
 #[test]
 fn description() {
-    // todo: this fails. load dict for test
     assert_eq!(
         "the system dictionary for the unit tests",
         HEADER.description
