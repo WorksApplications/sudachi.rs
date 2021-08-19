@@ -1,4 +1,7 @@
 /target
 **/*.rs.bk
-*.dic
 README*.html
+
+*.dic
+/tests/resources/*.tmp
+
