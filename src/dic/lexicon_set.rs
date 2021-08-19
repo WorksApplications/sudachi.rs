@@ -104,7 +104,7 @@ impl LexiconSet<'_> {
         }
         Ok((dict_id as u32) << 28 | word_id)
     }
-    fn get_dictionary_id(dictword_id: u32) -> usize {
+    pub fn get_dictionary_id(dictword_id: u32) -> usize {
         (dictword_id >> 28) as usize
     }
     fn get_word_id(dictword_id: u32) -> u32 {

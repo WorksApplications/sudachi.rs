@@ -16,7 +16,6 @@ pub struct Node {
     pub cost: i16,
 
     pub word_id: Option<u32>,
-    // todo: memoize
     pub word_info: Option<WordInfo>,
     pub is_oov: bool,
 
@@ -56,6 +55,20 @@ impl Node {
             self.set_word_info(lexicon.get_word_info(word_id)?);
         }
         Ok(())
+    }
+
+    pub fn is_defined(&self) -> bool {
+        match (&self.word_id, &self.word_info) {
+            (None, None) => false,
+            _ => true,
+        }
+    }
+
+    pub fn get_dictionary_id(&self) -> i32 {
+        if let Some(wi) = &self.word_id {
+            return LexiconSet::get_dictionary_id(*wi) as i32;
+        }
+        -1
     }
 
     pub fn new_bos() -> Node {

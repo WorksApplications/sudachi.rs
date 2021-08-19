@@ -12,6 +12,7 @@ pub struct Morpheme<'a> {
     surface: String,
     pub word_info: WordInfo,
     pub cost: i16,
+    pub dictionary_id: i32,
     pub is_oov: bool,
     grammar: &'a Grammar<'a>,
 }
@@ -34,13 +35,15 @@ impl<'a> Morpheme<'a> {
         };
         let is_oov = node.is_oov;
         let cost = node.cost;
+        let dictionary_id = node.get_dictionary_id();
 
         Ok(Morpheme {
             surface,
             word_info,
+            cost,
+            dictionary_id,
             is_oov,
             grammar,
-            cost,
         })
     }
 
