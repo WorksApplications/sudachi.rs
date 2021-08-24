@@ -116,11 +116,11 @@ impl Utf8InputText<'_> {
         // for JoinKatakanaOOV
         self.byte_indexes[end] - self.byte_indexes[begin]
     }
-}
 
-#[cfg(test)]
-impl Utf8InputText<'_> {
+    // returns corresponding byte index in the original test
+    // this fn is for test but expose it to use in plugin test
     pub fn get_original_index(&self, byte_idx: usize) -> usize {
         self.offsets[byte_idx]
     }
 }
+

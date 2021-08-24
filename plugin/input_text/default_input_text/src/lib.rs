@@ -14,6 +14,9 @@ use sudachi::input_text::utf8_input_text_builder::Utf8InputTextBuilder;
 use sudachi::plugin::input_text::InputTextPlugin;
 use sudachi::prelude::*;
 
+#[cfg(test)]
+mod tests;
+
 const DEFAULT_REWRITE_DEF_FILE: &str = "rewrite.def";
 
 declare_input_text_plugin!(DefaultInputTextPlugin, DefaultInputTextPlugin::default);
