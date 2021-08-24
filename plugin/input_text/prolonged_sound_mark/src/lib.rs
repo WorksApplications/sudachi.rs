@@ -9,6 +9,9 @@ use sudachi::input_text::utf8_input_text_builder::Utf8InputTextBuilder;
 use sudachi::plugin::input_text::InputTextPlugin;
 use sudachi::prelude::*;
 
+#[cfg(test)]
+mod tests;
+
 declare_input_text_plugin!(ProlongedSoundMarkPlugin, ProlongedSoundMarkPlugin::default);
 
 #[derive(Default)]
@@ -21,7 +24,7 @@ pub struct ProlongedSoundMarkPlugin {
 #[derive(Deserialize)]
 struct PluginSettings {
     prolongedSoundMarks: Vec<char>,
-    replacementSymbol: String,
+    replacementSymbol: Option<String>,
 }
 
 impl InputTextPlugin for ProlongedSoundMarkPlugin {
@@ -37,7 +40,7 @@ impl InputTextPlugin for ProlongedSoundMarkPlugin {
         let replace_symbol = settings.replacementSymbol;
 
         self.psm_set = psm_set;
-        self.replace_symbol = replace_symbol;
+        self.replace_symbol = replace_symbol.unwrap_or("ー".to_string());
 
         Ok(())
     }
