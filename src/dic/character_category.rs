@@ -51,13 +51,12 @@ pub struct CharacterCategory {
 
 impl CharacterCategory {
     pub fn from_file(path: PathBuf) -> SudachiResult<CharacterCategory> {
-        let ranges = CharacterCategory::read_character_definition(path)?;
+        let reader = BufReader::new(fs::File::open(&path)?);
+        let ranges = CharacterCategory::read_character_definition(reader)?;
         Ok(CharacterCategory::compile(ranges))
     }
 
-    fn read_character_definition(path: PathBuf) -> SudachiResult<Vec<Range>> {
-        let reader = BufReader::new(fs::File::open(&path)?);
-
+    fn read_character_definition(reader: BufReader<fs::File>) -> SudachiResult<Vec<Range>> {
         let mut ranges: Vec<Range> = Vec::new();
         for (i, line) in reader.lines().enumerate() {
             let line = line?;
@@ -114,9 +113,12 @@ impl CharacterCategory {
         Ok(ranges)
     }
 
+    /// compile transforms given range_list to non overlapped range list
+    /// to apply binary search in get_category_types
     fn compile(mut ranges: Vec<Range>) -> CharacterCategory {
-        /// compile transforms given range_list to non overlapped range list
-        /// to apply binary search in get_category_types
+        if ranges.is_empty() {
+            return CharacterCategory { ranges: Vec::new() };
+        }
 
         /// implement order for Heap
         /// note that here we use min-heap, based on the end of range
@@ -234,8 +236,8 @@ impl CharacterCategory {
 mod tests {
     use super::*;
     use std::char;
-    use std::fs::{self, File};
-    use std::io::{BufWriter, Write};
+    use std::io::{Seek, SeekFrom, Write};
+    use tempfile::tempfile;
 
     const TEST_RESOURCE_DIR: &str = "./tests/resources/";
     const TEST_CHAR_DEF_FILE: &str = "char.def";
@@ -291,18 +293,16 @@ mod tests {
             CategoryType::KATAKANA,
         ];
 
-        let path = PathBuf::from(TEST_RESOURCE_DIR).join("read_character_definition.tmp");
-
         // 1.
-        {
-            let mut writer =
-                BufWriter::new(File::create(&path).expect("Failed to create tmp file"));
-            writer.write("#\n \n".as_bytes()).unwrap();
-            writer.write("0x0030..0x0039 NUMERIC\n".as_bytes()).unwrap();
-            writer.write("0x0032         KANJI\n".as_bytes()).unwrap();
-        }
-        let cat =
-            CharacterCategory::from_file(path.clone()).expect("Failed to load tmp char def file");
+        let mut file = tempfile().expect("Failed to get temporary file");
+        writeln!(file, "#\n").unwrap();
+        writeln!(file, "0x0030..0x0039 NUMERIC").unwrap();
+        writeln!(file, "0x0032         KANJI").unwrap();
+        file.flush().expect("Failed to flush");
+        file.seek(SeekFrom::Start(0)).expect("Failed to seek");
+        let ranges = CharacterCategory::read_character_definition(BufReader::new(file))
+            .expect("Failed to read tmp char def file");
+        let cat = CharacterCategory::compile(ranges);
 
         assert_eq!(
             cats_num.iter().map(|v| *v).collect::<CategoryTypes>(),
@@ -326,17 +326,18 @@ mod tests {
         );
 
         // 2.
-        {
-            let mut writer =
-                BufWriter::new(File::create(&path).expect("Failed to create tmp file"));
-            writer.write("#\n \n".as_bytes()).unwrap();
-            writer.write("0x0030..0x0039 NUMERIC\n".as_bytes()).unwrap();
-            writer.write("0x0070..0x0079 ALPHA\n".as_bytes()).unwrap();
-            writer.write("0x3007         KANJI\n".as_bytes()).unwrap();
-            writer.write("0x0030         KANJI\n".as_bytes()).unwrap();
-        }
-        let cat =
-            CharacterCategory::from_file(path.clone()).expect("Failed to load tmp char def file");
+        let mut file = tempfile().expect("Failed to get temporary file");
+        writeln!(file, "#\n ").unwrap();
+        writeln!(file, "0x0030..0x0039 NUMERIC").unwrap();
+        writeln!(file, "0x0070..0x0079 ALPHA").unwrap();
+        writeln!(file, "0x3007         KANJI").unwrap();
+        writeln!(file, "0x0030         KANJI").unwrap();
+        file.flush().expect("Failed to flush");
+        file.seek(SeekFrom::Start(0)).expect("Failed to seek");
+        let ranges = CharacterCategory::read_character_definition(BufReader::new(file))
+            .expect("Failed to read tmp char def file");
+        let cat = CharacterCategory::compile(ranges);
+
         assert_eq!(
             cats_kanji_num.iter().map(|v| *v).collect::<CategoryTypes>(),
             cat.get_category_types(char::from_u32(0x0030).unwrap())
@@ -363,28 +364,21 @@ mod tests {
         );
 
         // 3.
-        {
-            let mut writer =
-                BufWriter::new(File::create(&path).expect("Failed to create tmp file"));
-            writer.write("#\n \n".as_bytes()).unwrap();
-            writer
-                .write("0x0030..0x0039 KATAKANA\n".as_bytes())
-                .unwrap();
-            writer
-                .write("0x3007         KANJI KANJINUMERIC\n".as_bytes())
-                .unwrap();
-            writer
-                .write("0x3008         KANJI KANJINUMERIC\n".as_bytes())
-                .unwrap();
-            writer
-                .write("0x3009         KANJI KANJINUMERIC\n".as_bytes())
-                .unwrap();
-            writer.write("0x0039..0x0040 ALPHA\n".as_bytes()).unwrap();
-            writer.write("0x0030..0x0039 NUMERIC\n".as_bytes()).unwrap();
-            writer.write("0x0030         KANJI\n".as_bytes()).unwrap();
-        }
-        let cat =
-            CharacterCategory::from_file(path.clone()).expect("Failed to load tmp char def file");
+        let mut file = tempfile().expect("Failed to get temporary file");
+        writeln!(file, "#\n ").unwrap();
+        writeln!(file, "0x0030..0x0039 KATAKANA").unwrap();
+        writeln!(file, "0x3007         KANJI KANJINUMERIC").unwrap();
+        writeln!(file, "0x3008         KANJI KANJINUMERIC").unwrap();
+        writeln!(file, "0x3009         KANJI KANJINUMERIC").unwrap();
+        writeln!(file, "0x0039..0x0040 ALPHA").unwrap();
+        writeln!(file, "0x0030..0x0039 NUMERIC").unwrap();
+        writeln!(file, "0x0030         KANJI").unwrap();
+        file.flush().expect("Failed to flush");
+        file.seek(SeekFrom::Start(0)).expect("Failed to seek");
+        let ranges = CharacterCategory::read_character_definition(BufReader::new(file))
+            .expect("Failed to read tmp char def file");
+        let cat = CharacterCategory::compile(ranges);
+
         assert_eq!(
             cats_default.iter().map(|v| *v).collect::<CategoryTypes>(),
             cat.get_category_types(char::from_u32(0x0029).unwrap())
@@ -424,17 +418,15 @@ mod tests {
         );
 
         // 4.
-        {
-            let mut writer =
-                BufWriter::new(File::create(&path).expect("Failed to create tmp file"));
-            writer.write("#\n \n".as_bytes()).unwrap();
-            writer.write("0x4E00..0x9FFF KANJI\n".as_bytes()).unwrap();
-            writer
-                .write("0x4E8C         KANJI KANJINUMERIC\n".as_bytes())
-                .unwrap();
-        }
-        let cat =
-            CharacterCategory::from_file(path.clone()).expect("Failed to load tmp char def file");
+        let mut file = tempfile().expect("Failed to get temporary file");
+        writeln!(file, "#\n ").unwrap();
+        writeln!(file, "0x4E00..0x9FFF KANJI").unwrap();
+        writeln!(file, "0x4E8C         KANJI KANJINUMERIC").unwrap();
+        file.flush().expect("Failed to flush");
+        file.seek(SeekFrom::Start(0)).expect("Failed to seek");
+        let ranges = CharacterCategory::read_character_definition(BufReader::new(file))
+            .expect("Failed to read tmp char def file");
+        let cat = CharacterCategory::compile(ranges);
 
         assert_eq!(
             cats_kanji.iter().map(|v| *v).collect::<CategoryTypes>(),
@@ -455,47 +447,38 @@ mod tests {
             cats_kanji.iter().map(|v| *v).collect::<CategoryTypes>(),
             cat.get_category_types(char::from_u32(0x4E8D).unwrap())
         );
-
-        // clean up
-        fs::remove_file(path).expect("Failed to remove tmp file");
     }
 
     #[test]
     #[should_panic]
     fn read_character_definition_with_invalid_format() {
-        let path = PathBuf::from(TEST_RESOURCE_DIR)
-            .join("read_character_definition_with_invalid_format.tmp");
-        {
-            let mut writer =
-                BufWriter::new(File::create(&path).expect("Failed to create tmp file"));
-            writer.write("0x0030..0x0039\n".as_bytes()).unwrap();
-        }
-        CharacterCategory::from_file(path.clone()).unwrap();
+        let mut file = tempfile().expect("Failed to get temporary file");
+        writeln!(file, "0x0030..0x0039").unwrap();
+        file.flush().expect("Failed to flush");
+        file.seek(SeekFrom::Start(0)).expect("Failed to seek");
+        let _ranges = CharacterCategory::read_character_definition(BufReader::new(file))
+            .expect("Failed to read tmp char def file");
     }
 
     #[test]
     #[should_panic]
     fn read_character_definition_with_invalid_range() {
-        let path = PathBuf::from(TEST_RESOURCE_DIR)
-            .join("read_character_definition_with_invalid_range.tmp");
-        {
-            let mut writer =
-                BufWriter::new(File::create(&path).expect("Failed to create tmp file"));
-            writer.write("0x0030..0x0029 NUMERIC\n".as_bytes()).unwrap();
-        }
-        CharacterCategory::from_file(path.clone()).unwrap();
+        let mut file = tempfile().expect("Failed to get temporary file");
+        writeln!(file, "0x0030..0x0029 NUMERIC").unwrap();
+        file.flush().expect("Failed to flush");
+        file.seek(SeekFrom::Start(0)).expect("Failed to seek");
+        let _ranges = CharacterCategory::read_character_definition(BufReader::new(file))
+            .expect("Failed to read tmp char def file");
     }
 
     #[test]
     #[should_panic]
     fn read_character_definition_with_invalid_type() {
-        let path = PathBuf::from(TEST_RESOURCE_DIR)
-            .join("read_character_definition_with_invalid_type.tmp");
-        {
-            let mut writer =
-                BufWriter::new(File::create(&path).expect("Failed to create tmp file"));
-            writer.write("0x0030..0x0039 FOO\n".as_bytes()).unwrap();
-        }
-        CharacterCategory::from_file(path.clone()).unwrap();
+        let mut file = tempfile().expect("Failed to get temporary file");
+        writeln!(file, "0x0030..0x0039 FOO").unwrap();
+        file.flush().expect("Failed to flush");
+        file.seek(SeekFrom::Start(0)).expect("Failed to seek");
+        let _ranges = CharacterCategory::read_character_definition(BufReader::new(file))
+            .expect("Failed to read tmp char def file");
     }
 }
