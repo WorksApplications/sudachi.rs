@@ -3,7 +3,7 @@ use serde_json::Value;
 use std::collections::HashMap;
 use std::fs;
 use std::io::{BufRead, BufReader};
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 use sudachi::config::Config;
 use sudachi::declare_oov_provider_plugin;
@@ -38,10 +38,10 @@ struct PluginSettings {
 }
 
 impl MeCabOovPlugin {
-    fn read_character_property(path: &Path) -> SudachiResult<HashMap<CategoryType, CategoryInfo>> {
+    fn read_character_property(
+        reader: BufReader<fs::File>,
+    ) -> SudachiResult<HashMap<CategoryType, CategoryInfo>> {
         let mut categories = HashMap::new();
-
-        let reader = BufReader::new(fs::File::open(&path)?);
         for (i, line) in reader.lines().enumerate() {
             let line = line?;
             let line = line.trim();
@@ -87,13 +87,11 @@ impl MeCabOovPlugin {
     }
 
     fn read_oov(
-        path: &Path,
+        reader: BufReader<fs::File>,
         categories: &HashMap<CategoryType, CategoryInfo>,
         grammar: &Grammar,
     ) -> SudachiResult<HashMap<CategoryType, Vec<OOV>>> {
         let mut oov_list: HashMap<CategoryType, Vec<OOV>> = HashMap::new();
-
-        let reader = BufReader::new(fs::File::open(&path)?);
         for (i, line) in reader.lines().enumerate() {
             let line = line?;
             let line = line.trim();
@@ -163,14 +161,16 @@ impl OovProviderPlugin for MeCabOovPlugin {
                 .charDef
                 .unwrap_or_else(|| PathBuf::from(DEFAULT_CHAR_DEF_FILE)),
         );
-        let categories = MeCabOovPlugin::read_character_property(&char_def_path)?;
+        let reader = BufReader::new(fs::File::open(&char_def_path)?);
+        let categories = MeCabOovPlugin::read_character_property(reader)?;
 
         let unk_def_path = config.complete_path(
             settings
                 .unkDef
                 .unwrap_or_else(|| PathBuf::from(DEFAULT_UNK_DEF_FILE)),
         );
-        let oov_list = MeCabOovPlugin::read_oov(&unk_def_path, &categories, grammar)?;
+        let reader = BufReader::new(fs::File::open(&unk_def_path)?);
+        let oov_list = MeCabOovPlugin::read_oov(reader, &categories, grammar)?;
 
         self.categories = categories;
         self.oov_list = oov_list;
