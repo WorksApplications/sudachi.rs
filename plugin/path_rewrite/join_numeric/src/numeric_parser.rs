@@ -1,5 +1,8 @@
 use std::collections::HashMap;
 
+mod string_number;
+use string_number::StringNumber;
+
 #[derive(Debug, Eq, PartialEq)]
 pub enum Error {
     NONE,
@@ -170,135 +173,170 @@ impl NumericParser {
     }
 }
 
-#[derive(Debug)]
-struct StringNumber {
-    significand: String,
-    scale: usize,
-    point: i32,
-    is_all_zero: bool,
-}
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-impl StringNumber {
-    fn new() -> StringNumber {
-        StringNumber {
-            significand: String::new(),
-            scale: 0,
-            point: -1,
-            is_all_zero: true,
-        }
-    }
-
-    fn clear(&mut self) {
-        self.significand.clear();
-        self.scale = 0;
-        self.point = -1;
-        self.is_all_zero = true;
-    }
-
-    fn append(&mut self, i: i32) {
-        if i != 0 {
-            self.is_all_zero = false;
-        }
-        self.significand += &i.to_string();
-    }
-
-    fn shift_scale(&mut self, i: i32) {
-        if self.is_zero() {
-            self.significand += "1";
-        }
-        self.scale = (self.scale as i32 + i) as usize;
-    }
-
-    fn add(&mut self, number: &mut StringNumber) -> bool {
-        if number.is_zero() {
-            return true;
-        }
-
-        if self.is_zero() {
-            self.significand += &number.significand;
-            self.scale = number.scale;
-            self.point = number.point;
-            return true;
-        }
-
-        self.normalize_scale();
-        let length = number.int_length();
-        if self.scale >= length {
-            self.fill_zero(self.scale - length);
-            if number.point >= 0 {
-                self.point = self.significand.len() as i32 + number.point;
-            }
-            self.significand += &number.significand;
-            self.scale = number.scale;
-            return true;
-        }
-
-        false
-    }
-
-    fn set_point(&mut self) -> bool {
-        if self.scale == 0 && self.point < 0 {
-            self.point = self.significand.len() as i32;
-            return true;
-        }
-        false
-    }
-
-    fn int_length(&mut self) -> usize {
-        self.normalize_scale();
-        if self.point >= 0 {
-            return self.point as usize;
-        }
-        self.significand.len() + self.scale
-    }
-
-    fn is_zero(&self) -> bool {
-        self.significand.len() == 0
-    }
-
-    fn to_string(&mut self) -> String {
-        if self.is_zero() {
-            return "0".to_owned();
-        }
-
-        self.normalize_scale();
-        if self.scale > 0 {
-            self.fill_zero(self.scale);
-        } else if self.point >= 0 {
-            self.significand.insert(self.point as usize, '.');
-            if self.point == 0 {
-                self.significand.insert(0, '0');
-            }
-            let n_last_zero = self
-                .significand
-                .chars()
-                .rev()
-                .take_while(|c| *c == '0')
-                .count();
-            self.significand
-                .truncate(self.significand.len() - n_last_zero);
-            if self.significand.chars().last().unwrap() == '.' {
-                self.significand.truncate(self.significand.len() - 1);
+    fn parse(parser: &mut NumericParser, text: &str) -> bool {
+        for c in text.to_string().chars() {
+            if !parser.append(&c) {
+                return false;
             }
         }
-
-        self.significand.clone()
+        parser.done()
     }
 
-    fn normalize_scale(&mut self) {
-        if self.point >= 0 {
-            let n_scale = self.significand.len() as i32 - self.point;
-            if n_scale > self.scale as i32 {
-                self.point += self.scale as i32;
-                self.scale = 0;
-            } else {
-                self.scale -= n_scale as usize;
-                self.point = -1;
-            }
-        }
+    #[test]
+    fn digits() {
+        let mut parser = NumericParser::new();
+        assert!(parse(&mut parser, "1000"));
+        assert_eq!("1000", parser.get_normalized());
     }
 
-    fn fill_zero(&mut self, length: usize) {
-        self.significand += &"0".repeat(length);
+    #[test]
+    fn starts_with_zero() {
+        let mut parser = NumericParser::new();
+        assert!(parse(&mut parser, "001000"));
+        assert_eq!("001000", parser.get_normalized());
+
+        parser.clear();
+        assert!(parse(&mut parser, "〇一〇〇〇"));
+        assert_eq!("01000", parser.get_normalized());
+
+        parser.clear();
+        assert!(parse(&mut parser, "00.1000"));
+        assert_eq!("00.1", parser.get_normalized());
+
+        parser.clear();
+        assert!(parse(&mut parser, "000"));
+        assert_eq!("000", parser.get_normalized());
+    }
+
+    #[test]
+    fn use_small_unit() {
+        let mut parser = NumericParser::new();
+        assert!(parse(&mut parser, "二十七"));
+        assert_eq!("27", parser.get_normalized());
+
+        parser.clear();
+        assert!(parse(&mut parser, "千三百二十七"));
+        assert_eq!("1327", parser.get_normalized());
+
+        parser.clear();
+        assert!(parse(&mut parser, "千十七"));
+        assert_eq!("1017", parser.get_normalized());
+
+        parser.clear();
+        assert!(parse(&mut parser, "千三百二十七.〇五"));
+        assert_eq!("1327.05", parser.get_normalized());
+
+        parser.clear();
+        assert!(!parse(&mut parser, "三百二十百"));
+    }
+
+    #[test]
+    fn use_large_unit() {
+        let mut parser = NumericParser::new();
+        assert!(parse(&mut parser, "1万"));
+        assert_eq!("10000", parser.get_normalized());
+
+        parser.clear();
+        assert!(parse(&mut parser, "千三百二十七万"));
+        assert_eq!("13270000", parser.get_normalized());
+
+        parser.clear();
+        assert!(parse(&mut parser, "千三百二十七万一四"));
+        assert_eq!("13270014", parser.get_normalized());
+
+        parser.clear();
+        assert!(parse(&mut parser, "千三百二十七万一四.〇五"));
+        assert_eq!("13270014.05", parser.get_normalized());
+
+        parser.clear();
+        assert!(parse(&mut parser, "三兆2千億千三百二十七万一四.〇五"));
+        assert_eq!("3200013270014.05", parser.get_normalized());
+
+        parser.clear();
+        assert!(!parse(&mut parser, "億万"));
+    }
+
+    #[test]
+    fn float_with_unit() {
+        let mut parser = NumericParser::new();
+        assert!(parse(&mut parser, "1.5千"));
+        assert_eq!("1500", parser.get_normalized());
+
+        parser.clear();
+        assert!(parse(&mut parser, "1.5百万"));
+        assert_eq!("1500000", parser.get_normalized());
+
+        parser.clear();
+        assert!(parse(&mut parser, "1.5百万1.5千20"));
+        assert_eq!("1501520", parser.get_normalized());
+
+        parser.clear();
+        assert!(!parse(&mut parser, "1.5千5百"));
+
+        parser.clear();
+        assert!(!parse(&mut parser, "1.5千500"));
+    }
+
+    #[test]
+    fn log_numeric() {
+        let mut parser = NumericParser::new();
+        assert!(parse(&mut parser, "200000000000000000000万"));
+        assert_eq!("2000000000000000000000000", parser.get_normalized());
+    }
+
+    #[test]
+    fn with_comma() {
+        let mut parser = NumericParser::new();
+        assert!(parse(&mut parser, "2,000,000"));
+        assert_eq!("2000000", parser.get_normalized());
+
+        parser.clear();
+        assert!(parse(&mut parser, "259万2,300"));
+        assert_eq!("2592300", parser.get_normalized());
+
+        parser.clear();
+        assert!(!parse(&mut parser, "200,00,000"));
+        assert_eq!(Error::COMMA, parser.error_state);
+
+        parser.clear();
+        assert!(!parse(&mut parser, "2,4"));
+        assert_eq!(Error::COMMA, parser.error_state);
+
+        parser.clear();
+        assert!(!parse(&mut parser, "000,000"));
+        assert_eq!(Error::COMMA, parser.error_state);
+
+        parser.clear();
+        assert!(!parse(&mut parser, ",000"));
+        assert_eq!(Error::COMMA, parser.error_state);
+
+        parser.clear();
+        assert!(!parse(&mut parser, "256,55.1"));
+        assert_eq!(Error::COMMA, parser.error_state);
+    }
+
+    #[test]
+    fn not_digit() {
+        let mut parser = NumericParser::new();
+        assert!(!parse(&mut parser, "@@@"));
+    }
+
+    #[test]
+    fn float_point() {
+        let mut parser = NumericParser::new();
+        assert!(parse(&mut parser, "6.0"));
+        assert_eq!("6", parser.get_normalized());
+
+        parser.clear();
+        assert!(!parse(&mut parser, "6."));
+        assert_eq!(Error::POINT, parser.error_state);
+
+        parser.clear();
+        assert!(!parse(&mut parser, "1.2.3"));
+        assert_eq!(Error::POINT, parser.error_state);
     }
 }
