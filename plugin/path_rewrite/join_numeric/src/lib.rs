@@ -13,6 +13,9 @@ use sudachi::prelude::*;
 pub mod numeric_parser;
 use numeric_parser::NumericParser;
 
+#[cfg(test)]
+mod tests;
+
 declare_path_rewrite_plugin!(JoinNumericPlugin, JoinNumericPlugin::default);
 
 #[derive(Default)]
@@ -24,7 +27,7 @@ pub struct JoinNumericPlugin {
 #[allow(non_snake_case)]
 #[derive(Deserialize)]
 struct PluginSettings {
-    enableNormalize: bool,
+    enableNormalize: Option<bool>,
 }
 
 impl JoinNumericPlugin {
@@ -76,7 +79,7 @@ impl PathRewritePlugin for JoinNumericPlugin {
         let enable_normalize = settings.enableNormalize;
 
         self.numeric_pos_id = numeric_pos_id;
-        self.enable_normalize = enable_normalize;
+        self.enable_normalize = enable_normalize.unwrap_or(true);
 
         Ok(())
     }
