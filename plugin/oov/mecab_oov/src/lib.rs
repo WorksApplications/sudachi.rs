@@ -16,6 +16,9 @@ use sudachi::lattice::node::Node;
 use sudachi::plugin::oov::OovProviderPlugin;
 use sudachi::prelude::*;
 
+#[cfg(test)]
+mod tests;
+
 const DEFAULT_CHAR_DEF_FILE: &str = "char.def";
 const DEFAULT_UNK_DEF_FILE: &str = "unk.def";
 
@@ -232,7 +235,7 @@ struct CategoryInfo {
     length: u32,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default, Clone)]
 struct OOV {
     left_id: i16,
     right_id: i16,
