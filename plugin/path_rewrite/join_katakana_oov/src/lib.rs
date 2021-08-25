@@ -10,6 +10,9 @@ use sudachi::lattice::{node::Node, Lattice};
 use sudachi::plugin::path_rewrite::PathRewritePlugin;
 use sudachi::prelude::*;
 
+#[cfg(test)]
+mod tests;
+
 declare_path_rewrite_plugin!(JoinKarakanaOovPlugin, JoinKarakanaOovPlugin::default);
 
 #[derive(Default)]
