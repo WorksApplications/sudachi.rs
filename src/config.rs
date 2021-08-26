@@ -6,7 +6,7 @@ use serde::Deserialize;
 use serde_json::Value;
 use thiserror::Error;
 
-const DEFAULT_RESOURCE_DIR: &str = "./src/resources";
+const DEFAULT_RESOURCE_DIR: &str = "src/resources";
 const DEFAULT_SETTING_FILE: &str = "sudachi.json";
 const DEFAULT_CHAR_DEF_FILE: &str = "char.def";
 
@@ -66,9 +66,12 @@ impl Config {
         resource_dir: Option<PathBuf>,
         dictionary_path: Option<PathBuf>,
     ) -> Result<Self, ConfigError> {
+        let src_root_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let default_resource_dir_path = src_root_path.join(DEFAULT_RESOURCE_DIR);
+
         let config_file = match config_file {
             Some(v) => v,
-            None => PathBuf::from(DEFAULT_RESOURCE_DIR).join(DEFAULT_SETTING_FILE),
+            None => default_resource_dir_path.join(DEFAULT_SETTING_FILE),
         };
         let file = File::open(config_file)?;
         let reader = BufReader::new(file);
@@ -76,7 +79,7 @@ impl Config {
 
         let resource_dir = resource_dir
             .or_else(|| raw_config.resourcePath.clone())
-            .unwrap_or_else(|| PathBuf::from(DEFAULT_RESOURCE_DIR));
+            .unwrap_or_else(|| default_resource_dir_path);
         let system_dict = dictionary_path.or_else(|| {
             raw_config
                 .systemDict
