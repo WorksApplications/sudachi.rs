@@ -6,6 +6,11 @@ use serde::Deserialize;
 use serde_json::Value;
 use thiserror::Error;
 
+const DEFAULT_RESOURCE_DIR: &str = "./src/resources";
+const DEFAULT_SETTING_FILE: &str = "sudachi.json";
+const DEFAULT_CHAR_DEF_FILE: &str = "char.def";
+
+/// Sudachi Error
 #[derive(Error, Debug)]
 pub enum ConfigError {
     #[error("IO Error: {0}")]
@@ -24,13 +29,23 @@ pub enum ConfigError {
     MissingArgument(String),
 }
 
-const DEFAULT_RESOURCE_DIR: &str = "./src/resources";
-const DEFAULT_SETTING_FILE: &str = "sudachi.json";
-const DEFAULT_CHAR_DEF_FILE: &str = "char.def";
+/// Setting data loaded from config file
+#[derive(Debug, Default)]
+pub struct Config {
+    pub resource_dir: PathBuf,
+    pub system_dict: Option<PathBuf>,
+    pub user_dicts: Vec<PathBuf>,
+    pub character_definition_file: PathBuf,
+
+    pub connection_cost_plugins: Vec<Value>,
+    pub input_text_plugins: Vec<Value>,
+    pub oov_provider_plugins: Vec<Value>,
+    pub path_rewrite_plugins: Vec<Value>,
+}
 
 /// Struct corresponds with raw config json file.
 /// You must use filed names defined here as json object key.
-/// For plugins, refer to each plugin's source.
+/// For plugins, refer to each plugin.
 #[allow(non_snake_case)]
 #[derive(Deserialize, Debug)]
 pub struct RawConfig {
@@ -43,19 +58,6 @@ pub struct RawConfig {
     inputTextPlugin: Option<Vec<Value>>,
     oovProviderPlugin: Option<Vec<Value>>,
     pathRewritePlugin: Option<Vec<Value>>,
-}
-
-#[derive(Debug, Default)]
-pub struct Config {
-    pub resource_dir: PathBuf,
-    pub system_dict: Option<PathBuf>,
-    pub user_dicts: Vec<PathBuf>,
-    pub character_definition_file: PathBuf,
-
-    pub connection_cost_plugins: Vec<Value>,
-    pub input_text_plugins: Vec<Value>,
-    pub oov_provider_plugins: Vec<Value>,
-    pub path_rewrite_plugins: Vec<Value>,
 }
 
 impl Config {
@@ -107,6 +109,7 @@ impl Config {
         })
     }
 
+    /// Resolves given path to a path relative to resource_dir if its relative
     pub fn complete_path(&self, file_path: PathBuf) -> PathBuf {
         Config::join_if_relative(&self.resource_dir, file_path)
     }

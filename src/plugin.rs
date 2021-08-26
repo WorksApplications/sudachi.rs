@@ -26,6 +26,7 @@ pub enum PluginError {
     InvalidDataFormat(String),
 }
 
+/// Retrieves the path to the plugin shared object file from a plugin config
 pub fn get_plugin_path(plugin_config: &Value, config: &Config) -> SudachiResult<PathBuf> {
     let obj = match plugin_config {
         Value::Object(v) => v,

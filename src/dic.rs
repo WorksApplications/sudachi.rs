@@ -24,6 +24,7 @@ pub struct Dictionary<'a> {
 }
 
 impl<'a> Dictionary<'a> {
+    /// Creates a system dictionary from bytes, and load a character category from file
     pub fn from_system_dictionary(
         dictionary_bytes: &'a [u8],
         character_category_file: PathBuf,
@@ -51,6 +52,7 @@ pub struct BinaryDictionary<'a> {
 }
 
 impl<'a> BinaryDictionary<'a> {
+    /// Creates a binary dictionary from bytes
     fn read_dictionary(dictionary_bytes: &[u8]) -> SudachiResult<BinaryDictionary> {
         let header = Header::new(&dictionary_bytes[..Header::STORAGE_SIZE])?;
         let mut offset = Header::STORAGE_SIZE;
@@ -71,6 +73,10 @@ impl<'a> BinaryDictionary<'a> {
             lexicon,
         })
     }
+
+    /// Creates a system binary dictionary from bytes
+    ///
+    /// Returns Err if header version is not match
     pub fn from_system_dictionary(dictionary_bytes: &[u8]) -> SudachiResult<BinaryDictionary> {
         let dict = Self::read_dictionary(dictionary_bytes)?;
         match dict.header.version {
@@ -80,6 +86,10 @@ impl<'a> BinaryDictionary<'a> {
             )),
         }
     }
+
+    /// Creates a user binary dictionary from bytes
+    ///
+    /// Returns Err if header version is not match
     pub fn from_user_dictionary(dictionary_bytes: &[u8]) -> SudachiResult<BinaryDictionary> {
         let dict = Self::read_dictionary(dictionary_bytes)?;
         match dict.header.version {

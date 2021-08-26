@@ -17,14 +17,23 @@ pub enum LexiconSetError {
     TooManyDictionaries,
 }
 
+/// Set of Lexicons
+///
+/// Handles multiple lexicons as one lexicon
+/// The first lexicon in the list must be from system dictionary
 pub struct LexiconSet<'a> {
     lexicons: Vec<Lexicon<'a>>,
     pos_offsets: Vec<usize>,
 }
 
 impl<'a> LexiconSet<'a> {
+    /// The first 4 bits of word_id are used to indicate that from which lexicon
+    /// the word comes, thus we can only hold 2^4 lexicons in the same time.
     const MAX_DICTIONARIES: usize = 16;
 
+    /// Creates a LexiconSet given a lexicon
+    ///
+    /// This assume that given lexicon is from system dictionary
     pub fn new(system_lexicon: Lexicon) -> LexiconSet {
         LexiconSet {
             lexicons: vec![system_lexicon],
@@ -32,6 +41,9 @@ impl<'a> LexiconSet<'a> {
         }
     }
 
+    /// Add a lexicon to the lexicon list
+    ///
+    /// pos_offset: number of pos in the grammar
     pub fn append(
         &mut self,
         lexicon: Lexicon<'a>,
@@ -46,17 +58,19 @@ impl<'a> LexiconSet<'a> {
         Ok(())
     }
 
+    /// Returns if dictionary capacity is full
     pub fn is_full(&self) -> bool {
         self.lexicons.len() >= LexiconSet::MAX_DICTIONARIES
     }
 }
 
 impl LexiconSet<'_> {
+    /// Returns a list of word_id and length of words that matches given input
+    ///
+    /// Searches user dictionary first and then system dictionary
     pub fn lookup(&self, input: &[u8], offset: usize) -> SudachiResult<Vec<(u32, usize)>> {
         let mut vs: Vec<(u32, usize)> = Vec::new();
         for (did, user_lexicon) in self.lexicons.iter().enumerate().skip(1) {
-            // lookup user dictionary first
-            // todo: impl Iterator
             vs.extend(
                 user_lexicon
                     .lookup(input, offset)?
@@ -70,6 +84,7 @@ impl LexiconSet<'_> {
         Ok(vs)
     }
 
+    /// Returns word_info for given word_id
     pub fn get_word_info(&self, dictword_id: u32) -> SudachiResult<WordInfo> {
         let (dict_id, word_id) = LexiconSet::decode_dictword_id(dictword_id);
         let mut word_info = self.lexicons[dict_id].get_word_info(word_id)?;
@@ -87,6 +102,7 @@ impl LexiconSet<'_> {
         Ok(word_info)
     }
 
+    /// Returns word_param for given word_id
     pub fn get_word_param(&self, dictword_id: u32) -> SudachiResult<(i16, i16, i16)> {
         let (dict_id, word_id) = LexiconSet::decode_dictword_id(dictword_id);
         self.lexicons[dict_id].get_word_param(word_id)

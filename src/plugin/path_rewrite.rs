@@ -10,9 +10,13 @@ use crate::input_text::utf8_input_text::Utf8InputText;
 use crate::lattice::{node::Node, Lattice};
 use crate::prelude::*;
 
+/// Trait of plugin to rewrite the path from lattice
 pub trait PathRewritePlugin {
+    /// Loads necessary information for the plugin
     fn set_up(&mut self, settings: &Value, config: &Config, grammar: &Grammar)
         -> SudachiResult<()>;
+
+    /// Returns a rewrited path
     fn rewrite(
         &self,
         text: &Utf8InputText,
@@ -20,6 +24,7 @@ pub trait PathRewritePlugin {
         lattice: &Lattice,
     ) -> SudachiResult<Vec<Node>>;
 
+    /// Concatenate the nodes in the range and replace normalized_form if geven.
     fn concatenate(
         &self,
         mut path: Vec<Node>,
@@ -57,7 +62,7 @@ pub trait PathRewritePlugin {
             .iter()
             .fold(String::new(), |acc, wi| acc + &wi.dictionary_form);
 
-        let mut node = Node::new_default();
+        let mut node = Node::default();
         node.set_range(b, e);
         node.set_word_info(WordInfo {
             surface,
@@ -74,6 +79,7 @@ pub trait PathRewritePlugin {
         Ok(path)
     }
 
+    /// Concatenate the nodes in the range and set pos_id.
     fn concatenate_oov(
         &self,
         mut path: Vec<Node>,
@@ -99,7 +105,7 @@ pub trait PathRewritePlugin {
             .iter()
             .fold(0, |acc, wi| acc + wi.head_word_length);
 
-        let mut node = Node::new_default();
+        let mut node = Node::default();
         node.set_range(b, e);
         node.set_word_info(WordInfo {
             normalized_form: surface.clone(),
@@ -137,6 +143,7 @@ macro_rules! declare_path_rewrite_plugin {
     };
 }
 
+/// Plugin manager to handle multiple plugins
 #[derive(Default)]
 pub struct PathRewritePluginManager {
     plugins: Vec<Box<dyn PathRewritePlugin + Sync>>,
@@ -178,6 +185,7 @@ impl Drop for PathRewritePluginManager {
     }
 }
 
+/// Load plugins based on config data
 pub fn get_path_rewrite_plugins(
     config: &Config,
     grammar: &Grammar,

@@ -9,11 +9,25 @@ use sudachi::prelude::*;
 
 declare_connect_cost_plugin!(InhibitConnectionPlugin, InhibitConnectionPlugin::default);
 
+/// A edit connection cost plugin for inhibiting the connections.
+///
+/// Example setting file
+/// ``
+/// {
+///     {
+///         "class": "relative-path/to/so-file/from/resource-path",
+///         "inhibitPair": [[0, 233], [435, 332]]
+///     }
+/// }
+/// ``
 #[derive(Default)]
 pub struct InhibitConnectionPlugin {
+    /// At each pair, the first one is right_id of the left node
+    /// and the second one is left_id of right node in a connection
     inhibit_pairs: Vec<(i16, i16)>,
 }
 
+/// Struct corresponds with raw config json file.
 #[allow(non_snake_case)]
 #[derive(Deserialize)]
 struct PluginSettings {

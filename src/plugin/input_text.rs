@@ -8,9 +8,15 @@ use crate::dic::grammar::Grammar;
 use crate::input_text::utf8_input_text_builder::Utf8InputTextBuilder;
 use crate::prelude::*;
 
+/// Trait of plugin to modify the input text before tokenization
 pub trait InputTextPlugin {
+    /// Loads necessary information for the plugin
     fn set_up(&mut self, settings: &Value, config: &Config, grammar: &Grammar)
         -> SudachiResult<()>;
+
+    /// Rewrites input text
+    ///
+    /// builder::replace will be used inside
     fn rewrite(&self, builder: &mut Utf8InputTextBuilder);
 }
 
@@ -35,6 +41,7 @@ macro_rules! declare_input_text_plugin {
     };
 }
 
+/// Plugin manager to handle multiple plugins
 #[derive(Default)]
 pub struct InputTextPluginManager {
     plugins: Vec<Box<dyn InputTextPlugin + Sync>>,
@@ -76,6 +83,7 @@ impl Drop for InputTextPluginManager {
     }
 }
 
+/// Load plugins based on config data
 pub fn get_input_text_plugins(
     config: &Config,
     grammar: &Grammar,

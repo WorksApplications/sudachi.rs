@@ -21,13 +21,18 @@ const DEFAULT_REWRITE_DEF_FILE: &str = "rewrite.def";
 
 declare_input_text_plugin!(DefaultInputTextPlugin, DefaultInputTextPlugin::default);
 
+/// Provides basic normalization of the input text
 #[derive(Default)]
 pub struct DefaultInputTextPlugin {
+    /// Set of characters to skip normalization
     ignore_normalize_set: HashSet<char>,
+    /// Mapping from a character to the maximum char_length of possible replacement
     key_lengths: HashMap<char, usize>,
+    /// Replacement mapping
     replace_char_map: HashMap<String, String>,
 }
 
+/// Struct corresponds with raw config json file.
 #[allow(non_snake_case)]
 #[derive(Deserialize)]
 struct PluginSettings {
@@ -35,6 +40,16 @@ struct PluginSettings {
 }
 
 impl DefaultInputTextPlugin {
+    /// Loads rewrite definition
+    ///
+    /// Definition syntax:
+    ///     Ignored normalize:
+    ///         Each line contains a character
+    ///     Replace char list:
+    ///         Each line contains two strings separated by white spaces
+    ///         Plugin replaces the first by the second
+    ///         Same target string cannot be defined multiple times
+    ///     Empty or line starts with "#" will be ignored
     fn read_rewrite_lists(&mut self, reader: BufReader<fs::File>) -> SudachiResult<()> {
         let mut ignore_normalize_set = HashSet::new();
         let mut key_lengths = HashMap::new();
@@ -67,8 +82,9 @@ impl DefaultInputTextPlugin {
                     ));
                 }
                 let first_char = cols[0].chars().next().unwrap();
-                if key_lengths.get(&first_char).map(|v| *v).unwrap_or(0) < cols[0].len() {
-                    key_lengths.insert(first_char, cols[0].chars().count());
+                let n_char = cols[0].chars().count();
+                if key_lengths.get(&first_char).map(|v| *v).unwrap_or(0) < n_char {
+                    key_lengths.insert(first_char, n_char);
                 }
                 replace_char_map.insert(cols[0].to_string(), cols[1].to_string());
                 continue;
@@ -148,7 +164,8 @@ impl InputTextPlugin for DefaultInputTextPlugin {
             // 2-1. capital alphabet (not only Latin but Greek, Cyrillic, etc.) -> small
             let original = original.to_string();
             let lower = original.to_lowercase();
-            // todo: in rust, char::to_lowercase may returns multiple chars
+            // char::to_lowercase may returns multiple chars
+            // here we check first one only.
             let lower_first_char = lower.chars().next().unwrap();
             let replace: String;
             if self.ignore_normalize_set.contains(&lower_first_char) {

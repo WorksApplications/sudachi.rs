@@ -13,6 +13,8 @@ use sudachi::prelude::*;
 
 declare_input_text_plugin!(IgnoreYomiganaPlugin, IgnoreYomiganaPlugin::default);
 
+/// Search katakana in the bracket after kanji character as Yomigana (読み仮名)
+/// and removes it from tokenization target
 #[derive(Default)]
 pub struct IgnoreYomiganaPlugin {
     character_category: CharacterCategory,
@@ -21,6 +23,7 @@ pub struct IgnoreYomiganaPlugin {
     max_yomigana_length: usize,
 }
 
+/// Struct corresponds with raw config json file.
 #[allow(non_snake_case)]
 #[derive(Deserialize)]
 struct PluginSettings {

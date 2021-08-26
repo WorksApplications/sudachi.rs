@@ -12,6 +12,7 @@ use sudachi::prelude::*;
 
 declare_oov_provider_plugin!(SimpleOovPlugin, SimpleOovPlugin::default);
 
+/// Provides a OOV node with single character if no words found in the dictionary
 #[derive(Default)]
 pub struct SimpleOovPlugin {
     left_id: i16,
@@ -20,6 +21,7 @@ pub struct SimpleOovPlugin {
     oov_pos_id: u16,
 }
 
+/// Struct corresponds with raw config json file.
 #[allow(non_snake_case)]
 #[derive(Deserialize)]
 struct PluginSettings {

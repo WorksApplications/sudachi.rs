@@ -6,13 +6,17 @@ use self::node::Node;
 use crate::dic::grammar::Grammar;
 use crate::prelude::*;
 
+/// Lattice for tokenization
 pub struct Lattice<'a> {
     grammar: &'a Grammar<'a>,
+    /// The byte_length of target text
     size: usize,
+    /// List of lattice nodes which ends at the byte_idx
     pub end_lists: Vec<Vec<Node>>,
 }
 
 impl<'a> Lattice<'a> {
+    /// Creates a lattice with bos node node
     pub fn new(grammar: &'a Grammar, size: usize) -> Lattice<'a> {
         let mut end_lists = vec![Vec::<Node>::new(); size + 1];
 
@@ -26,6 +30,7 @@ impl<'a> Lattice<'a> {
         }
     }
 
+    /// Inserts a node to the given range
     pub fn insert(&mut self, begin: usize, end: usize, mut node: Node) -> SudachiResult<()> {
         node.set_range(begin, end);
         self.connect_node(&mut node)?;
@@ -34,6 +39,7 @@ impl<'a> Lattice<'a> {
         Ok(())
     }
 
+    /// Connect node to previous nodes and calculate total_cost if possible
     fn connect_node(&self, r_node: &mut Node) -> SudachiResult<()> {
         let begin = r_node.begin;
         r_node.total_cost = i32::MAX;
@@ -59,15 +65,18 @@ impl<'a> Lattice<'a> {
         Ok(())
     }
 
+    /// Inserts eos node
     pub fn connect_eos_node(&mut self) -> SudachiResult<()> {
         let eos_node = Node::new_eos(self.size);
         self.insert(eos_node.begin, eos_node.end, eos_node)
     }
 
+    /// Returns if the lattice has node which ends at the given byte_idx
     pub fn has_previous_node(&self, index: usize) -> bool {
         !self.end_lists[index].is_empty()
     }
 
+    /// Calculate and Returns the best path from lattice
     pub fn get_best_path(&self) -> SudachiResult<Vec<Node>> {
         // TODO: reference of eos_node in struct `Lattice` ?
         let eos_node = self.end_lists[self.size]
@@ -98,6 +107,7 @@ impl<'a> Lattice<'a> {
         Ok(path)
     }
 
+    /// Dumps lattice
     pub fn dump(&self, grammar: &Grammar) -> SudachiResult<()> {
         let mut i = 0;
         for r_nodes in self.end_lists.iter().rev() {

@@ -43,7 +43,6 @@ fn katakana_length() {
     assert_eq!(1, path.len());
 }
 
-// todo?: proper test name
 #[test]
 fn part_of_speech() {
     let mut plugin = JoinKarakanaOovPlugin::default();

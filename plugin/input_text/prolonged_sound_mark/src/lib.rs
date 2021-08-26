@@ -14,12 +14,14 @@ mod tests;
 
 declare_input_text_plugin!(ProlongedSoundMarkPlugin, ProlongedSoundMarkPlugin::default);
 
+/// Replace (consecutive) prolonged sound mark by one symbol.
 #[derive(Default)]
 pub struct ProlongedSoundMarkPlugin {
     psm_set: HashSet<char>,
     replace_symbol: String,
 }
 
+/// Struct corresponds with raw config json file.
 #[allow(non_snake_case)]
 #[derive(Deserialize)]
 struct PluginSettings {

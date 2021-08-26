@@ -24,12 +24,14 @@ const DEFAULT_UNK_DEF_FILE: &str = "unk.def";
 
 declare_oov_provider_plugin!(MeCabOovPlugin, MeCabOovPlugin::default);
 
+/// provides MeCab oov nodes
 #[derive(Default)]
 pub struct MeCabOovPlugin {
     categories: HashMap<CategoryType, CategoryInfo>,
     oov_list: HashMap<CategoryType, Vec<OOV>>,
 }
 
+/// Struct corresponds with raw config json file.
 #[allow(non_snake_case)]
 #[derive(Deserialize)]
 struct PluginSettings {
@@ -38,6 +40,9 @@ struct PluginSettings {
 }
 
 impl MeCabOovPlugin {
+    /// Loads character category definition
+    ///
+    /// See src/resources/char.def for the syntax
     fn read_character_property(
         reader: BufReader<fs::File>,
     ) -> SudachiResult<HashMap<CategoryType, CategoryInfo>> {
@@ -86,6 +91,9 @@ impl MeCabOovPlugin {
         Ok(categories)
     }
 
+    /// Load OOV definition
+    ///
+    /// Each line contains: CategoryType, left_id, right_id, cost, and pos
     fn read_oov(
         reader: BufReader<fs::File>,
         categories: &HashMap<CategoryType, CategoryInfo>,
@@ -132,6 +140,7 @@ impl MeCabOovPlugin {
         Ok(oov_list)
     }
 
+    /// Creates a new oov node
     fn get_oov_node(&self, text: &str, oov: &OOV, length: u16) -> Node {
         let surface = String::from(text);
         let word_info = WordInfo {
@@ -227,6 +236,7 @@ impl OovProviderPlugin for MeCabOovPlugin {
     }
 }
 
+/// The character category definition
 #[derive(Debug)]
 struct CategoryInfo {
     category_type: CategoryType,
@@ -235,6 +245,7 @@ struct CategoryInfo {
     length: u32,
 }
 
+/// The OOV definition
 #[derive(Debug, Default, Clone)]
 struct OOV {
     left_id: i16,

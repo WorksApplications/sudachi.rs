@@ -18,12 +18,16 @@ mod tests;
 
 declare_path_rewrite_plugin!(JoinNumericPlugin, JoinNumericPlugin::default);
 
+/// Concatenates numeric nodes as one
 #[derive(Default)]
 pub struct JoinNumericPlugin {
+    /// The pos_id to concatenate
     numeric_pos_id: u16,
+    /// Whether if to normalize the normalized_form
     enable_normalize: bool,
 }
 
+/// Struct corresponds with raw config json file.
 #[allow(non_snake_case)]
 #[derive(Deserialize)]
 struct PluginSettings {

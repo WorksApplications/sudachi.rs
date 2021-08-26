@@ -5,10 +5,6 @@ use crate::error::SudachiError;
 
 /// Categories of characters.
 ///
-/// These categories are used in the
-/// OovPlugins and
-/// PathRewritePlugin.
-///
 /// You can define the range of each category in the file which specified
 /// "characterDefinitionFile" of the settings.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -47,6 +43,7 @@ pub enum CategoryType {
     NOOOVBOW,
 }
 
+/// Set of category types
 pub type CategoryTypes = HashSet<CategoryType>;
 
 impl FromStr for CategoryType {

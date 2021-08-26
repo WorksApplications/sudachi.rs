@@ -48,19 +48,13 @@ struct Cli {
     #[structopt(short = "d", long = "debug")]
     enable_debug: bool,
 
-    // Dictionary is optional if baked in
     /// Path to sudachi dictionary
-    #[cfg(feature = "bake_dictionary")]
-    #[structopt(short = "l", long = "dict")]
-    dictionary_path: Option<PathBuf>,
-
-    // Dictionary is not baked in, so it must be specified
-    /// Path to sudachi dictionary
-    #[cfg(not(feature = "bake_dictionary"))]
+    /// If None, it refer config and then baked dictionary
     #[structopt(short = "l", long = "dict")]
     dictionary_path: Option<PathBuf>,
 }
 
+/// get dictionary bytes
 fn get_dictionary_bytes(system_dict: Option<PathBuf>) -> Option<Cow<'static, [u8]>> {
     let dictionary_path = {
         cfg_if::cfg_if! {
@@ -149,6 +143,7 @@ fn main() {
     }
 }
 
+/// Format and write morphemes into writer
 fn write_results(
     writer: &mut Box<dyn Write>,
     morpheme_list: Vec<Morpheme>,

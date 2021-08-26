@@ -18,6 +18,7 @@ pub enum HeaderError {
     CannotParse,
 }
 
+/// Header version
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum HeaderVersion {
     SystemDict(SystemDictVersion),
@@ -63,6 +64,9 @@ impl HeaderVersion {
     }
 }
 
+/// Dictionary header
+///
+/// Contains version, create_time, and description
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Header {
     pub version: HeaderVersion,
@@ -74,6 +78,7 @@ impl Header {
     const DESCRIPTION_SIZE: usize = 256;
     pub const STORAGE_SIZE: usize = 8 + 8 + Header::DESCRIPTION_SIZE;
 
+    /// Creates a new header from a dictionary bytes
     pub fn new(bytes: &[u8]) -> Result<Header, HeaderError> {
         let (_rest, (version, create_time, description)) =
             header_parser(bytes).map_err(|_| HeaderError::CannotParse)?;
@@ -87,6 +92,7 @@ impl Header {
         })
     }
 
+    /// Returns if this header version has grammar
     pub fn has_grammar(&self) -> bool {
         match self.version {
             HeaderVersion::SystemDict(_) => true,
@@ -95,6 +101,8 @@ impl Header {
             _ => false,
         }
     }
+
+    /// Returns if this header version has synonym group ids
     pub fn has_synonym_group_ids(&self) -> bool {
         match self.version {
             HeaderVersion::SystemDict(SystemDictVersion::Version2) => true,
@@ -114,6 +122,7 @@ fn nul_terminated_str_from_slice(buf: &[u8]) -> String {
     String::from_utf8_lossy(str_bytes).to_string()
 }
 
+// parse header from bytes
 named_args!(
     header_parser()<&[u8], (u64, u64, String)>,
     do_parse!(

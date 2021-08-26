@@ -4,10 +4,16 @@ use super::utf8_input_text::Utf8InputText;
 use crate::dic::category_type::{CategoryType, CategoryTypes};
 use crate::dic::grammar::Grammar;
 
+/// Builder of Uuf8InputText
+///
+/// This handles modifications of the original text
 pub struct Utf8InputTextBuilder<'a> {
     grammar: &'a Grammar<'a>,
+    /// The original text
     pub original: &'a str,
+    /// The text after modifications
     pub modified: String,
+    /// mapping from modified byte_idx to original char_idx
     modified_to_original: Vec<usize>,
 }
 
@@ -29,28 +35,10 @@ impl<'a> Utf8InputTextBuilder<'a> {
             modified_to_original,
         }
     }
+}
 
-    fn char_range_to_byte_range(&self, char_range: Range<usize>) -> Range<usize> {
-        let mut byte_start = 0;
-        let mut byte_end = 0;
-        for (char_idx, byte_idx) in self
-            .modified
-            .char_indices()
-            .map(|v| v.0)
-            .chain([self.modified.len()])
-            .enumerate()
-        {
-            if char_idx == char_range.start {
-                byte_start = byte_idx;
-            }
-            if char_idx == char_range.end {
-                byte_end = byte_idx;
-                break;
-            }
-        }
-        byte_start..byte_end
-    }
-
+impl Utf8InputTextBuilder<'_> {
+    /// Replaces a substring of the current text by given new string
     pub fn replace(&mut self, char_range: Range<usize>, str_: &str) {
         let Range { start, end } = self.char_range_to_byte_range(char_range);
 
@@ -69,6 +57,9 @@ impl<'a> Utf8InputTextBuilder<'a> {
         }
     }
 
+    /// Builds a Utf8InputText
+    ///
+    /// Generated Utf8InputText has a reference to this builder thus fn replace cannot be used after this.
     pub fn build(&self) -> Utf8InputText {
         let byte_indexes: Vec<usize> = self
             .modified
@@ -96,6 +87,29 @@ impl<'a> Utf8InputTextBuilder<'a> {
         )
     }
 
+    /// Converts modified char_range to byte_range
+    fn char_range_to_byte_range(&self, char_range: Range<usize>) -> Range<usize> {
+        let mut byte_start = 0;
+        let mut byte_end = 0;
+        for (char_idx, byte_idx) in self
+            .modified
+            .char_indices()
+            .map(|v| v.0)
+            .chain([self.modified.len()])
+            .enumerate()
+        {
+            if char_idx == char_range.start {
+                byte_start = byte_idx;
+            }
+            if char_idx == char_range.end {
+                byte_end = byte_idx;
+                break;
+            }
+        }
+        byte_start..byte_end
+    }
+
+    /// Builds category types list
     fn build_char_category_types(&self) -> Vec<CategoryTypes> {
         self.modified
             .chars()
@@ -103,6 +117,7 @@ impl<'a> Utf8InputTextBuilder<'a> {
             .collect()
     }
 
+    /// Builds can_bow list
     fn build_can_bow_list(&self, char_category_types: &Vec<CategoryTypes>) -> Vec<bool> {
         if self.modified.is_empty() {
             return vec![];
@@ -129,6 +144,7 @@ impl<'a> Utf8InputTextBuilder<'a> {
         can_bow_list
     }
 
+    /// Returns char_length of same category type from given offset
     fn get_char_category_continuous_length(
         char_category_types: &Vec<CategoryTypes>,
         c_offset: usize,
@@ -146,6 +162,9 @@ impl<'a> Utf8InputTextBuilder<'a> {
         char_category_types.len() - c_offset
     }
 
+    /// Builds category continuity list
+    ///
+    /// It contains byte_length to where category type continuity ends
     fn build_char_category_continuities(
         &self,
         char_category_types: &Vec<CategoryTypes>,

@@ -12,6 +12,9 @@ use self::word_infos::{WordInfo, WordInfos};
 use self::word_params::WordParams;
 use crate::prelude::*;
 
+/// Dictionary lexicon
+///
+/// Contains trie, word_id, word_param, word_info
 pub struct Lexicon<'a> {
     trie: Trie,
     word_id_table: WordIdTable<'a>,
@@ -53,6 +56,7 @@ impl<'a> Lexicon<'a> {
         })
     }
 
+    /// Returns a list of word_id and length of words that matches given input
     pub fn lookup(&self, input: &[u8], offset: usize) -> SudachiResult<Vec<(u32, usize)>> {
         let result = self.trie.common_prefix_search(input, offset)?;
 
@@ -67,10 +71,12 @@ impl<'a> Lexicon<'a> {
         Ok(l)
     }
 
+    /// Returns word_info for given word_id
     pub fn get_word_info(&self, word_id: u32) -> SudachiResult<WordInfo> {
         self.word_infos.get_word_info(word_id)
     }
 
+    /// Returns word_param for given word_id
     pub fn get_word_param(&self, word_id: u32) -> SudachiResult<(i16, i16, i16)> {
         let left_id = self.word_params.get_left_id(word_id)?;
         let right_id = self.word_params.get_right_id(word_id)?;

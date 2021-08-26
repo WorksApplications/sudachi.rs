@@ -15,12 +15,16 @@ mod tests;
 
 declare_path_rewrite_plugin!(JoinKarakanaOovPlugin, JoinKarakanaOovPlugin::default);
 
+/// Concatenates katakana oov nodes into one
 #[derive(Default)]
 pub struct JoinKarakanaOovPlugin {
+    /// The pos_id used for concatenated node
     oov_pos_id: u16,
+    /// The minimum node char_length to concatenate even if it is not oov
     min_length: usize,
 }
 
+/// Struct corresponds with raw config json file.
 #[allow(non_snake_case)]
 #[derive(Deserialize)]
 struct PluginSettings {
@@ -45,8 +49,8 @@ impl JoinKarakanaOovPlugin {
             .contains(&CategoryType::NOOOVBOW)
     }
 
-    fn is_shorter(&self, length: usize, text: &Utf8InputText, node: &Node) -> bool {
-        text.code_point_count(node.begin, node.end) < length
+    fn is_shorter(&self, text: &Utf8InputText, node: &Node) -> bool {
+        text.code_point_count(node.begin, node.end) < self.min_length
     }
 }
 
@@ -84,9 +88,7 @@ impl PathRewritePlugin for JoinKarakanaOovPlugin {
             }
 
             let node = &path[i];
-            if !(node.is_oov || self.is_shorter(self.min_length, text, node))
-                || !self.is_katakana_node(text, node)
-            {
+            if !(node.is_oov || self.is_shorter(text, node)) || !self.is_katakana_node(text, node) {
                 i += 1;
                 continue;
             }

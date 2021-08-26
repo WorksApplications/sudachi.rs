@@ -136,7 +136,7 @@ impl<'a> Tokenizer<'a> {
             .append(user_lexicon, self.grammar.pos_list.len())?;
 
         if let Some(g) = user_dict.grammar {
-            self.grammar.merge(&g);
+            self.grammar.merge(g);
         }
 
         Ok(())

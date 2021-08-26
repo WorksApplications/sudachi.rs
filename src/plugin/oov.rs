@@ -9,9 +9,13 @@ use crate::input_text::utf8_input_text::Utf8InputText;
 use crate::lattice::node::Node;
 use crate::prelude::*;
 
+/// Trait of plugin to provide oov node during tokenization
 pub trait OovProviderPlugin {
+    /// Loads necessary information for the plugin
     fn set_up(&mut self, settings: &Value, config: &Config, grammar: &Grammar)
         -> SudachiResult<()>;
+
+    /// Generate a list of oov nodes
     fn provide_oov(
         &self,
         input_text: &Utf8InputText,
@@ -19,6 +23,7 @@ pub trait OovProviderPlugin {
         has_other_words: bool,
     ) -> SudachiResult<Vec<Node>>;
 
+    /// Fills range field of generated nodes and returns.
     fn get_oov(
         &self,
         input_text: &Utf8InputText,
@@ -55,6 +60,7 @@ macro_rules! declare_oov_provider_plugin {
     };
 }
 
+/// Plugin manager to handle multiple plugins
 #[derive(Default)]
 pub struct OovProviderPluginManager {
     plugins: Vec<Box<dyn OovProviderPlugin + Sync>>,
@@ -96,6 +102,7 @@ impl Drop for OovProviderPluginManager {
     }
 }
 
+/// Load plugins based on config data
 pub fn get_oov_plugins(
     config: &Config,
     grammar: &Grammar,

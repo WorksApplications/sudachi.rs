@@ -26,36 +26,51 @@ pub enum Error {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Range {
+struct Range {
     begin: u32,
     end: u32,
     categories: CategoryTypes,
 }
 
 impl Range {
-    pub fn contains(&self, cp: u32) -> bool {
+    fn contains(&self, cp: u32) -> bool {
         self.begin <= cp && cp < self.end
     }
-    pub fn lower(&self, cp: u32) -> bool {
+    fn lower(&self, cp: u32) -> bool {
         self.end <= cp
     }
-    pub fn higher(&self, cp: u32) -> bool {
+    fn _higher(&self, cp: u32) -> bool {
         cp < self.begin
     }
 }
 
+/// CharacterCategory holds mapping from character to character category type
 #[derive(Debug, Default, Clone)]
 pub struct CharacterCategory {
     ranges: Vec<Range>,
 }
 
 impl CharacterCategory {
+    /// Creates a character category from file
     pub fn from_file(path: PathBuf) -> SudachiResult<CharacterCategory> {
         let reader = BufReader::new(fs::File::open(&path)?);
         let ranges = CharacterCategory::read_character_definition(reader)?;
         Ok(CharacterCategory::compile(ranges))
     }
 
+    /// Reads character type definition as a list of Ranges
+    ///
+    /// Definition file syntax:
+    ///     Each line contains [TARGET_CHARACTER_CODE_POINT] [TYPES], where
+    ///     TARGET_CHARACTER_CODE_POINT:
+    ///         a code_point in hexadecimal format or two separated by ".."
+    ///     TYPES:
+    ///         one or more Category_types separated by white space
+    ///     Loads only lines start with "0x" are loaded and ignore others
+    ///
+    /// Definition example:
+    ///     "0x0030..0x0039 NUMERIC"
+    ///     "0x3008         KANJI KANJINUMERIC"
     fn read_character_definition(reader: BufReader<fs::File>) -> SudachiResult<Vec<Range>> {
         let mut ranges: Vec<Range> = Vec::new();
         for (i, line) in reader.lines().enumerate() {
@@ -113,15 +128,17 @@ impl CharacterCategory {
         Ok(ranges)
     }
 
-    /// compile transforms given range_list to non overlapped range list
+    /// Creates a character category from given range_list
+    ///
+    /// Transforms given range_list to non overlapped range list
     /// to apply binary search in get_category_types
     fn compile(mut ranges: Vec<Range>) -> CharacterCategory {
         if ranges.is_empty() {
             return CharacterCategory { ranges: Vec::new() };
         }
 
-        /// implement order for Heap
-        /// note that here we use min-heap, based on the end of range
+        // implement order for Heap
+        // note that here we use min-heap, based on the end of range
         impl Ord for Range {
             fn cmp(&self, other: &Self) -> Ordering {
                 other.end.cmp(&self.end)
@@ -200,6 +217,7 @@ impl CharacterCategory {
         CharacterCategory { ranges: new_ranges }
     }
 
+    /// Returns a set of category types which given char has
     pub fn get_category_types(&self, c: char) -> CategoryTypes {
         if self.ranges.is_empty() {
             return FromIterator::from_iter([CategoryType::DEFAULT]);

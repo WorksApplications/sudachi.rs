@@ -7,9 +7,13 @@ use crate::config::Config;
 use crate::dic::grammar::Grammar;
 use crate::prelude::*;
 
+/// Trait of plugin to edit connection cost in the grammar
 pub trait EditConnectionCostPlugin {
+    /// Loads necessary information for the plugin
     fn set_up(&mut self, settings: &Value, config: &Config, grammar: &Grammar)
         -> SudachiResult<()>;
+
+    /// Edits the grammar
     fn edit(&self, grammar: &mut Grammar);
 }
 
@@ -34,6 +38,7 @@ macro_rules! declare_connect_cost_plugin {
     };
 }
 
+/// Plugin manager to handle multiple plugins
 #[derive(Default)]
 pub struct EditConnectionCostPluginManager {
     plugins: Vec<Box<dyn EditConnectionCostPlugin>>,
@@ -75,6 +80,7 @@ impl Drop for EditConnectionCostPluginManager {
     }
 }
 
+/// Load plugins based on config data
 pub fn get_edit_connection_cost_plugins(
     config: &Config,
     grammar: &Grammar,

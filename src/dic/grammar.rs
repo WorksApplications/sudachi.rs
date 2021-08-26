@@ -6,6 +6,10 @@ use crate::dic::character_category::CharacterCategory;
 use crate::dic::utf16_string;
 use crate::prelude::*;
 
+/// Dictionary grammar
+///
+/// Contains part_of_speech list and connection cost map.
+/// It also holds character category.
 pub struct Grammar<'a> {
     bytes: &'a [u8],
     pub pos_list: Vec<Vec<String>>,
@@ -26,6 +30,10 @@ impl<'a> Grammar<'a> {
     pub const BOS_PARAMETER: (i16, i16, i16) = (0, 0, 0); // left_id, right_id, cost
     pub const EOS_PARAMETER: (i16, i16, i16) = (0, 0, 0); // left_id, right_id, cost
 
+    /// Creates a Grammar from dictionary bytes
+    ///
+    /// buf: reference to the dictionary bytes
+    /// offset: offset to the grammar section in the buf
     pub fn new(buf: &[u8], offset: usize) -> SudachiResult<Grammar> {
         let (rest, (pos_list, left_id_size, right_id_size)) =
             grammar_parser(buf, offset).map_err(|_| SudachiError::InvalidDictionaryGrammar)?;
@@ -49,6 +57,10 @@ impl<'a> Grammar<'a> {
         })
     }
 
+    /// Returns connection cost of nodes
+    ///
+    /// left_id: right_id of left node
+    /// right_id: left_if of right node
     pub fn get_connect_cost(&self, left_id: i16, right_id: i16) -> SudachiResult<i16> {
         if let Some(v) = self.connect_cost_map.get(&(left_id, right_id)) {
             return Ok(*v);
@@ -65,15 +77,24 @@ impl<'a> Grammar<'a> {
         Ok(connect_cost)
     }
 
+    /// Sets character category
+    ///
+    /// This is the only way to set character category.
+    /// Character category will be a empty map by default.
     pub fn set_character_category(&mut self, character_category: CharacterCategory) {
         self.character_category = character_category;
     }
 
+    /// Sets connect cost for a specific pair of ids
+    ///
+    /// left_id: right_id of left node
+    /// right_id: left_if of right node
     pub fn set_connect_cost(&mut self, left_id: i16, right_id: i16, cost: i16) {
         // for edit connection cose plugin
         self.connect_cost_map.insert((left_id, right_id), cost);
     }
 
+    /// Returns a pos_id of given pos in the grammar
     pub fn get_part_of_speech_id(&self, pos1: &[&str]) -> Option<u16> {
         for (i, pos2) in self.pos_list.iter().enumerate() {
             if pos1.len() == pos2.len() && pos1.iter().zip(pos2).all(|(a, b)| a == b) {
@@ -83,9 +104,11 @@ impl<'a> Grammar<'a> {
         None
     }
 
-    pub fn merge(&mut self, other: &Grammar) {
-        // todo? consume other
-        self.pos_list.extend(other.pos_list.clone());
+    /// Merge a another grammar into this grammar
+    ///
+    /// Only pos_list is merged
+    pub fn merge(&mut self, other: Grammar) {
+        self.pos_list.extend(other.pos_list);
     }
 }
 

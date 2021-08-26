@@ -3,6 +3,7 @@ use std::collections::HashMap;
 mod string_number;
 use string_number::StringNumber;
 
+/// State of the parser
 #[derive(Debug, Eq, PartialEq)]
 pub enum Error {
     NONE,
@@ -11,6 +12,7 @@ pub enum Error {
     OTHER,
 }
 
+/// Parses number written by arabic or kanji
 #[derive(Debug)]
 pub struct NumericParser {
     char_to_num: HashMap<char, i32>,
