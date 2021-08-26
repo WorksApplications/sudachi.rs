@@ -4,7 +4,7 @@ use std::cmp;
 use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::io::{BufRead, BufReader};
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use unicode_normalization::UnicodeNormalization;
 
 use sudachi::config::Config;
@@ -35,12 +35,10 @@ struct PluginSettings {
 }
 
 impl DefaultInputTextPlugin {
-    fn read_rewrite_lists(&mut self, path: &Path) -> SudachiResult<()> {
+    fn read_rewrite_lists(&mut self, reader: BufReader<fs::File>) -> SudachiResult<()> {
         let mut ignore_normalize_set = HashSet::new();
         let mut key_lengths = HashMap::new();
         let mut replace_char_map = HashMap::new();
-
-        let reader = BufReader::new(fs::File::open(&path)?);
         for (i, line) in reader.lines().enumerate() {
             let line = line?;
             let line = line.trim();
@@ -101,7 +99,8 @@ impl InputTextPlugin for DefaultInputTextPlugin {
                 .unwrap_or(PathBuf::from(DEFAULT_REWRITE_DEF_FILE)),
         );
 
-        self.read_rewrite_lists(&rewrite_file_path)?;
+        let reader = BufReader::new(fs::File::open(&rewrite_file_path)?);
+        self.read_rewrite_lists(reader)?;
 
         Ok(())
     }

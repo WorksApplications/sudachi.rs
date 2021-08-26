@@ -65,6 +65,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sudachi",
+ "tempfile",
  "unicode-normalization",
 ]
 

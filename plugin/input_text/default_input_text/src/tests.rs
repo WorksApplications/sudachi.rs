@@ -1,5 +1,7 @@
 use super::*;
 use serde_json::{Map, Value};
+use std::io::{Seek, SeekFrom, Write};
+use tempfile::tempfile;
 
 use sudachi::config::Config;
 use sudachi::dic::grammar::Grammar;
@@ -65,40 +67,47 @@ fn after_rewrite() {
 #[test]
 #[should_panic]
 fn invalid_format_ignorelist() {
-    let settings = build_mock_setting_from_file_name("rewrite_error_ignorelist.def");
-    let config = Config::default();
-    let bytes = build_mock_bytes();
-    let grammar = build_mock_grammar(&bytes);
+    let mut file = tempfile().expect("Failed to get temporary file");
+    writeln!(file, "# there are two characters in ignore list").unwrap();
+    writeln!(file, "12").unwrap();
+    file.flush().expect("Failed to flush");
+    file.seek(SeekFrom::Start(0)).expect("Failed to seek");
+
     let mut plugin = DefaultInputTextPlugin::default();
     plugin
-        .set_up(&settings, &config, &grammar)
-        .expect("12 is not character at line 1");
+        .read_rewrite_lists(BufReader::new(file))
+        .expect("Failed to read rewrite lists");
 }
 
 #[test]
 #[should_panic]
 fn invalid_format_replacelist() {
-    let settings = build_mock_setting_from_file_name("rewrite_error_replacelist.def");
-    let config = Config::default();
-    let bytes = build_mock_bytes();
-    let grammar = build_mock_grammar(&bytes);
+    let mut file = tempfile().expect("Failed to get temporary file");
+    writeln!(file, "# there are three columns in replace list").unwrap();
+    writeln!(file, "12 21 31").unwrap();
+    file.flush().expect("Failed to flush");
+    file.seek(SeekFrom::Start(0)).expect("Failed to seek");
+
     let mut plugin = DefaultInputTextPlugin::default();
     plugin
-        .set_up(&settings, &config, &grammar)
-        .expect("invalid format at line 1");
+        .read_rewrite_lists(BufReader::new(file))
+        .expect("Failed to read rewrite lists");
 }
 
 #[test]
 #[should_panic]
 fn duplicated_lines_replacelist() {
-    let settings = build_mock_setting_from_file_name("rewrite_error_dup.def");
-    let config = Config::default();
-    let bytes = build_mock_bytes();
-    let grammar = build_mock_grammar(&bytes);
+    let mut file = tempfile().expect("Failed to get temporary file");
+    writeln!(file, "# there are a duplicated replacement.").unwrap();
+    writeln!(file, "12 21").unwrap();
+    writeln!(file, "12 31").unwrap();
+    file.flush().expect("Failed to flush");
+    file.seek(SeekFrom::Start(0)).expect("Failed to seek");
+
     let mut plugin = DefaultInputTextPlugin::default();
     plugin
-        .set_up(&settings, &config, &grammar)
-        .expect("12 is already defined at line 2");
+        .read_rewrite_lists(BufReader::new(file))
+        .expect("Failed to read rewrite lists");
 }
 
 fn build_mock_bytes() -> Vec<u8> {

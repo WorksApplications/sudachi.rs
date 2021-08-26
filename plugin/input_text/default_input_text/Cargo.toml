@@ -11,3 +11,6 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 sudachi = { path = "../../../" }
 unicode-normalization = "0.1.19"
+
+[dev-dependencies]
+tempfile = "3"
