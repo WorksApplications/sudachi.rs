@@ -20,6 +20,5 @@ fn get_part_of_speech_string() {
     assert_eq!("助動詞", pos[0]);
 }
 
-// todo: not implemented in python
 // fn creat_with_merging_settings
 // fn creat_with_merging_null_settings

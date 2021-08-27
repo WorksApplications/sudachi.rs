@@ -1,6 +1,6 @@
 use nom::{le_i32, le_u16, le_u32, le_u8};
 
-use crate::dic::utf16_string;
+use crate::dic::{string_length, utf16_string};
 use crate::prelude::*;
 
 pub struct WordInfos<'a> {
@@ -57,8 +57,7 @@ named_args!(
     do_parse!(
         _seek: take!(index) >>
         surface: utf16_string >>
-        head_word_length: le_u8 >>
-        head_word_length_low: count!(le_u8, if head_word_length < 128 { 0 } else { 1 }) >>
+        head_word_length: string_length >>
         pos_id: le_u16 >>
         normalized_form: utf16_string >>
         dictionary_form_word_id: le_i32 >>
@@ -70,12 +69,7 @@ named_args!(
         synonym_group_ids: cond!(has_synonym_group_ids, u32_array) >>
 
         (WordInfo{
-            // word length can be 1 or 2 bytes
-            head_word_length: if head_word_length_low.is_empty() {
-                head_word_length as u16
-            } else {
-                ((head_word_length as u16 & 0x7F) << 8) | head_word_length_low[0] as u16
-            },
+            head_word_length,
             pos_id,
             normalized_form: match normalized_form.as_str() {
                 "" => surface.clone(),

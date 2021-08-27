@@ -67,10 +67,9 @@ fn word_info() {
     let wi = LEXICON.get_word_info(6).expect("failed to get word_info");
     assert_eq!("東京都", wi.surface);
     assert_eq!([5, 9], &wi.a_unit_split[..]);
-    assert!(&wi.b_unit_split.is_empty());
+    assert!(wi.b_unit_split.is_empty());
     assert_eq!([5, 9], &wi.word_structure[..]);
-    // todo: after read synonym group ids
-    // assert_eq!([], wi.synonym_group_ids);
+    assert!(wi.synonym_group_ids.is_empty());
 
     // 行っ
     let wi = LEXICON.get_word_info(8).expect("failed to get word_info");
@@ -82,15 +81,14 @@ fn word_info() {
 
 #[test]
 fn word_info_with_longword() {
-    // todo: impl after lexicon update
     // 0123456789 * 30
-    // let wi = LEXICON.get_word_info(36).expect("failed to get word_info");
-    // assert_eq!(300, wi.surface.chars().count());
-    // assert_eq!(300, wi.head_word_length);
-    // assert_eq!(300, wi.normalized_form.chars().count());
-    // assert_eq!(-1, wi.dictionary_form_word_id);
-    // assert_eq!(300, wi.dictionary_form.chars().count());
-    // assert_eq!(570, wi.reading_form.chars().count());
+    let wi = LEXICON.get_word_info(36).expect("failed to get word_info");
+    assert_eq!(300, wi.surface.chars().count());
+    assert_eq!(300, wi.head_word_length);
+    assert_eq!(300, wi.normalized_form.chars().count());
+    assert_eq!(-1, wi.dictionary_form_word_id);
+    assert_eq!(300, wi.dictionary_form.chars().count());
+    assert_eq!(570, wi.reading_form.chars().count());
 }
 
 #[test]

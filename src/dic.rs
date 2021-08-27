@@ -104,12 +104,26 @@ impl<'a> BinaryDictionary<'a> {
 named!(
     utf16_string<&[u8], String>,
     do_parse!(
-        length: le_u8 >>
+        length: string_length >>
         v: count!(le_u16, length as usize) >>
 
         (String::from_utf16(&v)
             .map_err(|_| nom::Err::Failure(
                 nom::Context::Code(&[] as &[u8], nom::ErrorKind::Custom(SudachiNomCustomError::FromUtf16Nom as u32))))?
         )
+    )
+);
+
+// word length can be 1 or 2 bytes
+named!(
+    string_length<&[u8], u16>,
+    do_parse!(
+        length: le_u8 >>
+        _low: cond!(length >= 128, le_u8) >>
+
+        (match _low {
+            Some(low) => ((length as u16 & 0x7F) << 8) | low as u16,
+            None => length as u16,
+        })
     )
 );
