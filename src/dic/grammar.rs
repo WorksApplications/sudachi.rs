@@ -14,12 +14,14 @@ pub struct Grammar<'a> {
     bytes: &'a [u8],
     pub pos_list: Vec<Vec<String>>,
     connect_table_offset: usize,
-    connect_cost_map: HashMap<(i16, i16), i16>,
     left_id_size: i16,
     _right_id_size: i16,
-
     pub storage_size: usize,
 
+    /// The mapping to overload cost table
+    connect_cost_map: HashMap<(i16, i16), i16>,
+
+    /// The mapping from character to character_category_type
     pub character_category: CharacterCategory,
 }
 
@@ -41,8 +43,6 @@ impl<'a> Grammar<'a> {
         let connect_table_offset = buf.len() - rest.len();
         let storage_size =
             (connect_table_offset - offset) + 2 * left_id_size as usize * right_id_size as usize;
-
-        // todo: better way to have table? (e.g. make table rewritable)
         let connect_cost_map = HashMap::new();
 
         Ok(Grammar {

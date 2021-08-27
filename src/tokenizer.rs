@@ -273,7 +273,6 @@ impl<'a> Tokenize for Tokenizer<'a> {
 
         let mut path = lattice.get_best_path()?;
         // fill word_info to safry unwrap during path_rewrite and split_path
-        // todo: remove this process
         for node in &mut path {
             node.fill_word_info(&self.lexicon)?;
         }

@@ -78,7 +78,6 @@ impl<'a> Lattice<'a> {
 
     /// Calculate and Returns the best path from lattice
     pub fn get_best_path(&self) -> SudachiResult<Vec<Node>> {
-        // TODO: reference of eos_node in struct `Lattice` ?
         let eos_node = self.end_lists[self.size]
             .last()
             .ok_or(SudachiError::MissingLaticePath)?;

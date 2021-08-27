@@ -91,7 +91,6 @@ impl LexiconSet<'_> {
         let pos_id = word_info.pos_id;
         if dict_id > 0 && pos_id as usize >= self.pos_offsets[1] {
             // user defined part-of-speech
-            // todo: this may overflow
             word_info.pos_id =
                 (pos_id as usize - self.pos_offsets[1] + self.pos_offsets[dict_id]) as u16;
         }

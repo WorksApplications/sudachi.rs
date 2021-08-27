@@ -33,7 +33,7 @@ impl<'a> WordInfos<'a> {
         let index = self.word_id_to_offset(word_id)?;
         let mut word_info = word_info_parser(self.bytes, index, self.has_synonym_group_ids)?.1;
 
-        // TODO: can we set dictionary_form within the word_info_parser?
+        // consult dictionary form
         let dfwi = word_info.dictionary_form_word_id;
         if (dfwi >= 0) && (dfwi != word_id as i32) {
             word_info.dictionary_form = self.get_word_info(dfwi as u32)?.surface;
@@ -41,8 +41,6 @@ impl<'a> WordInfos<'a> {
 
         Ok(word_info)
     }
-
-    // TODO: is_valid_split()
 }
 
 named!(
