@@ -74,8 +74,10 @@ fn get_dictionary_bytes(system_dict: Option<PathBuf>) -> Option<Cow<'static, [u8
         }
     };
 
-    let storage_buf = dictionary_bytes_from_path(&dictionary_path)
-        .expect("Failed to get dictionary bytes from file");
+    let storage_buf = match dictionary_bytes_from_path(&dictionary_path) {
+        Ok(x) => x,
+        err => panic!("Failed to get dictionary bytes from file: {:?}\nError: {:?}", &dictionary_path, &err)
+    };
     Some(Cow::Owned(storage_buf))
 }
 
