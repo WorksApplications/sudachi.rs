@@ -1,13 +1,13 @@
 #!/bin/sh
 
-DICT_NAME_BASE="sudachi-dictionary-20200722"
+DICT_NAME_BASE="sudachi-dictionary-20210802"
 DICT_TYPE="core"
 DICT_NAME="${DICT_NAME_BASE}-${DICT_TYPE}"
 
 echo "Downloading a dictionary file \`${DICT_NAME}\` ..."
 echo
 
-curl \
+curl -L \
     http://sudachi.s3-website-ap-northeast-1.amazonaws.com/sudachidict/${DICT_NAME}.zip \
     > ${DICT_NAME}.zip
 
