@@ -3,9 +3,10 @@
 
 <p align="center"><img width="100" src="logo.png" alt="sudachi.rs logo"></p>
 
-An official [Sudachi](https://github.com/WorksApplications/Sudachi) clone in Rust 🦀
+sudachi.rs is a Rust implementation of [Sudachi](https://github.com/WorksApplications/Sudachi), a Japanese morphological analyzer.
 
 [日本語 README](README.ja.md)
+
 
 ## Caution
 
@@ -14,39 +15,55 @@ This project is under development.
 Please also have a look at an alternative by another person, [Yasu-umi/sudachiclone-rs](https://github.com/Yasu-umi/sudachiclone-rs).
 
 
-## Example
+## TL;DR
+
+```bash
+$ git clone https://github.com/WorksApplications/SudachiPy.git
+$ cd ./sudachi.rs
+
+$ cargo build --release --all
+$ cargo install --path .
+$ ./fetch_dictionary.sh
+
+$ echo "高輪ゲートウェイ駅" | sudachi
+高輪ゲートウェイ駅  名詞,固有名詞,一般,*,*,*    高輪ゲートウェイ駅
+EOS
+```
+
+### Example
 
 Multi-granular Tokenization
 
-```
+```bash
 $ echo 選挙管理委員会 | sudachi
-選挙管理委員会	名詞,固有名詞,一般,*,*,*	選挙管理委員会
+選挙管理委員会  名詞,固有名詞,一般,*,*,*        選挙管理委員会
 EOS
 
 $ echo 選挙管理委員会 | sudachi --mode A
-選挙	名詞,普通名詞,サ変可能,*,*,*	選挙
-管理	名詞,普通名詞,サ変可能,*,*,*	管理
-委員	名詞,普通名詞,一般,*,*,*	委員
-会	名詞,普通名詞,一般,*,*,*	会
+選挙    名詞,普通名詞,サ変可能,*,*,*    選挙
+管理    名詞,普通名詞,サ変可能,*,*,*    管理
+委員    名詞,普通名詞,一般,*,*,*        委員
+会      名詞,普通名詞,一般,*,*,*        会
 EOS
 ```
 
 Normalized Form
 
-```
+```bash
 $ echo 打込む かつ丼 附属 vintage | sudachi
-打込む	動詞,一般,*,*,五段-マ行,終止形-一般	打ち込む
- 	空白,*,*,*,*,*
-かつ丼	名詞,普通名詞,一般,*,*,*	カツ丼
- 	空白,*,*,*,*,*
-附属	名詞,普通名詞,サ変可能,*,*,*	付属
- 	空白,*,*,*,*,*
-vintage	名詞,普通名詞,一般,*,*,*	ビンテージ
+打込む  動詞,一般,*,*,五段-マ行,終止形-一般     打ち込む
+        空白,*,*,*,*,*
+かつ丼  名詞,普通名詞,一般,*,*,*        カツ丼
+        空白,*,*,*,*,*
+附属    名詞,普通名詞,サ変可能,*,*,*    付属
+        空白,*,*,*,*,*
+vintage 名詞,普通名詞,一般,*,*,*        ビンテージ
+EOS
 ```
 
 Wakati (space-delimited surface form) Output
 
-```
+```bash
 $ cat lemon.txt
 えたいの知れない不吉な塊が私の心を始終圧えつけていた。
 焦躁と言おうか、嫌悪と言おうか――酒を飲んだあとに宿酔があるように、酒を毎日飲んでいると宿酔に相当した時期がやって来る。
@@ -58,47 +75,26 @@ $ sudachi --wakati lemon.txt
 それ が 来 た の だ 。 これ は ちょっと いけ なかっ た 。
 ```
 
-## Usage
-
-```
-$ sudachi -h
-sudachi 0.1.0
-A Japanese tokenizer
-
-USAGE:
-    sudachi [FLAGS] [OPTIONS] --dict <dictionary_path> [file]
-
-FLAGS:
-    -d, --debug      Debug mode: Dumps lattice
-    -h, --help       Prints help information
-    -a, --all        Prints all fields
-    -V, --version    Prints version information
-    -w, --wakati     Outputs only surface form
-
-OPTIONS:
-    -l, --dict <dictionary_path>    Path to sudachi dictionary
-    -m, --mode <mode>               Split unit: "A" (short), "B" (middle), or "C" (Named Entity) [default: C]
-
-ARGS:
-    <file>    Input text file: If not present, read from STDIN
-```
 
 ## Setup
+
+You need sudachi.rs, default plugins, and a dictionary. (This crate don't include dictionary.)
 
 ### 1. Get the source code
 
 ```
-$ git clone https://github.com/sorami/sudachi.rs.git
+$ git clone https://github.com/WorksApplications/SudachiPy.git
 ```
 
 ### 2. Download a Sudachi Dictionary
 
 Sudachi requires a dictionary to operate.
 You can download a dictionary ZIP file from [WorksApplications/SudachiDict](https://github.com/WorksApplications/SudachiDict) (choose one from `small`, `core`, or `full`), unzip it, and place the `system_*.dic` file somewhere.
+By the default setting file, sudachi.rs assumes that it is placed at `src/resources/system.dic`.
 
 #### Convenience Script
 
-Optionally, you can use the [`fetch_dictionary.sh`](fetch_dictionary.sh) shell script to download the `core` dictionary and install it to `src/resources/system.dic`.
+Optionally, you can use the [`fetch_dictionary.sh`](fetch_dictionary.sh) shell script to download a dictionary and install it to `src/resources/system.dic`.
 
 ```
 $ ./fetch_dictionary.sh
@@ -108,15 +104,17 @@ $ ./fetch_dictionary.sh
 
 #### Build (default)
 
+Use `--all` to also build default plugins.
+
 ```
-$ cargo build --release
+$ cargo build --release --all
 ```
 
 #### Build (bake dictionary into binary)
 
-Specify the `bake_dictionary` feature to avoid the requirement for the `--dict` argument with each invocation.
+Specify the `bake_dictionary` feature to embed a dictionary into the binary.
 The `sudachi` executable will **contain the dictionary binary**.
-The `--dict` option will be optional (default to using the integrated dictionary).
+The baked dictionary will be used if no one is specified via cli option or setting file.
 
 You must specify the path the dictionary file in the `SUDACHI_DICT_PATH` environment variable when building.
 `SUDACHI_DICT_PATH` is relative to the `src/` directory (or absolute).
@@ -148,6 +146,74 @@ $ sudachi -h
 sudachi 0.1.0
 A Japanese tokenizer
 ...
+```
+
+
+## Usage as a command
+
+```bash
+$ sudachi -h
+sudachi 0.1.0
+A Japanese tokenizer
+
+USAGE:
+    sudachi [FLAGS] [OPTIONS] [file]
+
+FLAGS:
+    -d, --debug      Debug mode: Print the debug information
+    -h, --help       Prints help information
+    -a, --all        Prints all fields
+    -V, --version    Prints version information
+    -w, --wakati     Outputs only surface form
+
+OPTIONS:
+    -r, --config-file <config-file>      Path to the setting file in JSON format
+    -l, --dict <dictionary-path>         Path to sudachi dictionary. If None, it refer config and then baked dictionary
+    -m, --mode <mode>                    Split unit: "A" (short), "B" (middle), or "C" (Named Entity) [default: C]
+    -o, --output <output-file>
+    -p, --resource_dir <resource-dir>    Path to the root directory of resources
+
+ARGS:
+    <file>    Input text file: If not present, read from STDIN
+```
+
+### Output
+
+Columns are tab separated.
+
+- Surface
+- Part-of-Speech Tags (comma separated)
+- Normalized Form
+
+When you add the `-a` (`--all`) flag, it additionally outputs
+
+- Dictionary Form
+- Reading Form
+- Dictionary ID
+  - `0` for the system dictionary
+  - `1` and above for the user dictionaries
+  - `-1` if a word is Out-of-Vocabulary (not in the dictionary)
+- Synonym group IDs
+- `(OOV)` if a word is Out-of-Vocabulary (not in the dictionary)
+
+```bash
+$ echo "外国人参政権" | sudachi -a
+外国人参政権    名詞,普通名詞,一般,*,*,*        外国人参政権    外国人参政権    ガイコクジンサンセイケン      0       []
+EOS
+```
+
+```bash
+echo "阿quei" | sudachipy -a
+阿      名詞,普通名詞,一般,*,*,*        阿      阿              -1      []      (OOV)
+quei    名詞,普通名詞,一般,*,*,*        quei    quei            -1      []      (OOV)
+EOS
+```
+
+When you add `-w` (`--wakati`) flag, it outputs space-delimited surface instead.
+
+```bash
+$ echo "外国人参政権" | sudachi -m A -w
+外国 人 参政 権
 ```
 
 

@@ -2,7 +2,7 @@
 
 <p align="center"><img width="100" src="logo.png" alt="sudachi.rs logo"></p>
 
-形態素解析器 [Sudachi](https://github.com/WorksApplications/Sudachi)  - 非公式 Rust 🦀 クローン
+sudachi.rs は日本語形態素解析器 [Sudachi](https://github.com/WorksApplications/Sudachi) のRust実装です。
 
 [English README](README.md)
 
@@ -13,20 +13,35 @@
 他の方によるRust実装も参照ください; [Yasu-umi/sudachiclone-rs](https://github.com/Yasu-umi/sudachiclone-rs)
 
 
-## 利用例
+## TL;DR
+
+```bash
+$ git clone https://github.com/WorksApplications/SudachiPy.git
+$ cd ./sudachi.rs
+
+$ cargo build --release --all
+$ cargo install --path .
+$ ./fetch_dictionary.sh
+
+$ echo "高輪ゲートウェイ駅" | sudachi
+高輪ゲートウェイ駅  名詞,固有名詞,一般,*,*,*    高輪ゲートウェイ駅
+EOS
+```
+
+### 利用例
 
 複数粒度での分割
 
 ```
 $ echo 選挙管理委員会 | sudachi
-選挙管理委員会	名詞,固有名詞,一般,*,*,*	選挙管理委員会
+選挙管理委員会  名詞,固有名詞,一般,*,*,*        選挙管理委員会
 EOS
 
 $ echo 選挙管理委員会 | sudachi --mode A
-選挙	名詞,普通名詞,サ変可能,*,*,*	選挙
-管理	名詞,普通名詞,サ変可能,*,*,*	管理
-委員	名詞,普通名詞,一般,*,*,*	委員
-会	名詞,普通名詞,一般,*,*,*	会
+選挙    名詞,普通名詞,サ変可能,*,*,*    選挙
+管理    名詞,普通名詞,サ変可能,*,*,*    管理
+委員    名詞,普通名詞,一般,*,*,*        委員
+会      名詞,普通名詞,一般,*,*,*        会
 EOS
 ```
 
@@ -34,13 +49,14 @@ EOS
 
 ```
 $ echo 打込む かつ丼 附属 vintage | sudachi
-打込む	動詞,一般,*,*,五段-マ行,終止形-一般	打ち込む
- 	空白,*,*,*,*,*
-かつ丼	名詞,普通名詞,一般,*,*,*	カツ丼
- 	空白,*,*,*,*,*
-附属	名詞,普通名詞,サ変可能,*,*,*	付属
- 	空白,*,*,*,*,*
-vintage	名詞,普通名詞,一般,*,*,*	ビンテージ
+打込む  動詞,一般,*,*,五段-マ行,終止形-一般     打ち込む
+        空白,*,*,*,*,*
+かつ丼  名詞,普通名詞,一般,*,*,*        カツ丼
+        空白,*,*,*,*,*
+附属    名詞,普通名詞,サ変可能,*,*,*    付属
+        空白,*,*,*,*,*
+vintage 名詞,普通名詞,一般,*,*,*        ビンテージ
+EOS
 ```
 
 分かち書き出力
@@ -57,46 +73,25 @@ $ sudachi --wakati lemon.txt
 それ が 来 た の だ 。 これ は ちょっと いけ なかっ た 。
 ```
 
-## 利用方法
-
-```
-$ sudachi -h
-sudachi 0.1.0
-A Japanese tokenizer
-
-USAGE:
-    sudachi [FLAGS] [OPTIONS] --dict <dictionary_path> [file]
-
-FLAGS:
-    -d, --debug      Debug mode: Dumps lattice
-    -h, --help       Prints help information
-    -a, --all        Prints all fields
-    -V, --version    Prints version information
-    -w, --wakati     Outputs only surface form
-
-OPTIONS:
-    -l, --dict <dictionary_path>    Path to sudachi dictionary
-    -m, --mode <mode>               Split unit: "A" (short), "B" (middle), or "C" (Named Entity) [default: C]
-
-ARGS:
-    <file>    Input text file: If not present, read from STDIN
-```
 
 ## セットアップ
+
+sudachi.rs本体に加え、デフォルトで使用するプラグイン、また辞書が必要になります。※パッケージには辞書が含まれていません。
 
 ### 1. ソースコードの取得
 
 ```
-$ git clone https://github.com/sorami/sudachi.rs.git
+$ git clone https://github.com/WorksApplications/SudachiPy.git
 ```
 
 ### 2. Sudachi辞書のダウンロード
 
-[WorksApplications/SudachiDict](https://github.com/WorksApplications/SudachiDict)から辞書のzipファイル（ `small` 、 `core` 、 `full` から一つ選択）し、解凍して、中にある `system_*.dic` ファイルを `src/resources/system.dic` として置いてください （ファイル名が `system.dic` に変わっていることに注意）。
+[WorksApplications/SudachiDict](https://github.com/WorksApplications/SudachiDict)から辞書のzipファイル（ `small` 、 `core` 、 `full` から一つ選択）し、解凍して、必要であれば中にある `system_*.dic` ファイルをわかりやすい位置に置いてください。
+デフォルトの設定ファイルでは、辞書ファイルが `src/resources/system.dic` に存在していると指定しています（ファイル名が `system.dic` に変わっていることに注意）。
 
 #### ダウンロードスクリプト
 
-上記のように手動で設置する以外に、レポジトリにあるスクリプトを使って自動的に `core` 辞書をダウンロードし `src/resources/system.dic` として設置することもできます。
+上記のように手動で設置する以外に、レポジトリにあるスクリプトを使って自動的に辞書をダウンロードし `src/resources/system.dic` として設置することもできます。
 
 ```
 $ ./fetch_dictionary.sh
@@ -106,15 +101,17 @@ $ ./fetch_dictionary.sh
 
 #### ビルド（デフォルト）
 
+`--all` フラグを使って付属のプラグインもまとめてビルドすることができます。
+
 ```
-$ cargo build --release
+$ cargo build --release --all
 ```
 
 #### ビルド（辞書バイナリの埋め込み）
 
-`bake_dictionary` フィーチャーフラグを立ててビルドすることで、`--dict` オプションなしでの実行が可能になります。
+`bake_dictionary` フィーチャーフラグを立ててビルドすることで、辞書ファイルをバイナリに埋め込むことができます。
 これによってビルドされた実行ファイルは、**辞書バイナリを内包しています**。
-また `--dict` オプションは任意となります（デフォルトで内包辞書を使用します）。
+オプションや設定ファイルで辞書が指定されなかった場合、この内包辞書が使用されます。
 
 ビルド時、埋め込む辞書へのパスを `SUDACHI_DICT_PATH` 環境変数によって指定する必要があります。
 このパスは絶対パスもしくは `src/` ディレクトリからの相対パスで指定してください。
@@ -145,6 +142,74 @@ $ sudachi -h
 sudachi 0.1.0
 A Japanese tokenizer
 ...
+```
+
+
+## 利用方法
+
+```bash
+$ sudachi -h
+sudachi 0.1.0
+A Japanese tokenizer
+
+USAGE:
+    sudachi [FLAGS] [OPTIONS] [file]
+
+FLAGS:
+    -d, --debug      Debug mode: Print the debug information
+    -h, --help       Prints help information
+    -a, --all        Prints all fields
+    -V, --version    Prints version information
+    -w, --wakati     Outputs only surface form
+
+OPTIONS:
+    -r, --config-file <config-file>      Path to the setting file in JSON format
+    -l, --dict <dictionary-path>         Path to sudachi dictionary. If None, it refer config and then baked dictionary
+    -m, --mode <mode>                    Split unit: "A" (short), "B" (middle), or "C" (Named Entity) [default: C]
+    -o, --output <output-file>
+    -p, --resource_dir <resource-dir>    Path to the root directory of resources
+
+ARGS:
+    <file>    Input text file: If not present, read from STDIN
+```
+
+### 出力
+
+タブ区切りで出力されます。 デフォルトは以下の情報が含まれます。
+
+- 表層形
+- 品詞（コンマ区切り）
+- 正規化表記
+
+オプションで -a (--all) を指定すると以下の情報が追加されます。
+
+- 辞書形
+- 読み
+- 辞書ID
+    - 0 システム辞書
+    - 1 ユーザー辞書
+    - -1 未知語（辞書に含まれない単語）
+- 同義語グループID
+- "OOV" 未知語（辞書に含まれない単語）の場合のみ
+
+```bash
+$ echo "外国人参政権" | sudachi -a
+外国人参政権    名詞,普通名詞,一般,*,*,*        外国人参政権    外国人参政権    ガイコクジンサンセイケン      0       []
+EOS
+```
+
+```bash
+echo "阿quei" | sudachipy -a
+阿      名詞,普通名詞,一般,*,*,*        阿      阿              -1      []      (OOV)
+quei    名詞,普通名詞,一般,*,*,*        quei    quei            -1      []      (OOV)
+EOS
+```
+
+オプションで -w (--wakati) を指定すると代わりに表層形のみをスペース区切りで出力します。
+
+```bash
+$ echo "外国人参政権" | sudachi -m A -w
+外国 人 参政 権
 ```
 
 
