@@ -48,7 +48,7 @@ struct Cli {
     #[structopt(short = "d", long = "debug")]
     enable_debug: bool,
 
-    /// Path to sudachi dictionary
+    /// Path to sudachi dictionary.
     /// If None, it refer config and then baked dictionary
     #[structopt(short = "l", long = "dict")]
     dictionary_path: Option<PathBuf>,
@@ -76,7 +76,10 @@ fn get_dictionary_bytes(system_dict: Option<PathBuf>) -> Option<Cow<'static, [u8
 
     let storage_buf = match dictionary_bytes_from_path(&dictionary_path) {
         Ok(x) => x,
-        err => panic!("Failed to get dictionary bytes from file: {:?}\nError: {:?}", &dictionary_path, &err)
+        err => panic!(
+            "Failed to get dictionary bytes from file: {:?}\nError: {:?}",
+            &dictionary_path, &err
+        ),
     };
     Some(Cow::Owned(storage_buf))
 }
@@ -157,36 +160,32 @@ fn write_results(
             .iter()
             .map(|m| m.surface().to_string())
             .collect::<Vec<_>>();
-        writer.write(surface_list.join(" ").as_bytes())?;
+        writeln!(writer, "{}", surface_list.join(" "))?;
     } else {
         for morpheme in morpheme_list {
-            writer.write(
-                format!(
-                    "{}\t{}\t{}",
-                    morpheme.surface(),
-                    morpheme.pos().expect("Missing part of speech").join(","),
-                    morpheme.normalized_form()
-                )
-                .as_bytes(),
+            write!(
+                writer,
+                "{}\t{}\t{}",
+                morpheme.surface(),
+                morpheme.pos().expect("Missing part of speech").join(","),
+                morpheme.normalized_form()
             )?;
             if print_all {
-                writer.write(
-                    format!(
-                        "\t{}\t{}\t{}\t{:?}",
-                        morpheme.dictionary_form(),
-                        morpheme.reading_form(),
-                        morpheme.dictionary_id,
-                        morpheme.word_info.synonym_group_ids,
-                    )
-                    .as_bytes(),
+                write!(
+                    writer,
+                    "\t{}\t{}\t{}\t{:?}",
+                    morpheme.dictionary_form(),
+                    morpheme.reading_form(),
+                    morpheme.dictionary_id,
+                    morpheme.word_info.synonym_group_ids,
                 )?;
                 if morpheme.is_oov {
-                    writer.write("\t(OOV)".as_bytes())?;
+                    write!(writer, "\t(OOV)")?;
                 }
             }
-            writer.write("\n".as_bytes())?;
+            writeln!(writer, "")?;
         }
-        writer.write("EOS\n".as_bytes())?;
+        writeln!(writer, "EOS")?;
     }
 
     Ok(())
