@@ -60,10 +60,6 @@ fn after_rewrite() {
     assert_eq!(24, text.get_original_index(17));
 }
 
-// not implemented in python
-// #[test]
-// fn setup_with_null() {}
-
 #[test]
 #[should_panic]
 fn invalid_format_ignorelist() {
