@@ -11,6 +11,9 @@ use sudachi::input_text::utf8_input_text_builder::Utf8InputTextBuilder;
 use sudachi::plugin::input_text::InputTextPlugin;
 use sudachi::prelude::*;
 
+#[cfg(test)]
+mod tests;
+
 declare_input_text_plugin!(IgnoreYomiganaPlugin, IgnoreYomiganaPlugin::default);
 
 /// Search katakana in the bracket after kanji character as Yomigana (読み仮名)
