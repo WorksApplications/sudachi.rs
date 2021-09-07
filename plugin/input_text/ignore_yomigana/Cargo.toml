@@ -1,6 +1,7 @@
 [package]
 name = "ignore_yomigana"
 version = "0.1.0"
+authors = ["Works Applications <sudachi@worksap.co.jp>"]
 edition = "2018"
 license = "Apache-2.0"
 
