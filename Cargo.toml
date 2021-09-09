@@ -19,17 +19,17 @@ members = [
 
 [dependencies]
 cfg-if = "1.0.0"
+fancy-regex = "0.7"
+lazy_static = "1.4.0"
 libloading = "0.7"
 multiset = "0.0.5"
 nom = "4"
-regex = "1.5"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 structopt = "0.3"
 thiserror = "1.0"
 
 [dev-dependencies]
-lazy_static = "1.4.0"
 tempfile = "3"
 
 [features]

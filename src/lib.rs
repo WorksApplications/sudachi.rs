@@ -31,6 +31,7 @@ pub mod input_text;
 pub mod lattice;
 pub mod morpheme;
 pub mod plugin;
+pub mod sentence_detector;
 pub mod tokenizer;
 
 pub use error::*;

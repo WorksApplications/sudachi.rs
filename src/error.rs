@@ -102,6 +102,9 @@ pub enum SudachiError {
 
     #[error("Lecicon error")]
     LexiconSetError(#[from] LexiconSetError),
+
+    #[error("Regex error")]
+    RegexError(#[from] fancy_regex::Error),
 }
 
 /// Define `SudachiNomCustomError` error and conversion to `SudachiError`.
