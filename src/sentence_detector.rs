@@ -49,7 +49,8 @@ impl NonBreakChecker<'_> {
                 continue;
             }
             for (_, end_byte) in self.lexicon.lookup(input_bytes, i)? {
-                if end_byte >= eos_byte {
+                let char_count = self.input.modified[i..end_byte].chars().count();
+                if end_byte > eos_byte || (end_byte == eos_byte && char_count > 1) {
                     return Ok(true);
                 }
             }
@@ -108,6 +109,7 @@ impl SentenceDetector {
 
         // handle at most self.limit chars at once
         let s: String = input.chars().take(self.limit).collect();
+        let input_exceeds_limit = s.len() < input.len();
 
         lazy_static! {
             static ref SENTENCE_BREAKER: Regex = Regex::new(&format!(
@@ -150,12 +152,14 @@ impl SentenceDetector {
             return Ok(eos as isize);
         }
 
-        // if no match found, search whitespace as a provisional split.
-        lazy_static! {
-            static ref SPACES: Regex = Regex::new(".+\\s+").unwrap();
-        }
-        if let Some(mat) = SPACES.find(&s)? {
-            return Ok(-(mat.end() as isize));
+        if input_exceeds_limit {
+            // search the final whitespace as a provisional split.
+            lazy_static! {
+                static ref SPACES: Regex = Regex::new(".+\\s+").unwrap();
+            }
+            if let Some(mat) = SPACES.find(&s)? {
+                return Ok(-(mat.end() as isize));
+            }
         }
 
         Ok(-(s.len() as isize))
@@ -236,7 +240,8 @@ mod tests {
         assert_eq!(sd.get_eos("あいう。えお。", None).unwrap(), 12);
         assert_eq!(sd.get_eos("あいう。。えお。", None).unwrap(), 15);
         assert_eq!(sd.get_eos("あいうえお", None).unwrap(), -15);
-        assert_eq!(sd.get_eos("あいう えお", None).unwrap(), -10);
+        assert_eq!(sd.get_eos("あいう えお。", None).unwrap(), 19);
+        assert_eq!(sd.get_eos("あいう えお", None).unwrap(), -16);
         assert_eq!(sd.get_eos("", None).unwrap(), 0);
     }
 

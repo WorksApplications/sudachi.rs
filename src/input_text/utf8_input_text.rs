@@ -195,7 +195,7 @@ impl Utf8InputText<'_> {
         // for Sentencedetector
         let o = self.offsets[byte_idx + 1];
         for i in byte_idx..self.modified.len() {
-            if self.offsets[i] != o {
+            if self.offsets[i + 1] != o {
                 return i;
             }
         }
