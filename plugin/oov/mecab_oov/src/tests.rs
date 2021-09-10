@@ -558,7 +558,7 @@ fn build_input_text<'a>(
 
     let text = Utf8InputText::new(
         text,
-        text,
+        String::from(text),
         offsets,
         byte_indexes,
         char_category_types,

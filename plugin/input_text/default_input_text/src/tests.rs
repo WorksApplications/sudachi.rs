@@ -37,14 +37,16 @@ fn before_rewrite() {
     assert_eq!(30, text.modified.as_bytes().len());
     let expected = b"\xc3\x82\xef\xbc\xa2\xce\x93\xd0\x94\xe3\x88\xb1\xef\xbd\xb6\xef\xbe\x9e\xe3\x82\xa6\xe3\x82\x9b\xe2\xbc\xbc\xe2\x85\xa2";
     assert_eq!(expected, text.modified.as_bytes());
+
     assert_eq!(0, text.get_original_index(0));
-    assert_eq!(0, text.get_original_index(1));
+    assert_eq!(2, text.get_original_index(1));
     assert_eq!(2, text.get_original_index(2));
-    assert_eq!(2, text.get_original_index(4));
-    assert_eq!(7, text.get_original_index(8));
+    assert_eq!(5, text.get_original_index(4));
+    assert_eq!(7, text.get_original_index(7));
     assert_eq!(12, text.get_original_index(12));
     assert_eq!(24, text.get_original_index(24));
-    assert_eq!(24, text.get_original_index(26));
+    assert_eq!(27, text.get_original_index(27));
+    assert_eq!(30, text.get_original_index(30));
 }
 
 #[test]
