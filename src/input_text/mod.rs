@@ -25,7 +25,7 @@ mod tests {
     use crate::dic::grammar::Grammar;
     use std::path::PathBuf;
 
-    const CHAR_CATEGORY_FILE_PATH: &str = "./src/resources/char.def";
+    const CHAR_CATEGORY_FILE_PATH: &str = "resources/char.def";
     const TEXT: &str = "âｂC1あ234漢字𡈽アｺﾞ";
     // const BYTES: &[u8] = &[
     //     0xC3u8, 0xA2u8, 0xEFu8, 0xBDu8, 0x82u8, 0x43u8, 0x31u8, 0xE3u8, 0x81u8, 0x82u8, 0x32u8,

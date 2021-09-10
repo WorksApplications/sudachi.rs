@@ -2,29 +2,29 @@
     "systemDict" : "system.dic",
     "characterDefinitionFile" : "char.def",
     "inputTextPlugin" : [
-        { "class" : "../../target/release/libdefault_input_text.so" },
-        { "class" : "../../target/release/libprolonged_sound_mark.so",
+        { "class" : "../target/release/libdefault_input_text.so" },
+        { "class" : "../target/release/libprolonged_sound_mark.so",
           "prolongedSoundMarks": ["ー", "-", "⁓", "〜", "〰"],
           "replacementSymbol": "ー"},
-	{ "class": "../../target/release/libignore_yomigana.so",
+	{ "class": "../target/release/libignore_yomigana.so",
           "leftBrackets": ["(", "（"],
           "rightBrackets": [")", "）"],
           "maxYomiganaLength": 4}
     ],
     "oovProviderPlugin" : [
-        { "class" : "../../target/release/libmecab_oov.so",
+        { "class" : "../target/release/libmecab_oov.so",
           "charDef" : "char.def",
           "unkDef" : "unk.def" },
-        { "class" : "../../target/release/libsimple_oov.so",
+        { "class" : "../target/release/libsimple_oov.so",
           "oovPOS" : [ "補助記号", "一般", "*", "*", "*", "*" ],
           "leftId" : 5968,
           "rightId" : 5968,
           "cost" : 3857 }
     ],
     "pathRewritePlugin" : [
-        { "class" : "../../target/release/libjoin_numeric.so",
+        { "class" : "../target/release/libjoin_numeric.so",
           "enableNormalize" : true },
-        { "class" : "../../target/release/libjoin_katakana_oov.so",
+        { "class" : "../target/release/libjoin_katakana_oov.so",
           "oovPOS" : [ "名詞", "普通名詞", "一般", "*", "*", "*" ],
           "minLength" : 3
         }

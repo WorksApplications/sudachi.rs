@@ -58,7 +58,7 @@ struct PluginSettings {
 impl MeCabOovPlugin {
     /// Loads character category definition
     ///
-    /// See src/resources/char.def for the syntax
+    /// See resources/char.def for the syntax
     fn read_character_property(
         reader: BufReader<fs::File>,
     ) -> SudachiResult<HashMap<CategoryType, CategoryInfo>> {

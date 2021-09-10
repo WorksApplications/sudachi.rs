@@ -90,11 +90,11 @@ $ git clone https://github.com/WorksApplications/SudachiPy.git
 
 Sudachi requires a dictionary to operate.
 You can download a dictionary ZIP file from [WorksApplications/SudachiDict](https://github.com/WorksApplications/SudachiDict) (choose one from `small`, `core`, or `full`), unzip it, and place the `system_*.dic` file somewhere.
-By the default setting file, sudachi.rs assumes that it is placed at `src/resources/system.dic`.
+By the default setting file, sudachi.rs assumes that it is placed at `resources/system.dic`.
 
 #### Convenience Script
 
-Optionally, you can use the [`fetch_dictionary.sh`](fetch_dictionary.sh) shell script to download a dictionary and install it to `src/resources/system.dic`.
+Optionally, you can use the [`fetch_dictionary.sh`](fetch_dictionary.sh) shell script to download a dictionary and install it to `resources/system.dic`.
 
 ```
 $ ./fetch_dictionary.sh
@@ -117,14 +117,14 @@ The `sudachi` executable will **contain the dictionary binary**.
 The baked dictionary will be used if no one is specified via cli option or setting file.
 
 You must specify the path the dictionary file in the `SUDACHI_DICT_PATH` environment variable when building.
-`SUDACHI_DICT_PATH` is relative to the `src/` directory (or absolute).
+`SUDACHI_DICT_PATH` is relative to the sudachi.rs directory (or absolute).
 
 Example on Unix-like system:
 ```sh
-# Download dictionary to src/resources/system.dic
+# Download dictionary to resources/system.dic
 $ ./fetch_dictionary.sh
 
-# Build with bake_dictionary feature (relative to src/ path)
+# Build with bake_dictionary feature (relative path)
 $ env SUDACHI_DICT_PATH=resources/system.dic cargo build --release --features bake_dictionary
 
 # or

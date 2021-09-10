@@ -22,7 +22,7 @@ use serde::Deserialize;
 use serde_json::Value;
 use thiserror::Error;
 
-const DEFAULT_RESOURCE_DIR: &str = "src/resources";
+const DEFAULT_RESOURCE_DIR: &str = "resources";
 const DEFAULT_SETTING_FILE: &str = "sudachi.json";
 const DEFAULT_CHAR_DEF_FILE: &str = "char.def";
 

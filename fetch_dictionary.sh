@@ -13,9 +13,9 @@ curl -L \
 
 unzip ${DICT_NAME}.zip
 
-mv ${DICT_NAME_BASE}/system_${DICT_TYPE}.dic src/resources/system.dic
+mv ${DICT_NAME_BASE}/system_${DICT_TYPE}.dic resources/system.dic
 
 rm -rf ${DICT_NAME}.zip ${DICT_NAME_BASE}
 
 echo
-echo "Placed a dictionary file to \`src/resources/system.dic\` ."
+echo "Placed a dictionary file to \`resources/system.dic\` ."

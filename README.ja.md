@@ -87,11 +87,11 @@ $ git clone https://github.com/WorksApplications/SudachiPy.git
 ### 2. Sudachi辞書のダウンロード
 
 [WorksApplications/SudachiDict](https://github.com/WorksApplications/SudachiDict)から辞書のzipファイル（ `small` 、 `core` 、 `full` から一つ選択）し、解凍して、必要であれば中にある `system_*.dic` ファイルをわかりやすい位置に置いてください。
-デフォルトの設定ファイルでは、辞書ファイルが `src/resources/system.dic` に存在していると指定しています（ファイル名が `system.dic` に変わっていることに注意）。
+デフォルトの設定ファイルでは、辞書ファイルが `resources/system.dic` に存在していると指定しています（ファイル名が `system.dic` に変わっていることに注意）。
 
 #### ダウンロードスクリプト
 
-上記のように手動で設置する以外に、レポジトリにあるスクリプトを使って自動的に辞書をダウンロードし `src/resources/system.dic` として設置することもできます。
+上記のように手動で設置する以外に、レポジトリにあるスクリプトを使って自動的に辞書をダウンロードし `resources/system.dic` として設置することもできます。
 
 ```
 $ ./fetch_dictionary.sh
@@ -114,11 +114,11 @@ $ cargo build --release --all
 オプションや設定ファイルで辞書が指定されなかった場合、この内包辞書が使用されます。
 
 ビルド時、埋め込む辞書へのパスを `SUDACHI_DICT_PATH` 環境変数によって指定する必要があります。
-このパスは絶対パスもしくは `src/` ディレクトリからの相対パスで指定してください。
+このパスは絶対パスもしくは sudachi.rs ディレクトリからの相対パスで指定してください。
 
 Unix-likeシステムでの例:
 ```sh
-# src/resources/system.dic への辞書ダウンロード
+# resources/system.dic への辞書ダウンロード
 $ ./fetch_dictionary.sh
 
 # bake_dictionary フィーチャーフラグ付きでビルド (辞書を相対パスで指定)
