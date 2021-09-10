@@ -35,12 +35,21 @@ use crate::plugin::input_text::{self, InputTextPluginManager};
 use crate::plugin::oov::{self, OovProviderPluginManager};
 use crate::plugin::path_rewrite::{self, PathRewritePluginManager};
 use crate::prelude::*;
+use crate::sentence_detector::{NonBreakChecker, SentenceDetector};
 
 /// Able to tokenize Japanese text
 pub trait Tokenize {
     /// Break text into `Morpheme`s
     fn tokenize(&self, input: &str, mode: Mode, enable_debug: bool)
         -> SudachiResult<Vec<Morpheme>>;
+
+    /// Split text into sentences then tokenize
+    fn tokenize_sentences(
+        &self,
+        input: &str,
+        mode: Mode,
+        enable_debug: bool,
+    ) -> SudachiResult<Vec<Vec<Morpheme>>>;
 }
 
 /// Tokenizes Japanese text
@@ -100,6 +109,17 @@ impl FromStr for Mode {
     }
 }
 
+/// Return bytes of a `dictionary_path`
+pub fn dictionary_bytes_from_path<P: AsRef<Path>>(dictionary_path: P) -> SudachiResult<Vec<u8>> {
+    let dictionary_path = dictionary_path.as_ref();
+    let dictionary_stat = fs::metadata(&dictionary_path)?;
+    let mut dictionary_file = File::open(dictionary_path)?;
+    let mut dictionary_bytes = Vec::with_capacity(dictionary_stat.len() as usize);
+    dictionary_file.read_to_end(&mut dictionary_bytes)?;
+
+    Ok(dictionary_bytes)
+}
+
 impl<'a> Tokenizer<'a> {
     /// Create `Tokenizer` from the raw bytes of a Sudachi dictionary.
     pub fn from_dictionary_bytes(
@@ -157,20 +177,107 @@ impl<'a> Tokenizer<'a> {
 
         Ok(())
     }
+
+    fn build_input_text(&'a self, input: &'a str) -> Utf8InputText<'a> {
+        let mut builder = Utf8InputTextBuilder::new(input, &self.grammar);
+
+        for plugin in self.input_text_plugins.plugins() {
+            plugin.rewrite(&mut builder);
+        }
+        builder.build()
+    }
+
+    fn split_sentences(&self, input: &'a Utf8InputText) -> SudachiResult<Vec<Utf8InputText>> {
+        let mut sentences = Vec::new();
+        let mut checker = NonBreakChecker::new(&self.lexicon, input);
+        let detector = SentenceDetector::new();
+        loop {
+            let byte_length = detector
+                .get_eos(&input.modified[checker.bos..], Some(&checker))?
+                .abs() as usize; // detector mey return negative value
+            if byte_length == 0 {
+                break;
+            }
+            let mut eos = checker.bos + byte_length;
+            if eos < input.modified.len() {
+                eos = input.get_next_in_original(eos - 1);
+            }
+            sentences.push(input.slice(checker.bos, eos));
+            checker.bos = eos;
+        }
+        Ok(sentences)
+    }
 }
 
-/// Return bytes of a `dictionary_path`
-pub fn dictionary_bytes_from_path<P: AsRef<Path>>(dictionary_path: P) -> SudachiResult<Vec<u8>> {
-    let dictionary_path = dictionary_path.as_ref();
-    let dictionary_stat = fs::metadata(&dictionary_path)?;
-    let mut dictionary_file = File::open(dictionary_path)?;
-    let mut dictionary_bytes = Vec::with_capacity(dictionary_stat.len() as usize);
-    dictionary_file.read_to_end(&mut dictionary_bytes)?;
+impl Tokenize for Tokenizer<'_> {
+    fn tokenize_sentences(
+        &self,
+        input: &str,
+        mode: Mode,
+        enable_debug: bool,
+    ) -> SudachiResult<Vec<Vec<Morpheme>>> {
+        if input.is_empty() {
+            return Ok(vec![Vec::new()]);
+        }
 
-    Ok(dictionary_bytes)
+        let input = self.build_input_text(input);
+        self.split_sentences(&input)?
+            .iter()
+            .map(|s| self.tokenize_input_text(s, mode, enable_debug))
+            .collect()
+    }
+
+    fn tokenize(
+        &self,
+        input: &str,
+        mode: Mode,
+        enable_debug: bool,
+    ) -> SudachiResult<Vec<Morpheme>> {
+        if input.is_empty() {
+            return Ok(Vec::new());
+        }
+        let input = self.build_input_text(input);
+        self.tokenize_input_text(&input, mode, enable_debug)
+    }
 }
 
-impl<'a> Tokenizer<'a> {
+impl Tokenizer<'_> {
+    fn tokenize_input_text(
+        &self,
+        input: &Utf8InputText,
+        mode: Mode,
+        enable_debug: bool,
+    ) -> SudachiResult<Vec<Morpheme>> {
+        let lattice = self.build_lattice(input)?;
+        if enable_debug {
+            println!("=== Lattice dump:");
+            lattice.dump(&self.grammar)?;
+        };
+
+        let mut path = lattice.get_best_path()?;
+        // fill word_info to safely unwrap during path_rewrite and split_path
+        for node in &mut path {
+            node.fill_word_info(&self.lexicon)?;
+        }
+        if enable_debug {
+            println!("=== Before Rewriting:");
+            println!("{:?}", path);
+        };
+
+        for plugin in self.path_rewrite_plugins.plugins() {
+            path = plugin.rewrite(&input, path, &lattice)?;
+        }
+        let path = self.split_path(path, mode)?;
+        if enable_debug {
+            println!("=== After Rewriting:");
+            println!("{:?}", path);
+        };
+
+        path.iter()
+            .map(|node| Morpheme::new(&node, &input, &self.grammar, &self.lexicon))
+            .collect::<SudachiResult<Vec<_>>>()
+    }
+
     fn build_lattice(&self, input: &Utf8InputText) -> SudachiResult<Lattice> {
         let input_bytes = input.modified.as_bytes();
         let mut lattice = Lattice::new(&self.grammar, input_bytes.len());
@@ -264,50 +371,5 @@ impl<'a> Tokenizer<'a> {
 
         new_path.shrink_to_fit();
         Ok(new_path)
-    }
-}
-
-impl<'a> Tokenize for Tokenizer<'a> {
-    fn tokenize(
-        &self,
-        input: &str,
-        mode: Mode,
-        enable_debug: bool,
-    ) -> SudachiResult<Vec<Morpheme>> {
-        let mut builder = Utf8InputTextBuilder::new(input, &self.grammar);
-
-        for plugin in self.input_text_plugins.plugins() {
-            plugin.rewrite(&mut builder);
-        }
-        let input = builder.build();
-
-        let lattice = self.build_lattice(&input)?;
-        if enable_debug {
-            println!("=== Lattice dump:");
-            lattice.dump(&self.grammar)?;
-        };
-
-        let mut path = lattice.get_best_path()?;
-        // fill word_info to safry unwrap during path_rewrite and split_path
-        for node in &mut path {
-            node.fill_word_info(&self.lexicon)?;
-        }
-        if enable_debug {
-            println!("=== Before Rewriting:");
-            println!("{:?}", path);
-        };
-
-        for plugin in self.path_rewrite_plugins.plugins() {
-            path = plugin.rewrite(&input, path, &lattice)?;
-        }
-        let path = self.split_path(path, mode)?;
-        if enable_debug {
-            println!("=== After Rewriting:");
-            println!("{:?}", path);
-        };
-
-        path.iter()
-            .map(|node| Morpheme::new(&node, &input, &self.grammar, &self.lexicon))
-            .collect::<SudachiResult<Vec<_>>>()
     }
 }

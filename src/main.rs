@@ -70,36 +70,6 @@ struct Cli {
     dictionary_path: Option<PathBuf>,
 }
 
-/// get dictionary bytes
-fn get_dictionary_bytes(system_dict: Option<PathBuf>) -> Option<Cow<'static, [u8]>> {
-    let dictionary_path = {
-        cfg_if::cfg_if! {
-            if #[cfg(feature="bake_dictionary")] {
-                if let Some(dictionary_path) = system_dict {
-                    dictionary_path
-                } else {
-                    return Some(Cow::Borrowed(BAKED_DICTIONARY_BYTES));
-                }
-            } else {
-                if let Some(dictionary_path) = system_dict {
-                    dictionary_path
-                }else {
-                    return None;
-                }
-            }
-        }
-    };
-
-    let storage_buf = match dictionary_bytes_from_path(&dictionary_path) {
-        Ok(x) => x,
-        err => panic!(
-            "Failed to get dictionary bytes from file: {:?}\nError: {:?}",
-            &dictionary_path, &err
-        ),
-    };
-    Some(Cow::Owned(storage_buf))
-}
-
 fn main() {
     let args = Cli::from_args();
 
@@ -156,16 +126,48 @@ fn main() {
     // tokenize and output results
     for line in reader.lines() {
         let input = line.expect("Failed to reead line");
-        let morpheme_list = tokenizer
-            .tokenize(&input, mode, enable_debug)
-            .expect("Failed to tokenize input");
-        write_results(&mut writer, morpheme_list, print_all, wakati)
-            .expect("Failed to write output");
+        for morpheme_list in tokenizer
+            .tokenize_sentences(&input, mode, enable_debug)
+            .expect("Failed to tokenize input")
+        {
+            write_sentence(&mut writer, morpheme_list, print_all, wakati)
+                .expect("Failed to write output");
+        }
     }
 }
 
+/// get dictionary bytes
+fn get_dictionary_bytes(system_dict: Option<PathBuf>) -> Option<Cow<'static, [u8]>> {
+    let dictionary_path = {
+        cfg_if::cfg_if! {
+            if #[cfg(feature="bake_dictionary")] {
+                if let Some(dictionary_path) = system_dict {
+                    dictionary_path
+                } else {
+                    return Some(Cow::Borrowed(BAKED_DICTIONARY_BYTES));
+                }
+            } else {
+                if let Some(dictionary_path) = system_dict {
+                    dictionary_path
+                }else {
+                    return None;
+                }
+            }
+        }
+    };
+
+    let storage_buf = match dictionary_bytes_from_path(&dictionary_path) {
+        Ok(x) => x,
+        err => panic!(
+            "Failed to get dictionary bytes from file: {:?}\nError: {:?}",
+            &dictionary_path, &err
+        ),
+    };
+    Some(Cow::Owned(storage_buf))
+}
+
 /// Format and write morphemes into writer
-fn write_results(
+fn write_sentence(
     writer: &mut Box<dyn Write>,
     morpheme_list: Vec<Morpheme>,
     print_all: bool,

@@ -20,30 +20,30 @@ use crate::dic::category_type::CategoryTypes;
 use crate::prelude::*;
 
 /// Tokenization target text with original text and utility information
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Utf8InputText<'a> {
     /// The original text
     pub original: &'a str,
     /// The text after preprocess. The tokenization works on this.
-    pub modified: &'a str,
+    pub modified: String,
 
-    /// mapping from modified byte_idx to original char_idx
+    /// The mapping from modified byte_idx to original byte_idx
     offsets: Vec<usize>,
-    /// mapping from modified byte_idx to char_idx
+    /// The mapping from modified byte_idx to modified char_idx
     byte_indexes: Vec<usize>,
 
-    /// category types of each characters
+    /// Category types of each characters
     char_category_types: Vec<CategoryTypes>,
-    /// whether if the character can be a beginning of word
+    /// Whether if the character can be a beginning of word
     can_bow_list: Vec<bool>,
-    // byte_length to where category type continuity ends
+    /// The byte_length to the next char where category type continuity ends
     char_category_continuities: Vec<usize>,
 }
 
 impl<'a> Utf8InputText<'a> {
     pub fn new(
         original: &'a str,
-        modified: &'a str,
+        modified: String,
         offsets: Vec<usize>,
         byte_indexes: Vec<usize>,
         char_category_types: Vec<CategoryTypes>,
@@ -63,6 +63,54 @@ impl<'a> Utf8InputText<'a> {
 }
 
 impl Utf8InputText<'_> {
+    /// Returns a substring of itself as a new Utf8InputText
+    pub fn slice(&self, byte_start: usize, byte_end: usize) -> Utf8InputText {
+        if byte_start == byte_end {
+            return Utf8InputText::default();
+        }
+
+        let original = &self.original[self.offsets[byte_start]..self.offsets[byte_end]];
+        let modified = self.modified[byte_start..byte_end].to_owned();
+
+        let offset_base = self.offsets[byte_start];
+        let offsets: Vec<_> = self.offsets[byte_start..byte_end + 1]
+            .iter()
+            .map(|v| v - offset_base)
+            .collect();
+        let byte_idx_base = self.byte_indexes[byte_start];
+        let byte_indexes: Vec<_> = self.byte_indexes[byte_start..byte_end + 1]
+            .iter()
+            .map(|v| v - byte_idx_base)
+            .collect();
+
+        let char_category_types = self.char_category_types
+            [self.byte_indexes[byte_start]..self.byte_indexes[byte_end]]
+            .to_vec();
+        let can_bow_list =
+            self.can_bow_list[self.byte_indexes[byte_start]..self.byte_indexes[byte_end]].to_vec();
+
+        let mut char_category_continuities =
+            self.char_category_continuities[byte_start..byte_end].to_vec();
+        if *char_category_continuities.last().unwrap() != 1 {
+            for (i, idx) in (0..char_category_continuities.len()).rev().enumerate() {
+                if char_category_continuities[idx] == 1 {
+                    break;
+                }
+                char_category_continuities[idx] = i + 1;
+            }
+        }
+
+        Utf8InputText {
+            original,
+            modified,
+            offsets,
+            byte_indexes,
+            char_category_types,
+            can_bow_list,
+            char_category_continuities,
+        }
+    }
+
     /// Returns if the byte_idx can be a beginning of word
     pub fn can_bow(&self, byte_idx: usize) -> bool {
         // the byte must be a first byte of utf8 character
@@ -71,16 +119,16 @@ impl Utf8InputText<'_> {
     }
 
     /// Returns a substring of original text which corresponds to given byte range of modified text
-    pub fn get_original_substring(&self, range: Range<usize>) -> String {
-        String::from(&self.original[self.offsets[range.start]..self.offsets[range.end]])
+    pub fn get_original_substring(&self, byte_range: Range<usize>) -> String {
+        String::from(&self.original[self.offsets[byte_range.start]..self.offsets[byte_range.end]])
     }
 
     /// Returns a substring of modified text
-    pub fn get_substring(&self, start: usize, end: usize) -> SudachiResult<String> {
-        if end < start || self.modified.len() < end {
-            return Err(SudachiError::InvalidRange(start, end));
+    pub fn get_substring(&self, byte_start: usize, byte_end: usize) -> SudachiResult<String> {
+        if byte_end < byte_start || self.modified.len() < byte_end {
+            return Err(SudachiError::InvalidRange(byte_start, byte_end));
         }
-        Ok(String::from(&self.modified[start..end]))
+        Ok(String::from(&self.modified[byte_start..byte_end]))
     }
 
     /// Returns a byte_length to the next can_bow point
@@ -140,6 +188,18 @@ impl Utf8InputText<'_> {
     pub fn code_point_count(&self, begin: usize, end: usize) -> usize {
         // for JoinKatakanaOOV
         self.byte_indexes[end] - self.byte_indexes[begin]
+    }
+
+    /// Returns byte index of the next byte where original char changes
+    pub fn get_next_in_original(&self, byte_idx: usize) -> usize {
+        // for Sentencedetector
+        let o = self.offsets[byte_idx + 1];
+        for i in byte_idx..self.modified.len() {
+            if self.offsets[i] != o {
+                return i;
+            }
+        }
+        self.modified.len()
     }
 
     /// Returns corresponding byte index in the original test

@@ -51,6 +51,36 @@ impl<'a> Utf8InputTextBuilder<'a> {
             modified_to_original,
         }
     }
+
+    /// Builds a Utf8InputText
+    ///
+    /// Generated Utf8InputText has a reference to this builder thus fn replace cannot be used after this.
+    pub fn build(self) -> Utf8InputText<'a> {
+        let byte_indexes: Vec<usize> = self
+            .modified
+            .chars()
+            .enumerate()
+            .map(|(i, c)| vec![i; c.len_utf8()])
+            .flatten()
+            .chain([self.modified.chars().count()])
+            .collect();
+        let offsets = self.modified_to_original.clone();
+
+        let char_category_types = self.build_char_category_types();
+        let can_bow_list = self.build_can_bow_list(&char_category_types);
+        let char_category_continuities =
+            self.build_char_category_continuities(&char_category_types);
+
+        Utf8InputText::new(
+            self.original,
+            self.modified,
+            offsets,
+            byte_indexes,
+            char_category_types,
+            can_bow_list,
+            char_category_continuities,
+        )
+    }
 }
 
 impl Utf8InputTextBuilder<'_> {
@@ -71,36 +101,6 @@ impl Utf8InputTextBuilder<'_> {
             self.modified_to_original
                 .splice(start + 1..end, vec![modified_end; length - 1]);
         }
-    }
-
-    /// Builds a Utf8InputText
-    ///
-    /// Generated Utf8InputText has a reference to this builder thus fn replace cannot be used after this.
-    pub fn build(&self) -> Utf8InputText {
-        let byte_indexes: Vec<usize> = self
-            .modified
-            .chars()
-            .enumerate()
-            .map(|(i, c)| vec![i; c.len_utf8()])
-            .flatten()
-            .chain([self.modified.chars().count()])
-            .collect();
-        let offsets = self.modified_to_original.clone();
-
-        let char_category_types = self.build_char_category_types();
-        let can_bow_list = self.build_can_bow_list(&char_category_types);
-        let char_category_continuities =
-            self.build_char_category_continuities(&char_category_types);
-
-        Utf8InputText::new(
-            self.original,
-            &self.modified,
-            offsets,
-            byte_indexes,
-            char_category_types,
-            can_bow_list,
-            char_category_continuities,
-        )
     }
 
     /// Converts modified char_range to byte_range
