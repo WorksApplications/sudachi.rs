@@ -85,6 +85,7 @@ impl Config {
         let src_root_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         let default_resource_dir_path = src_root_path.join(DEFAULT_RESOURCE_DIR);
 
+        // prioritize arg (cli option) > default
         let config_file = match config_file {
             Some(v) => v,
             None => default_resource_dir_path.join(DEFAULT_SETTING_FILE),
@@ -93,9 +94,12 @@ impl Config {
         let reader = BufReader::new(file);
         let raw_config: RawConfig = serde_json::from_reader(reader)?;
 
+        // prioritize arg (cli option) > config file > default
         let resource_dir = resource_dir
             .or_else(|| raw_config.resourcePath.clone())
             .unwrap_or_else(|| default_resource_dir_path);
+
+        // prioritize arg (cli option) > config file
         let system_dict = dictionary_path.or_else(|| {
             raw_config
                 .systemDict
