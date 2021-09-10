@@ -29,7 +29,8 @@ pub struct Utf8InputTextBuilder<'a> {
     pub original: &'a str,
     /// The text after modifications
     pub modified: String,
-    /// mapping from modified byte_idx to original char_idx
+    /// The mapping from modified byte_idx to original char_idx
+    /// Bytes in the middle of the char are mapped to the next char
     modified_to_original: Vec<usize>,
 }
 
@@ -37,11 +38,15 @@ impl<'a> Utf8InputTextBuilder<'a> {
     pub fn new(original: &'a str, grammar: &'a Grammar) -> Utf8InputTextBuilder<'a> {
         let modified = String::from(original);
 
-        let modified_to_original: Vec<usize> = modified
-            .char_indices()
-            .map(|(i, c)| vec![i; c.len_utf8()])
-            .flatten()
-            .chain([modified.len()])
+        let modified_to_original: Vec<usize> = vec![0]
+            .iter()
+            .map(|&v| v)
+            .chain(
+                modified
+                    .char_indices()
+                    .map(|(i, c)| vec![i + c.len_utf8(); c.len_utf8()])
+                    .flatten(),
+            )
             .collect();
 
         Utf8InputTextBuilder {

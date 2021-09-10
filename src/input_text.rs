@@ -73,20 +73,16 @@ mod tests {
         let builder = set_up_builder(&grammar);
         let input = builder.build();
         assert_eq!(32, input.modified.len());
-        assert_eq!(0, input.get_original_index(0));
-        assert_eq!(0, input.get_original_index(1));
-        assert_eq!(2, input.get_original_index(2));
-        assert_eq!(2, input.get_original_index(4));
-        assert_eq!(6, input.get_original_index(6));
-        assert_eq!(7, input.get_original_index(7));
-        assert_eq!(10, input.get_original_index(10));
-        assert_eq!(16, input.get_original_index(18));
-        assert_eq!(19, input.get_original_index(19));
-        assert_eq!(19, input.get_original_index(22));
-        assert_eq!(23, input.get_original_index(23));
-        assert_eq!(26, input.get_original_index(28));
-        assert_eq!(29, input.get_original_index(31));
-        assert_eq!(32, input.get_original_index(32));
+
+        for (i, &v) in [
+            0, 2, 2, 5, 5, 5, 6, 7, 10, 10, 10, 11, 12, 13, 16, 16, 16, 19, 19, 19, 23, 23, 23, 23,
+            26, 26, 26, 29, 29, 29, 32, 32, 32,
+        ]
+        .iter()
+        .enumerate()
+        {
+            assert_eq!(v, input.get_original_index(i));
+        }
     }
 
     #[test]
@@ -177,12 +173,12 @@ mod tests {
         assert_eq!(0, input.get_original_index(0));
         assert_eq!(12, input.get_original_index(12));
         assert_eq!(13, input.get_original_index(13));
+        assert_eq!(19, input.get_original_index(14));
         assert_eq!(19, input.get_original_index(15));
         assert_eq!(19, input.get_original_index(16));
+        assert_eq!(19, input.get_original_index(17));
         assert_eq!(19, input.get_original_index(18));
         assert_eq!(19, input.get_original_index(19));
-        assert_eq!(19, input.get_original_index(22));
-        assert_eq!(29, input.get_original_index(31));
         assert_eq!(32, input.get_original_index(32));
     }
 
@@ -202,10 +198,11 @@ mod tests {
         assert_eq!(0, input.get_original_index(0));
         assert_eq!(12, input.get_original_index(12));
         assert_eq!(13, input.get_original_index(13));
+        assert_eq!(19, input.get_original_index(14));
         assert_eq!(19, input.get_original_index(15));
         assert_eq!(19, input.get_original_index(16));
-        assert_eq!(19, input.get_original_index(19));
-        assert_eq!(29, input.get_original_index(28));
+        assert_eq!(23, input.get_original_index(17));
+        assert_eq!(23, input.get_original_index(18));
         assert_eq!(32, input.get_original_index(29));
     }
 
@@ -225,9 +222,15 @@ mod tests {
         assert_eq!(0, input.get_original_index(0));
         assert_eq!(12, input.get_original_index(12));
         assert_eq!(13, input.get_original_index(13)); // >あ< ああ
-        assert_eq!(19, input.get_original_index(21)); // ああ >あ<
-        assert_eq!(19, input.get_original_index(22));
-        assert_eq!(19, input.get_original_index(25));
+        assert_eq!(19, input.get_original_index(14));
+        assert_eq!(19, input.get_original_index(15));
+        assert_eq!(19, input.get_original_index(16)); // ああ >あ<
+        assert_eq!(19, input.get_original_index(17));
+        assert_eq!(19, input.get_original_index(18));
+        assert_eq!(19, input.get_original_index(19)); // ああ >あ<
+        assert_eq!(19, input.get_original_index(20));
+        assert_eq!(19, input.get_original_index(21));
+        assert_eq!(19, input.get_original_index(22)); // あああ >
         assert_eq!(32, input.get_original_index(35));
     }
 
@@ -246,20 +249,15 @@ mod tests {
         assert_eq!("abc1あ234漢字土アゴ", input.modified);
         assert_eq!(25, input.modified.len());
 
-        assert_eq!(0, input.get_original_index(0));
-        assert_eq!(2, input.get_original_index(1));
-        assert_eq!(5, input.get_original_index(2));
-        assert_eq!(10, input.get_original_index(7));
-        assert_eq!(11, input.get_original_index(8));
-        assert_eq!(12, input.get_original_index(9));
-        assert_eq!(16, input.get_original_index(15));
-        assert_eq!(19, input.get_original_index(16));
-        assert_eq!(23, input.get_original_index(18));
-        assert_eq!(23, input.get_original_index(19));
-        assert_eq!(23, input.get_original_index(21));
-        assert_eq!(26, input.get_original_index(22));
-        assert_eq!(32, input.get_original_index(24));
-        assert_eq!(32, input.get_original_index(25));
+        for (i, &v) in [
+            0, 2, 5, 6, 7, 10, 10, 10, 11, 12, 13, 16, 16, 16, 19, 19, 19, 23, 23, 23, 26, 26, 26,
+            32, 32, 32,
+        ]
+        .iter()
+        .enumerate()
+        {
+            assert_eq!(v, input.get_original_index(i));
+        }
     }
 
     #[test]
