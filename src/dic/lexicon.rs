@@ -19,13 +19,14 @@ pub mod word_id_table;
 pub mod word_infos;
 pub mod word_params;
 
-use nom::le_u32;
+use nom::{bytes::complete::take, number::complete::le_u32};
 use std::cmp;
 
 use self::trie::Trie;
 use self::word_id_table::WordIdTable;
 use self::word_infos::{WordInfo, WordInfos};
 use self::word_params::WordParams;
+use crate::error::SudachiNomResult;
 use crate::prelude::*;
 
 /// Dictionary lexicon
@@ -48,17 +49,17 @@ impl<'a> Lexicon<'a> {
     ) -> SudachiResult<Lexicon> {
         let mut offset = original_offset;
 
-        let (_rest, trie_size) = parse_size(buf, offset)?;
+        let (_rest, trie_size) = u32_parser(buf, offset)?;
         offset += 4;
-        let (_rest, trie_array) = parse_trie_array(buf, offset, trie_size)?;
+        let (_rest, trie_array) = trie_array_parser(buf, offset, trie_size)?;
         let trie = Trie::new(trie_array, trie_size);
         offset += trie.total_size();
 
-        let (_rest, word_id_table_size) = parse_size(buf, offset)?;
+        let (_rest, word_id_table_size) = u32_parser(buf, offset)?;
         let word_id_table = WordIdTable::new(buf, word_id_table_size, offset + 4);
         offset += word_id_table.storage_size();
 
-        let (_rest, word_params_size) = parse_size(buf, offset)?;
+        let (_rest, word_params_size) = u32_parser(buf, offset)?;
         let word_params = WordParams::new(buf, word_params_size, offset + 4);
         offset += word_params.storage_size();
 
@@ -124,23 +125,15 @@ impl<'a> Lexicon<'a> {
     }
 }
 
-named_args!(
-    parse_size(offset: usize)<&[u8], u32>,
-    do_parse!(
-        _seek: take!(offset) >>
-        size: le_u32 >>
+fn u32_parser(input: &[u8], offset: usize) -> SudachiNomResult<&[u8], u32> {
+    nom::sequence::preceded(take(offset), le_u32)(input)
+}
 
-        (size)
-    )
-);
-
-named_args!(
-    parse_trie_array(offset: usize, trie_size: u32)<&[u8], Vec<u32>>,
-    do_parse!(
-        _seek: take!(offset) >>
-        trie_array: count!(le_u32, trie_size as usize) >>
-
-        (trie_array)
-        // TODO: copied? &[u32] from bytes without copy? Java: `bytes.asIntBuffer();`
-    )
-);
+fn trie_array_parser(
+    input: &[u8],
+    offset: usize,
+    trie_size: u32,
+) -> SudachiNomResult<&[u8], Vec<u32>> {
+    // TODO: copied? &[u32] from bytes without copy? Java: `bytes.asIntBuffer();`
+    nom::sequence::preceded(take(offset), nom::multi::count(le_u32, trie_size as usize))(input)
+}

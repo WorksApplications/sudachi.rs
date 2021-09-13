@@ -14,8 +14,10 @@
  * limitations under the License.
  */
 
-use nom::le_u64;
+use nom::{bytes::complete::take, number::complete::le_u64};
 use thiserror::Error;
+
+use crate::error::SudachiNomResult;
 
 /// Sudachi error
 #[derive(Error, Debug, Eq, PartialEq)]
@@ -138,17 +140,14 @@ fn nul_terminated_str_from_slice(buf: &[u8]) -> String {
     String::from_utf8_lossy(str_bytes).to_string()
 }
 
-// parse header from bytes
-named_args!(
-    header_parser()<&[u8], (u64, u64, String)>,
-    do_parse!(
-        version: le_u64 >>
-        create_time: le_u64 >>
-        desc_buf: take!(Header::DESCRIPTION_SIZE) >>
+fn description_parser(input: &[u8]) -> SudachiNomResult<&[u8], String> {
+    let (rest, description_bytes) = take(Header::DESCRIPTION_SIZE)(input)?;
+    Ok((rest, nul_terminated_str_from_slice(description_bytes)))
+}
 
-        (version, create_time, nul_terminated_str_from_slice(&desc_buf))
-    )
-);
+fn header_parser(input: &[u8]) -> SudachiNomResult<&[u8], (u64, u64, String)> {
+    nom::sequence::tuple((le_u64, le_u64, description_parser))(input)
+}
 
 #[cfg(test)]
 mod tests {

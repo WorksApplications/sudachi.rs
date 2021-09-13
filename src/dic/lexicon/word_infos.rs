@@ -14,9 +14,13 @@
  * limitations under the License.
  */
 
-use nom::{le_i32, le_u16, le_u32, le_u8};
+use nom::{
+    bytes::complete::take,
+    number::complete::{le_i32, le_u16, le_u32},
+};
 
-use crate::dic::{string_length, utf16_string};
+use crate::dic::{string_length_parser, u32_array_parser, utf16_string_parser};
+use crate::error::SudachiNomResult;
 use crate::prelude::*;
 
 pub struct WordInfos<'a> {
@@ -42,7 +46,7 @@ impl<'a> WordInfos<'a> {
     }
 
     fn word_id_to_offset(&self, word_id: u32) -> SudachiResult<usize> {
-        Ok(le_u32(&self.bytes[self.offset + (4 * word_id as usize)..])?.1 as usize)
+        Ok(u32_parser(&self.bytes[self.offset + (4 * word_id as usize)..])?.1 as usize)
     }
 
     pub fn get_word_info(&self, word_id: u32) -> SudachiResult<WordInfo> {
@@ -59,37 +63,53 @@ impl<'a> WordInfos<'a> {
     }
 }
 
-named!(
-    u32_array<&[u8], Vec<u32>>,
-    do_parse!(
-        length: le_u8 >>
-        v: count!(le_u32, length as usize) >>
-        (v)
-    )
-);
+fn u32_parser(input: &[u8]) -> SudachiNomResult<&[u8], u32> {
+    le_u32(input)
+}
 
-named_args!(
-    word_info_parser(index: usize, has_synonym_group_ids: bool)<&[u8], WordInfo>,
-    do_parse!(
-        _seek: take!(index) >>
-        surface: utf16_string >>
-        head_word_length: string_length >>
-        pos_id: le_u16 >>
-        normalized_form: utf16_string >>
-        dictionary_form_word_id: le_i32 >>
-        reading_form: utf16_string >>
+fn word_info_parser(
+    input: &[u8],
+    offset: usize,
+    has_synonym_group_ids: bool,
+) -> SudachiNomResult<&[u8], WordInfo> {
+    let (
+        rest,
+        (
+            surface,
+            head_word_length,
+            pos_id,
+            normalized_form,
+            dictionary_form_word_id,
+            reading_form,
+            a_unit_split,
+            b_unit_split,
+            word_structure,
+            synonym_group_ids,
+        ),
+    ) = nom::sequence::preceded(
+        take(offset),
+        nom::sequence::tuple((
+            utf16_string_parser,
+            string_length_parser,
+            le_u16,
+            utf16_string_parser,
+            le_i32,
+            utf16_string_parser,
+            u32_array_parser,
+            u32_array_parser,
+            u32_array_parser,
+            nom::combinator::cond(has_synonym_group_ids, u32_array_parser),
+        )),
+    )(input)?;
 
-        a_unit_split: u32_array >>
-        b_unit_split: u32_array >>
-        word_structure: u32_array >>
-        synonym_group_ids: cond!(has_synonym_group_ids, u32_array) >>
-
-        (WordInfo{
+    Ok((
+        rest,
+        WordInfo {
             head_word_length,
             pos_id,
             normalized_form: match normalized_form.as_str() {
                 "" => surface.clone(),
-                _ => normalized_form
+                _ => normalized_form,
             },
             dictionary_form_word_id,
             dictionary_form: surface.clone(),
@@ -99,9 +119,9 @@ named_args!(
             b_unit_split,
             word_structure,
             synonym_group_ids: synonym_group_ids.unwrap_or_else(|| Vec::new()),
-        })
-    )
-);
+        },
+    ))
+}
 
 #[derive(Clone, Debug, Default)]
 pub struct WordInfo {

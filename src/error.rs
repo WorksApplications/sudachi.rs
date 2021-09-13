@@ -14,9 +14,7 @@
  * limitations under the License.
  */
 
-use std::convert::TryFrom;
 use std::fmt::Debug;
-
 use thiserror::Error;
 
 use crate::config::ConfigError;
@@ -55,8 +53,8 @@ pub enum SudachiError {
     #[error("Invalid grammar")]
     InvalidDictionaryGrammar,
 
-    #[error("Error parsing nom: {}", .0.description())]
-    NomParse(nom::ErrorKind<u32>),
+    #[error("Error from nom {0}")]
+    NomParseError(String),
 
     #[error("Missing word_id")]
     MissingWordId,
@@ -82,8 +80,8 @@ pub enum SudachiError {
     #[error("Invalid UTF-16: {0}")]
     FromUtf16(#[from] std::string::FromUtf16Error),
 
-    #[error("Invalid UTF-16 from nom")]
-    FromUtf16Nom,
+    #[error("Invalid utf16 string from nom")]
+    InvalidUtf16FromNom,
 
     #[error("End of sentence (EOS) is not connected to beginning of sentence (BOS)")]
     EosBosDisconnect,
@@ -107,42 +105,30 @@ pub enum SudachiError {
     RegexError(#[from] fancy_regex::Error),
 }
 
-/// Define `SudachiNomCustomError` error and conversion to `SudachiError`.
-/// The variants that can be converted will have the same name.
-macro_rules! define_nom_error_enum {
-    (
-        $( $name:ident = $value_int:literal , )*
-    ) => {
-        #[derive(Debug, Copy, Clone, Eq, PartialEq)]
-        pub(crate) enum SudachiNomCustomError {
-            $($name = $value_int , )*
-        }
+pub type SudachiNomResult<I, O> = nom::IResult<I, O, SudachiNomError<I>>;
 
-        impl TryFrom<u32> for SudachiError {
-            type Error = ();
-            fn try_from(x: u32) -> Result<Self, Self::Error> {
-                match x {
-                    $( $value_int => Ok(SudachiError::$name) , )*
-                    _ => Err(()),
-                }
-            }
-        }
-    };
+/// Custum nom error
+#[derive(Debug, PartialEq)]
+pub enum SudachiNomError<I> {
+    /// Failed to parse utf16 string
+    Utf16String,
+    Nom(I, nom::error::ErrorKind),
 }
 
-define_nom_error_enum! {
-    FromUtf16Nom = 0,
+impl<I> nom::error::ParseError<I> for SudachiNomError<I> {
+    fn from_error_kind(input: I, kind: nom::error::ErrorKind) -> Self {
+        SudachiNomError::Nom(input, kind)
+    }
+    fn append(_: I, _: nom::error::ErrorKind, other: Self) -> Self {
+        other
+    }
 }
 
-impl<I> From<nom::Err<I, u32>> for SudachiError {
-    fn from(err: nom::Err<I, u32>) -> Self {
-        if let nom::Err::Failure(nom::Context::Code(_v, nom::ErrorKind::Custom(custom_error))) =
-            &err
-        {
-            if let Ok(sudachi_error) = SudachiError::try_from(*custom_error) {
-                return sudachi_error;
-            }
+impl<I: Debug> From<nom::Err<SudachiNomError<I>>> for SudachiError {
+    fn from(err: nom::Err<SudachiNomError<I>>) -> Self {
+        if let nom::Err::Failure(SudachiNomError::Utf16String) = err {
+            return SudachiError::InvalidUtf16FromNom;
         }
-        SudachiError::NomParse(err.into_error_kind())
+        SudachiError::NomParseError(format!("{}", err))
     }
 }

@@ -21,9 +21,6 @@
 //! [`Tokenizer`](tokenizer/struct.Tokenizer.html) struct, which
 //! implements [`Tokenize`](tokenizer/trait.Tokenize.html).
 
-#[macro_use]
-extern crate nom;
-
 pub mod config;
 pub mod dic;
 pub mod error;

@@ -14,12 +14,16 @@
  * limitations under the License.
  */
 
-use nom::{le_i16, le_u16};
+use nom::{
+    bytes::complete::take,
+    number::complete::{le_i16, le_u16},
+};
 use std::collections::HashMap;
 use std::i16;
 
 use crate::dic::character_category::CharacterCategory;
-use crate::dic::utf16_string;
+use crate::dic::utf16_string_parser;
+use crate::error::SudachiNomResult;
 use crate::prelude::*;
 
 /// Dictionary grammar
@@ -128,31 +132,36 @@ impl<'a> Grammar<'a> {
     }
 }
 
-named_args!(
-    grammar_parser(offset: usize)<&[u8], (Vec<Vec<String>>, i16, i16)>,
-    do_parse!(
-        _seek: take!(offset) >>
-        pos_size: le_u16 >>
-        pos_list: count!(count!(utf16_string, Grammar::POS_DEPTH), pos_size as usize) >>
-        left_id_size: le_i16 >>
-        right_id_size: le_i16 >>
+fn pos_list_parser(input: &[u8]) -> SudachiNomResult<&[u8], Vec<Vec<String>>> {
+    let (rest, pos_size) = le_u16(input)?;
+    nom::multi::count(
+        nom::multi::count(utf16_string_parser, Grammar::POS_DEPTH),
+        pos_size as usize,
+    )(rest)
+}
 
-        ( pos_list, left_id_size, right_id_size )
-  )
-);
+fn grammar_parser(
+    input: &[u8],
+    offset: usize,
+) -> SudachiNomResult<&[u8], (Vec<Vec<String>>, i16, i16)> {
+    nom::sequence::preceded(
+        take(offset),
+        nom::sequence::tuple((pos_list_parser, le_i16, le_i16)),
+    )(input)
+}
 
-named_args!(
-    connect_cost_parser(offset: usize,
-                        left_id: usize,
-                        left_id_size: usize,
-                        right_id: usize)<&[u8], i16>,
-    do_parse!(
-        _seek: take!(offset + (left_id * 2) + (2 * left_id_size * right_id)) >>
-        connect_cost: le_i16 >>
-
-        (connect_cost)
-    )
-);
+fn connect_cost_parser(
+    input: &[u8],
+    offset: usize,
+    left_id: usize,
+    left_id_size: usize,
+    right_id: usize,
+) -> SudachiNomResult<&[u8], i16> {
+    nom::sequence::preceded(
+        take(offset + (left_id * 2) + (2 * left_id_size * right_id)),
+        le_i16,
+    )(input)
+}
 
 #[cfg(test)]
 mod tests {

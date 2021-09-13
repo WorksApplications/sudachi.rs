@@ -14,8 +14,10 @@
  * limitations under the License.
  */
 
-use nom::{le_u32, le_u8};
+use nom::bytes::complete::take;
 
+use crate::dic::u32_array_parser;
+use crate::error::SudachiNomResult;
 use crate::prelude::*;
 
 pub struct WordIdTable<'a> {
@@ -43,13 +45,10 @@ impl<'a> WordIdTable<'a> {
     }
 }
 
-named_args!(
-    word_id_table_parser(offset: usize, index: usize)<&[u8], Vec<u32>>,
-    do_parse!(
-        _seek: take!(offset + index) >>
-        length: le_u8 >>
-        result: count!(le_u32, length as usize) >>
-
-        (result)
-    )
-);
+fn word_id_table_parser(
+    input: &[u8],
+    offset: usize,
+    index: usize,
+) -> SudachiNomResult<&[u8], Vec<u32>> {
+    nom::sequence::preceded(take(offset + index), u32_array_parser)(input)
+}

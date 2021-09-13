@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-use nom::le_i16;
+use nom::{bytes::complete::take, number::complete::le_i16};
 use std::collections::HashMap;
 
+use crate::error::SudachiNomResult;
 use crate::prelude::*;
 
 pub struct WordParams<'a> {
@@ -79,12 +80,6 @@ impl<'a> WordParams<'a> {
     }
 }
 
-named_args!(
-    i16_parser(offset: usize)<&[u8], i16>,
-    do_parse!(
-        _seek: take!(offset) >>
-        num: le_i16 >>
-
-        (num)
-    )
-);
+fn i16_parser(input: &[u8], offset: usize) -> SudachiNomResult<&[u8], i16> {
+    nom::sequence::preceded(take(offset), le_i16)(input)
+}

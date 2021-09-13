@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-use nom::{le_u16, le_u8};
+use nom::number::complete::{le_u16, le_u32, le_u8};
 use std::path::PathBuf;
 
-use crate::error::SudachiNomCustomError;
+use crate::error::{SudachiNomError, SudachiNomResult};
 use crate::prelude::*;
 
 pub mod category_type;
@@ -117,29 +117,29 @@ impl<'a> BinaryDictionary<'a> {
     }
 }
 
-named!(
-    utf16_string<&[u8], String>,
-    do_parse!(
-        length: string_length >>
-        v: count!(le_u16, length as usize) >>
+fn u32_array_parser(input: &[u8]) -> SudachiNomResult<&[u8], Vec<u32>> {
+    let (rest, length) = le_u8(input)?;
+    nom::multi::count(le_u32, length as usize)(rest)
+}
 
-        (String::from_utf16(&v)
-            .map_err(|_| nom::Err::Failure(
-                nom::Context::Code(&[] as &[u8], nom::ErrorKind::Custom(SudachiNomCustomError::FromUtf16Nom as u32))))?
-        )
-    )
-);
+fn utf16_string_parser(input: &[u8]) -> SudachiNomResult<&[u8], String> {
+    let (rest, length) = string_length_parser(input)?;
+    let (rest, vs) = nom::multi::count(le_u16, length as usize)(rest)?;
+    Ok((
+        rest,
+        String::from_utf16(&vs).map_err(|_| nom::Err::Failure(SudachiNomError::Utf16String))?,
+    ))
+}
 
-// word length can be 1 or 2 bytes
-named!(
-    string_length<&[u8], u16>,
-    do_parse!(
-        length: le_u8 >>
-        _low: cond!(length >= 128, le_u8) >>
-
-        (match _low {
+fn string_length_parser(input: &[u8]) -> SudachiNomResult<&[u8], u16> {
+    let (rest, length) = le_u8(input)?;
+    // word length can be 1 or 2 bytes
+    let (rest, opt_low) = nom::combinator::cond(length >= 128, le_u8)(rest)?;
+    Ok((
+        rest,
+        match opt_low {
             Some(low) => ((length as u16 & 0x7F) << 8) | low as u16,
             None => length as u16,
-        })
-    )
-);
+        },
+    ))
+}
