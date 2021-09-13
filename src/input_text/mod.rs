@@ -285,9 +285,9 @@ mod tests {
         let grammar = build_mock_grammar(&bytes);
         let builder = set_up_builder(&grammar);
         let input = builder.build();
-        assert_eq!(1, input.code_point_count(0, 2));
-        assert_eq!(4, input.code_point_count(0, 7));
-        assert_eq!(2, input.code_point_count(13, 19));
+        assert_eq!(1, input.code_point_count(0..2));
+        assert_eq!(4, input.code_point_count(0..7));
+        assert_eq!(2, input.code_point_count(13..19));
     }
 
     #[test]

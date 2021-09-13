@@ -29,8 +29,9 @@ pub struct Utf8InputTextBuilder<'a> {
     pub original: &'a str,
     /// The text after modifications
     pub modified: String,
-    /// The mapping from modified byte_idx to original char_idx
-    /// Bytes in the middle of the char are mapped to the next char
+    /// The mapping from modified byte_idx to original byte_idx.
+    /// The mapped index locates at a valid char split point.
+    /// Bytes in the middle of the char are mapped to the next char.
     modified_to_original: Vec<usize>,
 }
 

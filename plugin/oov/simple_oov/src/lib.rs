@@ -83,7 +83,7 @@ impl OovProviderPlugin for SimpleOovPlugin {
         }
 
         let length = input_text.get_word_candidate_length(offset);
-        let surface = input_text.get_substring(offset, offset + length)?;
+        let surface = input_text.get_substring(offset..offset + length);
 
         Ok(vec![Node::new_oov(
             self.left_id,

@@ -50,7 +50,7 @@ struct PluginSettings {
 
 impl JoinKarakanaOovPlugin {
     fn is_katakana_node(&self, text: &Utf8InputText, node: &Node) -> bool {
-        text.get_char_category_types_range(node.begin, node.end)
+        text.get_char_category_types_range(node.begin..node.end)
             .contains(&CategoryType::KATAKANA)
     }
 
@@ -66,7 +66,7 @@ impl JoinKarakanaOovPlugin {
     }
 
     fn is_shorter(&self, text: &Utf8InputText, node: &Node) -> bool {
-        text.code_point_count(node.begin, node.end) < self.min_length
+        text.code_point_count(node.begin..node.end) < self.min_length
     }
 }
 

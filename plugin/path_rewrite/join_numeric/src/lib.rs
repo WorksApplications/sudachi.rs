@@ -119,7 +119,7 @@ impl PathRewritePlugin for JoinNumericPlugin {
         while i < path.len() as i32 - 1 {
             i += 1;
             let node = &path[i as usize];
-            let ctypes = text.get_char_category_types_range(node.begin, node.end);
+            let ctypes = text.get_char_category_types_range(node.begin..node.end);
             let s = node
                 .word_info
                 .as_ref()

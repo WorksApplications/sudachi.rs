@@ -231,7 +231,7 @@ impl OovProviderPlugin for MeCabOovPlugin {
             };
 
             if cinfo.is_group {
-                let s = input_text.get_substring(offset, offset + byte_len)?;
+                let s = input_text.get_substring(offset..offset + byte_len);
                 for oov in oovs {
                     nodes.push(self.get_oov_node(&s, oov, byte_len as u16));
                 }
@@ -242,7 +242,7 @@ impl OovProviderPlugin for MeCabOovPlugin {
                 if sublength > llength {
                     break;
                 }
-                let s = input_text.get_substring(offset, offset + sublength)?;
+                let s = input_text.get_substring(offset..offset + sublength);
                 for oov in oovs {
                     nodes.push(self.get_oov_node(&s, oov, sublength as u16));
                 }

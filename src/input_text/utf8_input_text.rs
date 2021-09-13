@@ -17,7 +17,6 @@
 use std::ops::Range;
 
 use crate::dic::category_type::CategoryTypes;
-use crate::prelude::*;
 
 /// Tokenization target text with original text and utility information
 #[derive(Debug, Default)]
@@ -27,7 +26,9 @@ pub struct Utf8InputText<'a> {
     /// The text after preprocess. The tokenization works on this.
     pub modified: String,
 
-    /// The mapping from modified byte_idx to original byte_idx
+    /// The mapping from modified byte_idx to original byte_idx.
+    /// The mapped index locates at a valid char split point.
+    /// Bytes in the middle of the char are mapped to the next char.
     offsets: Vec<usize>,
     /// The mapping from modified byte_idx to modified char_idx
     byte_indexes: Vec<usize>,
@@ -124,11 +125,8 @@ impl Utf8InputText<'_> {
     }
 
     /// Returns a substring of modified text
-    pub fn get_substring(&self, byte_start: usize, byte_end: usize) -> SudachiResult<String> {
-        if byte_end < byte_start || self.modified.len() < byte_end {
-            return Err(SudachiError::InvalidRange(byte_start, byte_end));
-        }
-        Ok(String::from(&self.modified[byte_start..byte_end]))
+    pub fn get_substring(&self, byte_range: Range<usize>) -> String {
+        String::from(&self.modified[byte_range])
     }
 
     /// Returns a byte_length to the next can_bow point
@@ -150,11 +148,11 @@ impl Utf8InputText<'_> {
     }
 
     /// Returns a common category_types of characters at given byte_range
-    pub fn get_char_category_types_range(&self, begin: usize, end: usize) -> CategoryTypes {
+    pub fn get_char_category_types_range(&self, byte_range: Range<usize>) -> CategoryTypes {
         // for path_rewrite
         // this assumes b < e
-        let b = self.byte_indexes[begin];
-        let e = self.byte_indexes[end];
+        let b = self.byte_indexes[byte_range.start];
+        let e = self.byte_indexes[byte_range.end];
 
         self.char_category_types[b + 1..e]
             .iter()
@@ -186,9 +184,9 @@ impl Utf8InputText<'_> {
     }
 
     /// Returns the number of characters in the given byte_range
-    pub fn code_point_count(&self, begin: usize, end: usize) -> usize {
+    pub fn code_point_count(&self, byte_range: Range<usize>) -> usize {
         // for JoinKatakanaOOV
-        self.byte_indexes[end] - self.byte_indexes[begin]
+        self.byte_indexes[byte_range.end] - self.byte_indexes[byte_range.start]
     }
 
     /// Returns byte index of the next byte where original char changes
