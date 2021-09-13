@@ -29,6 +29,8 @@ pub struct Lattice<'a> {
     size: usize,
     /// List of lattice nodes which ends at the byte_idx
     pub end_lists: Vec<Vec<Node>>,
+    /// The end-of-sentence node
+    eos_node: Option<Node>,
 }
 
 impl<'a> Lattice<'a> {
@@ -43,6 +45,7 @@ impl<'a> Lattice<'a> {
             grammar,
             size,
             end_lists,
+            eos_node: None,
         }
     }
 
@@ -83,8 +86,10 @@ impl<'a> Lattice<'a> {
 
     /// Inserts eos node
     pub fn connect_eos_node(&mut self) -> SudachiResult<()> {
-        let eos_node = Node::new_eos(self.size);
-        self.insert(eos_node.begin, eos_node.end, eos_node)
+        let mut eos_node = Node::new_eos(self.size);
+        self.connect_node(&mut eos_node)?;
+        self.eos_node = Some(eos_node);
+        Ok(())
     }
 
     /// Returns if the lattice has node which ends at the given byte_idx
@@ -94,8 +99,9 @@ impl<'a> Lattice<'a> {
 
     /// Calculate and Returns the best path from lattice
     pub fn get_best_path(&self) -> SudachiResult<Vec<Node>> {
-        let eos_node = self.end_lists[self.size]
-            .last()
+        let eos_node = self
+            .eos_node
+            .as_ref()
             .ok_or(SudachiError::MissingLaticePath)?;
 
         if !eos_node.is_connected_to_bos {
