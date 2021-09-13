@@ -248,10 +248,14 @@ impl Tokenizer<'_> {
         mode: Mode,
         enable_debug: bool,
     ) -> SudachiResult<Vec<Morpheme>> {
+        if enable_debug {
+            println!("=== Input dump:\n{}", input.modified);
+        }
+
         let lattice = self.build_lattice(input)?;
         if enable_debug {
             println!("=== Lattice dump:");
-            lattice.dump(&self.grammar)?;
+            lattice.dump(&self.grammar, &self.lexicon)?;
         };
 
         let mut path = lattice.get_best_path()?;
@@ -261,7 +265,7 @@ impl Tokenizer<'_> {
         }
         if enable_debug {
             println!("=== Before Rewriting:");
-            println!("{:?}", path);
+            Tokenizer::dump_path(&path);
         };
 
         for plugin in self.path_rewrite_plugins.plugins() {
@@ -270,7 +274,8 @@ impl Tokenizer<'_> {
         let path = self.split_path(path, mode)?;
         if enable_debug {
             println!("=== After Rewriting:");
-            println!("{:?}", path);
+            Tokenizer::dump_path(&path);
+            println!("===");
         };
 
         path.iter()
@@ -371,5 +376,11 @@ impl Tokenizer<'_> {
 
         new_path.shrink_to_fit();
         Ok(new_path)
+    }
+
+    fn dump_path(path: &Vec<Node>) {
+        for (i, node) in (&path).iter().enumerate() {
+            println!("{}: {}", i, node);
+        }
     }
 }

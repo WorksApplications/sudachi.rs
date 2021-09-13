@@ -20,6 +20,7 @@ use std::i32;
 
 use self::node::Node;
 use crate::dic::grammar::Grammar;
+use crate::dic::lexicon_set::LexiconSet;
 use crate::prelude::*;
 
 /// Lattice for tokenization
@@ -129,18 +130,50 @@ impl<'a> Lattice<'a> {
     }
 
     /// Dumps lattice
-    pub fn dump(&self, grammar: &Grammar) -> SudachiResult<()> {
-        let mut i = 0;
-        for r_nodes in self.end_lists.iter().rev() {
+    pub fn dump(&self, grammar: &Grammar, lexicon: &LexiconSet) -> SudachiResult<()> {
+        let mut dump_idx = 0;
+        let eos_node = self
+            .eos_node
+            .clone()
+            .ok_or(SudachiError::MissingLaticePath)?;
+        for r_nodes in self.end_lists.iter().chain([vec![eos_node]].iter()).rev() {
             for r_node in r_nodes {
-                print!("{}: {}: ", i, r_node);
+                let (surface, pos) = if r_node.is_system_node {
+                    ("(null)".to_owned(), "BOS/EOS".to_owned())
+                } else {
+                    let wi = match r_node.word_info.clone() {
+                        Some(wi) => wi,
+                        None => {
+                            let word_id = r_node.word_id.ok_or(SudachiError::MissingWordId)?;
+                            lexicon.get_word_info(word_id)?
+                        }
+                    };
+                    (wi.surface, grammar.pos_list[wi.pos_id as usize].join(","))
+                };
+
+                print!(
+                    "{}: {} {} {}({}) {} {} {} {}:",
+                    dump_idx,
+                    r_node.begin,
+                    r_node.end,
+                    surface,
+                    match r_node.word_id {
+                        Some(word_id) => word_id.to_string(),
+                        None => "0".to_string(),
+                    },
+                    pos,
+                    r_node.left_id,
+                    r_node.right_id,
+                    r_node.cost
+                );
+
                 for l_node in &self.end_lists[r_node.begin] {
                     let connect_cost = grammar.get_connect_cost(l_node.right_id, r_node.left_id)?;
-                    let cost = l_node.total_cost + connect_cost as i32;
-                    print!("{} ", cost);
+                    print!(" {}", connect_cost);
                 }
                 println!();
-                i += 1;
+
+                dump_idx += 1;
             }
         }
         Ok(())

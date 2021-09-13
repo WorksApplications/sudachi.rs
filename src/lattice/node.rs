@@ -37,13 +37,15 @@ pub struct Node {
     pub cost: i16,
 
     /// The word_id in the dictionary of this node
-    /// None if this node comes from outside of dictionary (e.g. oov)
+    /// None if this node comes from outside of dictionary (e.g. oov, bos, eos)
     pub word_id: Option<u32>,
     /// The word_info in the dictionary of this node
-    /// None until the first time it is referenced
+    /// None until it is set manually
     pub word_info: Option<WordInfo>,
     /// Wherther if this node is oov
     pub is_oov: bool,
+    /// Wherther if this node is BOS/EOS
+    pub is_system_node: bool,
 
     /// The total cost from bos to this node
     pub total_cost: i32,
@@ -111,6 +113,7 @@ impl Node {
             right_id,
             cost,
             is_connected_to_bos: true,
+            is_system_node: true,
             ..Default::default()
         }
     }
@@ -124,6 +127,7 @@ impl Node {
             left_id,
             right_id,
             cost,
+            is_system_node: true,
             ..Default::default()
         }
     }
@@ -144,9 +148,15 @@ impl Node {
 
 impl fmt::Display for Node {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        // assume word_info is filled
+        let pos_id = match &self.word_info {
+            None => -1,
+            Some(wi) => wi.pos_id as i32,
+        };
+
         write!(
             f,
-            "{} {} {}({}) {} {} {}",
+            "{} {} {}({}) {} {} {} {}",
             self.begin,
             self.end,
             match &self.word_info {
@@ -155,8 +165,9 @@ impl fmt::Display for Node {
             },
             match self.word_id {
                 Some(word_id) => word_id.to_string(),
-                None => "-1".to_string(),
+                None => "0".to_string(),
             },
+            pos_id,
             self.left_id,
             self.right_id,
             self.cost
