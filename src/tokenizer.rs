@@ -24,9 +24,7 @@ use crate::dic::category_type::CategoryType;
 use crate::dic::grammar::Grammar;
 use crate::dic::lexicon_set::LexiconSet;
 use crate::dic::{BinaryDictionary, Dictionary};
-use crate::input_text::{
-    utf8_input_text::Utf8InputText, utf8_input_text_builder::Utf8InputTextBuilder,
-};
+use crate::input_text::{Utf8InputText, Utf8InputTextBuilder};
 use crate::lattice::node::Node;
 use crate::lattice::Lattice;
 use crate::morpheme::Morpheme;

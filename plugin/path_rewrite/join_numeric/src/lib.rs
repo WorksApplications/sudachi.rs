@@ -21,7 +21,7 @@ use sudachi::config::Config;
 use sudachi::declare_path_rewrite_plugin;
 use sudachi::dic::category_type::CategoryType;
 use sudachi::dic::grammar::Grammar;
-use sudachi::input_text::utf8_input_text::Utf8InputText;
+use sudachi::input_text::Utf8InputText;
 use sudachi::lattice::{node::Node, Lattice};
 use sudachi::plugin::path_rewrite::PathRewritePlugin;
 use sudachi::prelude::*;

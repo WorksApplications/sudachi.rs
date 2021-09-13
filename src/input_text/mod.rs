@@ -17,6 +17,9 @@
 pub mod utf8_input_text;
 pub mod utf8_input_text_builder;
 
+pub use utf8_input_text::Utf8InputText;
+pub use utf8_input_text_builder::Utf8InputTextBuilder;
+
 #[cfg(test)]
 mod tests {
     use super::utf8_input_text_builder::Utf8InputTextBuilder;

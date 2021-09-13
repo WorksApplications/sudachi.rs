@@ -27,7 +27,7 @@ use sudachi::dic::category_type::CategoryType;
 use sudachi::dic::character_category::Error as CharacterCategoryError;
 use sudachi::dic::grammar::Grammar;
 use sudachi::dic::lexicon::word_infos::WordInfo;
-use sudachi::input_text::utf8_input_text::Utf8InputText;
+use sudachi::input_text::Utf8InputText;
 use sudachi::lattice::node::Node;
 use sudachi::plugin::oov::OovProviderPlugin;
 use sudachi::prelude::*;

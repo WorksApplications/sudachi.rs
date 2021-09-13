@@ -19,7 +19,7 @@ use serde_json::{Map, Value};
 
 use sudachi::config::Config;
 use sudachi::dic::grammar::Grammar;
-use sudachi::input_text::utf8_input_text_builder::Utf8InputTextBuilder;
+use sudachi::input_text::Utf8InputTextBuilder;
 
 #[test]
 fn combine_continuous_prolonged_sound_mark() {

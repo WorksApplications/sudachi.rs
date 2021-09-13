@@ -21,7 +21,7 @@ use tempfile::tempfile;
 
 use sudachi::config::Config;
 use sudachi::dic::grammar::Grammar;
-use sudachi::input_text::utf8_input_text_builder::Utf8InputTextBuilder;
+use sudachi::input_text::Utf8InputTextBuilder;
 
 const TEST_RESOURCE_DIR: &str = "tests/resources/";
 const ORIGINAL_TEXT: &str = "ÂＢΓД㈱ｶﾞウ゛⼼Ⅲ";

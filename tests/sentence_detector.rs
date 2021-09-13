@@ -20,7 +20,7 @@ extern crate lazy_static;
 mod common;
 use common::{GRAMMAR, TOKENIZER};
 
-use sudachi::input_text::utf8_input_text_builder::Utf8InputTextBuilder;
+use sudachi::input_text::Utf8InputTextBuilder;
 use sudachi::sentence_detector::{NonBreakChecker, SentenceDetector};
 
 #[test]

@@ -21,7 +21,7 @@ use std::collections::HashSet;
 use sudachi::config::Config;
 use sudachi::declare_input_text_plugin;
 use sudachi::dic::grammar::Grammar;
-use sudachi::input_text::utf8_input_text_builder::Utf8InputTextBuilder;
+use sudachi::input_text::Utf8InputTextBuilder;
 use sudachi::plugin::input_text::InputTextPlugin;
 use sudachi::prelude::*;
 

@@ -20,7 +20,7 @@ use std::path::Path;
 
 use crate::config::Config;
 use crate::dic::grammar::Grammar;
-use crate::input_text::utf8_input_text_builder::Utf8InputTextBuilder;
+use crate::input_text::Utf8InputTextBuilder;
 use crate::prelude::*;
 
 /// Trait of plugin to modify the input text before tokenization

@@ -18,7 +18,7 @@ use fancy_regex::Regex;
 use lazy_static::lazy_static;
 
 use crate::dic::lexicon_set::LexiconSet;
-use crate::input_text::utf8_input_text::Utf8InputText;
+use crate::input_text::Utf8InputText;
 use crate::prelude::*;
 
 /// A checker for words that cross boundaries

@@ -21,7 +21,7 @@ use sudachi::config::Config;
 use sudachi::declare_oov_provider_plugin;
 use sudachi::dic::grammar::Grammar;
 use sudachi::dic::lexicon::word_infos::WordInfo;
-use sudachi::input_text::utf8_input_text::Utf8InputText;
+use sudachi::input_text::Utf8InputText;
 use sudachi::lattice::node::Node;
 use sudachi::plugin::oov::OovProviderPlugin;
 use sudachi::prelude::*;

@@ -19,7 +19,7 @@ use std::fmt;
 use crate::dic::grammar::Grammar;
 use crate::dic::lexicon::word_infos::WordInfo;
 use crate::dic::lexicon_set::LexiconSet;
-use crate::input_text::utf8_input_text::Utf8InputText;
+use crate::input_text::Utf8InputText;
 use crate::lattice::node::Node;
 use crate::prelude::*;
 

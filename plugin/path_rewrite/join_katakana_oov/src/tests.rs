@@ -21,7 +21,7 @@ use std::path::PathBuf;
 use sudachi::dic::character_category::CharacterCategory;
 use sudachi::dic::grammar::Grammar;
 use sudachi::dic::lexicon::word_infos::WordInfo;
-use sudachi::input_text::utf8_input_text_builder::Utf8InputTextBuilder;
+use sudachi::input_text::Utf8InputTextBuilder;
 
 const TEST_RESOURCE_DIR_PATH: &str = "tests/resources/";
 
