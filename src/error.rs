@@ -32,29 +32,68 @@ pub enum SudachiError {
     #[error("IO Error: {0}")]
     Io(#[from] std::io::Error),
 
+    #[error("Parse Int Error")]
+    ParseIntError(#[from] std::num::ParseIntError),
+
+    #[error("Invalid UTF-16: {0}")]
+    FromUtf16(#[from] std::string::FromUtf16Error),
+
+    #[error("Regex error")]
+    RegexError(#[from] fancy_regex::Error),
+
     #[error("Libloading Error: {0}")]
     Libloading(#[from] libloading::Error),
+
+    #[error("Error from nom {0}")]
+    NomParseError(String),
+
+    #[error("Invalid utf16 string from nom")]
+    InvalidUtf16FromNom,
 
     #[error("Serde error: {0}")]
     SerdeError(#[from] serde_json::Error),
 
+    #[error("Invalid character category definition: {0}")]
+    InvalidCharacterCategory(#[from] CharacterCategoryError),
+
     #[error("Config Error: {0}")]
     ConfigError(#[from] ConfigError),
-
-    #[error("Parse Int Error")]
-    ParseIntError(#[from] std::num::ParseIntError),
-
-    #[error("Invalid range: {0}..{1}")]
-    InvalidRange(usize, usize),
 
     #[error("Invalid header: {0}")]
     InvalidHeader(#[from] HeaderError),
 
+    #[error("Lecicon error")]
+    LexiconSetError(#[from] LexiconSetError),
+
+    #[error("Plugin error")]
+    PluginError(#[from] PluginError),
+
+    #[error("End of sentence (EOS) is not connected to beginning of sentence (BOS)")]
+    EosBosDisconnect,
+
+    #[error("Invalid character category type: {0}")]
+    InvalidCharacterCategoryType(String),
+
+    #[error("Invalid data format: {1} at line {0}")]
+    InvalidDataFormat(usize, String),
+
     #[error("Invalid grammar")]
     InvalidDictionaryGrammar,
 
-    #[error("Error from nom {0}")]
-    NomParseError(String),
+    #[error("Invalid part of speech: {0}")]
+    InvalidPartOfSpeech(String),
+
+    #[error("Invalid range: {0}..{1}")]
+    InvalidRange(usize, usize),
+
+    #[error("Missing dictionary trie")]
+    MissingDictionaryTrie,
+
+    #[error("Missing latice path")]
+    MissingLaticePath,
+
+    #[error("Missing part of speech")]
+    MissingPartOfSpeech,
 
     #[error("Missing word_id")]
     MissingWordId,
@@ -62,47 +101,8 @@ pub enum SudachiError {
     #[error("Missing word_info")]
     MissingWordInfo,
 
-    #[error("Missing part of speech")]
-    MissingPartOfSpeech,
-
-    #[error("Missing latice path")]
-    MissingLaticePath,
-
-    #[error("Missing dictionary trie")]
-    MissingDictionaryTrie,
-
-    #[error("Invalid character category definition: {0}")]
-    InvalidCharacterCategory(#[from] CharacterCategoryError),
-
-    #[error("Invalid character category type: {0}")]
-    InvalidCharacterCategoryType(String),
-
-    #[error("Invalid UTF-16: {0}")]
-    FromUtf16(#[from] std::string::FromUtf16Error),
-
-    #[error("Invalid utf16 string from nom")]
-    InvalidUtf16FromNom,
-
-    #[error("End of sentence (EOS) is not connected to beginning of sentence (BOS)")]
-    EosBosDisconnect,
-
-    #[error("Invalid part of speech: {0}")]
-    InvalidPartOfSpeech(String),
-
-    #[error("Invalid data format: {1} at line {0}")]
-    InvalidDataFormat(usize, String),
-
     #[error("No out of vocabulary plugin provided")]
     NoOOVPluginProvided,
-
-    #[error("Plugin error")]
-    PluginError(#[from] PluginError),
-
-    #[error("Lecicon error")]
-    LexiconSetError(#[from] LexiconSetError),
-
-    #[error("Regex error")]
-    RegexError(#[from] fancy_regex::Error),
 }
 
 pub type SudachiNomResult<I, O> = nom::IResult<I, O, SudachiNomError<I>>;
