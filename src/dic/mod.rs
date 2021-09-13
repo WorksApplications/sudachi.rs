@@ -43,7 +43,7 @@ impl<'a> Dictionary<'a> {
     /// Creates a system dictionary from bytes, and load a character category from file
     pub fn from_system_dictionary(
         dictionary_bytes: &'a [u8],
-        character_category_file: PathBuf,
+        character_category_file: &PathBuf,
     ) -> SudachiResult<Dictionary<'a>> {
         let system_dict = BinaryDictionary::from_system_dictionary(dictionary_bytes)?;
 

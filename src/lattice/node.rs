@@ -159,13 +159,13 @@ impl fmt::Display for Node {
             "{} {} {}({}) {} {} {} {}",
             self.begin,
             self.end,
-            match &self.word_info {
-                Some(wi) => wi.surface.clone(),
-                None => "".to_string(),
+            match self.word_info.as_ref() {
+                Some(wi) => wi.surface.as_ref(),
+                None => "",
             },
-            match self.word_id {
-                Some(word_id) => word_id.to_string(),
-                None => "0".to_string(),
+            match self.word_id.as_ref() {
+                Some(word_id) => word_id,
+                None => &0,
             },
             pos_id,
             self.left_id,

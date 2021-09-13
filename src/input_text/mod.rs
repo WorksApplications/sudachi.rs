@@ -44,7 +44,7 @@ mod tests {
     fn build_mock_grammar(bytes: &[u8]) -> Grammar {
         let mut grammar = Grammar::new(bytes, 0).expect("Failed to create grammar");
         let character_category =
-            CharacterCategory::from_file(PathBuf::from(CHAR_CATEGORY_FILE_PATH))
+            CharacterCategory::from_file(&PathBuf::from(CHAR_CATEGORY_FILE_PATH))
                 .expect("Failed to load character category");
         grammar.set_character_category(character_category);
         grammar

@@ -129,7 +129,7 @@ impl<'a> Tokenizer<'a> {
     ) -> SudachiResult<Tokenizer<'a>> {
         let dictionary = Dictionary::from_system_dictionary(
             dictionary_bytes,
-            config.character_definition_file.clone(),
+            &config.character_definition_file,
         )?;
         let mut grammar = dictionary.grammar;
         let lexicon = dictionary.lexicon_set;
@@ -346,7 +346,7 @@ impl Tokenizer<'_> {
         for node in path {
             let word_info = node
                 .word_info
-                .clone()
+                .as_ref()
                 .ok_or(SudachiError::MissingWordInfo)?;
             let word_ids = match mode {
                 Mode::A => &word_info.a_unit_split,
@@ -363,7 +363,7 @@ impl Tokenizer<'_> {
                     n.fill_word_info(&self.lexicon)?;
                     let length = n
                         .word_info
-                        .clone()
+                        .as_ref()
                         .ok_or(SudachiError::MissingWordInfo)?
                         .head_word_length as usize;
                     n.set_range(offset, offset + length);

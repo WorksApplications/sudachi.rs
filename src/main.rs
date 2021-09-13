@@ -112,7 +112,7 @@ fn main() {
 
     // load and parse dictionary binary to create a tokenizer
     let dictionary_bytes =
-        get_dictionary_bytes(config.system_dict.clone()).expect("No system dictionary found");
+        get_dictionary_bytes(config.system_dict.as_ref()).expect("No system dictionary found");
     let mut user_dictionary_bytes = Vec::with_capacity(config.user_dicts.len());
     for pb in &config.user_dicts {
         let storage_buf =
@@ -137,7 +137,7 @@ fn main() {
 }
 
 /// get dictionary bytes
-fn get_dictionary_bytes(system_dict: Option<PathBuf>) -> Option<Cow<'static, [u8]>> {
+fn get_dictionary_bytes(system_dict: Option<&PathBuf>) -> Option<Cow<'static, [u8]>> {
     let dictionary_path = {
         cfg_if::cfg_if! {
             if #[cfg(feature="bake_dictionary")] {

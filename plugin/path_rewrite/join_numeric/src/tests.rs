@@ -46,8 +46,8 @@ fn digit() {
         .rewrite(&text, path, &Lattice::new(&grammar, 0))
         .expect("Failed to rewrite path");
     assert_eq!(4, path.len());
-    assert_eq!("123", path[0].word_info.clone().unwrap().surface);
-    assert_eq!("20", path[2].word_info.clone().unwrap().surface);
+    assert_eq!("123", path[0].word_info.as_ref().unwrap().surface);
+    assert_eq!("20", path[2].word_info.as_ref().unwrap().surface);
 
     let builder = Utf8InputTextBuilder::new("080-121", &grammar);
     let text = builder.build();
@@ -64,8 +64,8 @@ fn digit() {
         .rewrite(&text, path, &Lattice::new(&grammar, 0))
         .expect("Failed to rewrite path");
     assert_eq!(3, path.len());
-    assert_eq!("080", path[0].word_info.clone().unwrap().surface);
-    assert_eq!("121", path[2].word_info.clone().unwrap().surface);
+    assert_eq!("080", path[0].word_info.as_ref().unwrap().surface);
+    assert_eq!("121", path[2].word_info.as_ref().unwrap().surface);
 }
 
 #[test]
@@ -89,7 +89,7 @@ fn kanji_numeric() {
         .rewrite(&text, path, &Lattice::new(&grammar, 0))
         .expect("Failed to rewrite path");
     assert_eq!(2, path.len());
-    assert_eq!("一二三万二千", path[0].word_info.clone().unwrap().surface);
+    assert_eq!("一二三万二千", path[0].word_info.as_ref().unwrap().surface);
 
     let builder = Utf8InputTextBuilder::new("二百百", &grammar);
     let text = builder.build();
@@ -127,7 +127,7 @@ fn normalize() {
     assert_eq!(2, path.len());
     assert_eq!(
         "1232000",
-        path[0].word_info.clone().unwrap().normalized_form
+        path[0].word_info.as_ref().unwrap().normalized_form
     );
 }
 
@@ -145,7 +145,10 @@ fn normalized_with_not_numeric() {
         .rewrite(&text, path, &Lattice::new(&grammar, 0))
         .expect("Failed to rewrite path");
     assert_eq!(1, path.len());
-    assert_eq!("六三四", path[0].word_info.clone().unwrap().normalized_form);
+    assert_eq!(
+        "六三四",
+        path[0].word_info.as_ref().unwrap().normalized_form
+    );
 }
 
 #[test]
@@ -167,7 +170,7 @@ fn point() {
         .rewrite(&text, path, &Lattice::new(&grammar, 0))
         .expect("Failed to rewrite path");
     assert_eq!(1, path.len());
-    assert_eq!("1.002", path[0].word_info.clone().unwrap().normalized_form);
+    assert_eq!("1.002", path[0].word_info.as_ref().unwrap().normalized_form);
 
     let builder = Utf8InputTextBuilder::new(".002", &grammar);
     let text = builder.build();
@@ -181,8 +184,8 @@ fn point() {
         .rewrite(&text, path, &Lattice::new(&grammar, 0))
         .expect("Failed to rewrite path");
     assert_eq!(2, path.len());
-    assert_eq!(".", path[0].word_info.clone().unwrap().normalized_form);
-    assert_eq!("002", path[1].word_info.clone().unwrap().normalized_form);
+    assert_eq!(".", path[0].word_info.as_ref().unwrap().normalized_form);
+    assert_eq!("002", path[1].word_info.as_ref().unwrap().normalized_form);
 
     let builder = Utf8InputTextBuilder::new("22.", &grammar);
     let text = builder.build();
@@ -195,8 +198,8 @@ fn point() {
         .rewrite(&text, path, &Lattice::new(&grammar, 0))
         .expect("Failed to rewrite path");
     assert_eq!(2, path.len());
-    assert_eq!("22", path[0].word_info.clone().unwrap().normalized_form);
-    assert_eq!(".", path[1].word_info.clone().unwrap().normalized_form);
+    assert_eq!("22", path[0].word_info.as_ref().unwrap().normalized_form);
+    assert_eq!(".", path[1].word_info.as_ref().unwrap().normalized_form);
 
     let builder = Utf8InputTextBuilder::new("22.節", &grammar);
     let text = builder.build();
@@ -210,8 +213,8 @@ fn point() {
         .rewrite(&text, path, &Lattice::new(&grammar, 0))
         .expect("Failed to rewrite path");
     assert_eq!(3, path.len());
-    assert_eq!("22", path[0].word_info.clone().unwrap().normalized_form);
-    assert_eq!(".", path[1].word_info.clone().unwrap().normalized_form);
+    assert_eq!("22", path[0].word_info.as_ref().unwrap().normalized_form);
+    assert_eq!(".", path[1].word_info.as_ref().unwrap().normalized_form);
 
     let builder = Utf8InputTextBuilder::new(".c", &grammar);
     let text = builder.build();
@@ -223,7 +226,7 @@ fn point() {
         .rewrite(&text, path, &Lattice::new(&grammar, 0))
         .expect("Failed to rewrite path");
     assert_eq!(2, path.len());
-    assert_eq!(".", path[0].word_info.clone().unwrap().normalized_form);
+    assert_eq!(".", path[0].word_info.as_ref().unwrap().normalized_form);
 
     let builder = Utf8InputTextBuilder::new("1.20.3", &grammar);
     let text = builder.build();
@@ -239,7 +242,7 @@ fn point() {
         .rewrite(&text, path, &Lattice::new(&grammar, 0))
         .expect("Failed to rewrite path");
     assert_eq!(5, path.len());
-    assert_eq!("20", path[2].word_info.clone().unwrap().normalized_form);
+    assert_eq!("20", path[2].word_info.as_ref().unwrap().normalized_form);
 
     let builder = Utf8InputTextBuilder::new("652...", &grammar);
     let text = builder.build();
@@ -255,7 +258,7 @@ fn point() {
         .rewrite(&text, path, &Lattice::new(&grammar, 0))
         .expect("Failed to rewrite path");
     assert_eq!(4, path.len());
-    assert_eq!("652", path[0].word_info.clone().unwrap().normalized_form);
+    assert_eq!("652", path[0].word_info.as_ref().unwrap().normalized_form);
 }
 
 #[test]
@@ -285,13 +288,13 @@ fn comma() {
         .rewrite(&text, path, &Lattice::new(&grammar, 0))
         .expect("Failed to rewrite path");
     assert_eq!(8, path.len());
-    assert_eq!("2", path[0].word_info.clone().unwrap().normalized_form);
-    assert_eq!(",", path[1].word_info.clone().unwrap().normalized_form);
-    assert_eq!("00", path[2].word_info.clone().unwrap().normalized_form);
-    assert_eq!(",", path[3].word_info.clone().unwrap().normalized_form);
-    assert_eq!("000", path[4].word_info.clone().unwrap().normalized_form);
-    assert_eq!(",", path[5].word_info.clone().unwrap().normalized_form);
-    assert_eq!("000", path[6].word_info.clone().unwrap().normalized_form);
+    assert_eq!("2", path[0].word_info.as_ref().unwrap().normalized_form);
+    assert_eq!(",", path[1].word_info.as_ref().unwrap().normalized_form);
+    assert_eq!("00", path[2].word_info.as_ref().unwrap().normalized_form);
+    assert_eq!(",", path[3].word_info.as_ref().unwrap().normalized_form);
+    assert_eq!("000", path[4].word_info.as_ref().unwrap().normalized_form);
+    assert_eq!(",", path[5].word_info.as_ref().unwrap().normalized_form);
+    assert_eq!("000", path[6].word_info.as_ref().unwrap().normalized_form);
 
     let builder = Utf8InputTextBuilder::new(",", &grammar);
     let text = builder.build();
@@ -300,7 +303,7 @@ fn comma() {
         .rewrite(&text, path, &Lattice::new(&grammar, 0))
         .expect("Failed to rewrite path");
     assert_eq!(1, path.len());
-    assert_eq!(",", path[0].word_info.clone().unwrap().normalized_form);
+    assert_eq!(",", path[0].word_info.as_ref().unwrap().normalized_form);
 
     let builder = Utf8InputTextBuilder::new("652,,,", &grammar);
     let text = builder.build();
@@ -316,7 +319,7 @@ fn comma() {
         .rewrite(&text, path, &Lattice::new(&grammar, 0))
         .expect("Failed to rewrite path");
     assert_eq!(4, path.len());
-    assert_eq!("652", path[0].word_info.clone().unwrap().normalized_form);
+    assert_eq!("652", path[0].word_info.as_ref().unwrap().normalized_form);
 
     let builder = Utf8InputTextBuilder::new("256,5.50389", &grammar);
     let text = builder.build();
@@ -337,10 +340,10 @@ fn comma() {
         .rewrite(&text, path, &Lattice::new(&grammar, 0))
         .expect("Failed to rewrite path");
     assert_eq!(3, path.len());
-    assert_eq!("256", path[0].word_info.clone().unwrap().normalized_form);
+    assert_eq!("256", path[0].word_info.as_ref().unwrap().normalized_form);
     assert_eq!(
         "5.50389",
-        path[2].word_info.clone().unwrap().normalized_form
+        path[2].word_info.as_ref().unwrap().normalized_form
     );
 
     let builder = Utf8InputTextBuilder::new("256,550.389", &grammar);
@@ -364,7 +367,7 @@ fn comma() {
     assert_eq!(1, path.len());
     assert_eq!(
         "256550.389",
-        path[0].word_info.clone().unwrap().normalized_form
+        path[0].word_info.as_ref().unwrap().normalized_form
     );
 }
 
@@ -386,14 +389,14 @@ fn single_node() {
         .rewrite(&text, _path.clone(), &Lattice::new(&grammar, 0))
         .expect("Failed to rewrite path");
     assert_eq!(3, path.len());
-    assert_eq!("3", path[1].word_info.clone().unwrap().normalized_form);
+    assert_eq!("3", path[1].word_info.as_ref().unwrap().normalized_form);
 
     plugin.enable_normalize = false;
     let path = plugin
         .rewrite(&text, _path.clone(), &Lattice::new(&grammar, 0))
         .expect("Failed to rewrite path");
     assert_eq!(3, path.len());
-    assert_eq!("三", path[1].word_info.clone().unwrap().normalized_form);
+    assert_eq!("三", path[1].word_info.as_ref().unwrap().normalized_form);
 }
 
 fn build_node_num(surface: &str, normalized: &str, length: u16, start: usize) -> Node {
@@ -441,7 +444,7 @@ fn build_plugin() -> JoinNumericPlugin {
 }
 fn build_character_category() -> CharacterCategory {
     let char_cat_file_path = PathBuf::from(TEST_RESOURCE_DIR_PATH.to_string() + "char.def");
-    CharacterCategory::from_file(char_cat_file_path).expect("Failed to load character category")
+    CharacterCategory::from_file(&char_cat_file_path).expect("Failed to load character category")
 }
 fn build_mock_bytes() -> Vec<u8> {
     let mut buf = Vec::new();

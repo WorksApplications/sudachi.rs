@@ -140,7 +140,7 @@ impl Config {
         if file_path.is_absolute() {
             file_path
         } else {
-            resource_dir.join(file_path)
+            resource_dir.join(&file_path)
         }
     }
 }

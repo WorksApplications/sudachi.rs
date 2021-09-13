@@ -201,7 +201,7 @@ fn build_node_oov(start: usize, end: usize, cost: i32, surface: &str, length: u1
 
 fn build_character_category() -> CharacterCategory {
     let char_cat_file_path = PathBuf::from(TEST_RESOURCE_DIR_PATH.to_string() + "char.def");
-    CharacterCategory::from_file(char_cat_file_path).expect("Failed to load character category")
+    CharacterCategory::from_file(&char_cat_file_path).expect("Failed to load character category")
 }
 fn build_mock_bytes() -> Vec<u8> {
     let mut buf = Vec::new();

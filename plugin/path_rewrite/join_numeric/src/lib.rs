@@ -60,7 +60,7 @@ impl JoinNumericPlugin {
     ) -> SudachiResult<Vec<Node>> {
         let word_info = path[begin]
             .word_info
-            .clone()
+            .as_ref()
             .ok_or(SudachiError::MissingWordInfo)?;
 
         if word_info.pos_id != self.numeric_pos_id {
@@ -122,9 +122,10 @@ impl PathRewritePlugin for JoinNumericPlugin {
             let ctypes = text.get_char_category_types_range(node.begin, node.end);
             let s = node
                 .word_info
-                .clone()
+                .as_ref()
                 .ok_or(SudachiError::MissingWordInfo)?
-                .normalized_form;
+                .normalized_form
+                .clone();
             if ctypes.contains(&CategoryType::NUMERIC)
                 || ctypes.contains(&CategoryType::KANJINUMERIC)
                 || (comma_as_digit && s == ",")
@@ -157,9 +158,9 @@ impl PathRewritePlugin for JoinNumericPlugin {
                     path = self.concat(path, begin_idx as usize, i as usize, &mut parser)?;
                     i = begin_idx + 1;
                 } else {
-                    let ss = path[i as usize - 1]
+                    let ss = &path[i as usize - 1]
                         .word_info
-                        .clone()
+                        .as_ref()
                         .ok_or(SudachiError::MissingWordInfo)?
                         .normalized_form;
                     if (parser.error_state == numeric_parser::Error::COMMA && ss == ",")
@@ -186,9 +187,9 @@ impl PathRewritePlugin for JoinNumericPlugin {
             if parser.done() {
                 path = self.concat(path, begin_idx as usize, len, &mut parser)?;
             } else {
-                let ss = path[len - 1]
+                let ss = &path[len - 1]
                     .word_info
-                    .clone()
+                    .as_ref()
                     .ok_or(SudachiError::MissingWordInfo)?
                     .normalized_form;
                 if (parser.error_state == numeric_parser::Error::COMMA && ss == ",")

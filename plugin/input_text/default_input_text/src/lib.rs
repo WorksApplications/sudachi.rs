@@ -140,8 +140,7 @@ impl InputTextPlugin for DefaultInputTextPlugin {
     fn rewrite(&self, builder: &mut Utf8InputTextBuilder) {
         let mut offset: i32 = 0;
         let mut next_offset: i32 = 0;
-        let text = builder.modified.clone();
-        let chars: Vec<_> = text.chars().collect();
+        let chars: Vec<_> = builder.modified.chars().collect();
 
         let mut i: i32 = -1;
         loop {

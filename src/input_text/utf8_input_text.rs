@@ -152,14 +152,15 @@ impl Utf8InputText<'_> {
     /// Returns a common category_types of characters at given byte_range
     pub fn get_char_category_types_range(&self, begin: usize, end: usize) -> CategoryTypes {
         // for path_rewrite
+        // this assumes b < e
         let b = self.byte_indexes[begin];
         let e = self.byte_indexes[end];
 
-        self.char_category_types[b..e]
+        self.char_category_types[b + 1..e]
             .iter()
-            .map(|v| v.clone())
-            .reduce(|a, b| a.intersection(&b).map(|v| *v).collect::<CategoryTypes>())
-            .unwrap()
+            .fold(self.char_category_types[b].clone(), |a, b| {
+                a.intersection(&b).map(|v| *v).collect::<CategoryTypes>()
+            })
     }
 
     /// Returns byte length from byte_idx to index where category type continuity ends

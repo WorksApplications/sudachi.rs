@@ -141,14 +141,15 @@ impl<'a> Lattice<'a> {
                 let (surface, pos) = if r_node.is_system_node {
                     ("(null)".to_owned(), "BOS/EOS".to_owned())
                 } else {
-                    let wi = match r_node.word_info.clone() {
-                        Some(wi) => wi,
+                    let (surface, pos_id) = match r_node.word_info.as_ref() {
+                        Some(wi) => (wi.surface.clone(), wi.pos_id),
                         None => {
                             let word_id = r_node.word_id.ok_or(SudachiError::MissingWordId)?;
-                            lexicon.get_word_info(word_id)?
+                            let wi = lexicon.get_word_info(word_id)?;
+                            (wi.surface, wi.pos_id)
                         }
                     };
-                    (wi.surface, grammar.pos_list[wi.pos_id as usize].join(","))
+                    (surface, grammar.pos_list[pos_id as usize].join(","))
                 };
 
                 print!(

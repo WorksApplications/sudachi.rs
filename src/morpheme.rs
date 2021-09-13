@@ -42,8 +42,8 @@ impl<'a> Morpheme<'a> {
         lexicon: &LexiconSet,
     ) -> SudachiResult<Morpheme<'a>> {
         let surface = input.get_original_substring(node.begin..node.end);
-        let word_info = match node.word_info.clone() {
-            Some(wi) => wi,
+        let word_info = match node.word_info.as_ref() {
+            Some(wi) => wi.clone(),
             None => {
                 let word_id = node.word_id.ok_or(SudachiError::MissingWordId)?;
                 lexicon.get_word_info(word_id)?

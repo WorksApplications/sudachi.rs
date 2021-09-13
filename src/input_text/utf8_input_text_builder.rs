@@ -69,7 +69,6 @@ impl<'a> Utf8InputTextBuilder<'a> {
             .flatten()
             .chain([self.modified.chars().count()])
             .collect();
-        let offsets = self.modified_to_original.clone();
 
         let char_category_types = self.build_char_category_types();
         let can_bow_list = self.build_can_bow_list(&char_category_types);
@@ -79,7 +78,7 @@ impl<'a> Utf8InputTextBuilder<'a> {
         Utf8InputText::new(
             self.original,
             self.modified,
-            offsets,
+            self.modified_to_original,
             byte_indexes,
             char_category_types,
             can_bow_list,

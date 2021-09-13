@@ -56,7 +56,7 @@ pub trait PathRewritePlugin {
         let e = path[end - 1].end;
         let word_infos: Vec<_> = path[begin..end]
             .iter()
-            .map(|node| node.word_info.clone())
+            .map(|node| node.word_info.as_ref())
             .collect::<Option<_>>()
             .ok_or(SudachiError::MissingWordInfo)?;
         let pos_id = word_infos[0].pos_id;
@@ -111,7 +111,7 @@ pub trait PathRewritePlugin {
         let e = path[end - 1].end;
         let word_infos: Vec<_> = path[begin..end]
             .iter()
-            .map(|node| node.word_info.clone())
+            .map(|node| node.word_info.as_ref())
             .collect::<Option<_>>()
             .ok_or(SudachiError::MissingWordInfo)?;
         let surface = word_infos

@@ -68,8 +68,8 @@ pub struct CharacterCategory {
 
 impl CharacterCategory {
     /// Creates a character category from file
-    pub fn from_file(path: PathBuf) -> SudachiResult<CharacterCategory> {
-        let reader = BufReader::new(fs::File::open(&path)?);
+    pub fn from_file(path: &PathBuf) -> SudachiResult<CharacterCategory> {
+        let reader = BufReader::new(fs::File::open(path)?);
         let ranges = CharacterCategory::read_character_definition(reader)?;
         Ok(CharacterCategory::compile(ranges))
     }
@@ -302,7 +302,7 @@ mod tests {
     #[test]
     fn get_category_types() {
         let path = PathBuf::from(TEST_RESOURCE_DIR).join(TEST_CHAR_DEF_FILE);
-        let cat = CharacterCategory::from_file(path).expect("failed to load char.def for test");
+        let cat = CharacterCategory::from_file(&path).expect("failed to load char.def for test");
         let cats = cat.get_category_types('熙');
         assert_eq!(1, cats.len());
         assert!(cats.contains(&CategoryType::KANJI));
