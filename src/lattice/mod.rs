@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-pub mod node;
-
 use std::i32;
 
 use self::node::Node;
 use crate::dic::grammar::Grammar;
 use crate::dic::lexicon_set::LexiconSet;
 use crate::prelude::*;
+
+pub mod node;
 
 /// Lattice for tokenization
 pub struct Lattice<'a> {

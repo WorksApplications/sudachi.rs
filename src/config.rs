@@ -14,12 +14,11 @@
  * limitations under the License.
  */
 
+use serde::Deserialize;
+use serde_json::Value;
 use std::fs::File;
 use std::io::BufReader;
 use std::path::PathBuf;
-
-use serde::Deserialize;
-use serde_json::Value;
 use thiserror::Error;
 
 const DEFAULT_RESOURCE_DIR: &str = "resources";

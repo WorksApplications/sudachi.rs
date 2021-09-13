@@ -14,11 +14,6 @@
  * limitations under the License.
  */
 
-pub mod connect_cost;
-pub mod input_text;
-pub mod oov;
-pub mod path_rewrite;
-
 use libloading::Error as LLError;
 use serde_json::Value;
 use std::path::PathBuf;
@@ -26,6 +21,11 @@ use thiserror::Error;
 
 use crate::config::{Config, ConfigError};
 use crate::prelude::*;
+
+pub mod connect_cost;
+pub mod input_text;
+pub mod oov;
+pub mod path_rewrite;
 
 #[derive(Error, Debug)]
 pub enum PluginError {

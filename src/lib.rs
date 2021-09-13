@@ -31,12 +31,11 @@ pub mod plugin;
 pub mod sentence_detector;
 pub mod tokenizer;
 
-pub use error::*;
-
 pub mod prelude {
     pub use crate::{
+        error::SudachiError,
+        error::SudachiResult,
         morpheme::Morpheme,
         tokenizer::{dictionary_bytes_from_path, Mode, Tokenize, Tokenizer},
-        SudachiError, SudachiResult,
     };
 }

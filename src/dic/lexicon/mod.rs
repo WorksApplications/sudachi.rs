@@ -14,11 +14,6 @@
  * limitations under the License.
  */
 
-pub mod trie;
-pub mod word_id_table;
-pub mod word_infos;
-pub mod word_params;
-
 use nom::{bytes::complete::take, number::complete::le_u32};
 use std::cmp;
 
@@ -28,6 +23,11 @@ use self::word_infos::{WordInfo, WordInfos};
 use self::word_params::WordParams;
 use crate::error::SudachiNomResult;
 use crate::prelude::*;
+
+pub mod trie;
+pub mod word_id_table;
+pub mod word_infos;
+pub mod word_params;
 
 /// Dictionary lexicon
 ///

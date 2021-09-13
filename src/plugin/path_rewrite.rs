@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 
-use std::path::Path;
-
 use libloading::{Library, Symbol};
 use serde_json::Value;
+use std::path::Path;
 
 use crate::config::Config;
 use crate::dic::grammar::Grammar;

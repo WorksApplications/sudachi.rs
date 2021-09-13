@@ -19,6 +19,11 @@ use std::path::PathBuf;
 
 use crate::error::{SudachiNomError, SudachiNomResult};
 use crate::prelude::*;
+use character_category::CharacterCategory;
+use grammar::Grammar;
+use header::Header;
+use lexicon::Lexicon;
+use lexicon_set::LexiconSet;
 
 pub mod category_type;
 pub mod character_category;
@@ -26,12 +31,6 @@ pub mod grammar;
 pub mod header;
 pub mod lexicon;
 pub mod lexicon_set;
-
-use character_category::CharacterCategory;
-use grammar::Grammar;
-use header::Header;
-use lexicon::Lexicon;
-use lexicon_set::LexiconSet;
 
 /// A dictionary consists of one system_dict and zero or more user_dicts
 pub struct Dictionary<'a> {
