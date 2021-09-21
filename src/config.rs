@@ -35,7 +35,7 @@ pub enum ConfigError {
     SerdeError(#[from] serde_json::Error),
 
     #[error("Config file not found")]
-    FileNotFound,
+    FileNotFound(String),
 
     #[error("Invalid format: {0}")]
     InvalidFormat(String),

@@ -21,6 +21,9 @@ use thiserror::Error;
 
 use crate::config::{Config, ConfigError};
 use crate::prelude::*;
+use std::ffi::OsStr;
+use crate::config::ConfigError::FileNotFound;
+use thiserror::private::PathAsDisplay;
 
 pub mod connect_cost;
 pub mod input_text;
@@ -42,6 +45,36 @@ pub enum PluginError {
     InvalidDataFormat(String),
 }
 
+// All utilities for OsStr are very bad :\
+fn starts_with_lib(data: &OsStr) -> bool {
+    if data.len() < 3 {
+        false
+    } else {
+        let lib_prefix: &OsStr = OsStr::new("lib");
+        let lic_prefix: &OsStr = OsStr::new("lic");
+        return lib_prefix.le(data) && lic_prefix.ge(data);
+    }
+}
+
+fn fix_lib_extension(path: &PathBuf) -> PathBuf {
+    let new_name = match path.file_name() {
+        Some(name) =>
+            if starts_with_lib(name) {
+                name.to_str().map(|n| OsStr::new(&n[3..])).unwrap_or_else(|| name)
+            } else { name }
+        None => path.as_os_str()
+    };
+    let extension =
+        if cfg!(target_os = "windows") {
+            OsStr::new("dll")
+        } else if cfg!(target_os = "linux") {
+            OsStr::new("so")
+        } else if cfg!(target_os = "macos") {
+            OsStr::new("dylib")
+        } else { panic!("Unsupported target! We support only Windows, Linux or MacOS") };
+    path.with_file_name(new_name).with_extension(extension)
+}
+
 /// Retrieves the path to the plugin shared object file from a plugin config
 pub fn get_plugin_path(plugin_config: &Value, config: &Config) -> SudachiResult<PathBuf> {
     let obj = match plugin_config {
@@ -60,5 +93,13 @@ pub fn get_plugin_path(plugin_config: &Value, config: &Config) -> SudachiResult<
             )));
         }
     };
-    Ok(config.complete_path(PathBuf::from(lib)))
+    let lib_path = config.complete_path(PathBuf::from(lib));
+    if lib_path.exists() {
+        return Ok(lib_path);
+    }
+    let fixed_path = fix_lib_extension(&lib_path);
+    if fixed_path.exists() {
+        return Ok(fixed_path);
+    }
+    Err(SudachiError::ConfigError(FileNotFound(format!("Failed to find library, tried: {} and {}", lib_path.as_display(), fixed_path.as_display()))))
 }

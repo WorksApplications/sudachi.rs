@@ -64,7 +64,7 @@ pub trait OovProviderPlugin {
 macro_rules! declare_oov_provider_plugin {
     ($plugin_type:ty, $constructor:path) => {
         #[no_mangle]
-        pub extern "C" fn load_plugin() -> *mut (dyn OovProviderPlugin + Sync) {
+        pub extern "Rust" fn load_plugin() -> *mut (dyn OovProviderPlugin + Sync) {
             // make sure the constructor is the correct type.
             let constructor: fn() -> $plugin_type = $constructor;
 
@@ -89,7 +89,7 @@ impl OovProviderPluginManager {
         config: &Config,
         grammar: &Grammar,
     ) -> SudachiResult<()> {
-        type PluginCreate = unsafe fn() -> *mut (dyn OovProviderPlugin + Sync);
+        type PluginCreate = unsafe extern "Rust" fn() -> *mut (dyn OovProviderPlugin + Sync);
 
         let lib = unsafe { Library::new(path) }?;
         let load_plugin: Symbol<PluginCreate> = unsafe { lib.get(b"load_plugin") }?;
