@@ -147,7 +147,7 @@ pub trait PathRewritePlugin {
 macro_rules! declare_path_rewrite_plugin {
     ($plugin_type:ty, $constructor:path) => {
         #[no_mangle]
-        pub extern "C" fn load_plugin() -> *mut (dyn PathRewritePlugin + Sync) {
+        pub extern "Rust" fn load_plugin() -> *mut (dyn PathRewritePlugin + Sync) {
             // make sure the constructor is the correct type.
             let constructor: fn() -> $plugin_type = $constructor;
 
@@ -172,7 +172,7 @@ impl PathRewritePluginManager {
         config: &Config,
         grammar: &Grammar,
     ) -> SudachiResult<()> {
-        type PluginCreate = unsafe fn() -> *mut (dyn PathRewritePlugin + Sync);
+        type PluginCreate = unsafe extern "Rust" fn() -> *mut (dyn PathRewritePlugin + Sync);
 
         let lib = unsafe { Library::new(path) }?;
         let load_plugin: Symbol<PluginCreate> = unsafe { lib.get(b"load_plugin") }?;

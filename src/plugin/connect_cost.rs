@@ -67,7 +67,7 @@ impl EditConnectionCostPluginManager {
         config: &Config,
         grammar: &Grammar,
     ) -> SudachiResult<()> {
-        type PluginCreate = unsafe fn() -> *mut dyn EditConnectionCostPlugin;
+        type PluginCreate = unsafe extern "Rust" fn() -> *mut dyn EditConnectionCostPlugin;
 
         let lib = unsafe { Library::new(path) }?;
         let load_plugin: Symbol<PluginCreate> = unsafe { lib.get(b"load_plugin") }?;
