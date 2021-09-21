@@ -1,0 +1,26 @@
+name: Rust
+
+on:
+  push:
+    branches: [ develop ]
+  pull_request:
+    branches: [ develop ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Download dictionary
+      run: bash fetch_dictionary.sh
+    - name: Build release
+      run: cargo build --verbose --all --release
+    - name: Build debug
+      run: cargo build --verbose --all
+    - name: Run tests
+      run: cargo test --verbose
