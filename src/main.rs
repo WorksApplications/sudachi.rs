@@ -206,5 +206,6 @@ fn write_sentence(
         writeln!(writer, "EOS")?;
     }
 
+    writer.flush().expect("Failed to flush writer");
     Ok(())
 }
