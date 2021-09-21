@@ -5,3 +5,7 @@ README*.html
 *.dic
 /tests/resources/*.tmp
 
+# IDE files
+.idea/
+.vscode/
+
