@@ -103,7 +103,7 @@ impl<'a> Lexicon<'a> {
     }
 
     /// update word_param cost based on current tokenizer
-    pub fn update_cost(&mut self, tokenizer: &Tokenizer) -> SudachiResult<()> {
+    pub fn update_cost<T: Tokenize>(&mut self, tokenizer: &T) -> SudachiResult<()> {
         for wid in 0..self.word_params.size() as u32 {
             if self.word_params.get_cost(wid)? != std::i16::MIN {
                 continue;

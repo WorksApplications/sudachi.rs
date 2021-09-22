@@ -18,20 +18,21 @@ use std::fs::{self, File};
 use std::io::Read;
 use std::path::Path;
 use std::str::FromStr;
+use std::sync::Arc;
 
 use crate::config::Config;
 use crate::dic::category_type::CategoryType;
 use crate::dic::grammar::Grammar;
 use crate::dic::lexicon_set::LexiconSet;
-use crate::dic::{BinaryDictionary, Dictionary};
+use crate::dic::{DictionaryLoader, LoadedDictionary};
 use crate::input_text::{Utf8InputText, Utf8InputTextBuilder};
 use crate::lattice::node::Node;
 use crate::lattice::Lattice;
 use crate::morpheme::Morpheme;
-use crate::plugin::connect_cost;
-use crate::plugin::input_text::{self, InputTextPluginManager};
-use crate::plugin::oov::{self, OovProviderPluginManager};
-use crate::plugin::path_rewrite::{self, PathRewritePluginManager};
+use crate::plugin::{connect_cost, PluginProvider};
+use crate::plugin::input_text::{self, InputTextPluginManager, InputTextPlugin};
+use crate::plugin::oov::{self, OovProviderPluginManager, OovProviderPlugin};
+use crate::plugin::path_rewrite::{self, PathRewritePluginManager, PathRewritePlugin};
 use crate::prelude::*;
 use crate::sentence_detector::{NonBreakChecker, SentenceDetector};
 
@@ -125,7 +126,7 @@ impl<'a> Tokenizer<'a> {
         user_dictionary_bytes: &'a Vec<Box<[u8]>>,
         config: &Config,
     ) -> SudachiResult<Tokenizer<'a>> {
-        let dictionary = Dictionary::from_system_dictionary(
+        let dictionary = LoadedDictionary::from_system_dictionary(
             dictionary_bytes,
             &config.character_definition_file,
         )?;
@@ -161,7 +162,7 @@ impl<'a> Tokenizer<'a> {
     }
 
     fn merge_user_dictionary(&mut self, dictionary_bytes: &'a [u8]) -> SudachiResult<()> {
-        let user_dict = BinaryDictionary::from_user_dictionary(dictionary_bytes)?;
+        let user_dict = DictionaryLoader::read_user_dictionary(dictionary_bytes)?;
 
         // we need to update lexicon first, since it needs the current number of pos
         let mut user_lexicon = user_dict.lexicon;

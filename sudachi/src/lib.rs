@@ -30,6 +30,7 @@ pub mod morpheme;
 pub mod plugin;
 pub mod sentence_detector;
 pub mod tokenizer;
+mod stateless_tokeniser;
 
 pub mod prelude {
     pub use crate::{

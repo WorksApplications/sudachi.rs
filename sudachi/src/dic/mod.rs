@@ -31,20 +31,21 @@ pub mod grammar;
 pub mod header;
 pub mod lexicon;
 pub mod lexicon_set;
+mod dictionary;
 
 /// A dictionary consists of one system_dict and zero or more user_dicts
-pub struct Dictionary<'a> {
+pub struct LoadedDictionary<'a> {
     pub grammar: Grammar<'a>,
     pub lexicon_set: LexiconSet<'a>,
 }
 
-impl<'a> Dictionary<'a> {
+impl<'a> LoadedDictionary<'a> {
     /// Creates a system dictionary from bytes, and load a character category from file
     pub fn from_system_dictionary(
         dictionary_bytes: &'a [u8],
         character_category_file: &PathBuf,
-    ) -> SudachiResult<Dictionary<'a>> {
-        let system_dict = BinaryDictionary::from_system_dictionary(dictionary_bytes)?;
+    ) -> SudachiResult<LoadedDictionary<'a>> {
+        let system_dict = DictionaryLoader::read_system_dictionary(dictionary_bytes)?;
 
         let character_category = CharacterCategory::from_file(character_category_file)?;
         let mut grammar = system_dict
@@ -52,7 +53,7 @@ impl<'a> Dictionary<'a> {
             .ok_or(SudachiError::InvalidDictionaryGrammar)?;
         grammar.set_character_category(character_category);
 
-        Ok(Dictionary {
+        Ok(LoadedDictionary {
             grammar,
             lexicon_set: LexiconSet::new(system_dict.lexicon),
         })
@@ -60,15 +61,15 @@ impl<'a> Dictionary<'a> {
 }
 
 /// A single system or user dictionary
-pub struct BinaryDictionary<'a> {
+pub struct DictionaryLoader<'a> {
     pub header: Header,
     pub grammar: Option<Grammar<'a>>,
     pub lexicon: Lexicon<'a>,
 }
 
-impl<'a> BinaryDictionary<'a> {
+impl<'a> DictionaryLoader<'a> {
     /// Creates a binary dictionary from bytes
-    fn read_dictionary(dictionary_bytes: &[u8]) -> SudachiResult<BinaryDictionary> {
+    fn read_dictionary(dictionary_bytes: &[u8]) -> SudachiResult<DictionaryLoader> {
         let header = Header::new(&dictionary_bytes[..Header::STORAGE_SIZE])?;
         let mut offset = Header::STORAGE_SIZE;
 
@@ -82,7 +83,7 @@ impl<'a> BinaryDictionary<'a> {
 
         let lexicon = Lexicon::new(dictionary_bytes, offset, header.has_synonym_group_ids())?;
 
-        Ok(BinaryDictionary {
+        Ok(DictionaryLoader {
             header,
             grammar,
             lexicon,
@@ -92,7 +93,7 @@ impl<'a> BinaryDictionary<'a> {
     /// Creates a system binary dictionary from bytes
     ///
     /// Returns Err if header version is not match
-    pub fn from_system_dictionary(dictionary_bytes: &[u8]) -> SudachiResult<BinaryDictionary> {
+    pub fn read_system_dictionary(dictionary_bytes: &[u8]) -> SudachiResult<DictionaryLoader> {
         let dict = Self::read_dictionary(dictionary_bytes)?;
         match dict.header.version {
             header::HeaderVersion::SystemDict(_) => Ok(dict),
@@ -105,7 +106,7 @@ impl<'a> BinaryDictionary<'a> {
     /// Creates a user binary dictionary from bytes
     ///
     /// Returns Err if header version is not match
-    pub fn from_user_dictionary(dictionary_bytes: &[u8]) -> SudachiResult<BinaryDictionary> {
+    pub fn read_user_dictionary(dictionary_bytes: &[u8]) -> SudachiResult<DictionaryLoader> {
         let dict = Self::read_dictionary(dictionary_bytes)?;
         match dict.header.version {
             header::HeaderVersion::UserDict(_) => Ok(dict),

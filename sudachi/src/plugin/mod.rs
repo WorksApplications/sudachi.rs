@@ -24,6 +24,10 @@ use crate::config::{Config, ConfigError};
 use crate::prelude::*;
 use std::ffi::OsStr;
 use thiserror::private::PathAsDisplay;
+use crate::plugin::connect_cost::EditConnectionCostPluginManager;
+use crate::plugin::input_text::InputTextPluginManager;
+use crate::plugin::oov::OovProviderPluginManager;
+use crate::plugin::path_rewrite::PathRewritePluginManager;
 
 pub mod connect_cost;
 pub mod input_text;
@@ -112,4 +116,31 @@ pub fn get_plugin_path(plugin_config: &Value, config: &Config) -> SudachiResult<
         lib_path.as_display(),
         fixed_path.as_display()
     ))))
+}
+
+pub trait PluginProvider<T: Sync + ?Sized> {
+    fn plugins(&self) -> &[Box<T>];
+    fn is_empty(&self) -> bool;
+}
+
+pub(crate) struct Plugins {
+    pub(crate) connect_cost: EditConnectionCostPluginManager,
+    pub(crate) input_text: InputTextPluginManager,
+    pub(crate) oov: OovProviderPluginManager,
+    pub(crate) path_rewrite: PathRewritePluginManager
+}
+
+impl Plugins {
+    pub(crate) fn new() -> Plugins {
+        return Plugins {
+            connect_cost: Default::default(),
+            input_text: Default::default(),
+            oov: Default::default(),
+            path_rewrite: Default::default()
+        }
+    }
+
+    pub(crate) fn load(&mut self, cfg: &Config) -> SudachiResult<()> {
+        todo!()
+    }
 }
