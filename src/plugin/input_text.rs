@@ -45,7 +45,7 @@ pub trait InputTextPlugin {
 macro_rules! declare_input_text_plugin {
     ($plugin_type:ty, $constructor:path) => {
         #[no_mangle]
-        pub extern "Rust" fn load_plugin() -> *mut (dyn InputTextPlugin + Sync) {
+        pub fn load_plugin() -> *mut (dyn InputTextPlugin + Sync) {
             // make sure the constructor is the correct type.
             let constructor: fn() -> $plugin_type = $constructor;
 
@@ -70,7 +70,7 @@ impl InputTextPluginManager {
         config: &Config,
         grammar: &Grammar,
     ) -> SudachiResult<()> {
-        type PluginCreate = unsafe extern "Rust" fn() -> *mut (dyn InputTextPlugin + Sync);
+        type PluginCreate = unsafe fn() -> *mut (dyn InputTextPlugin + Sync);
 
         let lib = unsafe { Library::new(path) }?;
         let load_plugin: Symbol<PluginCreate> = unsafe { lib.get(b"load_plugin") }?;

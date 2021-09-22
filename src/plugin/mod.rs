@@ -19,10 +19,10 @@ use serde_json::Value;
 use std::path::PathBuf;
 use thiserror::Error;
 
+use crate::config::ConfigError::FileNotFound;
 use crate::config::{Config, ConfigError};
 use crate::prelude::*;
 use std::ffi::OsStr;
-use crate::config::ConfigError::FileNotFound;
 use thiserror::private::PathAsDisplay;
 
 pub mod connect_cost;
@@ -58,20 +58,26 @@ fn starts_with_lib(data: &OsStr) -> bool {
 
 fn fix_lib_extension(path: &PathBuf) -> PathBuf {
     let new_name = match path.file_name() {
-        Some(name) =>
+        Some(name) => {
             if starts_with_lib(name) {
-                name.to_str().map(|n| OsStr::new(&n[3..])).unwrap_or_else(|| name)
-            } else { name }
-        None => path.as_os_str()
+                name.to_str()
+                    .map(|n| OsStr::new(&n[3..]))
+                    .unwrap_or_else(|| name)
+            } else {
+                name
+            }
+        }
+        None => path.as_os_str(),
     };
-    let extension =
-        if cfg!(target_os = "windows") {
-            OsStr::new("dll")
-        } else if cfg!(target_os = "linux") {
-            OsStr::new("so")
-        } else if cfg!(target_os = "macos") {
-            OsStr::new("dylib")
-        } else { panic!("Unsupported target! We support only Windows, Linux or MacOS") };
+    let extension = if cfg!(target_os = "windows") {
+        OsStr::new("dll")
+    } else if cfg!(target_os = "linux") {
+        OsStr::new("so")
+    } else if cfg!(target_os = "macos") {
+        OsStr::new("dylib")
+    } else {
+        panic!("Unsupported target! We support only Windows, Linux or MacOS")
+    };
     path.with_file_name(new_name).with_extension(extension)
 }
 
@@ -101,5 +107,9 @@ pub fn get_plugin_path(plugin_config: &Value, config: &Config) -> SudachiResult<
     if fixed_path.exists() {
         return Ok(fixed_path);
     }
-    Err(SudachiError::ConfigError(FileNotFound(format!("Failed to find library, tried: {} and {}", lib_path.as_display(), fixed_path.as_display()))))
+    Err(SudachiError::ConfigError(FileNotFound(format!(
+        "Failed to find library, tried: {} and {}",
+        lib_path.as_display(),
+        fixed_path.as_display()
+    ))))
 }
