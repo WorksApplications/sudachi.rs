@@ -82,7 +82,7 @@ impl Config {
         dictionary_path: Option<PathBuf>,
     ) -> Result<Self, ConfigError> {
         let src_root_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        let default_resource_dir_path = src_root_path.join(DEFAULT_RESOURCE_DIR);
+        let default_resource_dir_path = src_root_path.join("..").join(DEFAULT_RESOURCE_DIR);
 
         // prioritize arg (cli option) > default
         let config_file = match config_file {

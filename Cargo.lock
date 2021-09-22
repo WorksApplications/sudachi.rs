@@ -438,7 +438,6 @@ dependencies = [
 name = "sudachi"
 version = "0.1.0"
 dependencies = [
- "cfg-if",
  "fancy-regex",
  "lazy_static",
  "libloading",
@@ -446,9 +445,25 @@ dependencies = [
  "nom",
  "serde",
  "serde_json",
- "structopt",
  "tempfile",
  "thiserror",
+]
+
+[[package]]
+name = "sudachi-cli"
+version = "0.1.0"
+dependencies = [
+ "cfg-if",
+ "default_input_text",
+ "ignore_yomigana",
+ "inhibit_connection",
+ "join_katakana_oov",
+ "join_numeric",
+ "mecab_oov",
+ "prolonged_sound_mark",
+ "simple_oov",
+ "structopt",
+ "sudachi",
 ]
 
 [[package]]
