@@ -14,11 +14,15 @@ members = [
     "plugin/connect_cost/*",
     "plugin/input_text/*",
     "plugin/oov/*",
-    "plugin/path_rewrite/*"
+    "plugin/path_rewrite/*",
+    "sudachi-cli"
+]
+default-members = [
+    "sudachi-cli"
 ]
 
+
 [dependencies]
-cfg-if = "1.0.0"
 fancy-regex = "0.7"
 lazy_static = "1.4.0"
 libloading = "0.7"
@@ -26,12 +30,10 @@ multiset = "0.0.5"
 nom = "7"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-structopt = "0.3"
 thiserror = "1.0"
 
 [dev-dependencies]
 tempfile = "3"
 
-[features]
-# Compile dictionary into executable (specifying dictionary becomes optional)
-bake_dictionary = []
+[lib]
+crate-type = ["rlib"]
