@@ -1,39 +1,14 @@
-[package]
-name = "sudachi"
-version = "0.1.0"
-authors = ["Works Applications <sudachi@worksap.co.jp>"]
-edition = "2018"
-description = "Rust version of Sudachi, the Japanese Morphological Analyzer"
-readme = "README.md"
-homepage = "https://github.com/WorksApplications/sudachi.rs"
-repository = "https://github.com/WorksApplications/sudachi.rs"
-license = "Apache-2.0"
-
 [workspace]
 members = [
+    "sudachi",
+    "sudachi-cli",
     "plugin/connect_cost/*",
     "plugin/input_text/*",
     "plugin/oov/*",
     "plugin/path_rewrite/*",
-    "sudachi-cli"
 ]
+
 default-members = [
+    "sudachi",
     "sudachi-cli"
 ]
-
-
-[dependencies]
-fancy-regex = "0.7"
-lazy_static = "1.4.0"
-libloading = "0.7"
-multiset = "0.0.5"
-nom = "7"
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-thiserror = "1.0"
-
-[dev-dependencies]
-tempfile = "3"
-
-[lib]
-crate-type = ["rlib"]

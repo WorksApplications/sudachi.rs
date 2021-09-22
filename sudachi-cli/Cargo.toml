@@ -10,7 +10,7 @@ repository = "https://github.com/WorksApplications/sudachi.rs"
 license = "Apache-2.0"
 
 [dependencies]
-sudachi = { path = ".." }
+sudachi = { path = "../sudachi" }
 structopt = "0.3"
 cfg-if = "1.0.0"
 
