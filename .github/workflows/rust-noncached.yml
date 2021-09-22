@@ -1,0 +1,29 @@
+name: Rust-Non-Cached
+
+on:
+  schedule:
+    - cron: '0 18 * * *' # run at 18:00 UTC (JST 03:00)
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest, windows-latest ] # add macOS-latest later
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Download dictionary
+        run: bash fetch_dictionary.sh
+      - name: Build release
+        run: cargo build --verbose --all --release
+      - name: Build debug
+        run: cargo build --verbose --all
+      - name: Run tests
+        run: cargo test --verbose
