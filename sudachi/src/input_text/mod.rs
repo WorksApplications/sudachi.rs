@@ -52,7 +52,7 @@ mod tests {
         grammar.set_character_category(character_category);
         grammar
     }
-    fn set_up_builder<'a>(grammar: &'a Grammar) -> Utf8InputTextBuilder<'a> {
+    fn set_up_builder<'a>(grammar: &'a Grammar) -> Utf8InputTextBuilder<'a, 'static> {
         Utf8InputTextBuilder::new(TEXT, grammar)
     }
 
