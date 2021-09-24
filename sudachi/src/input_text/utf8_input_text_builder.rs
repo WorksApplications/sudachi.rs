@@ -23,10 +23,10 @@ use crate::dic::grammar::Grammar;
 /// Builder of Uuf8InputText
 ///
 /// This handles modifications of the original text
-pub struct Utf8InputTextBuilder<'a> {
+pub struct Utf8InputTextBuilder<'a, 'b> {
     grammar: &'a Grammar<'a>,
     /// The original text
-    pub original: &'a str,
+    pub original: &'b str,
     /// The text after modifications
     pub modified: String,
     /// The mapping from modified byte_idx to original byte_idx.
@@ -35,8 +35,8 @@ pub struct Utf8InputTextBuilder<'a> {
     modified_to_original: Vec<usize>,
 }
 
-impl<'a> Utf8InputTextBuilder<'a> {
-    pub fn new(original: &'a str, grammar: &'a Grammar) -> Utf8InputTextBuilder<'a> {
+impl<'a, 'b> Utf8InputTextBuilder<'a, 'b> {
+    pub fn new(original: &'b str, grammar: &'a Grammar) -> Utf8InputTextBuilder<'a, 'b> {
         let modified = String::from(original);
 
         let modified_to_original: Vec<usize> = vec![0]
@@ -61,7 +61,7 @@ impl<'a> Utf8InputTextBuilder<'a> {
     /// Builds a Utf8InputText
     ///
     /// Generated Utf8InputText has a reference to this builder thus fn replace cannot be used after this.
-    pub fn build(self) -> Utf8InputText<'a> {
+    pub fn build(self: Self) -> Utf8InputText<'b> {
         let byte_indexes: Vec<usize> = self
             .modified
             .chars()
@@ -88,7 +88,7 @@ impl<'a> Utf8InputTextBuilder<'a> {
     }
 }
 
-impl Utf8InputTextBuilder<'_> {
+impl Utf8InputTextBuilder<'_, '_> {
     /// Replaces a substring of the current text by given new string
     pub fn replace(&mut self, char_range: Range<usize>, str_: &str) {
         let Range { start, end } = self.char_range_to_byte_range(char_range);

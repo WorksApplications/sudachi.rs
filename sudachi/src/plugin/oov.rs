@@ -25,7 +25,7 @@ use crate::lattice::node::Node;
 use crate::prelude::*;
 
 /// Trait of plugin to provide oov node during tokenization
-pub trait OovProviderPlugin {
+pub trait OovProviderPlugin: Sync {
     /// Loads necessary information for the plugin
     fn set_up(&mut self, settings: &Value, config: &Config, grammar: &Grammar)
         -> SudachiResult<()>;
@@ -78,7 +78,7 @@ macro_rules! declare_oov_provider_plugin {
 /// Plugin manager to handle multiple plugins
 #[derive(Default)]
 pub struct OovProviderPluginManager {
-    plugins: Vec<Box<dyn OovProviderPlugin + Sync>>,
+    plugins: Vec<Box<dyn OovProviderPlugin>>,
     libraries: Vec<Library>,
 }
 impl OovProviderPluginManager {
@@ -89,7 +89,7 @@ impl OovProviderPluginManager {
         config: &Config,
         grammar: &Grammar,
     ) -> SudachiResult<()> {
-        type PluginCreate = unsafe fn() -> *mut (dyn OovProviderPlugin + Sync);
+        type PluginCreate = unsafe fn() -> *mut (dyn OovProviderPlugin);
 
         let lib = unsafe { Library::new(path) }?;
         let load_plugin: Symbol<PluginCreate> = unsafe { lib.get(b"load_plugin") }?;
@@ -101,7 +101,7 @@ impl OovProviderPluginManager {
         Ok(())
     }
 
-    pub fn plugins(&self) -> &[Box<dyn OovProviderPlugin + Sync>] {
+    pub fn plugins(&self) -> &[Box<dyn OovProviderPlugin>] {
         &self.plugins
     }
 
@@ -109,6 +109,7 @@ impl OovProviderPluginManager {
         self.plugins.is_empty()
     }
 }
+
 impl Drop for OovProviderPluginManager {
     fn drop(&mut self) {
         // Plugin drop must be called before Library drop.

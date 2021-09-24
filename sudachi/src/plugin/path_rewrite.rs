@@ -26,7 +26,7 @@ use crate::lattice::{node::Node, Lattice};
 use crate::prelude::*;
 
 /// Trait of plugin to rewrite the path from lattice
-pub trait PathRewritePlugin {
+pub trait PathRewritePlugin: Sync {
     /// Loads necessary information for the plugin
     fn set_up(&mut self, settings: &Value, config: &Config, grammar: &Grammar)
         -> SudachiResult<()>;
@@ -161,7 +161,7 @@ macro_rules! declare_path_rewrite_plugin {
 /// Plugin manager to handle multiple plugins
 #[derive(Default)]
 pub struct PathRewritePluginManager {
-    plugins: Vec<Box<dyn PathRewritePlugin + Sync>>,
+    plugins: Vec<Box<dyn PathRewritePlugin>>,
     libraries: Vec<Library>,
 }
 impl PathRewritePluginManager {
@@ -172,7 +172,7 @@ impl PathRewritePluginManager {
         config: &Config,
         grammar: &Grammar,
     ) -> SudachiResult<()> {
-        type PluginCreate = unsafe fn() -> *mut (dyn PathRewritePlugin + Sync);
+        type PluginCreate = unsafe fn() -> *mut (dyn PathRewritePlugin);
 
         let lib = unsafe { Library::new(path) }?;
         let load_plugin: Symbol<PluginCreate> = unsafe { lib.get(b"load_plugin") }?;
@@ -184,7 +184,7 @@ impl PathRewritePluginManager {
         Ok(())
     }
 
-    pub fn plugins(&self) -> &[Box<dyn PathRewritePlugin + Sync>] {
+    pub fn plugins(&self) -> &[Box<dyn PathRewritePlugin>] {
         &self.plugins
     }
 

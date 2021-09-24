@@ -21,8 +21,8 @@ use std::path::Path;
 use crate::config::Config;
 use crate::dic::grammar::Grammar;
 use crate::input_text::Utf8InputTextBuilder;
+use crate::plugin::PluginProvider;
 use crate::prelude::*;
-use crate::plugin::{PluginProvider};
 
 /// Trait of plugin to modify the input text before tokenization
 pub trait InputTextPlugin: Sync {
@@ -64,7 +64,6 @@ pub struct InputTextPluginManager {
     libraries: Vec<Library>,
 }
 
-
 impl InputTextPluginManager {
     pub fn load(
         &mut self,
@@ -95,7 +94,6 @@ impl PluginProvider<dyn InputTextPlugin> for InputTextPluginManager {
         self.plugin_v.is_empty()
     }
 }
-
 
 impl Drop for InputTextPluginManager {
     fn drop(&mut self) {

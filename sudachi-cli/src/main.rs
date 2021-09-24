@@ -108,7 +108,7 @@ fn main() {
         args.resource_dir.clone(),
         args.dictionary_path.clone(),
     )
-        .expect("Failed to load config file");
+    .expect("Failed to load config file");
 
     // load and parse dictionary binary to create a tokenizer
     let dictionary_bytes =

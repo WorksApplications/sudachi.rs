@@ -18,7 +18,6 @@ use std::fs::{self, File};
 use std::io::Read;
 use std::path::Path;
 use std::str::FromStr;
-use std::sync::Arc;
 
 use crate::config::Config;
 use crate::dic::category_type::CategoryType;
@@ -29,10 +28,10 @@ use crate::input_text::{Utf8InputText, Utf8InputTextBuilder};
 use crate::lattice::node::Node;
 use crate::lattice::Lattice;
 use crate::morpheme::Morpheme;
+use crate::plugin::input_text::{self, InputTextPluginManager};
+use crate::plugin::oov::{self, OovProviderPluginManager};
+use crate::plugin::path_rewrite::{self, PathRewritePluginManager};
 use crate::plugin::{connect_cost, PluginProvider};
-use crate::plugin::input_text::{self, InputTextPluginManager, InputTextPlugin};
-use crate::plugin::oov::{self, OovProviderPluginManager, OovProviderPlugin};
-use crate::plugin::path_rewrite::{self, PathRewritePluginManager, PathRewritePlugin};
 use crate::prelude::*;
 use crate::sentence_detector::{NonBreakChecker, SentenceDetector};
 

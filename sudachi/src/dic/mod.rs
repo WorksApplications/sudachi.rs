@@ -27,11 +27,11 @@ use lexicon_set::LexiconSet;
 
 pub mod category_type;
 pub mod character_category;
+pub mod dictionary;
 pub mod grammar;
 pub mod header;
 pub mod lexicon;
 pub mod lexicon_set;
-mod dictionary;
 
 /// A dictionary consists of one system_dict and zero or more user_dicts
 pub struct LoadedDictionary<'a> {

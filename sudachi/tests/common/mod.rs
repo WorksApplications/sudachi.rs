@@ -22,7 +22,7 @@ use sudachi::dic::{grammar::Grammar, header::Header, lexicon::Lexicon};
 use sudachi::prelude::*;
 
 lazy_static! {
-    static ref TEST_CONFIG: Config = {
+    pub static ref TEST_CONFIG: Config = {
         let test_config_path = "tests/resources/sudachi.json";
         let conf = Config::new(Some(PathBuf::from(test_config_path)), None, None)
             .expect("Failed to read config file for test");
