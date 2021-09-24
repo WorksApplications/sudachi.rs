@@ -37,6 +37,6 @@ pub mod prelude {
         error::SudachiError,
         error::SudachiResult,
         morpheme::Morpheme,
-        tokenizer::{dictionary_bytes_from_path, Mode, Tokenize, Tokenizer},
+        tokenizer::{Mode, Tokenize},
     };
 }

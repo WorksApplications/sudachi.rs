@@ -28,14 +28,15 @@ use crate::plugin::input_text::InputTextPlugin;
 use crate::plugin::oov::OovProviderPlugin;
 use crate::plugin::path_rewrite::PathRewritePlugin;
 use crate::prelude::{Mode, Tokenize};
+use crate::sentence_detector::{NonBreakChecker, SentenceDetector};
 
 /// Provides access to dictionary data
 pub trait DictionaryAccess {
     fn grammar(&self) -> &Grammar<'_>;
     fn lexicon(&self) -> &LexiconSet<'_>;
-    fn input_text_plugins(&self) -> &[Box<dyn InputTextPlugin>];
-    fn oov_provider_plugins(&self) -> &[Box<dyn OovProviderPlugin>];
-    fn path_rewrite_plugins(&self) -> &[Box<dyn PathRewritePlugin>];
+    fn input_text_plugins(&self) -> &[Box<dyn InputTextPlugin + Sync>];
+    fn oov_provider_plugins(&self) -> &[Box<dyn OovProviderPlugin + Sync>];
+    fn path_rewrite_plugins(&self) -> &[Box<dyn PathRewritePlugin + Sync>];
 }
 
 /// Implementation of a Tokenizer which does not have tokenization state.
@@ -53,6 +54,10 @@ where
 {
     pub fn new(dict: T) -> StatelessTokenizer<T> {
         StatelessTokenizer { dict }
+    }
+
+    pub fn as_dict(&self) -> &<T as Deref>::Target {
+        return Deref::deref(&self.dict);
     }
 }
 
@@ -77,8 +82,41 @@ where
         mode: Mode,
         enable_debug: bool,
     ) -> SudachiResult<Vec<Vec<Morpheme>>> {
-        todo!()
+        if input.is_empty() {
+            return Ok(vec![Vec::new()]);
+        }
+
+        let dict = Deref::deref(&self.dict);
+        let input = build_input_text(dict, input);
+        split_sentences(dict.lexicon(), &input)?
+            .iter()
+            .map(|s| tokenize_input_text(dict, s, mode, enable_debug))
+            .collect()
     }
+}
+
+fn split_sentences<'a, 'b>(
+    lexicon: &'a LexiconSet,
+    input: &'b Utf8InputText<'a>,
+) -> SudachiResult<Vec<Utf8InputText<'b>>> {
+    let mut sentences = Vec::new();
+    let mut checker = NonBreakChecker::new(lexicon, input);
+    let detector = SentenceDetector::new();
+    loop {
+        let byte_length = detector
+            .get_eos(&input.modified[checker.bos..], Some(&checker))?
+            .abs() as usize; // detector mey return negative value
+        if byte_length == 0 {
+            break;
+        }
+        let mut eos = checker.bos + byte_length;
+        if eos < input.modified.len() {
+            eos = input.get_next_in_original(eos - 1);
+        }
+        sentences.push(input.slice(checker.bos, eos));
+        checker.bos = eos;
+    }
+    Ok(sentences)
 }
 
 fn build_input_text<'b, T: DictionaryAccess + ?Sized>(

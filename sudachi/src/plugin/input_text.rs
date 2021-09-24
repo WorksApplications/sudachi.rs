@@ -21,7 +21,6 @@ use std::path::Path;
 use crate::config::Config;
 use crate::dic::grammar::Grammar;
 use crate::input_text::Utf8InputTextBuilder;
-use crate::plugin::PluginProvider;
 use crate::prelude::*;
 
 /// Trait of plugin to modify the input text before tokenization
@@ -46,12 +45,12 @@ pub trait InputTextPlugin: Sync {
 macro_rules! declare_input_text_plugin {
     ($plugin_type:ty, $constructor:path) => {
         #[no_mangle]
-        pub fn load_plugin() -> *mut (dyn InputTextPlugin) {
+        pub fn load_plugin() -> *mut (dyn InputTextPlugin + Sync) {
             // make sure the constructor is the correct type.
             let constructor: fn() -> $plugin_type = $constructor;
 
             let object = constructor();
-            let boxed: Box<dyn InputTextPlugin + Sync> = Box::new(object);
+            let boxed: Box<dyn InputTextPlugin + Sync + Send> = Box::new(object);
             Box::into_raw(boxed)
         }
     };
@@ -60,7 +59,7 @@ macro_rules! declare_input_text_plugin {
 /// Plugin manager to handle multiple plugins
 #[derive(Default)]
 pub struct InputTextPluginManager {
-    plugin_v: Vec<Box<dyn InputTextPlugin>>,
+    plugins: Vec<Box<dyn InputTextPlugin + Sync>>,
     libraries: Vec<Library>,
 }
 
@@ -72,33 +71,31 @@ impl InputTextPluginManager {
         config: &Config,
         grammar: &Grammar,
     ) -> SudachiResult<()> {
-        type PluginCreate = unsafe fn() -> *mut (dyn InputTextPlugin);
+        type PluginCreate = unsafe fn() -> *mut (dyn InputTextPlugin + Sync);
 
         let lib = unsafe { Library::new(path) }?;
         let load_plugin: Symbol<PluginCreate> = unsafe { lib.get(b"load_plugin") }?;
         let mut plugin = unsafe { Box::from_raw(load_plugin()) };
         plugin.set_up(settings, config, grammar)?;
 
-        self.plugin_v.push(plugin);
+        self.plugins.push(plugin);
         self.libraries.push(lib);
         Ok(())
     }
-}
 
-impl PluginProvider<dyn InputTextPlugin> for InputTextPluginManager {
-    fn plugins(&self) -> &[Box<dyn InputTextPlugin>] {
-        &self.plugin_v
+    pub fn plugins(&self) -> &[Box<dyn InputTextPlugin + Sync>] {
+        &self.plugins
     }
 
-    fn is_empty(&self) -> bool {
-        self.plugin_v.is_empty()
+    pub fn is_empty(&self) -> bool {
+        self.plugins.is_empty()
     }
 }
 
 impl Drop for InputTextPluginManager {
     fn drop(&mut self) {
         // Plugin drop must be called before Library drop.
-        self.plugin_v.clear();
+        self.plugins.clear();
         self.libraries.clear();
     }
 }

@@ -78,7 +78,7 @@ macro_rules! declare_oov_provider_plugin {
 /// Plugin manager to handle multiple plugins
 #[derive(Default)]
 pub struct OovProviderPluginManager {
-    plugins: Vec<Box<dyn OovProviderPlugin>>,
+    plugins: Vec<Box<dyn OovProviderPlugin + Sync>>,
     libraries: Vec<Library>,
 }
 impl OovProviderPluginManager {
@@ -89,7 +89,7 @@ impl OovProviderPluginManager {
         config: &Config,
         grammar: &Grammar,
     ) -> SudachiResult<()> {
-        type PluginCreate = unsafe fn() -> *mut (dyn OovProviderPlugin);
+        type PluginCreate = unsafe fn() -> *mut (dyn OovProviderPlugin + Sync);
 
         let lib = unsafe { Library::new(path) }?;
         let load_plugin: Symbol<PluginCreate> = unsafe { lib.get(b"load_plugin") }?;
@@ -101,7 +101,7 @@ impl OovProviderPluginManager {
         Ok(())
     }
 
-    pub fn plugins(&self) -> &[Box<dyn OovProviderPlugin>] {
+    pub fn plugins(&self) -> &[Box<dyn OovProviderPlugin + Sync>] {
         &self.plugins
     }
 

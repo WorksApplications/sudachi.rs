@@ -23,7 +23,7 @@ use crate::dic::grammar::Grammar;
 use crate::prelude::*;
 
 /// Trait of plugin to edit connection cost in the grammar
-pub trait EditConnectionCostPlugin {
+pub trait EditConnectionCostPlugin: Sync {
     /// Loads necessary information for the plugin
     fn set_up(&mut self, settings: &Value, config: &Config, grammar: &Grammar)
         -> SudachiResult<()>;
@@ -42,12 +42,12 @@ pub trait EditConnectionCostPlugin {
 macro_rules! declare_connect_cost_plugin {
     ($plugin_type:ty, $constructor:path) => {
         #[no_mangle]
-        pub extern "C" fn load_plugin() -> *mut EditConnectionCostPlugin {
+        pub extern "C" fn load_plugin() -> *mut (dyn EditConnectionCostPlugin + Sync) {
             // make sure the constructor is the correct type.
             let constructor: fn() -> $plugin_type = $constructor;
 
             let object = constructor();
-            let boxed: Box<EditConnectionCostPlugin> = Box::new(object);
+            let boxed: Box<dyn EditConnectionCostPlugin + Sync> = Box::new(object);
             Box::into_raw(boxed)
         }
     };
@@ -56,7 +56,7 @@ macro_rules! declare_connect_cost_plugin {
 /// Plugin manager to handle multiple plugins
 #[derive(Default)]
 pub struct EditConnectionCostPluginManager {
-    plugins: Vec<Box<dyn EditConnectionCostPlugin>>,
+    plugins: Vec<Box<dyn EditConnectionCostPlugin + Sync>>,
     libraries: Vec<Library>,
 }
 impl EditConnectionCostPluginManager {
@@ -67,8 +67,7 @@ impl EditConnectionCostPluginManager {
         config: &Config,
         grammar: &Grammar,
     ) -> SudachiResult<()> {
-        type PluginCreate = unsafe fn() -> *mut dyn EditConnectionCostPlugin;
-
+        type PluginCreate = unsafe fn() -> *mut (dyn EditConnectionCostPlugin + Sync);
         let lib = unsafe { Library::new(path) }?;
         let load_plugin: Symbol<PluginCreate> = unsafe { lib.get(b"load_plugin") }?;
         let mut plugin = unsafe { Box::from_raw(load_plugin()) };
@@ -79,7 +78,7 @@ impl EditConnectionCostPluginManager {
         Ok(())
     }
 
-    pub fn plugins(&self) -> &[Box<dyn EditConnectionCostPlugin>] {
+    pub fn plugins(&self) -> &[Box<dyn EditConnectionCostPlugin + Sync>] {
         &self.plugins
     }
 

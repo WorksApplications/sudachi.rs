@@ -18,33 +18,10 @@
 extern crate lazy_static;
 extern crate sudachi;
 
-use std::rc::Rc;
-
-use common::TEST_CONFIG;
-use sudachi::dic::dictionary::JapaneseDictionary;
-use sudachi::prelude::Morpheme;
-use sudachi::stateless_tokeniser::StatelessTokenizer;
-use sudachi::tokenizer::{Mode, Tokenize};
+use sudachi::tokenizer::Mode;
 
 mod common;
-
-struct TestTokenizer {
-    tok: StatelessTokenizer<Rc<JapaneseDictionary>>,
-}
-
-impl TestTokenizer {
-    fn new() -> TestTokenizer {
-        let dict = JapaneseDictionary::from_cfg(&TEST_CONFIG).expect("failed to make dictionary");
-        let rcdict = Rc::new(dict);
-        let tok = StatelessTokenizer::new(rcdict.clone());
-        return TestTokenizer { tok };
-    }
-
-    fn tokenize(&self, data: &str, mode: Mode) -> Vec<Morpheme> {
-        let result = self.tok.tokenize(data, mode, false);
-        result.expect("tokenization failed")
-    }
-}
+use crate::common::TestTokenizer;
 
 #[test]
 fn tokenize_small_katakana_only() {

@@ -18,7 +18,7 @@
 extern crate lazy_static;
 
 mod common;
-use common::{GRAMMAR, TOKENIZER};
+use common::{TestTokenizer, GRAMMAR};
 
 #[test]
 fn get_part_of_speech_size() {
@@ -26,7 +26,8 @@ fn get_part_of_speech_size() {
     assert_eq!(8, GRAMMAR.pos_list.len());
 
     // user test dict contains another pos
-    assert_eq!(9, TOKENIZER.grammar.pos_list.len());
+    let tokenizer = TestTokenizer::new();
+    assert_eq!(9, tokenizer.dict().grammar().pos_list.len());
 }
 
 #[test]

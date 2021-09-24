@@ -14,12 +14,28 @@
  * limitations under the License.
  */
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 extern crate sudachi;
+use self::sudachi::dic::dictionary::JapaneseDictionary;
+use self::sudachi::stateless_tokeniser::{StatelessTokenizer};
+use std::fs;
+use std::fs::File;
+use std::io::Read;
+use std::sync::Arc;
 use sudachi::config::Config;
 use sudachi::dic::{grammar::Grammar, header::Header, lexicon::Lexicon};
 use sudachi::prelude::*;
+
+pub fn dictionary_bytes_from_path<P: AsRef<Path>>(dictionary_path: P) -> SudachiResult<Vec<u8>> {
+    let dictionary_path = dictionary_path.as_ref();
+    let dictionary_stat = fs::metadata(&dictionary_path)?;
+    let mut dictionary_file = File::open(dictionary_path)?;
+    let mut dictionary_bytes = Vec::with_capacity(dictionary_stat.len() as usize);
+    dictionary_file.read_to_end(&mut dictionary_bytes)?;
+
+    Ok(dictionary_bytes)
+}
 
 lazy_static! {
     pub static ref TEST_CONFIG: Config = {
@@ -57,7 +73,29 @@ lazy_static! {
         Lexicon::new(&DICTIONARY_BYTES, offset, HEADER.has_synonym_group_ids())
             .expect("Failed to read lexicon for tests")
     };
-    pub static ref TOKENIZER: Tokenizer<'static> =
-        Tokenizer::from_dictionary_bytes(&DICTIONARY_BYTES, &USER_DICTIONARY_BYTES, &TEST_CONFIG,)
-            .expect("Failed to create Tokenizer for tests");
 }
+
+pub struct TestTokenizer {
+    tok: StatelessTokenizer<Arc<JapaneseDictionary>>,
+}
+
+impl TestTokenizer {
+    pub fn new() -> TestTokenizer {
+        let dict = JapaneseDictionary::from_cfg(&TEST_CONFIG).expect("failed to make dictionary");
+        let tok = StatelessTokenizer::new(Arc::new(dict));
+        return TestTokenizer { tok };
+    }
+
+    pub fn tokenize(&self, data: &str, mode: Mode) -> Vec<Morpheme> {
+        let result = self.tok.tokenize(data, mode, false);
+        result.expect("tokenization failed")
+    }
+
+    pub fn dict(&self) -> &JapaneseDictionary {
+        &self.tok.as_dict()
+    }
+}
+
+// lazy_static! {
+//     pub static ref TEST_TOKENIZER: TestTokenizer = TestTokenizer::new();
+// }

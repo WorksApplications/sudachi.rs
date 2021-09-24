@@ -120,11 +120,6 @@ pub fn get_plugin_path(plugin_config: &Value, config: &Config) -> SudachiResult<
     ))))
 }
 
-pub trait PluginProvider<T: Sync + ?Sized> {
-    fn plugins(&self) -> &[Box<T>];
-    fn is_empty(&self) -> bool;
-}
-
 pub(crate) struct Plugins {
     pub(crate) connect_cost: EditConnectionCostPluginManager,
     pub(crate) input_text: InputTextPluginManager,

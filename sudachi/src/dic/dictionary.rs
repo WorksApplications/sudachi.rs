@@ -25,11 +25,11 @@ use crate::dic::grammar::Grammar;
 use crate::dic::lexicon_set::LexiconSet;
 use crate::dic::{DictionaryLoader, LoadedDictionary};
 use crate::error::SudachiError::ConfigError;
-use crate::error::SudachiResult;
+use crate::error::{SudachiError, SudachiResult};
 use crate::plugin::input_text::InputTextPlugin;
 use crate::plugin::oov::OovProviderPlugin;
 use crate::plugin::path_rewrite::PathRewritePlugin;
-use crate::plugin::{PluginProvider, Plugins};
+use crate::plugin::Plugins;
 use crate::stateless_tokeniser::{DictionaryAccess, StatelessTokenizer};
 
 // Mmap stores file handle, so file field may not be needed
@@ -118,6 +118,10 @@ impl JapaneseDictionary {
 
         plugins.load(cfg, &basic_dict.grammar)?;
 
+        if plugins.oov.is_empty() {
+            return Err(SudachiError::NoOOVPluginProvided);
+        }
+
         for p in plugins.connect_cost.plugins() {
             p.edit(&mut basic_dict.grammar);
         }
@@ -179,15 +183,15 @@ impl DictionaryAccess for JapaneseDictionary {
         self.lexicon()
     }
 
-    fn input_text_plugins(&self) -> &[Box<dyn InputTextPlugin>] {
+    fn input_text_plugins(&self) -> &[Box<dyn InputTextPlugin + Sync>] {
         self.plugins.input_text.plugins()
     }
 
-    fn oov_provider_plugins(&self) -> &[Box<dyn OovProviderPlugin>] {
+    fn oov_provider_plugins(&self) -> &[Box<dyn OovProviderPlugin + Sync>] {
         self.plugins.oov.plugins()
     }
 
-    fn path_rewrite_plugins(&self) -> &[Box<dyn PathRewritePlugin>] {
+    fn path_rewrite_plugins(&self) -> &[Box<dyn PathRewritePlugin + Sync>] {
         self.plugins.path_rewrite.plugins()
     }
 }

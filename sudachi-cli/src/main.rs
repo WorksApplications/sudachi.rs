@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-use std::borrow::Cow;
 use std::fs::File;
 use std::io::{self, BufRead, BufReader, BufWriter, Write};
 use std::path::PathBuf;
@@ -23,7 +22,9 @@ use std::process;
 use structopt::StructOpt;
 
 use sudachi::config::Config;
+use sudachi::dic::dictionary::JapaneseDictionary;
 use sudachi::prelude::*;
+use sudachi::stateless_tokeniser::StatelessTokenizer;
 
 #[cfg(feature = "bake_dictionary")]
 const BAKED_DICTIONARY_BYTES: &[u8] = include_bytes!(env!("SUDACHI_DICT_PATH"));
@@ -110,22 +111,13 @@ fn main() {
     )
     .expect("Failed to load config file");
 
-    // load and parse dictionary binary to create a tokenizer
-    let dictionary_bytes =
-        get_dictionary_bytes(config.system_dict.as_ref()).expect("No system dictionary found");
-    let mut user_dictionary_bytes = Vec::with_capacity(config.user_dicts.len());
-    for pb in &config.user_dicts {
-        let storage_buf =
-            dictionary_bytes_from_path(pb).expect("Failed to get user dictionary bytes from file");
-        user_dictionary_bytes.push(storage_buf.into_boxed_slice());
-    }
-    let tokenizer =
-        Tokenizer::from_dictionary_bytes(&dictionary_bytes, &user_dictionary_bytes, &config)
-            .expect("Failed to create Tokenizer from dictionary bytes");
+    let dict = JapaneseDictionary::from_cfg(&config)
+        .unwrap_or_else(|e| panic!("Failed to create dictionary: {:?}", e));
+    let tokenizer = StatelessTokenizer::new(&dict);
 
     // tokenize and output results
     for line in reader.lines() {
-        let input = line.expect("Failed to reead line");
+        let input = line.expect("Failed to read line");
         for morpheme_list in tokenizer
             .tokenize_sentences(&input, mode, enable_debug)
             .expect("Failed to tokenize input")
@@ -134,36 +126,6 @@ fn main() {
                 .expect("Failed to write output");
         }
     }
-}
-
-/// get dictionary bytes
-fn get_dictionary_bytes(system_dict: Option<&PathBuf>) -> Option<Cow<'static, [u8]>> {
-    let dictionary_path = {
-        cfg_if::cfg_if! {
-            if #[cfg(feature="bake_dictionary")] {
-                if let Some(dictionary_path) = system_dict {
-                    dictionary_path
-                } else {
-                    return Some(Cow::Borrowed(BAKED_DICTIONARY_BYTES));
-                }
-            } else {
-                if let Some(dictionary_path) = system_dict {
-                    dictionary_path
-                }else {
-                    return None;
-                }
-            }
-        }
-    };
-
-    let storage_buf = match dictionary_bytes_from_path(&dictionary_path) {
-        Ok(x) => x,
-        err => panic!(
-            "Failed to get dictionary bytes from file: {:?}\nError: {:?}",
-            &dictionary_path, &err
-        ),
-    };
-    Some(Cow::Owned(storage_buf))
 }
 
 /// Format and write morphemes into writer

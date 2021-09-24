@@ -161,7 +161,7 @@ macro_rules! declare_path_rewrite_plugin {
 /// Plugin manager to handle multiple plugins
 #[derive(Default)]
 pub struct PathRewritePluginManager {
-    plugins: Vec<Box<dyn PathRewritePlugin>>,
+    plugins: Vec<Box<dyn PathRewritePlugin + Sync>>,
     libraries: Vec<Library>,
 }
 impl PathRewritePluginManager {
@@ -172,7 +172,7 @@ impl PathRewritePluginManager {
         config: &Config,
         grammar: &Grammar,
     ) -> SudachiResult<()> {
-        type PluginCreate = unsafe fn() -> *mut (dyn PathRewritePlugin);
+        type PluginCreate = unsafe fn() -> *mut (dyn PathRewritePlugin + Sync);
 
         let lib = unsafe { Library::new(path) }?;
         let load_plugin: Symbol<PluginCreate> = unsafe { lib.get(b"load_plugin") }?;
@@ -184,7 +184,7 @@ impl PathRewritePluginManager {
         Ok(())
     }
 
-    pub fn plugins(&self) -> &[Box<dyn PathRewritePlugin>] {
+    pub fn plugins(&self) -> &[Box<dyn PathRewritePlugin + Sync>] {
         &self.plugins
     }
 
