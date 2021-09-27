@@ -5,6 +5,7 @@ members = [
     "plugin/input_text/*",
     "plugin/oov/*",
     "plugin/path_rewrite/*",
+    "python"
 ]
 
 default-members = [
