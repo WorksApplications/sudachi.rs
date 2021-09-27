@@ -25,7 +25,7 @@ use crate::lattice::node::Node;
 use crate::prelude::*;
 
 /// Trait of plugin to provide oov node during tokenization
-pub trait OovProviderPlugin {
+pub trait OovProviderPlugin: Sync {
     /// Loads necessary information for the plugin
     fn set_up(&mut self, settings: &Value, config: &Config, grammar: &Grammar)
         -> SudachiResult<()>;
@@ -109,6 +109,7 @@ impl OovProviderPluginManager {
         self.plugins.is_empty()
     }
 }
+
 impl Drop for OovProviderPluginManager {
     fn drop(&mut self) {
         // Plugin drop must be called before Library drop.

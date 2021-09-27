@@ -29,6 +29,7 @@ pub mod lattice;
 pub mod morpheme;
 pub mod plugin;
 pub mod sentence_detector;
+pub mod stateless_tokeniser;
 pub mod tokenizer;
 
 pub mod prelude {
@@ -36,6 +37,6 @@ pub mod prelude {
         error::SudachiError,
         error::SudachiResult,
         morpheme::Morpheme,
-        tokenizer::{dictionary_bytes_from_path, Mode, Tokenize, Tokenizer},
+        tokenizer::{Mode, Tokenize},
     };
 }

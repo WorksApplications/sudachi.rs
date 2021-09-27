@@ -21,9 +21,15 @@ use thiserror::Error;
 
 use crate::config::ConfigError::FileNotFound;
 use crate::config::{Config, ConfigError};
+use crate::dic::grammar::Grammar;
+use crate::plugin::connect_cost::{
+    get_edit_connection_cost_plugins, EditConnectionCostPluginManager,
+};
+use crate::plugin::input_text::{get_input_text_plugins, InputTextPluginManager};
+use crate::plugin::oov::{get_oov_plugins, OovProviderPluginManager};
+use crate::plugin::path_rewrite::{get_path_rewrite_plugins, PathRewritePluginManager};
 use crate::prelude::*;
 use std::ffi::OsStr;
-use thiserror::private::PathAsDisplay;
 
 pub mod connect_cost;
 pub mod input_text;
@@ -109,7 +115,33 @@ pub fn get_plugin_path(plugin_config: &Value, config: &Config) -> SudachiResult<
     }
     Err(SudachiError::ConfigError(FileNotFound(format!(
         "Failed to find library, tried: {} and {}",
-        lib_path.as_display(),
-        fixed_path.as_display()
+        lib_path.display(),
+        fixed_path.display()
     ))))
+}
+
+pub(crate) struct Plugins {
+    pub(crate) connect_cost: EditConnectionCostPluginManager,
+    pub(crate) input_text: InputTextPluginManager,
+    pub(crate) oov: OovProviderPluginManager,
+    pub(crate) path_rewrite: PathRewritePluginManager,
+}
+
+impl Plugins {
+    pub(crate) fn new() -> Plugins {
+        return Plugins {
+            connect_cost: Default::default(),
+            input_text: Default::default(),
+            oov: Default::default(),
+            path_rewrite: Default::default(),
+        };
+    }
+
+    pub(crate) fn load(&mut self, cfg: &Config, grammar: &Grammar) -> SudachiResult<()> {
+        self.connect_cost = get_edit_connection_cost_plugins(cfg, grammar)?;
+        self.input_text = get_input_text_plugins(cfg, grammar)?;
+        self.oov = get_oov_plugins(cfg, grammar)?;
+        self.path_rewrite = get_path_rewrite_plugins(cfg, grammar)?;
+        Ok(())
+    }
 }

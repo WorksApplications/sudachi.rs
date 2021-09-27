@@ -26,7 +26,7 @@ use crate::lattice::{node::Node, Lattice};
 use crate::prelude::*;
 
 /// Trait of plugin to rewrite the path from lattice
-pub trait PathRewritePlugin {
+pub trait PathRewritePlugin: Sync {
     /// Loads necessary information for the plugin
     fn set_up(&mut self, settings: &Value, config: &Config, grammar: &Grammar)
         -> SudachiResult<()>;

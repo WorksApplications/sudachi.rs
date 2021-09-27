@@ -24,7 +24,7 @@ use crate::input_text::Utf8InputTextBuilder;
 use crate::prelude::*;
 
 /// Trait of plugin to modify the input text before tokenization
-pub trait InputTextPlugin {
+pub trait InputTextPlugin: Sync {
     /// Loads necessary information for the plugin
     fn set_up(&mut self, settings: &Value, config: &Config, grammar: &Grammar)
         -> SudachiResult<()>;
@@ -50,7 +50,7 @@ macro_rules! declare_input_text_plugin {
             let constructor: fn() -> $plugin_type = $constructor;
 
             let object = constructor();
-            let boxed: Box<dyn InputTextPlugin + Sync> = Box::new(object);
+            let boxed: Box<dyn InputTextPlugin + Sync + Send> = Box::new(object);
             Box::into_raw(boxed)
         }
     };
@@ -62,6 +62,7 @@ pub struct InputTextPluginManager {
     plugins: Vec<Box<dyn InputTextPlugin + Sync>>,
     libraries: Vec<Library>,
 }
+
 impl InputTextPluginManager {
     pub fn load(
         &mut self,
@@ -90,6 +91,7 @@ impl InputTextPluginManager {
         self.plugins.is_empty()
     }
 }
+
 impl Drop for InputTextPluginManager {
     fn drop(&mut self) {
         // Plugin drop must be called before Library drop.
