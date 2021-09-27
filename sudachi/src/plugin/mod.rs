@@ -25,7 +25,8 @@ use crate::dic::grammar::Grammar;
 use crate::plugin::connect_cost::{
     get_edit_connection_cost_plugins, EditConnectionCostPluginManager,
 };
-use crate::plugin::input_text::{get_input_text_plugins, InputTextPluginManager};
+use crate::plugin::input_text::{get_input_text_plugins, InputTextPlugin, InputTextPluginManager};
+use crate::plugin::loader::load_plugins_of;
 use crate::plugin::oov::{get_oov_plugins, OovProviderPluginManager};
 use crate::plugin::path_rewrite::{get_path_rewrite_plugins, PathRewritePluginManager};
 use crate::prelude::*;
@@ -33,6 +34,7 @@ use std::ffi::OsStr;
 
 pub mod connect_cost;
 pub mod input_text;
+mod loader;
 pub mod oov;
 pub mod path_rewrite;
 
@@ -143,5 +145,11 @@ impl Plugins {
         self.oov = get_oov_plugins(cfg, grammar)?;
         self.path_rewrite = get_path_rewrite_plugins(cfg, grammar)?;
         Ok(())
+    }
+
+    pub(crate) fn load2(cfg: &Config, grammar: &Grammar) -> SudachiResult<Plugins> {
+        let it_plugs = load_plugins_of::<dyn InputTextPlugin>(cfg, grammar)?;
+
+        todo!()
     }
 }

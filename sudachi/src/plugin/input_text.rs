@@ -21,6 +21,7 @@ use std::path::Path;
 use crate::config::Config;
 use crate::dic::grammar::Grammar;
 use crate::input_text::Utf8InputTextBuilder;
+use crate::plugin::loader::PluginCategory;
 use crate::prelude::*;
 
 /// Trait of plugin to modify the input text before tokenization
@@ -33,6 +34,30 @@ pub trait InputTextPlugin: Sync + Send {
     ///
     /// builder::replace will be used inside
     fn rewrite(&self, builder: &mut Utf8InputTextBuilder);
+}
+
+impl PluginCategory for dyn InputTextPlugin {
+    type BoxType = Box<dyn InputTextPlugin + Sync>;
+    type InitFnType = unsafe extern "C" fn() -> SudachiResult<Self::BoxType>;
+    fn configurations(cfg: &Config) -> &[Value] {
+        &cfg.input_text_plugins
+    }
+
+    fn packaged_impl(name: &str) -> Option<Self::BoxType> {
+        match name {
+            "com.worksap.sudachi.Test" => todo!(),
+            _ => None,
+        }
+    }
+
+    fn do_setup(
+        ptr: &mut Self::BoxType,
+        settings: &Value,
+        config: &Config,
+        grammar: &Grammar,
+    ) -> SudachiResult<()> {
+        ptr.set_up(settings, config, grammar)
+    }
 }
 
 /// Declare a plugin type and its constructor.
@@ -50,7 +75,7 @@ macro_rules! declare_input_text_plugin {
             let constructor: fn() -> $plugin_type = $constructor;
 
             let object = constructor();
-            let boxed: Box<dyn InputTextPlugin + Sync + Send> = Box::new(object);
+            let boxed: Box<dyn InputTextPlugin + Sync> = Box::new(object);
             Box::into_raw(boxed)
         }
     };

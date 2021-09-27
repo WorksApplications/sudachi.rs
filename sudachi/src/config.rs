@@ -14,11 +14,14 @@
  * limitations under the License.
  */
 
-use serde::Deserialize;
-use serde_json::Value;
+use std::env::current_exe;
 use std::fs::File;
 use std::io::BufReader;
 use std::path::PathBuf;
+
+use lazy_static::lazy_static;
+use serde::Deserialize;
+use serde_json::Value;
 use thiserror::Error;
 
 const DEFAULT_RESOURCE_DIR: &str = "resources";
@@ -131,15 +134,59 @@ impl Config {
         })
     }
 
+    pub fn resolve_path(&self, mut path: String) -> String {
+        if path.starts_with("$exe") {
+            path.replace_range(0..4, &CURRENT_EXE_DIR);
+        }
+
+        if path.starts_with("$cfg") {
+            let cfg_path = self.resource_dir.to_str().unwrap();
+            path.replace_range(0..4, cfg_path);
+        }
+
+        path
+    }
+
     /// Resolves given path to a path relative to resource_dir if its relative
     pub fn complete_path(&self, file_path: PathBuf) -> PathBuf {
         Config::join_if_relative(&self.resource_dir, file_path)
     }
+
     fn join_if_relative(resource_dir: &PathBuf, file_path: PathBuf) -> PathBuf {
         if file_path.is_absolute() {
             file_path
         } else {
             resource_dir.join(&file_path)
         }
+    }
+}
+
+fn current_exe_dir() -> String {
+    let exe = current_exe().unwrap_or_else(|e| panic!("Current exe is not available {:?}", e));
+
+    let parent = exe
+        .parent()
+        .unwrap_or_else(|| panic!("Path to executable must have a parent"));
+
+    parent.to_str().map(|s| s.to_owned()).unwrap_or_else(|| {
+        panic!("placing Sudachi in directories with non-utf paths is not supported")
+    })
+}
+
+lazy_static! {
+    static ref CURRENT_EXE_DIR: String = current_exe_dir();
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::config::Config;
+    use crate::prelude::SudachiResult;
+
+    #[test]
+    fn resolve_exe() -> SudachiResult<()> {
+        let cfg = Config::new(None, None, None)?;
+        let npath = cfg.resolve_path("$exe/data".to_owned());
+        println!("{}", npath);
+        Ok(())
     }
 }
