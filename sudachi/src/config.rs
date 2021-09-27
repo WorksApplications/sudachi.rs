@@ -181,12 +181,23 @@ lazy_static! {
 mod tests {
     use crate::config::Config;
     use crate::prelude::SudachiResult;
+    use super::CURRENT_EXE_DIR;
 
     #[test]
     fn resolve_exe() -> SudachiResult<()> {
         let cfg = Config::new(None, None, None)?;
         let npath = cfg.resolve_path("$exe/data".to_owned());
-        println!("{}", npath);
+        let exe_dir: &str = &CURRENT_EXE_DIR;
+        assert!(npath.starts_with(exe_dir));
+        Ok(())
+    }
+
+    #[test]
+    fn resolve_cfg() -> SudachiResult<()> {
+        let cfg = Config::new(None, None, None)?;
+        let npath = cfg.resolve_path("$cfg/data".to_owned());
+        let path_dir: &str = cfg.resource_dir.to_str().unwrap();
+        assert!(npath.starts_with(path_dir));
         Ok(())
     }
 }
