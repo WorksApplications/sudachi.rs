@@ -14,14 +14,12 @@
  * limitations under the License.
  */
 
-use std::ffi::OsStr;
 use std::path::PathBuf;
 
 use libloading::Error as LLError;
 use serde_json::Value;
 use thiserror::Error;
 
-use crate::config::ConfigError::FileNotFound;
 use crate::config::{Config, ConfigError};
 use crate::dic::grammar::Grammar;
 use crate::plugin::connect_cost::{

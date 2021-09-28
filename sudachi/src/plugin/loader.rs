@@ -52,6 +52,35 @@ struct PluginLoader<'a, T: PluginCategory + ?Sized> {
     plugins: Vec<<T as PluginCategory>::BoxType>,
 }
 
+#[cfg(target_os="linux")]
+fn make_system_specific_name(s: &str) -> String {
+    format!("lib{}.so", s)
+}
+
+#[cfg(target_os="windows")]
+fn make_system_specific_name(s: &str) -> String {
+    format!("{}.dll", s)
+}
+
+#[cfg(target_os="macos")]
+fn make_system_specific_name(s: &str) -> String {
+    format!("lib{}.dylib", s)
+}
+
+fn system_specific_name(s: &str) -> Option<String> {
+    if s.contains('.') {
+        None
+    } else {
+        let p = std::path::Path::new(s);
+        let fname = p.file_name().and_then(|np| np.to_str()).map(|f| make_system_specific_name(f));
+        let parent = p.parent().and_then(|np| np.to_str());
+        match (parent, fname) {
+            (Some(p), Some(c)) => Some(format!("{}/{}", p, c)),
+            _ => None
+        }
+    }
+}
+
 impl<'a, T: PluginCategory + ?Sized> PluginLoader<'a, T> {
     pub fn new(grammar: &'a Grammar, config: &'a Config) -> PluginLoader<'a, T> {
         PluginLoader {
@@ -101,7 +130,13 @@ impl<'a, T: PluginCategory + ?Sized> PluginLoader<'a, T> {
     }
 
     fn resolve_dso_names(&self, name: &str) -> Vec<String> {
-        let resolved = self.cfg.resolve_plugin_paths(name.to_owned());
+        let mut resolved = self.cfg.resolve_plugin_paths(name.to_owned());
+
+        if let Some(sysname) = system_specific_name(name) {
+            let resolved_sys = self.cfg.resolve_plugin_paths(sysname);
+            resolved.extend(resolved_sys);
+        }
+
         resolved
     }
 

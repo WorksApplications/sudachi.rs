@@ -12,19 +12,19 @@
           "maxYomiganaLength": 4}
     ],
     "oovProviderPlugin" : [
-        { "class" : "../target/release/libmecab_oov.so",
+        { "class" : "$exe/mecab_oov",
           "charDef" : "char.def",
           "unkDef" : "unk.def" },
-        { "class" : "../target/release/libsimple_oov.so",
+        { "class" : "$exe/simple_oov",
           "oovPOS" : [ "補助記号", "一般", "*", "*", "*", "*" ],
           "leftId" : 5968,
           "rightId" : 5968,
           "cost" : 3857 }
     ],
     "pathRewritePlugin" : [
-        { "class" : "../target/release/libjoin_numeric.so",
+        { "class" : "$exe/join_numeric",
           "enableNormalize" : true },
-        { "class" : "../target/release/libjoin_katakana_oov.so",
+        { "class" : "$exe/join_katakana_oov",
           "oovPOS" : [ "名詞", "普通名詞", "一般", "*", "*", "*" ],
           "minLength" : 3
         }
