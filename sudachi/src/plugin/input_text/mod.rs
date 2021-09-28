@@ -30,7 +30,7 @@ use crate::plugin::input_text::default_input_text::DefaultInputTextPlugin;
 use crate::plugin::input_text::prolonged_sound_mark::ProlongedSoundMarkPlugin;
 
 /// Trait of plugin to modify the input text before tokenization
-pub trait InputTextPlugin: Sync {
+pub trait InputTextPlugin: Sync + Send {
     /// Loads necessary information for the plugin
     fn set_up(&mut self, settings: &Value, config: &Config, grammar: &Grammar)
         -> SudachiResult<()>;
@@ -42,7 +42,7 @@ pub trait InputTextPlugin: Sync {
 }
 
 impl PluginCategory for dyn InputTextPlugin {
-    type BoxType = Box<dyn InputTextPlugin + Sync>;
+    type BoxType = Box<dyn InputTextPlugin + Sync + Send>;
     type InitFnType = unsafe extern "Rust" fn() -> SudachiResult<Self::BoxType>;
     fn configurations(cfg: &Config) -> &[Value] {
         &cfg.input_text_plugins

@@ -34,7 +34,7 @@ use crate::sentence_detector::{NonBreakChecker, SentenceDetector};
 pub trait DictionaryAccess {
     fn grammar(&self) -> &Grammar<'_>;
     fn lexicon(&self) -> &LexiconSet<'_>;
-    fn input_text_plugins(&self) -> &[Box<dyn InputTextPlugin + Sync>];
+    fn input_text_plugins(&self) -> &[Box<dyn InputTextPlugin + Sync + Send>];
     fn oov_provider_plugins(&self) -> &[Box<dyn OovProviderPlugin + Sync>];
     fn path_rewrite_plugins(&self) -> &[Box<dyn PathRewritePlugin + Sync>];
 }

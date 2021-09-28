@@ -185,7 +185,7 @@ impl DictionaryAccess for JapaneseDictionary {
         self.lexicon()
     }
 
-    fn input_text_plugins(&self) -> &[Box<dyn InputTextPlugin + Sync>] {
+    fn input_text_plugins(&self) -> &[Box<dyn InputTextPlugin + Sync + Send>] {
         self.plugins.input_text.plugins()
     }
 
