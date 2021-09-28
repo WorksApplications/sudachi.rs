@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-use sudachi::sudachi_dso_plugin;
+use sudachi::plugin::input_text::default_input_text::DefaultInputTextPlugin;
 use sudachi::plugin::input_text::InputTextPlugin;
 use sudachi::plugin::PluginCategory;
-use sudachi::plugin::input_text::default_input_text::DefaultInputTextPlugin;
 use sudachi::prelude::*;
+use sudachi::sudachi_dso_plugin;
 
 // Generate DSO for tests
 sudachi_dso_plugin!(dyn InputTextPlugin, DefaultInputTextPlugin);

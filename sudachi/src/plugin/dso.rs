@@ -19,7 +19,7 @@
 macro_rules! sudachi_dso_plugin {
     ($plugin_type:ty, $impl_type:ty) => {
         #[no_mangle]
-        pub extern "Rust" fn load_plugin() -> SudachiResult<<$plugin_type as PluginCategory>::BoxType> {
+        pub fn load_plugin() -> SudachiResult<<$plugin_type as PluginCategory>::BoxType> {
             let object = <$impl_type>::default();
             let boxed: <$plugin_type as PluginCategory>::BoxType = Box::new(object);
             Ok(boxed)

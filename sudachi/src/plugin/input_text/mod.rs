@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-mod ignore_yomigana;
 pub mod default_input_text;
+mod ignore_yomigana;
 mod prolonged_sound_mark;
 
 use serde_json::Value;
@@ -23,11 +23,11 @@ use serde_json::Value;
 use crate::config::Config;
 use crate::dic::grammar::Grammar;
 use crate::input_text::Utf8InputTextBuilder;
+use crate::plugin::input_text::default_input_text::DefaultInputTextPlugin;
 use crate::plugin::input_text::ignore_yomigana::IgnoreYomiganaPlugin;
+use crate::plugin::input_text::prolonged_sound_mark::ProlongedSoundMarkPlugin;
 use crate::plugin::loader::PluginCategory;
 use crate::prelude::*;
-use crate::plugin::input_text::default_input_text::DefaultInputTextPlugin;
-use crate::plugin::input_text::prolonged_sound_mark::ProlongedSoundMarkPlugin;
 
 /// Trait of plugin to modify the input text before tokenization
 pub trait InputTextPlugin: Sync + Send {
@@ -43,22 +43,16 @@ pub trait InputTextPlugin: Sync + Send {
 
 impl PluginCategory for dyn InputTextPlugin {
     type BoxType = Box<dyn InputTextPlugin + Sync + Send>;
-    type InitFnType = unsafe extern "Rust" fn() -> SudachiResult<Self::BoxType>;
+    type InitFnType = unsafe fn() -> SudachiResult<Self::BoxType>;
     fn configurations(cfg: &Config) -> &[Value] {
         &cfg.input_text_plugins
     }
 
     fn bundled_impl(name: &str) -> Option<Self::BoxType> {
         match name {
-            "IgnoreYomiganaPlugin" => {
-                Some(Box::new(IgnoreYomiganaPlugin::default()))
-            }
-            "DefaultInputTextPlugin" => {
-                Some(Box::new(DefaultInputTextPlugin::default()))
-            }
-            "ProlongedSoundMarkPlugin" => {
-                Some(Box::new(ProlongedSoundMarkPlugin::default()))
-            }
+            "IgnoreYomiganaPlugin" => Some(Box::new(IgnoreYomiganaPlugin::default())),
+            "DefaultInputTextPlugin" => Some(Box::new(DefaultInputTextPlugin::default())),
+            "ProlongedSoundMarkPlugin" => Some(Box::new(ProlongedSoundMarkPlugin::default())),
             _ => None,
         }
     }

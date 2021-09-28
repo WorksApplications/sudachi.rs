@@ -108,26 +108,26 @@ impl<'a, T: PluginCategory + ?Sized> PluginLoader<'a, T> {
     fn try_load_library_from(candidates: &[String]) -> SudachiResult<Library> {
         if candidates.is_empty() {
             return Err(SudachiError::PluginError(PluginError::InvalidDataFormat(
-                "No candidates to load library".to_owned()
-            )))
+                "No candidates to load library".to_owned(),
+            )));
         }
 
         let mut last_error = libloading::Error::IncompatibleSize;
         for p in candidates.iter() {
             match unsafe { Library::new(p.as_str()) } {
                 Ok(lib) => return Ok(lib),
-                Err(e) => last_error = e
+                Err(e) => last_error = e,
             }
-        };
+        }
         Err(SudachiError::PluginError(PluginError::Libloading {
             source: last_error,
-            message: format!("failed to load library from: {:?}", candidates)
+            message: format!("failed to load library from: {:?}", candidates),
         }))
     }
 
     fn load_plugin_from_dso(
         &mut self,
-        candidates: &[String]
+        candidates: &[String],
     ) -> SudachiResult<<T as PluginCategory>::BoxType> {
         let lib = Self::try_load_library_from(candidates)?;
         let load_fn: Symbol<fn() -> SudachiResult<<T as PluginCategory>::BoxType>> =

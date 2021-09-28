@@ -21,11 +21,11 @@ use libloading::Error as LLError;
 use serde_json::Value;
 use thiserror::Error;
 
-use crate::config::{Config, ConfigError};
 use crate::config::ConfigError::FileNotFound;
+use crate::config::{Config, ConfigError};
 use crate::dic::grammar::Grammar;
 use crate::plugin::connect_cost::{
-    EditConnectionCostPluginManager, get_edit_connection_cost_plugins,
+    get_edit_connection_cost_plugins, EditConnectionCostPluginManager,
 };
 use crate::plugin::input_text::InputTextPlugin;
 use crate::plugin::loader::{load_plugins_of, PluginContainer};
@@ -36,11 +36,11 @@ use crate::prelude::*;
 pub use self::loader::PluginCategory;
 
 pub mod connect_cost;
+pub mod dso;
 pub mod input_text;
 mod loader;
 pub mod oov;
 pub mod path_rewrite;
-pub mod dso;
 
 #[derive(Error, Debug)]
 pub enum PluginError {
@@ -59,7 +59,10 @@ pub enum PluginError {
 
 impl From<LLError> for PluginError {
     fn from(e: LLError) -> Self {
-        PluginError::Libloading { source: e, message: String::new() }
+        PluginError::Libloading {
+            source: e,
+            message: String::new(),
+        }
     }
 }
 
