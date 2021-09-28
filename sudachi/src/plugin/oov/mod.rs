@@ -68,7 +68,7 @@ impl PluginCategory for dyn OovProviderPlugin {
     fn bundled_impl(name: &str) -> Option<Self::BoxType> {
         match name {
             "SimpleOovPlugin" => Some(Box::new(SimpleOovPlugin::default())),
-            "DefaultInputTextPlugin" => Some(Box::new(MeCabOovPlugin::default())),
+            "MeCabOovPlugin" => Some(Box::new(MeCabOovPlugin::default())),
             _ => None,
         }
     }

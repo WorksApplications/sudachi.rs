@@ -12,19 +12,19 @@
           "maxYomiganaLength": 4}
     ],
     "oovProviderPlugin" : [
-        { "class" : "$exe/mecab_oov",
+        { "class" : "com.worksap.nlp.sudachi.MeCabOovPlugin",
           "charDef" : "char.def",
           "unkDef" : "unk.def" },
-        { "class" : "$exe/simple_oov",
+        { "class" : "com.worksap.nlp.sudachi.SimpleOovPlugin",
           "oovPOS" : [ "補助記号", "一般", "*", "*", "*", "*" ],
           "leftId" : 5968,
           "rightId" : 5968,
           "cost" : 3857 }
     ],
     "pathRewritePlugin" : [
-        { "class" : "$exe/join_numeric",
+        { "class" : "com.worksap.nlp.sudachi.JoinNumericPlugin",
           "enableNormalize" : true },
-        { "class" : "$exe/join_katakana_oov",
+        { "class" : "com.worksap.nlp.sudachi.JoinKatakanaOovPlugin",
           "oovPOS" : [ "名詞", "普通名詞", "一般", "*", "*", "*" ],
           "minLength" : 3
         }
