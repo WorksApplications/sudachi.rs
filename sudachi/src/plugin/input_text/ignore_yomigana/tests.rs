@@ -18,7 +18,7 @@ use super::*;
 use serde_json::Value;
 use std::path::PathBuf;
 
-use sudachi::input_text::Utf8InputTextBuilder;
+use crate::input_text::Utf8InputTextBuilder;
 
 const TEST_RESOURCE_DIR_PATH: &str = "tests/resources/";
 

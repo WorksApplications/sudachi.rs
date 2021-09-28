@@ -19,9 +19,14 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 thiserror = "1.0"
 memmap2 = "0.5"
+unicode-normalization = "0.1.19"
 
 [dev-dependencies]
 tempfile = "3"
+default_input_text = { path = "../plugin/input_text/default_input_text" }
+simple_oov = { path = "../plugin/oov/simple_oov" }
+join_numeric = { path = "../plugin/path_rewrite/join_numeric" }
+join_katakana_oov = { path = "../plugin/path_rewrite/join_katakana_oov" }
 
 [lib]
 crate-type = ["rlib"]

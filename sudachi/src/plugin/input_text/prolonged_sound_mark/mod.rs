@@ -18,17 +18,14 @@ use serde::Deserialize;
 use serde_json::Value;
 use std::collections::HashSet;
 
-use sudachi::config::Config;
-use sudachi::declare_input_text_plugin;
-use sudachi::dic::grammar::Grammar;
-use sudachi::input_text::Utf8InputTextBuilder;
-use sudachi::plugin::input_text::InputTextPlugin;
-use sudachi::prelude::*;
+use crate::config::Config;
+use crate::dic::grammar::Grammar;
+use crate::input_text::Utf8InputTextBuilder;
+use crate::plugin::input_text::InputTextPlugin;
+use crate::prelude::*;
 
 #[cfg(test)]
 mod tests;
-
-declare_input_text_plugin!(ProlongedSoundMarkPlugin, ProlongedSoundMarkPlugin::default);
 
 /// Replace (consecutive) prolonged sound mark by one symbol.
 #[derive(Default)]

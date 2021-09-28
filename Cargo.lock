@@ -77,11 +77,7 @@ dependencies = [
 name = "default_input_text"
 version = "0.1.0"
 dependencies = [
- "serde",
- "serde_json",
  "sudachi",
- "tempfile",
- "unicode-normalization",
 ]
 
 [[package]]
@@ -121,15 +117,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "62b467343b94ba476dcb2500d242dadbb39557df889310ac77c5d99100aaac33"
 dependencies = [
  "libc",
-]
-
-[[package]]
-name = "ignore_yomigana"
-version = "0.1.0"
-dependencies = [
- "serde",
- "serde_json",
- "sudachi",
 ]
 
 [[package]]
@@ -272,15 +259,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5c7ed8b8c7b886ea3ed7dde405212185f423ab44682667c8c6dd14aa1d9f6612"
 dependencies = [
  "unicode-xid",
-]
-
-[[package]]
-name = "prolonged_sound_mark"
-version = "0.1.0"
-dependencies = [
- "serde",
- "serde_json",
- "sudachi",
 ]
 
 [[package]]
@@ -447,7 +425,10 @@ dependencies = [
 name = "sudachi"
 version = "0.1.0"
 dependencies = [
+ "default_input_text",
  "fancy-regex",
+ "join_katakana_oov",
+ "join_numeric",
  "lazy_static",
  "libloading",
  "memmap2",
@@ -455,8 +436,10 @@ dependencies = [
  "nom",
  "serde",
  "serde_json",
+ "simple_oov",
  "tempfile",
  "thiserror",
+ "unicode-normalization",
 ]
 
 [[package]]
@@ -465,12 +448,10 @@ version = "0.1.0"
 dependencies = [
  "cfg-if",
  "default_input_text",
- "ignore_yomigana",
  "inhibit_connection",
  "join_katakana_oov",
  "join_numeric",
  "mecab_oov",
- "prolonged_sound_mark",
  "simple_oov",
  "structopt",
  "sudachi",
@@ -532,9 +513,9 @@ dependencies = [
 
 [[package]]
 name = "tinyvec"
-version = "1.3.1"
+version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "848a1e1181b9f6753b5e96a092749e29b11d19ede67dfbbd6c7dc7e0f49b5338"
+checksum = "f83b2a3d4d9091d0abd7eba4dc2710b1718583bd4d8992e2190720ea38f391f7"
 dependencies = [
  "tinyvec_macros",
 ]

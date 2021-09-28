@@ -19,9 +19,9 @@ use serde_json::{Map, Value};
 use std::io::{Seek, SeekFrom, Write};
 use tempfile::tempfile;
 
-use sudachi::config::Config;
-use sudachi::dic::grammar::Grammar;
-use sudachi::input_text::Utf8InputTextBuilder;
+use crate::config::Config;
+use crate::dic::grammar::Grammar;
+use crate::input_text::Utf8InputTextBuilder;
 
 const TEST_RESOURCE_DIR: &str = "tests/resources/";
 const ORIGINAL_TEXT: &str = "ÂＢΓД㈱ｶﾞウ゛⼼Ⅲ";

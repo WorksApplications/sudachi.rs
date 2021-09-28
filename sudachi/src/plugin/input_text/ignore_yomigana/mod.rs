@@ -18,19 +18,16 @@ use serde::Deserialize;
 use serde_json::Value;
 use std::collections::HashSet;
 
-use sudachi::config::Config;
-use sudachi::declare_input_text_plugin;
-use sudachi::dic::category_type::CategoryType;
-use sudachi::dic::character_category::CharacterCategory;
-use sudachi::dic::grammar::Grammar;
-use sudachi::input_text::Utf8InputTextBuilder;
-use sudachi::plugin::input_text::InputTextPlugin;
-use sudachi::prelude::*;
+use crate::config::Config;
+use crate::dic::category_type::CategoryType;
+use crate::dic::character_category::CharacterCategory;
+use crate::dic::grammar::Grammar;
+use crate::input_text::Utf8InputTextBuilder;
+use crate::plugin::input_text::InputTextPlugin;
+use crate::prelude::*;
 
 #[cfg(test)]
 mod tests;
-
-declare_input_text_plugin!(IgnoreYomiganaPlugin, IgnoreYomiganaPlugin::default);
 
 /// Search katakana in the bracket after kanji character as Yomigana (読み仮名)
 /// and removes it from tokenization target

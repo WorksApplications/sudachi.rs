@@ -79,6 +79,7 @@ pub struct TestTokenizer {
     tok: StatelessTokenizer<Arc<JapaneseDictionary>>,
 }
 
+#[allow(unused)]
 impl TestTokenizer {
     pub fn new() -> TestTokenizer {
         let dict = JapaneseDictionary::from_cfg(&TEST_CONFIG).expect("failed to make dictionary");

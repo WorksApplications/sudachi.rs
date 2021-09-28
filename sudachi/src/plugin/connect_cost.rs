@@ -42,7 +42,7 @@ pub trait EditConnectionCostPlugin: Sync + Send {
 macro_rules! declare_connect_cost_plugin {
     ($plugin_type:ty, $constructor:path) => {
         #[no_mangle]
-        pub extern "C" fn load_plugin() -> *mut (dyn EditConnectionCostPlugin + Sync) {
+        pub fn load_plugin() -> *mut (dyn EditConnectionCostPlugin + Sync) {
             // make sure the constructor is the correct type.
             let constructor: fn() -> $plugin_type = $constructor;
 

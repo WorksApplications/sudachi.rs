@@ -35,6 +35,7 @@ use crate::stateless_tokeniser::{DictionaryAccess, StatelessTokenizer};
 // Mmap stores file handle, so file field may not be needed
 // but let it be here for the time being
 struct FileMapping {
+    #[allow(unused)]
     file: File,
     mapping: Mmap,
 }
@@ -50,9 +51,12 @@ impl FileMapping {
 
 enum StorageBackend {
     FileSystem {
+        #[allow(unused)] // This is for ownership, this is not used by code
         system: FileMapping,
         user: Vec<FileMapping>,
     },
+    // Remove when fixing https://github.com/WorksApplications/sudachi.rs/issues/35
+    #[allow(unused)]
     InMemory {},
 }
 
@@ -62,7 +66,7 @@ impl StorageBackend {
             StorageBackend::FileSystem { user: u, .. } => {
                 u.iter().map(|m| unsafe { m.as_static_slice() })
             }
-            _ => todo!(),
+            _ => panic!("Not implemented"),
         }
     }
 }
@@ -73,7 +77,7 @@ impl Drop for StorageBackend {
             StorageBackend::FileSystem { user: u, .. } => {
                 u.clear();
             }
-            _ => todo!(),
+            _ => panic!("Not implemented"),
         }
     }
 }
@@ -114,9 +118,7 @@ impl JapaneseDictionary {
             &cfg.character_definition_file,
         )?;
 
-        let mut plugins = Plugins::new();
-
-        plugins.load(cfg, &basic_dict.grammar)?;
+        let plugins = Plugins::load(cfg, &basic_dict.grammar)?;
 
         if plugins.oov.is_empty() {
             return Err(SudachiError::NoOOVPluginProvided);

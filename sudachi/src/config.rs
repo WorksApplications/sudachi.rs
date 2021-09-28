@@ -134,6 +134,11 @@ impl Config {
         })
     }
 
+    /// Resolve variables in path.
+    /// Starting $exe is replaced with a directory of the current executable
+    /// Starting $cfg is replaced with the resource directory
+    ///
+    /// Takes the input path as String, by value, because it will be modified.
     pub fn resolve_path(&self, mut path: String) -> String {
         if path.starts_with("$exe") {
             path.replace_range(0..4, &CURRENT_EXE_DIR);
@@ -145,6 +150,23 @@ impl Config {
         }
 
         path
+    }
+
+    pub fn resolve_plugin_paths(&self, mut path: String) -> Vec<String> {
+        if path.starts_with("$exe") {
+            path.replace_range(0..4, &CURRENT_EXE_DIR);
+
+            let mut path2 = path.clone();
+            path2.insert_str(CURRENT_EXE_DIR.len(), "/deps");
+            return vec![path2, path];
+        }
+
+        if path.starts_with("$cfg") {
+            let cfg_path = self.resource_dir.to_str().unwrap();
+            path.replace_range(0..4, cfg_path);
+        }
+
+        vec![path]
     }
 
     /// Resolves given path to a path relative to resource_dir if its relative
@@ -179,9 +201,9 @@ lazy_static! {
 
 #[cfg(test)]
 mod tests {
+    use super::CURRENT_EXE_DIR;
     use crate::config::Config;
     use crate::prelude::SudachiResult;
-    use super::CURRENT_EXE_DIR;
 
     #[test]
     fn resolve_exe() -> SudachiResult<()> {

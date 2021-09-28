@@ -14,37 +14,41 @@
  * limitations under the License.
  */
 
+use std::ffi::OsStr;
+use std::path::PathBuf;
+
 use libloading::Error as LLError;
 use serde_json::Value;
-use std::path::PathBuf;
 use thiserror::Error;
 
-use crate::config::ConfigError::FileNotFound;
 use crate::config::{Config, ConfigError};
+use crate::config::ConfigError::FileNotFound;
 use crate::dic::grammar::Grammar;
 use crate::plugin::connect_cost::{
-    get_edit_connection_cost_plugins, EditConnectionCostPluginManager,
+    EditConnectionCostPluginManager, get_edit_connection_cost_plugins,
 };
-use crate::plugin::input_text::{get_input_text_plugins, InputTextPlugin, InputTextPluginManager};
-use crate::plugin::loader::load_plugins_of;
+use crate::plugin::input_text::InputTextPlugin;
+use crate::plugin::loader::{load_plugins_of, PluginContainer};
 use crate::plugin::oov::{get_oov_plugins, OovProviderPluginManager};
 use crate::plugin::path_rewrite::{get_path_rewrite_plugins, PathRewritePluginManager};
 use crate::prelude::*;
-use std::ffi::OsStr;
+
+pub use self::loader::PluginCategory;
 
 pub mod connect_cost;
 pub mod input_text;
 mod loader;
 pub mod oov;
 pub mod path_rewrite;
+pub mod dso;
 
 #[derive(Error, Debug)]
 pub enum PluginError {
     #[error("IO Error: {0}")]
     Io(#[from] std::io::Error),
 
-    #[error("Libloading Error: {0}")]
-    Libloading(#[from] LLError),
+    #[error("Libloading Error: {message} ; {source}")]
+    Libloading { source: LLError, message: String },
 
     #[error("Serde error: {0}")]
     SerdeError(#[from] serde_json::Error),
@@ -53,40 +57,10 @@ pub enum PluginError {
     InvalidDataFormat(String),
 }
 
-// All utilities for OsStr are very bad :\
-fn starts_with_lib(data: &OsStr) -> bool {
-    if data.len() < 3 {
-        false
-    } else {
-        let lib_prefix: &OsStr = OsStr::new("lib");
-        let lic_prefix: &OsStr = OsStr::new("lic");
-        return lib_prefix.le(data) && lic_prefix.ge(data);
+impl From<LLError> for PluginError {
+    fn from(e: LLError) -> Self {
+        PluginError::Libloading { source: e, message: String::new() }
     }
-}
-
-fn fix_lib_extension(path: &PathBuf) -> PathBuf {
-    let new_name = match path.file_name() {
-        Some(name) => {
-            if starts_with_lib(name) {
-                name.to_str()
-                    .map(|n| OsStr::new(&n[3..]))
-                    .unwrap_or_else(|| name)
-            } else {
-                name
-            }
-        }
-        None => path.as_os_str(),
-    };
-    let extension = if cfg!(target_os = "windows") {
-        OsStr::new("dll")
-    } else if cfg!(target_os = "linux") {
-        OsStr::new("so")
-    } else if cfg!(target_os = "macos") {
-        OsStr::new("dylib")
-    } else {
-        panic!("Unsupported target! We support only Windows, Linux or MacOS")
-    };
-    path.with_file_name(new_name).with_extension(extension)
 }
 
 /// Retrieves the path to the plugin shared object file from a plugin config
@@ -107,49 +81,25 @@ pub fn get_plugin_path(plugin_config: &Value, config: &Config) -> SudachiResult<
             )));
         }
     };
-    let lib_path = config.complete_path(PathBuf::from(lib));
-    if lib_path.exists() {
-        return Ok(lib_path);
-    }
-    let fixed_path = fix_lib_extension(&lib_path);
-    if fixed_path.exists() {
-        return Ok(fixed_path);
-    }
-    Err(SudachiError::ConfigError(FileNotFound(format!(
-        "Failed to find library, tried: {} and {}",
-        lib_path.display(),
-        fixed_path.display()
-    ))))
+    let lib_path = PathBuf::from(config.resolve_path(lib.clone()));
+    Ok(lib_path)
 }
 
 pub(crate) struct Plugins {
     pub(crate) connect_cost: EditConnectionCostPluginManager,
-    pub(crate) input_text: InputTextPluginManager,
+    pub(crate) input_text: PluginContainer<dyn InputTextPlugin>,
     pub(crate) oov: OovProviderPluginManager,
     pub(crate) path_rewrite: PathRewritePluginManager,
 }
 
 impl Plugins {
-    pub(crate) fn new() -> Plugins {
-        return Plugins {
-            connect_cost: Default::default(),
-            input_text: Default::default(),
-            oov: Default::default(),
-            path_rewrite: Default::default(),
+    pub(crate) fn load(cfg: &Config, grammar: &Grammar) -> SudachiResult<Plugins> {
+        let plugins = Plugins {
+            connect_cost: get_edit_connection_cost_plugins(cfg, grammar)?,
+            input_text: load_plugins_of(cfg, grammar)?,
+            oov: get_oov_plugins(cfg, grammar)?,
+            path_rewrite: get_path_rewrite_plugins(cfg, grammar)?,
         };
-    }
-
-    pub(crate) fn load(&mut self, cfg: &Config, grammar: &Grammar) -> SudachiResult<()> {
-        self.connect_cost = get_edit_connection_cost_plugins(cfg, grammar)?;
-        self.input_text = get_input_text_plugins(cfg, grammar)?;
-        self.oov = get_oov_plugins(cfg, grammar)?;
-        self.path_rewrite = get_path_rewrite_plugins(cfg, grammar)?;
-        Ok(())
-    }
-
-    pub(crate) fn load2(cfg: &Config, grammar: &Grammar) -> SudachiResult<Plugins> {
-        let it_plugs = load_plugins_of::<dyn InputTextPlugin>(cfg, grammar)?;
-
-        todo!()
+        Ok(plugins)
     }
 }
