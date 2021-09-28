@@ -24,7 +24,7 @@ use crate::input_text::Utf8InputTextBuilder;
 use crate::prelude::*;
 
 /// Trait of plugin to modify the input text before tokenization
-pub trait InputTextPlugin: Sync {
+pub trait InputTextPlugin: Sync + Send {
     /// Loads necessary information for the plugin
     fn set_up(&mut self, settings: &Value, config: &Config, grammar: &Grammar)
         -> SudachiResult<()>;

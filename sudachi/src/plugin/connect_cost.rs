@@ -23,7 +23,7 @@ use crate::dic::grammar::Grammar;
 use crate::prelude::*;
 
 /// Trait of plugin to edit connection cost in the grammar
-pub trait EditConnectionCostPlugin: Sync {
+pub trait EditConnectionCostPlugin: Sync + Send {
     /// Loads necessary information for the plugin
     fn set_up(&mut self, settings: &Value, config: &Config, grammar: &Grammar)
         -> SudachiResult<()>;
