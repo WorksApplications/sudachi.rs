@@ -9,6 +9,9 @@ use sudachi::dic::dictionary::JapaneseDictionary;
 use sudachi::prelude::*;
 use sudachi::stateless_tokeniser::StatelessTokenizer;
 
+pub mod morpheme;
+use crate::morpheme::PyMorpheme;
+
 /// module root
 #[pymodule]
 fn sudachi(_py: Python, m: &PyModule) -> PyResult<()> {
@@ -27,8 +30,9 @@ impl PyDictionary {
     /// Creates a sudachi dictionary
     #[new]
     fn new(config_path: Option<PathBuf>, resource_dir: Option<PathBuf>) -> PyResult<Self> {
-        let config = Config::new(config_path, resource_dir, None)
-            .map_err(|e| PyException::new_err(format!("Error loding config: {}", e.to_string())))?;
+        let config = Config::new(config_path, resource_dir, None).map_err(|e| {
+            PyException::new_err(format!("Error loading config: {}", e.to_string()))
+        })?;
 
         let dictionary = Arc::new(JapaneseDictionary::from_cfg(&config).map_err(|e| {
             PyException::new_err(format!(
@@ -47,29 +51,50 @@ impl PyDictionary {
             .parse()
             .map_err(|e: &str| PyException::new_err(format!("Error: {}", e)))?;
 
+        let dictionary = self.dictionary.clone();
         let tokenizer = StatelessTokenizer::new(self.dictionary.clone());
 
-        Ok(PyTokenizer { tokenizer, mode })
+        Ok(PyTokenizer {
+            dictionary,
+            tokenizer,
+            mode,
+        })
     }
 }
 
 #[pyclass]
 pub struct PyTokenizer {
+    dictionary: Arc<JapaneseDictionary>,
     tokenizer: StatelessTokenizer<Arc<JapaneseDictionary>>,
     mode: Mode,
 }
 
 #[pymethods]
 impl PyTokenizer {
-    fn tokenize(&self, input: &str, enable_debug: Option<bool>) -> PyResult<Vec<String>> {
-        Ok(self
+    // want to take logger instead of deug flag
+    fn tokenize(
+        &self,
+        text: &str,
+        mode: Option<&str>,
+        enable_debug: Option<bool>,
+    ) -> PyResult<Vec<PyMorpheme>> {
+        let mode: Mode = match mode {
+            Some(m) => m
+                .parse()
+                .map_err(|e: &str| PyException::new_err(format!("Error: {}", e)))?,
+            None => self.mode,
+        };
+
+        let morphemes = self
             .tokenizer
-            .tokenize(input, self.mode, enable_debug.unwrap_or(false))
+            .tokenize(text, mode, enable_debug.unwrap_or(false))
             .map_err(|e| {
                 PyException::new_err(format!("Error while tokenization: {}", e.to_string()))
             })?
-            .iter()
-            .map(|m| m.surface().clone())
-            .collect())
+            .into_iter()
+            .map(|m| PyMorpheme::new(m, self.dictionary.clone()))
+            .collect();
+
+        Ok(morphemes)
     }
 }
