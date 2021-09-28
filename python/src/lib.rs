@@ -15,9 +15,61 @@ use crate::morpheme::PyMorpheme;
 /// module root
 #[pymodule]
 fn sudachi(_py: Python, m: &PyModule) -> PyResult<()> {
+    m.add_class::<PySplitMode>()?;
     m.add_class::<PyDictionary>()?;
     m.add_class::<PyTokenizer>()?;
+    m.add_class::<PyMorpheme>()?;
     Ok(())
+}
+
+/// This implementation is a workaround. Waiting for pyo3 enum feature.
+/// ref: [PyO3 issue #834](https://github.com/PyO3/pyo3/issues/834).
+#[pyclass]
+#[derive(Clone, PartialEq, Eq)]
+pub struct PySplitMode {
+    mode: u8,
+}
+
+#[pymethods]
+impl PySplitMode {
+    #[classattr]
+    const A: Self = Self { mode: 0 };
+    #[classattr]
+    const B: Self = Self { mode: 1 };
+    #[classattr]
+    const C: Self = Self { mode: 2 };
+}
+
+impl From<Mode> for PySplitMode {
+    fn from(mode: Mode) -> Self {
+        match mode {
+            Mode::A => PySplitMode::A,
+            Mode::B => PySplitMode::B,
+            Mode::C => PySplitMode::C,
+        }
+    }
+}
+
+impl From<PySplitMode> for Mode {
+    fn from(mode: PySplitMode) -> Self {
+        match mode {
+            PySplitMode::A => Mode::A,
+            PySplitMode::B => Mode::B,
+            _ => Mode::C,
+        }
+    }
+}
+
+impl std::str::FromStr for PySplitMode {
+    type Err = &'static str;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "A" | "a" => Ok(PySplitMode::A),
+            "B" | "b" => Ok(PySplitMode::B),
+            "C" | "c" => Ok(PySplitMode::C),
+            _ => Err("Mode must be one of \"A\", \"B\", or \"C\" (in lower or upper case)."),
+        }
+    }
 }
 
 #[pyclass]
@@ -45,20 +97,16 @@ impl PyDictionary {
     }
 
     /// Creates a sudachi tokenizer
-    fn create(&self, mode: Option<&str>) -> PyResult<PyTokenizer> {
-        let mode: Mode = mode
-            .unwrap_or("C")
-            .parse()
-            .map_err(|e: &str| PyException::new_err(format!("Error: {}", e)))?;
-
+    fn create(&self, mode: Option<PySplitMode>) -> PyTokenizer {
         let dictionary = self.dictionary.clone();
         let tokenizer = StatelessTokenizer::new(self.dictionary.clone());
+        let mode = mode.unwrap_or(PySplitMode::C).into();
 
-        Ok(PyTokenizer {
+        PyTokenizer {
             dictionary,
             tokenizer,
             mode,
-        })
+        }
     }
 }
 
@@ -75,13 +123,11 @@ impl PyTokenizer {
     fn tokenize(
         &self,
         text: &str,
-        mode: Option<&str>,
+        mode: Option<PySplitMode>,
         enable_debug: Option<bool>,
     ) -> PyResult<Vec<PyMorpheme>> {
         let mode: Mode = match mode {
-            Some(m) => m
-                .parse()
-                .map_err(|e: &str| PyException::new_err(format!("Error: {}", e)))?,
+            Some(m) => m.into(),
             None => self.mode,
         };
 
