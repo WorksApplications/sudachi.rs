@@ -23,7 +23,7 @@ use thiserror::Error;
 use crate::config::{Config, ConfigError};
 use crate::dic::grammar::Grammar;
 use crate::plugin::connect_cost::{
-    get_edit_connection_cost_plugins, EditConnectionCostPluginManager,
+    EditConnectionCostPlugin
 };
 use crate::plugin::input_text::InputTextPlugin;
 use crate::plugin::loader::{load_plugins_of, PluginContainer};
@@ -87,7 +87,7 @@ pub fn get_plugin_path(plugin_config: &Value, config: &Config) -> SudachiResult<
 }
 
 pub(crate) struct Plugins {
-    pub(crate) connect_cost: EditConnectionCostPluginManager,
+    pub(crate) connect_cost: PluginContainer<dyn EditConnectionCostPlugin>,
     pub(crate) input_text: PluginContainer<dyn InputTextPlugin>,
     pub(crate) oov: OovProviderPluginManager,
     pub(crate) path_rewrite: PathRewritePluginManager,
@@ -96,7 +96,7 @@ pub(crate) struct Plugins {
 impl Plugins {
     pub(crate) fn load(cfg: &Config, grammar: &Grammar) -> SudachiResult<Plugins> {
         let plugins = Plugins {
-            connect_cost: get_edit_connection_cost_plugins(cfg, grammar)?,
+            connect_cost: load_plugins_of(cfg, grammar)?,
             input_text: load_plugins_of(cfg, grammar)?,
             oov: get_oov_plugins(cfg, grammar)?,
             path_rewrite: get_path_rewrite_plugins(cfg, grammar)?,

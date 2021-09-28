@@ -17,13 +17,10 @@
 use serde::Deserialize;
 use serde_json::Value;
 
-use sudachi::config::Config;
-use sudachi::declare_connect_cost_plugin;
-use sudachi::dic::grammar::Grammar;
-use sudachi::plugin::connect_cost::EditConnectionCostPlugin;
-use sudachi::prelude::*;
-
-declare_connect_cost_plugin!(InhibitConnectionPlugin, InhibitConnectionPlugin::default);
+use crate::config::Config;
+use crate::dic::grammar::Grammar;
+use crate::plugin::connect_cost::EditConnectionCostPlugin;
+use crate::prelude::*;
 
 /// A edit connection cost plugin for inhibiting the connections.
 ///
@@ -64,11 +61,8 @@ impl EditConnectionCostPlugin for InhibitConnectionPlugin {
         _grammar: &Grammar,
     ) -> SudachiResult<()> {
         let settings: PluginSettings = serde_json::from_value(settings.clone())?;
-
         let inhibit_pairs = settings.inhibitPair;
-
         self.inhibit_pairs = inhibit_pairs;
-
         Ok(())
     }
 
@@ -109,6 +103,7 @@ mod tests {
         buf.extend(&(0 as i16).to_le_bytes());
         buf
     }
+
     fn build_mock_grammar(bytes: &[u8]) -> Grammar {
         Grammar::new(bytes, 0).expect("Failed to create grammar")
     }
