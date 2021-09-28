@@ -25,7 +25,7 @@ use crate::lattice::node::Node;
 use crate::prelude::*;
 
 /// Trait of plugin to provide oov node during tokenization
-pub trait OovProviderPlugin: Sync {
+pub trait OovProviderPlugin: Sync + Send {
     /// Loads necessary information for the plugin
     fn set_up(&mut self, settings: &Value, config: &Config, grammar: &Grammar)
         -> SudachiResult<()>;
