@@ -193,7 +193,7 @@ impl DictionaryAccess for JapaneseDictionary {
         self.plugins.oov.plugins()
     }
 
-    fn path_rewrite_plugins(&self) -> &[Box<dyn PathRewritePlugin + Sync>] {
+    fn path_rewrite_plugins(&self) -> &[Box<dyn PathRewritePlugin + Sync + Send>] {
         self.plugins.path_rewrite.plugins()
     }
 }

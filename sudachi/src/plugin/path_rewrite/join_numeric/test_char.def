@@ -5,7 +5,7 @@
 #
 
 ###################################################################################
-# 
+#
 #  CHARACTER CATEGORY DEFINITION
 #
 #  CATEGORY_NAME INVOKE GROUP LENGTH
@@ -16,7 +16,7 @@
 #   - LENGTH: n:     1 to n length new words are added
 #
 DEFAULT         0 1 0  # DEFAULT is a mandatory category!
-SPACE           0 1 0  
+SPACE           0 1 0
 KANJI           0 0 2
 SYMBOL          1 1 0
 NUMERIC         1 1 0

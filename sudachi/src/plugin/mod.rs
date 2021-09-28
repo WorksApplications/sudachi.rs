@@ -14,21 +14,16 @@
  * limitations under the License.
  */
 
-use std::path::PathBuf;
-
 use libloading::Error as LLError;
-use serde_json::Value;
 use thiserror::Error;
 
-use crate::config::{Config, ConfigError};
+use crate::config::{Config};
 use crate::dic::grammar::Grammar;
-use crate::plugin::connect_cost::{
-    EditConnectionCostPlugin
-};
+use crate::plugin::connect_cost::EditConnectionCostPlugin;
 use crate::plugin::input_text::InputTextPlugin;
 use crate::plugin::loader::{load_plugins_of, PluginContainer};
-use crate::plugin::oov::{OovProviderPlugin};
-use crate::plugin::path_rewrite::{get_path_rewrite_plugins, PathRewritePluginManager};
+use crate::plugin::oov::OovProviderPlugin;
+use crate::plugin::path_rewrite::PathRewritePlugin;
 use crate::prelude::*;
 
 pub use self::loader::PluginCategory;
@@ -64,33 +59,11 @@ impl From<LLError> for PluginError {
     }
 }
 
-/// Retrieves the path to the plugin shared object file from a plugin config
-pub fn get_plugin_path(plugin_config: &Value, config: &Config) -> SudachiResult<PathBuf> {
-    let obj = match plugin_config {
-        Value::Object(v) => v,
-        _ => {
-            return Err(SudachiError::ConfigError(ConfigError::InvalidFormat(
-                "plugin config must be an object".to_owned(),
-            )));
-        }
-    };
-    let lib = match obj.get("class") {
-        Some(Value::String(v)) => v,
-        _ => {
-            return Err(SudachiError::ConfigError(ConfigError::InvalidFormat(
-                "plugin config must have 'class' key to indicate plugin SO file".to_owned(),
-            )));
-        }
-    };
-    let lib_path = PathBuf::from(config.resolve_path(lib.clone()));
-    Ok(lib_path)
-}
-
 pub(crate) struct Plugins {
     pub(crate) connect_cost: PluginContainer<dyn EditConnectionCostPlugin>,
     pub(crate) input_text: PluginContainer<dyn InputTextPlugin>,
     pub(crate) oov: PluginContainer<dyn OovProviderPlugin>,
-    pub(crate) path_rewrite: PathRewritePluginManager,
+    pub(crate) path_rewrite: PluginContainer<dyn PathRewritePlugin>,
 }
 
 impl Plugins {
@@ -99,7 +72,7 @@ impl Plugins {
             connect_cost: load_plugins_of(cfg, grammar)?,
             input_text: load_plugins_of(cfg, grammar)?,
             oov: load_plugins_of(cfg, grammar)?,
-            path_rewrite: get_path_rewrite_plugins(cfg, grammar)?,
+            path_rewrite: load_plugins_of(cfg, grammar)?,
         };
         Ok(plugins)
     }

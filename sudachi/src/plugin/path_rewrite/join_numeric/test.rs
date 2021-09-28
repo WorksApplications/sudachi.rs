@@ -16,14 +16,10 @@
 
 use super::*;
 
-use std::path::PathBuf;
-
-use sudachi::dic::character_category::CharacterCategory;
-use sudachi::dic::grammar::Grammar;
-use sudachi::dic::lexicon::word_infos::WordInfo;
-use sudachi::input_text::Utf8InputTextBuilder;
-
-const TEST_RESOURCE_DIR_PATH: &str = "tests/resources/";
+use crate::dic::character_category::CharacterCategory;
+use crate::dic::grammar::Grammar;
+use crate::dic::lexicon::word_infos::WordInfo;
+use crate::input_text::Utf8InputTextBuilder;
 
 #[test]
 fn digit() {
@@ -442,10 +438,13 @@ fn build_plugin() -> JoinNumericPlugin {
         enable_normalize: true,
     }
 }
+
+const CHAR_DEF: &[u8] = include_bytes!("test_char.def");
+
 fn build_character_category() -> CharacterCategory {
-    let char_cat_file_path = PathBuf::from(TEST_RESOURCE_DIR_PATH.to_string() + "char.def");
-    CharacterCategory::from_file(&char_cat_file_path).expect("Failed to load character category")
+    CharacterCategory::from_reader(CHAR_DEF).expect("Failed to load character category")
 }
+
 fn build_mock_bytes() -> Vec<u8> {
     let mut buf = Vec::new();
     // set 0 for all of pos size, left and right id size
@@ -454,6 +453,7 @@ fn build_mock_bytes() -> Vec<u8> {
     buf.extend(&(0 as i16).to_le_bytes());
     buf
 }
+
 fn build_mock_grammar(bytes: &[u8]) -> Grammar {
     let mut grammar = Grammar::new(bytes, 0).expect("Failed to create grammar");
     let char_cat = build_character_category();

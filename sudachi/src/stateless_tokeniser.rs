@@ -36,7 +36,7 @@ pub trait DictionaryAccess {
     fn lexicon(&self) -> &LexiconSet<'_>;
     fn input_text_plugins(&self) -> &[Box<dyn InputTextPlugin + Sync + Send>];
     fn oov_provider_plugins(&self) -> &[Box<dyn OovProviderPlugin + Sync + Send>];
-    fn path_rewrite_plugins(&self) -> &[Box<dyn PathRewritePlugin + Sync>];
+    fn path_rewrite_plugins(&self) -> &[Box<dyn PathRewritePlugin + Sync + Send>];
 }
 
 /// Implementation of a Tokenizer which does not have tokenization state.

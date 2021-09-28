@@ -16,18 +16,14 @@
 
 use super::*;
 
-use std::path::PathBuf;
-
-use sudachi::dic::character_category::CharacterCategory;
-use sudachi::dic::grammar::Grammar;
-use sudachi::dic::lexicon::word_infos::WordInfo;
-use sudachi::input_text::Utf8InputTextBuilder;
-
-const TEST_RESOURCE_DIR_PATH: &str = "tests/resources/";
+use crate::dic::character_category::CharacterCategory;
+use crate::dic::grammar::Grammar;
+use crate::dic::lexicon::word_infos::WordInfo;
+use crate::input_text::Utf8InputTextBuilder;
 
 #[test]
 fn katakana_length() {
-    let mut plugin = JoinKarakanaOovPlugin::default();
+    let mut plugin = JoinKatakanaOovPlugin::default();
     let bytes = build_mock_bytes();
     let grammar = build_mock_grammar(&bytes);
     let builder = Utf8InputTextBuilder::new("アイアイウ", &grammar);
@@ -61,7 +57,7 @@ fn katakana_length() {
 
 #[test]
 fn part_of_speech() {
-    let mut plugin = JoinKarakanaOovPlugin::default();
+    let mut plugin = JoinKatakanaOovPlugin::default();
     let bytes = build_mock_bytes();
     let grammar = build_mock_grammar(&bytes);
     let builder = Utf8InputTextBuilder::new("アイアイウ", &grammar);
@@ -78,7 +74,7 @@ fn part_of_speech() {
 
 #[test]
 fn start_with_middle() {
-    let mut plugin = JoinKarakanaOovPlugin::default();
+    let mut plugin = JoinKatakanaOovPlugin::default();
     let bytes = build_mock_bytes();
     let grammar = build_mock_grammar(&bytes);
     let builder = Utf8InputTextBuilder::new("アイウアイアイウ", &grammar);
@@ -98,7 +94,7 @@ fn start_with_middle() {
 
 #[test]
 fn start_with_tail() {
-    let mut plugin = JoinKarakanaOovPlugin::default();
+    let mut plugin = JoinKatakanaOovPlugin::default();
     let bytes = build_mock_bytes();
     let grammar = build_mock_grammar(&bytes);
     let builder = Utf8InputTextBuilder::new("アイウアイウアイ", &grammar);
@@ -120,7 +116,7 @@ fn start_with_tail() {
 fn with_noovbow() {
     let bytes = build_mock_bytes();
     let grammar = build_mock_grammar(&bytes);
-    let mut plugin = JoinKarakanaOovPlugin::default();
+    let mut plugin = JoinKatakanaOovPlugin::default();
     plugin.min_length = 3;
 
     let builder = Utf8InputTextBuilder::new("ァアイアイウ", &grammar);
@@ -199,10 +195,12 @@ fn build_node_oov(start: usize, end: usize, cost: i32, surface: &str, length: u1
     node_ai
 }
 
+const CHAR_DEF: &[u8] = include_bytes!("test_char.def");
+
 fn build_character_category() -> CharacterCategory {
-    let char_cat_file_path = PathBuf::from(TEST_RESOURCE_DIR_PATH.to_string() + "char.def");
-    CharacterCategory::from_file(&char_cat_file_path).expect("Failed to load character category")
+    CharacterCategory::from_reader(CHAR_DEF).expect("Failed to load character category")
 }
+
 fn build_mock_bytes() -> Vec<u8> {
     let mut buf = Vec::new();
     // set 0 for all of pos size, left and right id size
@@ -211,6 +209,7 @@ fn build_mock_bytes() -> Vec<u8> {
     buf.extend(&(0 as i16).to_le_bytes());
     buf
 }
+
 fn build_mock_grammar(bytes: &[u8]) -> Grammar {
     let mut grammar = Grammar::new(bytes, 0).expect("Failed to create grammar");
     let char_cat = build_character_category();

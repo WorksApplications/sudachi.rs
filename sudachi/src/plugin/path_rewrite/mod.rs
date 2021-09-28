@@ -14,15 +14,19 @@
  * limitations under the License.
  */
 
-use libloading::{Library, Symbol};
+pub mod join_numeric;
+pub mod join_katakana_oov;
+
 use serde_json::Value;
-use std::path::Path;
 
 use crate::config::Config;
 use crate::dic::grammar::Grammar;
 use crate::dic::lexicon::word_infos::WordInfo;
 use crate::input_text::Utf8InputText;
 use crate::lattice::{node::Node, Lattice};
+use crate::plugin::path_rewrite::join_katakana_oov::JoinKatakanaOovPlugin;
+use crate::plugin::path_rewrite::join_numeric::JoinNumericPlugin;
+use crate::plugin::PluginCategory;
 use crate::prelude::*;
 
 /// Trait of plugin to rewrite the path from lattice
@@ -31,7 +35,7 @@ pub trait PathRewritePlugin: Sync + Send {
     fn set_up(&mut self, settings: &Value, config: &Config, grammar: &Grammar)
         -> SudachiResult<()>;
 
-    /// Returns a rewrited path
+    /// Returns a rewritten path
     fn rewrite(
         &self,
         text: &Utf8InputText,
@@ -39,7 +43,7 @@ pub trait PathRewritePlugin: Sync + Send {
         lattice: &Lattice,
     ) -> SudachiResult<Vec<Node>>;
 
-    /// Concatenate the nodes in the range and replace normalized_form if geven.
+    /// Concatenate the nodes in the range and replace normalized_form if given.
     fn concatenate(
         &self,
         mut path: Vec<Node>,
@@ -137,80 +141,27 @@ pub trait PathRewritePlugin: Sync + Send {
     }
 }
 
-/// Declare a plugin type and its constructor.
-///
-/// # Notes
-/// This works by automatically generating an `extern "C"` function with a
-/// pre-defined signature and symbol name. Therefore you will only be able to
-/// declare one plugin per library.
-#[macro_export]
-macro_rules! declare_path_rewrite_plugin {
-    ($plugin_type:ty, $constructor:path) => {
-        #[no_mangle]
-        pub fn load_plugin() -> *mut (dyn PathRewritePlugin + Sync) {
-            // make sure the constructor is the correct type.
-            let constructor: fn() -> $plugin_type = $constructor;
+impl PluginCategory for dyn PathRewritePlugin {
+    type BoxType = Box<dyn PathRewritePlugin + Sync + Send>;
+    type InitFnType = unsafe fn() -> SudachiResult<Self::BoxType>;
+    fn configurations(cfg: &Config) -> &[Value] {
+        &cfg.path_rewrite_plugins
+    }
 
-            let object = constructor();
-            let boxed: Box<dyn PathRewritePlugin + Sync> = Box::new(object);
-            Box::into_raw(boxed)
+    fn bundled_impl(name: &str) -> Option<Self::BoxType> {
+        match name {
+            "JoinNumericPlugin" => Some(Box::new(JoinNumericPlugin::default())),
+            "JoinKatakanaOovPlugin" => Some(Box::new(JoinKatakanaOovPlugin::default())),
+            _ => None,
         }
-    };
-}
+    }
 
-/// Plugin manager to handle multiple plugins
-#[derive(Default)]
-pub struct PathRewritePluginManager {
-    plugins: Vec<Box<dyn PathRewritePlugin + Sync>>,
-    libraries: Vec<Library>,
-}
-impl PathRewritePluginManager {
-    pub fn load(
-        &mut self,
-        path: &Path,
+    fn do_setup(
+        ptr: &mut Self::BoxType,
         settings: &Value,
         config: &Config,
         grammar: &Grammar,
     ) -> SudachiResult<()> {
-        type PluginCreate = unsafe fn() -> *mut (dyn PathRewritePlugin + Sync);
-
-        let lib = unsafe { Library::new(path) }?;
-        let load_plugin: Symbol<PluginCreate> = unsafe { lib.get(b"load_plugin") }?;
-        let mut plugin = unsafe { Box::from_raw(load_plugin()) };
-        plugin.set_up(settings, config, grammar)?;
-
-        self.plugins.push(plugin);
-        self.libraries.push(lib);
-        Ok(())
+        ptr.set_up(settings, config, grammar)
     }
-
-    pub fn plugins(&self) -> &[Box<dyn PathRewritePlugin + Sync>] {
-        &self.plugins
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.plugins.is_empty()
-    }
-}
-impl Drop for PathRewritePluginManager {
-    fn drop(&mut self) {
-        // Plugin drop must be called before Library drop.
-        self.plugins.clear();
-        self.libraries.clear();
-    }
-}
-
-/// Load plugins based on config data
-pub fn get_path_rewrite_plugins(
-    config: &Config,
-    grammar: &Grammar,
-) -> SudachiResult<PathRewritePluginManager> {
-    let mut manager = PathRewritePluginManager::default();
-
-    for plugin in &config.path_rewrite_plugins {
-        let lib = super::get_plugin_path(plugin, config)?;
-        manager.load(lib.as_path(), plugin, config, grammar)?;
-    }
-
-    Ok(manager)
 }
