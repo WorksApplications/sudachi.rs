@@ -23,6 +23,8 @@ unicode-normalization = "0.1.19"
 
 [dev-dependencies]
 tempfile = "3"
+
+# Plugins for tests
 default_input_text = { path = "../plugin/input_text/default_input_text" }
 simple_oov = { path = "../plugin/oov/simple_oov" }
 join_numeric = { path = "../plugin/path_rewrite/join_numeric" }

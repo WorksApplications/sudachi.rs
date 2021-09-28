@@ -27,7 +27,7 @@ use crate::plugin::connect_cost::{
 };
 use crate::plugin::input_text::InputTextPlugin;
 use crate::plugin::loader::{load_plugins_of, PluginContainer};
-use crate::plugin::oov::{get_oov_plugins, OovProviderPluginManager};
+use crate::plugin::oov::{OovProviderPlugin};
 use crate::plugin::path_rewrite::{get_path_rewrite_plugins, PathRewritePluginManager};
 use crate::prelude::*;
 
@@ -89,7 +89,7 @@ pub fn get_plugin_path(plugin_config: &Value, config: &Config) -> SudachiResult<
 pub(crate) struct Plugins {
     pub(crate) connect_cost: PluginContainer<dyn EditConnectionCostPlugin>,
     pub(crate) input_text: PluginContainer<dyn InputTextPlugin>,
-    pub(crate) oov: OovProviderPluginManager,
+    pub(crate) oov: PluginContainer<dyn OovProviderPlugin>,
     pub(crate) path_rewrite: PathRewritePluginManager,
 }
 
@@ -98,7 +98,7 @@ impl Plugins {
         let plugins = Plugins {
             connect_cost: load_plugins_of(cfg, grammar)?,
             input_text: load_plugins_of(cfg, grammar)?,
-            oov: get_oov_plugins(cfg, grammar)?,
+            oov: load_plugins_of(cfg, grammar)?,
             path_rewrite: get_path_rewrite_plugins(cfg, grammar)?,
         };
         Ok(plugins)

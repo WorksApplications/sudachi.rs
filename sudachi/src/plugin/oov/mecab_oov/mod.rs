@@ -21,24 +21,21 @@ use std::fs;
 use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
 
-use sudachi::config::Config;
-use sudachi::declare_oov_provider_plugin;
-use sudachi::dic::category_type::CategoryType;
-use sudachi::dic::character_category::Error as CharacterCategoryError;
-use sudachi::dic::grammar::Grammar;
-use sudachi::dic::lexicon::word_infos::WordInfo;
-use sudachi::input_text::Utf8InputText;
-use sudachi::lattice::node::Node;
-use sudachi::plugin::oov::OovProviderPlugin;
-use sudachi::prelude::*;
+use crate::config::Config;
+use crate::dic::category_type::CategoryType;
+use crate::dic::character_category::Error as CharacterCategoryError;
+use crate::dic::grammar::Grammar;
+use crate::dic::lexicon::word_infos::WordInfo;
+use crate::input_text::Utf8InputText;
+use crate::lattice::node::Node;
+use crate::plugin::oov::OovProviderPlugin;
+use crate::prelude::*;
 
 #[cfg(test)]
 mod tests;
 
 const DEFAULT_CHAR_DEF_FILE: &str = "char.def";
 const DEFAULT_UNK_DEF_FILE: &str = "unk.def";
-
-declare_oov_provider_plugin!(MeCabOovPlugin, MeCabOovPlugin::default);
 
 /// provides MeCab oov nodes
 #[derive(Default)]

@@ -166,16 +166,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "mecab_oov"
-version = "0.1.0"
-dependencies = [
- "serde",
- "serde_json",
- "sudachi",
- "tempfile",
-]
-
-[[package]]
 name = "memchr"
 version = "2.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -377,8 +367,6 @@ dependencies = [
 name = "simple_oov"
 version = "0.1.0"
 dependencies = [
- "serde",
- "serde_json",
  "sudachi",
 ]
 
@@ -440,8 +428,6 @@ dependencies = [
  "cfg-if",
  "join_katakana_oov",
  "join_numeric",
- "mecab_oov",
- "simple_oov",
  "structopt",
  "sudachi",
 ]

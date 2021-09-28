@@ -189,7 +189,7 @@ impl DictionaryAccess for JapaneseDictionary {
         self.plugins.input_text.plugins()
     }
 
-    fn oov_provider_plugins(&self) -> &[Box<dyn OovProviderPlugin + Sync>] {
+    fn oov_provider_plugins(&self) -> &[Box<dyn OovProviderPlugin + Sync + Send>] {
         self.plugins.oov.plugins()
     }
 
