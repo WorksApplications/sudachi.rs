@@ -32,7 +32,7 @@ pub mod simple_oov;
 pub trait OovProviderPlugin: Sync + Send {
     /// Loads necessary information for the plugin
     fn set_up(&mut self, settings: &Value, config: &Config, grammar: &Grammar)
-              -> SudachiResult<()>;
+        -> SudachiResult<()>;
 
     /// Generate a list of oov nodes
     fn provide_oov(

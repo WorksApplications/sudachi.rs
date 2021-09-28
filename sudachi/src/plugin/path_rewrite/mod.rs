@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-pub mod join_numeric;
 pub mod join_katakana_oov;
+pub mod join_numeric;
 
 use serde_json::Value;
 

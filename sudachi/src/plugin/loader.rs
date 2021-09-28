@@ -52,17 +52,17 @@ struct PluginLoader<'a, T: PluginCategory + ?Sized> {
     plugins: Vec<<T as PluginCategory>::BoxType>,
 }
 
-#[cfg(target_os="linux")]
+#[cfg(target_os = "linux")]
 fn make_system_specific_name(s: &str) -> String {
     format!("lib{}.so", s)
 }
 
-#[cfg(target_os="windows")]
+#[cfg(target_os = "windows")]
 fn make_system_specific_name(s: &str) -> String {
     format!("{}.dll", s)
 }
 
-#[cfg(target_os="macos")]
+#[cfg(target_os = "macos")]
 fn make_system_specific_name(s: &str) -> String {
     format!("lib{}.dylib", s)
 }
@@ -72,11 +72,14 @@ fn system_specific_name(s: &str) -> Option<String> {
         None
     } else {
         let p = std::path::Path::new(s);
-        let fname = p.file_name().and_then(|np| np.to_str()).map(|f| make_system_specific_name(f));
+        let fname = p
+            .file_name()
+            .and_then(|np| np.to_str())
+            .map(|f| make_system_specific_name(f));
         let parent = p.parent().and_then(|np| np.to_str());
         match (parent, fname) {
             (Some(p), Some(c)) => Some(format!("{}/{}", p, c)),
-            _ => None
+            _ => None,
         }
     }
 }

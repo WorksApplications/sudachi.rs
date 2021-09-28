@@ -17,7 +17,7 @@
 use libloading::Error as LLError;
 use thiserror::Error;
 
-use crate::config::{Config};
+use crate::config::Config;
 use crate::dic::grammar::Grammar;
 use crate::plugin::connect_cost::EditConnectionCostPlugin;
 use crate::plugin::input_text::InputTextPlugin;

@@ -15,8 +15,8 @@
  */
 
 use super::*;
-use std::io::{Seek, SeekFrom, Write};
 use crate::dic::category_type::CategoryTypes;
+use std::io::{Seek, SeekFrom, Write};
 use tempfile::tempfile;
 
 #[test]

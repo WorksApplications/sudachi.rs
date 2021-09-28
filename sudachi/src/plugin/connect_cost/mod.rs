@@ -45,11 +45,16 @@ impl PluginCategory for dyn EditConnectionCostPlugin {
     fn bundled_impl(name: &str) -> Option<Self::BoxType> {
         match name {
             "InhibitConnectionPlugin" => Some(Box::new(InhibitConnectionPlugin::default())),
-            _ => None
+            _ => None,
         }
     }
 
-    fn do_setup(ptr: &mut Self::BoxType, settings: &Value, config: &Config, grammar: &Grammar) -> SudachiResult<()> {
+    fn do_setup(
+        ptr: &mut Self::BoxType,
+        settings: &Value,
+        config: &Config,
+        grammar: &Grammar,
+    ) -> SudachiResult<()> {
         ptr.set_up(settings, config, grammar)
     }
 }

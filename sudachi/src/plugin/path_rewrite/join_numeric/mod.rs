@@ -22,13 +22,13 @@ use crate::config::Config;
 use crate::dic::category_type::CategoryType;
 use crate::dic::grammar::Grammar;
 use crate::input_text::Utf8InputText;
-use crate::lattice::{Lattice, node::Node};
+use crate::lattice::{node::Node, Lattice};
 use crate::plugin::path_rewrite::PathRewritePlugin;
 use crate::prelude::*;
 
+mod numeric_parser;
 #[cfg(test)]
 mod test;
-mod numeric_parser;
 
 /// Concatenates numeric nodes as one
 #[derive(Default)]
