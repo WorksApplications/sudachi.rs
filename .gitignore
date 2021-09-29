@@ -10,6 +10,7 @@ README*.html
 .vscode/
 
 # python binding
+python/dist
 .env
 *.egg-info
 *.so
