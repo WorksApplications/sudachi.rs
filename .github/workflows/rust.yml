@@ -15,7 +15,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-latest, windows-latest ] # add macOS-latest later
+        os: [ ubuntu-latest, windows-latest, macOS-latest ]
 
     runs-on: ${{ matrix.os }}
 
@@ -33,9 +33,5 @@ jobs:
           ~/.cargo/git/db/
           target/
         key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-    - name: Build release
-      run: cargo build --verbose --all --release
-    - name: Build debug
-      run: cargo build --verbose --all
-    - name: Run tests
+    - name: Run tests (Debug)
       run: cargo test --verbose
