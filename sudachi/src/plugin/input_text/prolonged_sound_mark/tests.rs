@@ -60,10 +60,6 @@ fn combined_continuous_prolonged_sound_marks_at_end() {
     let expected = b"\xe3\x82\xb9\xe3\x83\xbc\xe3\x83\x91\xe3\x83\xbc";
     assert_eq!(expected, text.modified.as_bytes());
 
-    for i in 0..text.modified.as_bytes().len() + 1 {
-        println!("{}, {}", i, text.get_original_index(i));
-    }
-
     assert_eq!(0, text.get_original_index(0));
     assert_eq!(3, text.get_original_index(3));
     assert_eq!(6, text.get_original_index(6));
@@ -86,10 +82,6 @@ fn combine_continuous_prolonged_sound_marks_multi_times() {
     assert_eq!(18, text.modified.as_bytes().len());
     let expected = b"\xe3\x82\xa8\xe3\x83\xbc\xe3\x83\x93\xe3\x83\xbc\xe3\x82\xb7\xe3\x83\xbc";
     assert_eq!(expected, text.modified.as_bytes());
-
-    for i in 0..text.modified.as_bytes().len() + 1 {
-        println!("{}, {}", i, text.get_original_index(i));
-    }
 
     assert_eq!(0, text.get_original_index(0));
     assert_eq!(3, text.get_original_index(3));
@@ -116,10 +108,6 @@ fn combine_continuous_prolonged_sound_marks_multi_symbol_types() {
     let expected = b"\xe3\x82\xa8\xe3\x83\xbc\xe3\x83\x93\xe3\x83\xbc\xe3\x82\xb7\xe3\x83\xbc";
     assert_eq!(expected, text.modified.as_bytes());
 
-    for i in 0..text.modified.as_bytes().len() + 1 {
-        println!("{}, {}", i, text.get_original_index(i));
-    }
-
     assert_eq!(0, text.get_original_index(0));
     assert_eq!(3, text.get_original_index(3));
     assert_eq!(9, text.get_original_index(6));
@@ -145,10 +133,6 @@ fn combine_continuous_prolonged_sound_marks_multi_mixed_symbol_types() {
     assert_eq!(18, text.modified.as_bytes().len());
     let expected = b"\xe3\x82\xa8\xe3\x83\xbc\xe3\x83\x93\xe3\x83\xbc\xe3\x82\xb7\xe3\x83\xbc";
     assert_eq!(expected, text.modified.as_bytes());
-
-    for i in 0..text.modified.as_bytes().len() + 1 {
-        println!("{}, {}", i, text.get_original_index(i));
-    }
 
     assert_eq!(0, text.get_original_index(0));
     assert_eq!(3, text.get_original_index(3));

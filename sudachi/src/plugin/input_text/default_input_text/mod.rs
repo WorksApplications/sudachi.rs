@@ -63,7 +63,7 @@ impl DefaultInputTextPlugin {
     ///         Plugin replaces the first by the second
     ///         Same target string cannot be defined multiple times
     ///     Empty or line starts with "#" will be ignored
-    fn read_rewrite_lists(&mut self, reader: BufReader<fs::File>) -> SudachiResult<()> {
+    fn read_rewrite_lists<T: BufRead>(&mut self, reader: T) -> SudachiResult<()> {
         let mut ignore_normalize_set = HashSet::new();
         let mut key_lengths = HashMap::new();
         let mut replace_char_map = HashMap::new();

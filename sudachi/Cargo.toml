@@ -23,6 +23,7 @@ unicode-normalization = "0.1.19"
 
 [dev-dependencies]
 tempfile = "3"
+claim = "0.5"
 
 # Plugins for tests
 default_input_text = { path = "../plugin/input_text/default_input_text" }
