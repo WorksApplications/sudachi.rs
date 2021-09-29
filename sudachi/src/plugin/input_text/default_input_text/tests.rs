@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-use super::*;
+use claim::assert_matches;
 use serde_json::{Map, Value};
-use std::io::{Seek, SeekFrom, Write};
-use tempfile::tempfile;
 
 use crate::config::Config;
 use crate::dic::grammar::Grammar;
 use crate::input_text::Utf8InputTextBuilder;
+
+use super::*;
 
 const TEST_RESOURCE_DIR: &str = "tests/resources/";
 const ORIGINAL_TEXT: &str = "ÂＢΓД㈱ｶﾞウ゛⼼Ⅲ";
@@ -79,49 +79,30 @@ fn after_rewrite() {
 }
 
 #[test]
-#[should_panic]
-fn invalid_format_ignorelist() {
-    let mut file = tempfile().expect("Failed to get temporary file");
-    writeln!(file, "# there are two characters in ignore list").unwrap();
-    writeln!(file, "12").unwrap();
-    file.flush().expect("Failed to flush");
-    file.seek(SeekFrom::Start(0)).expect("Failed to seek");
-
+fn ignore_list_two_chars() {
+    let data = "12";
     let mut plugin = DefaultInputTextPlugin::default();
-    plugin
-        .read_rewrite_lists(BufReader::new(file))
-        .expect("Failed to read rewrite lists");
+    let result = plugin.read_rewrite_lists(data.as_bytes());
+    assert_matches!(result, Err(SudachiError::InvalidDataFormat(0, _)))
 }
 
 #[test]
-#[should_panic]
-fn invalid_format_replacelist() {
-    let mut file = tempfile().expect("Failed to get temporary file");
-    writeln!(file, "# there are three columns in replace list").unwrap();
-    writeln!(file, "12 21 31").unwrap();
-    file.flush().expect("Failed to flush");
-    file.seek(SeekFrom::Start(0)).expect("Failed to seek");
-
+fn replace_list_three_entries() {
+    let data = "12 21 31";
     let mut plugin = DefaultInputTextPlugin::default();
-    plugin
-        .read_rewrite_lists(BufReader::new(file))
-        .expect("Failed to read rewrite lists");
+    let result = plugin.read_rewrite_lists(data.as_bytes());
+    assert_matches!(result, Err(SudachiError::InvalidDataFormat(0, _)))
 }
 
 #[test]
-#[should_panic]
-fn duplicated_lines_replacelist() {
-    let mut file = tempfile().expect("Failed to get temporary file");
-    writeln!(file, "# there are a duplicated replacement.").unwrap();
-    writeln!(file, "12 21").unwrap();
-    writeln!(file, "12 31").unwrap();
-    file.flush().expect("Failed to flush");
-    file.seek(SeekFrom::Start(0)).expect("Failed to seek");
+fn replace_list_duplicates() {
+    let data = "
+    12 31
+    12 31";
 
     let mut plugin = DefaultInputTextPlugin::default();
-    plugin
-        .read_rewrite_lists(BufReader::new(file))
-        .expect("Failed to read rewrite lists");
+    let result = plugin.read_rewrite_lists(data.as_bytes());
+    assert_matches!(result, Err(SudachiError::InvalidDataFormat(2, _)));
 }
 
 fn build_mock_bytes() -> Vec<u8> {

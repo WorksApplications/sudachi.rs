@@ -56,8 +56,8 @@ impl MeCabOovPlugin {
     /// Loads character category definition
     ///
     /// See resources/char.def for the syntax
-    fn read_character_property(
-        reader: BufReader<fs::File>,
+    fn read_character_property<T: BufRead>(
+        reader: T,
     ) -> SudachiResult<HashMap<CategoryType, CategoryInfo>> {
         let mut categories = HashMap::new();
         for (i, line) in reader.lines().enumerate() {
@@ -107,8 +107,8 @@ impl MeCabOovPlugin {
     /// Load OOV definition
     ///
     /// Each line contains: CategoryType, left_id, right_id, cost, and pos
-    fn read_oov(
-        reader: BufReader<fs::File>,
+    fn read_oov<T: BufRead>(
+        reader: T,
         categories: &HashMap<CategoryType, CategoryInfo>,
         grammar: &Grammar,
     ) -> SudachiResult<HashMap<CategoryType, Vec<OOV>>> {

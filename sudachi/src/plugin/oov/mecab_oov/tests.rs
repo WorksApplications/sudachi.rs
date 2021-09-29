@@ -14,10 +14,14 @@
  *  limitations under the License.
  */
 
-use super::*;
-use crate::dic::category_type::CategoryTypes;
 use std::io::{Seek, SeekFrom, Write};
+
+use claim::assert_matches;
 use tempfile::tempfile;
+
+use crate::dic::category_type::CategoryTypes;
+
+use super::*;
 
 #[test]
 fn provide_oov000() {
@@ -85,8 +89,6 @@ fn provide_oov010() {
     );
     let text = "あいうえお";
     let text = build_input_text(text, 0, 3, CategoryType::KANJI);
-
-    println!("{:?}", text);
 
     let nodes = plugin
         .provide_oov(&text, 0, false)
@@ -374,38 +376,35 @@ fn read_character_property() {
 }
 
 #[test]
-#[should_panic]
 fn read_character_property_with_too_few_columns() {
-    let mut file = tempfile().expect("Failed to get temporary file");
-    writeln!(file, "DEFAULT 0 1").unwrap();
-    file.flush().expect("Failed to flush");
-    file.seek(SeekFrom::Start(0)).expect("Failed to seek");
-    let _categories = MeCabOovPlugin::read_character_property(BufReader::new(file))
-        .expect("Failed to read tmp file");
+    let data = "DEFAULT 0 1";
+    let result = MeCabOovPlugin::read_character_property(data.as_bytes());
+    assert_matches!(
+        result,
+        Err(SudachiError::InvalidCharacterCategory(
+            CharacterCategoryError::InvalidFormat(0)
+        ))
+    );
 }
 
 #[test]
-#[should_panic]
 fn read_character_property_with_undefined_type() {
-    let mut file = tempfile().expect("Failed to get temporary file");
-    writeln!(file, "FOO 0 1 2").unwrap();
-    file.flush().expect("Failed to flush");
-    file.seek(SeekFrom::Start(0)).expect("Failed to seek");
-    let _categories = MeCabOovPlugin::read_character_property(BufReader::new(file))
-        .expect("Failed to read tmp file");
+    let data = "FOO 0 1 2";
+    let result = MeCabOovPlugin::read_character_property(data.as_bytes());
+    assert_matches!(result,
+        Err(SudachiError::InvalidCharacterCategory(
+            CharacterCategoryError::InvalidCategoryType(0, s))) if s == "FOO");
 }
 
 #[test]
-#[should_panic]
 fn read_character_property_duplicate_definitions() {
-    let mut file = tempfile().expect("Failed to get temporary file");
-    writeln!(file, "#\n").unwrap();
-    writeln!(file, "DEFAULT 0 1 2").unwrap();
-    writeln!(file, "DEFAULT 1 1 2").unwrap();
-    file.flush().expect("Failed to flush");
-    file.seek(SeekFrom::Start(0)).expect("Failed to seek");
-    let _categories = MeCabOovPlugin::read_character_property(BufReader::new(file))
-        .expect("Failed to read tmp file");
+    let data = "#
+    DEFAULT 0 1 2
+    DEFAULT 1 1 2";
+    let result = MeCabOovPlugin::read_character_property(data.as_bytes());
+    assert_matches!(result,
+        Err(SudachiError::InvalidCharacterCategory(
+            CharacterCategoryError::MultipleTypeDefinition(2, s))) if s == "DEFAULT");
 }
 
 #[test]
@@ -440,13 +439,7 @@ fn read_oov() {
 }
 
 #[test]
-#[should_panic]
 fn read_oov_with_too_few_columns() {
-    let mut file = tempfile().expect("Failed to get temporary file");
-    writeln!(file, "DEFAULT,1,2,3,補助記号,一般,*,*,*").unwrap();
-    file.flush().expect("Failed to flush");
-    file.seek(SeekFrom::Start(0)).expect("Failed to seek");
-
     let bytes = build_mock_bytes();
     let grammar = build_mock_grammar(&bytes);
     let mut categories = HashMap::new();
@@ -460,18 +453,13 @@ fn read_oov_with_too_few_columns() {
         },
     );
 
-    let _oov_list = MeCabOovPlugin::read_oov(BufReader::new(file), &categories, &grammar)
-        .expect("Failed to read tmp file");
+    let data = "DEFAULT,1,2,3,補助記号,一般,*,*,*";
+    let result = MeCabOovPlugin::read_oov(data.as_bytes(), &categories, &grammar);
+    assert_matches!(result, Err(SudachiError::InvalidDataFormat(0, s)) if s == data);
 }
 
 #[test]
-#[should_panic]
 fn read_oov_with_undefined_type() {
-    let mut file = tempfile().expect("Failed to get temporary file");
-    writeln!(file, "FOO,1,2,3,補助記号,一般,*,*,*,*").unwrap();
-    file.flush().expect("Failed to flush");
-    file.seek(SeekFrom::Start(0)).expect("Failed to seek");
-
     let bytes = build_mock_bytes();
     let grammar = build_mock_grammar(&bytes);
     let mut categories = HashMap::new();
@@ -485,18 +473,13 @@ fn read_oov_with_undefined_type() {
         },
     );
 
-    let _oov_list = MeCabOovPlugin::read_oov(BufReader::new(file), &categories, &grammar)
-        .expect("Failed to read tmp file");
+    let data = "FOO,1,2,3,補助記号,一般,*,*,*,*";
+    let result = MeCabOovPlugin::read_oov(data.as_bytes(), &categories, &grammar);
+    assert_matches!(result, Err(SudachiError::InvalidCharacterCategoryType(s)) if s == "FOO")
 }
 
 #[test]
-#[should_panic]
 fn read_oov_with_category_not_in_character_property() {
-    let mut file = tempfile().expect("Failed to get temporary file");
-    writeln!(file, "ALPHA,1,2,3,補助記号,一般,*,*,*,*").unwrap();
-    file.flush().expect("Failed to flush");
-    file.seek(SeekFrom::Start(0)).expect("Failed to seek");
-
     let bytes = build_mock_bytes();
     let grammar = build_mock_grammar(&bytes);
     let mut categories = HashMap::new();
@@ -510,8 +493,9 @@ fn read_oov_with_category_not_in_character_property() {
         },
     );
 
-    let _oov_list = MeCabOovPlugin::read_oov(BufReader::new(file), &categories, &grammar)
-        .expect("Failed to read tmp file");
+    let data = "ALPHA,1,2,3,補助記号,一般,*,*,*,*";
+    let result = MeCabOovPlugin::read_oov(data.as_bytes(), &categories, &grammar);
+    assert_matches!(result, Err(SudachiError::InvalidDataFormat(0, s)) if s.contains("ALPHA"))
 }
 
 fn build_plugin() -> MeCabOovPlugin {

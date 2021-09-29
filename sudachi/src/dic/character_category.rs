@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-use multiset::HashMultiSet;
 use std::cmp::{Ordering, Reverse};
 use std::collections::BinaryHeap;
 use std::fs;
@@ -22,6 +21,8 @@ use std::io::{BufRead, BufReader};
 use std::iter::FromIterator;
 use std::path::PathBuf;
 use std::u32;
+
+use multiset::HashMultiSet;
 use thiserror::Error;
 
 use crate::dic::category_type::{CategoryType, CategoryTypes};
@@ -272,10 +273,13 @@ impl CharacterCategory {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use std::char;
     use std::io::{Seek, SeekFrom, Write};
+
+    use claim::assert_matches;
     use tempfile::tempfile;
+
+    use super::*;
 
     const TEST_RESOURCE_DIR: &str = "./tests/resources/";
     const TEST_CHAR_DEF_FILE: &str = "char.def";
@@ -488,35 +492,33 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
     fn read_character_definition_with_invalid_format() {
-        let mut file = tempfile().expect("Failed to get temporary file");
-        writeln!(file, "0x0030..0x0039").unwrap();
-        file.flush().expect("Failed to flush");
-        file.seek(SeekFrom::Start(0)).expect("Failed to seek");
-        let _ranges = CharacterCategory::read_character_definition(BufReader::new(file))
-            .expect("Failed to read tmp char def file");
+        let data = "0x0030..0x0039";
+        let result = CharacterCategory::read_character_definition(data.as_bytes());
+        assert_matches!(
+            result,
+            Err(SudachiError::InvalidCharacterCategory(
+                Error::InvalidFormat(0)
+            ))
+        );
     }
 
     #[test]
-    #[should_panic]
     fn read_character_definition_with_invalid_range() {
-        let mut file = tempfile().expect("Failed to get temporary file");
-        writeln!(file, "0x0030..0x0029 NUMERIC").unwrap();
-        file.flush().expect("Failed to flush");
-        file.seek(SeekFrom::Start(0)).expect("Failed to seek");
-        let _ranges = CharacterCategory::read_character_definition(BufReader::new(file))
-            .expect("Failed to read tmp char def file");
+        let data = "0x0030..0x0029 NUMERIC";
+        let result = CharacterCategory::read_character_definition(data.as_bytes());
+        assert_matches!(
+            result,
+            Err(SudachiError::InvalidCharacterCategory(
+                Error::InvalidFormat(0)
+            ))
+        );
     }
 
     #[test]
-    #[should_panic]
     fn read_character_definition_with_invalid_type() {
-        let mut file = tempfile().expect("Failed to get temporary file");
-        writeln!(file, "0x0030..0x0039 FOO").unwrap();
-        file.flush().expect("Failed to flush");
-        file.seek(SeekFrom::Start(0)).expect("Failed to seek");
-        let _ranges = CharacterCategory::read_character_definition(BufReader::new(file))
-            .expect("Failed to read tmp char def file");
+        let data = "0x0030..0x0039 FOO";
+        let result = CharacterCategory::read_character_definition(data.as_bytes());
+        assert_matches!(result, Err(SudachiError::InvalidCharacterCategory(Error::InvalidCategoryType(0, s))) if s == "FOO");
     }
 }
