@@ -9,9 +9,11 @@ use sudachi::stateless_tokeniser::StatelessTokenizer;
 
 use crate::morpheme::PyMorpheme;
 
-/// This implementation is a workaround. Waiting for pyo3 enum feature.
+/// Unit to split text
+///
+/// This implementation is a workaround. Waiting for the pyo3 enum feature.
 /// ref: [PyO3 issue #834](https://github.com/PyO3/pyo3/issues/834).
-#[pyclass]
+#[pyclass(module = "sudachi.tokenizer", name = "SplitMode")]
 #[derive(Clone, PartialEq, Eq)]
 pub struct PySplitMode {
     mode: u8,
@@ -20,11 +22,13 @@ pub struct PySplitMode {
 #[pymethods]
 impl PySplitMode {
     #[classattr]
-    const A: Self = Self { mode: 0 };
+    pub const A: Self = Self { mode: 0 };
+
     #[classattr]
-    const B: Self = Self { mode: 1 };
+    pub const B: Self = Self { mode: 1 };
+
     #[classattr]
-    const C: Self = Self { mode: 2 };
+    pub const C: Self = Self { mode: 2 };
 }
 
 impl From<Mode> for PySplitMode {
@@ -59,21 +63,37 @@ impl std::str::FromStr for PySplitMode {
     }
 }
 
-#[pyclass]
+#[pyclass(module = "sudachi.tokenizer", name = "Tokenizer")]
 pub struct PyTokenizer {
     dictionary: Arc<JapaneseDictionary>,
     tokenizer: StatelessTokenizer<Arc<JapaneseDictionary>>,
     mode: Mode,
 }
 
+impl PyTokenizer {
+    pub fn new(
+        dictionary: Arc<JapaneseDictionary>,
+        tokenizer: StatelessTokenizer<Arc<JapaneseDictionary>>,
+        mode: Mode,
+    ) -> Self {
+        Self {
+            dictionary,
+            tokenizer,
+            mode,
+        }
+    }
+}
+
 #[pymethods]
 impl PyTokenizer {
-    // want to take logger instead of deug flag
+    /// Break text into morphemes
+    #[pyo3(text_signature = "($self, text, /, mode, enable_debug)")]
+    #[args(text, mode = "None", enable_debug = "None")]
     fn tokenize(
         &self,
         text: &str,
         mode: Option<PySplitMode>,
-        enable_debug: Option<bool>,
+        enable_debug: Option<bool>, // want to take logger instead of debug flag
     ) -> PyResult<Vec<PyMorpheme>> {
         let mode: Mode = match mode {
             Some(m) => m.into(),
