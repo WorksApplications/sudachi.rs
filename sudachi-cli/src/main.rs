@@ -24,6 +24,7 @@ use structopt::StructOpt;
 use sudachi::config::Config;
 use sudachi::dic::dictionary::JapaneseDictionary;
 use sudachi::prelude::*;
+use sudachi::sentence_splitter::{SentenceSplitter, SplitSentences};
 use sudachi::stateless_tokeniser::StatelessTokenizer;
 
 #[cfg(feature = "bake_dictionary")]
@@ -69,10 +70,14 @@ struct Cli {
     /// If None, it refer config and then baked dictionary
     #[structopt(short = "l", long = "dict")]
     dictionary_path: Option<PathBuf>,
+
+    /// Only split sentences, do not perform analysis
+    #[structopt(long = "only-split-sentences")]
+    only_split_sentences: bool,
 }
 
 fn main() {
-    let args = Cli::from_args();
+    let args: Cli = Cli::from_args();
 
     let mode = match args.mode.as_str().parse() {
         Ok(mode) => mode,
@@ -115,14 +120,22 @@ fn main() {
         .unwrap_or_else(|e| panic!("Failed to create dictionary: {:?}", e));
     let tokenizer = StatelessTokenizer::new(&dict);
 
+    let splitter = SentenceSplitter::with_limit(32 * 1024);
+
     // tokenize and output results
     for line in reader.lines() {
         let input = line.expect("Failed to read line");
-        for morpheme_list in tokenizer
-            .tokenize_sentences(&input, mode, enable_debug)
-            .expect("Failed to tokenize input")
-        {
-            write_sentence(&mut writer, morpheme_list, print_all, wakati)
+        for (_, sentence) in splitter.split(&input) {
+            if args.only_split_sentences {
+                writeln!(&mut writer, "{}", sentence)
+                    .expect("Failed to write output");
+                continue;
+            }
+
+            let morphemes = tokenizer.tokenize(sentence, mode, enable_debug)
+                .expect("Failed to tokenize input");
+
+            write_sentence(&mut writer, morphemes, print_all, wakati)
                 .expect("Failed to write output");
         }
     }
