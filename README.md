@@ -21,10 +21,10 @@ Please also have a look at an alternative by another person, [Yasu-umi/sudachicl
 ## TL;DR
 
 ```bash
-$ git clone https://github.com/WorksApplications/SudachiPy.git
+$ git clone https://github.com/WorksApplications/sudachi.rs.git
 $ cd ./sudachi.rs
 
-$ cargo build --release --all
+$ cargo build --release
 $ cargo install --path .
 $ ./fetch_dictionary.sh
 
@@ -105,15 +105,13 @@ $ ./fetch_dictionary.sh
 
 ### 3. Build
 
-#### Build (default)
-
-Use `--all` to also build default plugins.
-
 ```
-$ cargo build --release --all
+$ cargo build --release
 ```
 
 #### Build (bake dictionary into binary)
+
+**This was un-implemented and does not work currently**, see https://github.com/WorksApplications/sudachi.rs/issues/35
 
 Specify the `bake_dictionary` feature to embed a dictionary into the binary.
 The `sudachi` executable will **contain the dictionary binary**.

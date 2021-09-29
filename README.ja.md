@@ -16,10 +16,10 @@ sudachi.rs は日本語形態素解析器 [Sudachi](https://github.com/WorksAppl
 ## TL;DR
 
 ```bash
-$ git clone https://github.com/WorksApplications/SudachiPy.git
+$ git clone https://github.com/WorksApplications/sudachi.rs.git
 $ cd ./sudachi.rs
 
-$ cargo build --release --all
+$ cargo build --release
 $ cargo install --path .
 $ ./fetch_dictionary.sh
 
@@ -81,7 +81,7 @@ sudachi.rs本体に加え、デフォルトで使用するプラグイン、ま�
 ### 1. ソースコードの取得
 
 ```
-$ git clone https://github.com/WorksApplications/SudachiPy.git
+$ git clone https://github.com/WorksApplications/sudachi.rs.git
 ```
 
 ### 2. Sudachi辞書のダウンロード
@@ -104,10 +104,12 @@ $ ./fetch_dictionary.sh
 `--all` フラグを使って付属のプラグインもまとめてビルドすることができます。
 
 ```
-$ cargo build --release --all
+$ cargo build --release
 ```
 
 #### ビルド（辞書バイナリの埋め込み）
+
+**以下は現在未対応となっています**　https://github.com/WorksApplications/sudachi.rs/issues/35 をご参考ください。
 
 `bake_dictionary` フィーチャーフラグを立ててビルドすることで、辞書ファイルをバイナリに埋め込むことができます。
 これによってビルドされた実行ファイルは、**辞書バイナリを内包しています**。
