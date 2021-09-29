@@ -2,7 +2,6 @@
 members = [
     "sudachi",
     "sudachi-cli",
-    "plugin/connect_cost/*",
     "plugin/input_text/*",
     "plugin/oov/*",
     "plugin/path_rewrite/*",

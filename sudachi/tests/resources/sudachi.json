@@ -4,19 +4,19 @@
     "userDict" : [ "user.dic.test" ],
     "characterDefinitionFile" : "char.def",
     "inputTextPlugin" : [
-        { "class" : "../../../target/debug/libdefault_input_text.so" }
+        { "class" : "$exe/default_input_text" }
     ],
     "oovProviderPlugin" : [
-        { "class" : "../../../target/debug/libsimple_oov.so",
+        { "class" : "$exe/simple_oov",
           "oovPOS" : [ "名詞", "普通名詞", "一般", "*", "*", "*" ],
           "leftId" : 8,
           "rightId" : 8,
           "cost" : 6000 }
     ],
     "pathRewritePlugin" : [
-        { "class" : "../../../target/debug/libjoin_numeric.so",
+        { "class" : "$exe/join_numeric",
           "enableNormalize" : true },
-        { "class" : "../../../target/debug/libjoin_katakana_oov.so",
+        { "class" : "$exe/join_katakana_oov",
           "oovPOS" : [ "名詞", "普通名詞", "一般", "*", "*", "*" ],
           "minLength" : 3
         }

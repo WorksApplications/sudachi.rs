@@ -70,8 +70,12 @@ impl CharacterCategory {
     /// Creates a character category from file
     pub fn from_file(path: &PathBuf) -> SudachiResult<CharacterCategory> {
         let reader = BufReader::new(fs::File::open(path)?);
-        let ranges = CharacterCategory::read_character_definition(reader)?;
-        Ok(CharacterCategory::compile(ranges))
+        Self::from_reader(reader)
+    }
+
+    pub fn from_reader<T: BufRead>(data: T) -> SudachiResult<CharacterCategory> {
+        let ranges = Self::read_character_definition(data)?;
+        Ok(Self::compile(ranges))
     }
 
     /// Reads character type definition as a list of Ranges
@@ -87,7 +91,7 @@ impl CharacterCategory {
     /// Definition example:
     ///     "0x0030..0x0039 NUMERIC"
     ///     "0x3008         KANJI KANJINUMERIC"
-    fn read_character_definition(reader: BufReader<fs::File>) -> SudachiResult<Vec<Range>> {
+    fn read_character_definition<T: BufRead>(reader: T) -> SudachiResult<Vec<Range>> {
         let mut ranges: Vec<Range> = Vec::new();
         for (i, line) in reader.lines().enumerate() {
             let line = line?;

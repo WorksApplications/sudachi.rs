@@ -14,13 +14,6 @@ sudachi = { path = "../sudachi" }
 structopt = "0.3"
 cfg-if = "1.0.0"
 
-# plugins
-inhibit_connection = { path = "../plugin/connect_cost/inhibit_connection" }
-default_input_text = { path = "../plugin/input_text/default_input_text" }
-ignore_yomigana = { path = "../plugin/input_text/ignore_yomigana" }
-prolonged_sound_mark = { path = "../plugin/input_text/prolonged_sound_mark" }
-mecab_oov = { path = "../plugin/oov/mecab_oov" }
-simple_oov = { path = "../plugin/oov/simple_oov" }
 join_numeric = { path = "../plugin/path_rewrite/join_numeric" }
 join_katakana_oov = { path = "../plugin/path_rewrite/join_katakana_oov" }
 

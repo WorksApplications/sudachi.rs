@@ -18,7 +18,7 @@ use std::path::{Path, PathBuf};
 
 extern crate sudachi;
 use self::sudachi::dic::dictionary::JapaneseDictionary;
-use self::sudachi::stateless_tokeniser::{StatelessTokenizer};
+use self::sudachi::stateless_tokeniser::StatelessTokenizer;
 use std::fs;
 use std::fs::File;
 use std::io::Read;
@@ -79,6 +79,7 @@ pub struct TestTokenizer {
     tok: StatelessTokenizer<Arc<JapaneseDictionary>>,
 }
 
+#[allow(unused)]
 impl TestTokenizer {
     pub fn new() -> TestTokenizer {
         let dict = JapaneseDictionary::from_cfg(&TEST_CONFIG).expect("failed to make dictionary");
