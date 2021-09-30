@@ -31,6 +31,7 @@ pub mod plugin;
 pub mod sentence_detector;
 pub mod stateless_tokeniser;
 pub mod tokenizer;
+pub mod sentence_splitter;
 
 pub mod prelude {
     pub use crate::{
