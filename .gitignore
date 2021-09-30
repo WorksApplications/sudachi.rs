@@ -9,3 +9,8 @@ README*.html
 .idea/
 .vscode/
 
+# python binding
+python/dist
+.env
+*.egg-info
+*.so
