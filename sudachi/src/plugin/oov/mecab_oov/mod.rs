@@ -212,7 +212,7 @@ impl OovProviderPlugin for MeCabOovPlugin {
             return Ok(nodes);
         }
 
-        for ctype in input_text.get_char_category_types(offset) {
+        for ctype in input_text.get_char_category_types(offset).iter() {
             let cinfo = match self.categories.get(&ctype) {
                 Some(ci) => ci,
                 None => continue,

@@ -14,8 +14,8 @@
  *  limitations under the License.
  */
 
-use std::ops::Range;
 use crate::sentence_detector::SentenceDetector;
+use std::ops::Range;
 
 pub trait SplitSentences {
     fn split<'a, 'b>(&'b self, data: &'a str) -> SentenceIter<'a, 'b>;
@@ -24,7 +24,7 @@ pub trait SplitSentences {
 pub struct SentenceIter<'s, 'x> {
     splitter: &'x SentenceDetector,
     data: &'s str,
-    position: usize
+    position: usize,
 }
 
 impl<'s, 'x> Iterator for SentenceIter<'s, 'x> {
@@ -32,13 +32,15 @@ impl<'s, 'x> Iterator for SentenceIter<'s, 'x> {
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.position == self.data.len() {
-            return None
+            return None;
         }
         let slice = &self.data[self.position..];
         let rv = self.splitter.get_eos(slice, None).unwrap();
         let end = if rv < 0 {
             self.data.len()
-        } else { self.position + rv as usize };
+        } else {
+            self.position + rv as usize
+        };
 
         let range = self.position..end;
         let real_slice = &self.data[range.clone()];
@@ -48,16 +50,20 @@ impl<'s, 'x> Iterator for SentenceIter<'s, 'x> {
 }
 
 pub struct SentenceSplitter {
-    detector: SentenceDetector
+    detector: SentenceDetector,
 }
 
 impl SentenceSplitter {
     pub fn new() -> SentenceSplitter {
-        SentenceSplitter { detector: SentenceDetector::new() }
+        SentenceSplitter {
+            detector: SentenceDetector::new(),
+        }
     }
 
     pub fn with_limit(limit: usize) -> SentenceSplitter {
-        SentenceSplitter { detector: SentenceDetector::with_limit(limit) }
+        SentenceSplitter {
+            detector: SentenceDetector::with_limit(limit),
+        }
     }
 }
 
@@ -66,7 +72,7 @@ impl SplitSentences for SentenceSplitter {
         SentenceIter {
             data: data,
             position: 0,
-            splitter: &self.detector
+            splitter: &self.detector,
         }
     }
 }
@@ -88,8 +94,14 @@ mod tests {
     fn split_longer_sentence() {
         let splitter = SentenceSplitter::new();
         let mut iter = splitter.split("　振り返って見ると白い物！　女が軒下で招いている。");
-        assert_eq!(iter.next(), Some((0..39, "\u{3000}振り返って見ると白い物！")));
-        assert_eq!(iter.next(), Some((39..75, "\u{3000}女が軒下で招いている。")));
+        assert_eq!(
+            iter.next(),
+            Some((0..39, "\u{3000}振り返って見ると白い物！"))
+        );
+        assert_eq!(
+            iter.next(),
+            Some((39..75, "\u{3000}女が軒下で招いている。"))
+        );
         assert_eq!(iter.next(), None)
     }
 }

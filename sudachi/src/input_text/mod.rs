@@ -96,46 +96,46 @@ mod tests {
         let input = builder.build();
         assert!(input
             .get_char_category_types(0)
-            .contains(&CategoryType::ALPHA));
+            .contains(CategoryType::ALPHA));
         assert!(input
             .get_char_category_types(2)
-            .contains(&CategoryType::ALPHA));
+            .contains(CategoryType::ALPHA));
         assert!(input
             .get_char_category_types(5)
-            .contains(&CategoryType::ALPHA));
+            .contains(CategoryType::ALPHA));
         assert!(input
             .get_char_category_types(6)
-            .contains(&CategoryType::NUMERIC));
+            .contains(CategoryType::NUMERIC));
         assert!(input
             .get_char_category_types(7)
-            .contains(&CategoryType::HIRAGANA));
+            .contains(CategoryType::HIRAGANA));
         assert!(input
             .get_char_category_types(9)
-            .contains(&CategoryType::HIRAGANA));
+            .contains(CategoryType::HIRAGANA));
         assert!(input
             .get_char_category_types(10)
-            .contains(&CategoryType::NUMERIC));
+            .contains(CategoryType::NUMERIC));
         assert!(input
             .get_char_category_types(13)
-            .contains(&CategoryType::KANJI));
+            .contains(CategoryType::KANJI));
         assert!(input
             .get_char_category_types(18)
-            .contains(&CategoryType::KANJI));
+            .contains(CategoryType::KANJI));
         assert!(input
             .get_char_category_types(19)
-            .contains(&CategoryType::DEFAULT));
+            .contains(CategoryType::DEFAULT));
         assert!(input
             .get_char_category_types(22)
-            .contains(&CategoryType::DEFAULT));
+            .contains(CategoryType::DEFAULT));
         assert!(input
             .get_char_category_types(23)
-            .contains(&CategoryType::KATAKANA));
+            .contains(CategoryType::KATAKANA));
         assert!(input
             .get_char_category_types(26)
-            .contains(&CategoryType::KATAKANA));
+            .contains(CategoryType::KATAKANA));
         assert!(input
             .get_char_category_types(31)
-            .contains(&CategoryType::KATAKANA));
+            .contains(CategoryType::KATAKANA));
     }
 
     #[test]

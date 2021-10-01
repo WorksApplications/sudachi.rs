@@ -17,7 +17,7 @@
 use std::ops::Range;
 
 use super::utf8_input_text::Utf8InputText;
-use crate::dic::category_type::{CategoryType, CategoryTypes};
+use crate::dic::category_type::CategoryType;
 use crate::dic::grammar::Grammar;
 
 /// Builder of Uuf8InputText
@@ -131,7 +131,7 @@ impl Utf8InputTextBuilder<'_, '_> {
     }
 
     /// Builds category types list
-    fn build_char_category_types(&self) -> Vec<CategoryTypes> {
+    fn build_char_category_types(&self) -> Vec<CategoryType> {
         self.modified
             .chars()
             .map(|c| self.grammar.character_category.get_category_types(c))
@@ -139,7 +139,7 @@ impl Utf8InputTextBuilder<'_, '_> {
     }
 
     /// Builds can_bow list
-    fn build_can_bow_list(&self, char_category_types: &Vec<CategoryTypes>) -> Vec<bool> {
+    fn build_can_bow_list(&self, char_category_types: &Vec<CategoryType>) -> Vec<bool> {
         if self.modified.is_empty() {
             return vec![];
         }
@@ -152,13 +152,11 @@ impl Utf8InputTextBuilder<'_, '_> {
 
             // in rust, char corresponds to unicode scalar value
             // and we do not need to check surrogate
-
-            if cat.contains(&CategoryType::ALPHA)
-                || cat.contains(&CategoryType::GREEK)
-                || cat.contains(&CategoryType::CYRILLIC)
-            {
+            let non_starting = CategoryType::ALPHA | CategoryType::GREEK | CategoryType::CYRILLIC;
+            if cat.intersects(non_starting) {
                 // can bow if previous charactar does not have same category type
-                can_bow_list[i] = cat.intersection(&char_category_types[i - 1]).count() == 0;
+                let prev_cat = char_category_types[i - 1];
+                can_bow_list[i] = cat.intersection(prev_cat).is_empty();
             }
         }
 
@@ -167,15 +165,12 @@ impl Utf8InputTextBuilder<'_, '_> {
 
     /// Returns char_length of same category type from given offset
     fn get_char_category_continuous_length(
-        char_category_types: &Vec<CategoryTypes>,
+        char_category_types: &Vec<CategoryType>,
         c_offset: usize,
     ) -> usize {
-        let mut continuous_cat = char_category_types[c_offset].clone();
+        let mut continuous_cat = char_category_types[c_offset];
         for length in 1..char_category_types.len() - c_offset {
-            continuous_cat = continuous_cat
-                .intersection(&char_category_types[c_offset + length])
-                .map(|v| *v)
-                .collect();
+            continuous_cat = continuous_cat.intersection(char_category_types[c_offset + length]);
             if continuous_cat.is_empty() {
                 return length;
             }
@@ -188,7 +183,7 @@ impl Utf8InputTextBuilder<'_, '_> {
     /// It contains byte_length to where category type continuity ends
     fn build_char_category_continuities(
         &self,
-        char_category_types: &Vec<CategoryTypes>,
+        char_category_types: &Vec<CategoryType>,
     ) -> Vec<usize> {
         if self.modified.is_empty() {
             return vec![];

@@ -197,7 +197,7 @@ fn build_lattice<'a, 'b, T: DictionaryAccess + ?Sized>(
         // OOV
         if !input
             .get_char_category_types(i)
-            .contains(&CategoryType::NOOOVBOW)
+            .contains(CategoryType::NOOOVBOW)
         {
             for oov_provider in dict.oov_provider_plugins() {
                 for node in oov_provider.get_oov(&input, i, has_word)? {
