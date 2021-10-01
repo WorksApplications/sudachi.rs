@@ -48,7 +48,18 @@ struct Range {
 /// CharacterCategory holds mapping from character to character category type
 #[derive(Debug, Clone)]
 pub struct CharacterCategory {
+    /// Split the whole domain of codepoints into ranges,
+    /// limited by boundaries.
+    ///
+    /// Ranges are half-open: `[boundaries[i], boundaries[i + 1])`
+    /// meaning that right bound is not included.
+    /// 0 and u32::MAX are not stored, they are included implicitly
+    /// as if they would have indices of `-1` and `boundaries.len()`.
     boundaries: Vec<u32>,
+
+    /// Stores the category for each range.
+    /// `categories[i]` is for the range `[boundaries[i - 1], boundaries[i])`.
+    /// Plays well with [`std::slice::binary_search`], see [`get_category_types()`].
     categories: Vec<CategoryType>,
 }
 
@@ -225,7 +236,9 @@ impl CharacterCategory {
         }
         let cint = c as u32;
         match self.boundaries.binary_search(&cint) {
+            //Ok means the index in boundaries, so the next category
             Ok(idx) => self.categories[idx + 1],
+            //Err means the insertion index, so the current category
             Err(idx) => self.categories[idx],
         }
     }
