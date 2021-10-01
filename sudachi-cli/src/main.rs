@@ -127,12 +127,12 @@ fn main() {
         let input = line.expect("Failed to read line");
         for (_, sentence) in splitter.split(&input) {
             if args.only_split_sentences {
-                writeln!(&mut writer, "{}", sentence)
-                    .expect("Failed to write output");
+                writeln!(&mut writer, "{}", sentence).expect("Failed to write output");
                 continue;
             }
 
-            let morphemes = tokenizer.tokenize(sentence, mode, enable_debug)
+            let morphemes = tokenizer
+                .tokenize(sentence, mode, enable_debug)
                 .expect("Failed to tokenize input");
 
             write_sentence(&mut writer, morphemes, print_all, wakati)
