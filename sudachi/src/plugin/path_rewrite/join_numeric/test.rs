@@ -22,7 +22,7 @@ use crate::dic::lexicon::word_infos::WordInfo;
 use crate::input_text::Utf8InputTextBuilder;
 
 #[test]
-fn digit() {
+fn digit_1() {
     let plugin = build_plugin();
     let bytes = build_mock_bytes();
     let grammar = build_mock_grammar(&bytes);
@@ -44,6 +44,13 @@ fn digit() {
     assert_eq!(4, path.len());
     assert_eq!("123", path[0].word_info.as_ref().unwrap().surface);
     assert_eq!("20", path[2].word_info.as_ref().unwrap().surface);
+}
+
+#[test]
+fn digit_2() {
+    let plugin = build_plugin();
+    let bytes = build_mock_bytes();
+    let grammar = build_mock_grammar(&bytes);
 
     let builder = Utf8InputTextBuilder::new("080-121", &grammar);
     let text = builder.build();

@@ -110,7 +110,6 @@ impl PathRewritePlugin for JoinNumericPlugin {
         let mut comma_as_digit = true;
         let mut period_as_digit = true;
         let mut parser = NumericParser::new();
-
         let mut i = -1;
         while i < path.len() as i32 - 1 {
             i += 1;
@@ -122,8 +121,7 @@ impl PathRewritePlugin for JoinNumericPlugin {
                 .ok_or(SudachiError::MissingWordInfo)?
                 .normalized_form
                 .clone();
-            if ctypes.contains(&CategoryType::NUMERIC)
-                || ctypes.contains(&CategoryType::KANJINUMERIC)
+            if ctypes.intersects(CategoryType::NUMERIC | CategoryType::KANJINUMERIC)
                 || (comma_as_digit && s == ",")
                 || (period_as_digit && s == ".")
             {

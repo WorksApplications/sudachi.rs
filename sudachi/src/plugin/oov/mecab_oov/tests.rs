@@ -19,8 +19,6 @@ use std::io::{Seek, SeekFrom, Write};
 use claim::assert_matches;
 use tempfile::tempfile;
 
-use crate::dic::category_type::CategoryTypes;
-
 use super::*;
 
 #[test]
@@ -530,7 +528,7 @@ fn build_input_text<'a>(
     // assume text = "あいうえお"
     let offsets = vec![0, 0, 0, 3, 3, 3, 6, 6, 6, 9, 9, 9, 12, 12, 12, 15];
     let byte_indexes = vec![0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 5];
-    let mut char_category_types = vec![CategoryTypes::default(); 5];
+    let mut char_category_types = vec![CategoryType::default(); 5];
     for i in begin..end {
         char_category_types[i].insert(ctype);
     }

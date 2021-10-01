@@ -14,18 +14,14 @@
  * limitations under the License.
  */
 
-use std::cmp::{Ordering, Reverse};
-use std::collections::BinaryHeap;
+use std::collections::BTreeSet;
 use std::fs;
 use std::io::{BufRead, BufReader};
-use std::iter::FromIterator;
 use std::path::PathBuf;
-use std::u32;
 
-use multiset::HashMultiSet;
 use thiserror::Error;
 
-use crate::dic::category_type::{CategoryType, CategoryTypes};
+use crate::dic::category_type::CategoryType;
 use crate::prelude::*;
 
 /// Sudachi error
@@ -46,25 +42,23 @@ pub enum Error {
 struct Range {
     begin: u32,
     end: u32,
-    categories: CategoryTypes,
-}
-
-impl Range {
-    fn contains(&self, cp: u32) -> bool {
-        self.begin <= cp && cp < self.end
-    }
-    fn lower(&self, cp: u32) -> bool {
-        self.end <= cp
-    }
-    fn _higher(&self, cp: u32) -> bool {
-        cp < self.begin
-    }
+    categories: CategoryType,
 }
 
 /// CharacterCategory holds mapping from character to character category type
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Clone)]
 pub struct CharacterCategory {
-    ranges: Vec<Range>,
+    boundaries: Vec<u32>,
+    categories: Vec<CategoryType>,
+}
+
+impl Default for CharacterCategory {
+    fn default() -> Self {
+        CharacterCategory {
+            boundaries: Vec::new(),
+            categories: vec![CategoryType::DEFAULT],
+        }
+    }
 }
 
 impl CharacterCategory {
@@ -76,7 +70,7 @@ impl CharacterCategory {
 
     pub fn from_reader<T: BufRead>(data: T) -> SudachiResult<CharacterCategory> {
         let ranges = Self::read_character_definition(data)?;
-        Ok(Self::compile(ranges))
+        Ok(Self::compile(&ranges))
     }
 
     /// Reads character type definition as a list of Ranges
@@ -97,10 +91,7 @@ impl CharacterCategory {
         for (i, line) in reader.lines().enumerate() {
             let line = line?;
             let line = line.trim();
-            if line.is_empty()
-                || line.chars().next().unwrap() == '#'
-                || line.chars().take(2).collect::<Vec<_>>() != vec!['0', 'x']
-            {
+            if line.is_empty() || line.starts_with('#') || !line.starts_with("0x") {
                 continue;
             }
 
@@ -124,7 +115,7 @@ impl CharacterCategory {
                 ));
             }
 
-            let mut categories = CategoryTypes::new();
+            let mut categories = CategoryType::empty();
             for elem in cols[1..]
                 .iter()
                 .take_while(|elem| elem.chars().next().unwrap() != '#')
@@ -153,342 +144,255 @@ impl CharacterCategory {
     ///
     /// Transforms given range_list to non overlapped range list
     /// to apply binary search in get_category_types
-    fn compile(mut ranges: Vec<Range>) -> CharacterCategory {
+    fn compile(ranges: &Vec<Range>) -> CharacterCategory {
         if ranges.is_empty() {
-            return CharacterCategory { ranges: Vec::new() };
+            return CharacterCategory::default();
         }
 
-        // implement order for Heap
-        // note that here we use min-heap, based on the end of range
-        impl Ord for Range {
-            fn cmp(&self, other: &Self) -> Ordering {
-                other.end.cmp(&self.end)
-            }
-        }
-        impl PartialOrd for Range {
-            fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-                Some(self.cmp(other))
-            }
-        }
+        let boundaries = Self::collect_boundaries(ranges);
+        let mut categories = vec![CategoryType::empty(); boundaries.len()];
 
-        // sort in the descending order to pop from the minimum value
-        ranges.sort_by_key(|a| Reverse(a.begin));
-        let mut non_overlap_ranges = vec![];
-        let mut left_chain: BinaryHeap<Range> = BinaryHeap::new();
-        let mut category_state: HashMultiSet<CategoryType> = HashMultiSet::new();
-        let mut pivot = 0;
-        loop {
-            let left = match left_chain.pop() {
-                None => {
-                    let right = match ranges.pop() {
-                        Some(v) => v,
-                        None => break,
-                    };
-                    pivot = right.begin;
-                    category_state = right.categories.iter().map(|v| *v).collect();
-                    left_chain.push(right);
-                    continue;
+        for range in ranges {
+            let start_idx = match boundaries.binary_search(&range.begin) {
+                Ok(i) => i + 1,
+                Err(_) => panic!("there can not be not found boundaries"),
+            };
+            // apply category to all splits which are included in the current range
+            for i in start_idx..boundaries.len() {
+                if boundaries[i] > range.end {
+                    break;
                 }
-                Some(v) => v,
-            };
-            let right = match ranges.last() {
-                None => Range {
-                    begin: u32::MAX,
-                    end: 0,
-                    categories: CategoryTypes::new(),
-                },
-                Some(v) => v.clone(),
-            };
-            if left.end <= right.begin {
-                non_overlap_ranges.push(Range {
-                    begin: pivot,
-                    end: left.end,
-                    categories: category_state.distinct_elements().map(|v| *v).collect(),
-                });
-                pivot = left.end;
-                category_state = category_state - left.categories.iter().map(|v| *v).collect();
-            } else {
-                non_overlap_ranges.push(Range {
-                    begin: pivot,
-                    end: right.begin,
-                    categories: category_state.distinct_elements().map(|v| *v).collect(),
-                });
-                pivot = right.begin;
-                category_state = category_state + right.categories.iter().map(|v| *v).collect();
-
-                left_chain.push(right);
-                left_chain.push(left);
-                ranges.pop();
+                categories[i] |= range.categories;
             }
         }
 
-        // merge adjacent ranges with same categories
-        let mut new_ranges = vec![];
-        let mut left = non_overlap_ranges[0].clone();
-        for right in non_overlap_ranges.iter().skip(1) {
-            if left.end == right.begin && left.categories == right.categories {
-                left.end = right.end;
-            } else {
-                new_ranges.push(left);
-                left = right.clone();
+        // first category is always default (it is impossible to get it assigned above)
+        debug_assert_eq!(categories[0], CategoryType::empty());
+        categories[0] = CategoryType::DEFAULT;
+        // merge successive ranges of the same category
+        let mut final_boundaries = Vec::with_capacity(boundaries.len());
+        let mut final_categories = Vec::with_capacity(categories.len());
+
+        let mut last_category = categories[0];
+        let mut last_boundary = boundaries[0];
+        for i in 1..categories.len() {
+            if categories[i] == last_category {
+                last_boundary = boundaries[i];
+                continue;
+            }
+            final_boundaries.push(last_boundary);
+            final_categories.push(last_category);
+            last_category = categories[i];
+            last_boundary = boundaries[i];
+        }
+
+        final_categories.push(last_category);
+        final_boundaries.push(last_boundary);
+
+        // replace empty categories with default
+        for cat in final_categories.iter_mut() {
+            if cat.is_empty() {
+                *cat = CategoryType::DEFAULT;
             }
         }
-        new_ranges.push(left);
 
-        CharacterCategory { ranges: new_ranges }
+        // and add the category after the last boundary
+        final_categories.push(CategoryType::DEFAULT);
+
+        final_boundaries.shrink_to_fit();
+        final_categories.shrink_to_fit();
+
+        CharacterCategory {
+            boundaries: final_boundaries,
+            categories: final_categories,
+        }
+    }
+
+    /// Find sorted list of all boundaries
+    fn collect_boundaries(data: &Vec<Range>) -> Vec<u32> {
+        let mut boundaries = BTreeSet::new();
+        for i in data {
+            boundaries.insert(i.begin);
+            boundaries.insert(i.end);
+        }
+        boundaries.into_iter().collect()
     }
 
     /// Returns a set of category types which given char has
-    pub fn get_category_types(&self, c: char) -> CategoryTypes {
-        if self.ranges.is_empty() {
-            return FromIterator::from_iter([CategoryType::DEFAULT]);
+    pub fn get_category_types(&self, c: char) -> CategoryType {
+        if self.boundaries.is_empty() {
+            return CategoryType::DEFAULT;
         }
-
-        let code_point = c as u32;
-
-        // binary search
-        let mut begin = 0;
-        let mut end = self.ranges.len();
-        let mut pivot = (begin + end) / 2;
-        loop {
-            let range = self.ranges.get(pivot).unwrap();
-            if range.contains(code_point) {
-                return range.categories.clone();
-            }
-            if range.lower(code_point) {
-                begin = pivot;
-            } else {
-                end = pivot;
-            }
-            let new_pivot = (begin + end) / 2;
-            if new_pivot == pivot {
-                break;
-            }
-            pivot = new_pivot;
+        let cint = c as u32;
+        match self.boundaries.binary_search(&cint) {
+            Ok(idx) => self.categories[idx + 1],
+            Err(idx) => self.categories[idx],
         }
-
-        FromIterator::from_iter([CategoryType::DEFAULT])
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use std::char;
-    use std::io::{Seek, SeekFrom, Write};
-
-    use claim::assert_matches;
-    use tempfile::tempfile;
-
     use super::*;
+    use claim::assert_matches;
 
     const TEST_RESOURCE_DIR: &str = "./tests/resources/";
     const TEST_CHAR_DEF_FILE: &str = "char.def";
-
-    impl Range {
-        pub fn containing_length(&self, text: &str) -> usize {
-            for (i, c) in text.chars().enumerate() {
-                let code_point = c as u32;
-                if code_point < self.begin || self.end < code_point {
-                    return i;
-                }
-            }
-            text.chars().count()
-        }
-    }
-
-    #[test]
-    fn range_containing_length() {
-        let range = Range {
-            begin: 0x41u32,
-            end: 0x54u32,
-            categories: CategoryTypes::default(),
-        };
-        assert_eq!(3, range.containing_length("ABC12"));
-        assert_eq!(0, range.containing_length("熙"));
-    }
 
     #[test]
     fn get_category_types() {
         let path = PathBuf::from(TEST_RESOURCE_DIR).join(TEST_CHAR_DEF_FILE);
         let cat = CharacterCategory::from_file(&path).expect("failed to load char.def for test");
         let cats = cat.get_category_types('熙');
-        assert_eq!(1, cats.len());
-        assert!(cats.contains(&CategoryType::KANJI));
+        assert_eq!(1, cats.count());
+        assert!(cats.contains(CategoryType::KANJI));
+    }
+
+    fn read_categories(data: &str) -> CharacterCategory {
+        let ranges = CharacterCategory::read_character_definition(data.as_bytes())
+            .expect("error when parsing character categories");
+        CharacterCategory::compile(&ranges)
+    }
+
+    type CT = CategoryType;
+
+    #[test]
+    fn read_cdef_1() {
+        let cat = read_categories(
+            "
+            0x0030..0x0039 NUMERIC
+            0x0032         KANJI",
+        );
+        assert_eq!(cat.get_category_types('\u{0030}'), CT::NUMERIC);
+        assert_eq!(cat.get_category_types('\u{0031}'), CT::NUMERIC);
+        assert_eq!(cat.get_category_types('\u{0032}'), CT::NUMERIC | CT::KANJI);
+        assert_eq!(cat.get_category_types('\u{0033}'), CT::NUMERIC);
+        assert_eq!(cat.get_category_types('\u{0039}'), CT::NUMERIC);
     }
 
     #[test]
-    fn read_character_definition() {
-        let cats_default = [CategoryType::DEFAULT];
-        let cats_num = [CategoryType::NUMERIC];
-        let cats_alp = [CategoryType::ALPHA];
-        let cats_kanji = [CategoryType::KANJI];
-        let cats_kanji_num = [CategoryType::KANJI, CategoryType::NUMERIC];
-        let cats_kanjinumeric = [CategoryType::KANJI, CategoryType::KANJINUMERIC];
-        let cats_num_kanji_kana = [
-            CategoryType::NUMERIC,
-            CategoryType::KANJI,
-            CategoryType::KATAKANA,
-        ];
-        let cats_num_alpha_kana = [
-            CategoryType::NUMERIC,
-            CategoryType::ALPHA,
-            CategoryType::KATAKANA,
-        ];
+    fn read_cdef_2() {
+        let cat = read_categories(
+            "
+            0x0030..0x0039 NUMERIC
+            0x0070..0x0079 ALPHA
+            0x3007         KANJI
+            0x0030         KANJI",
+        );
+        assert_eq!(cat.get_category_types('\u{0030}'), CT::NUMERIC | CT::KANJI);
+        assert_eq!(cat.get_category_types('\u{0039}'), CT::NUMERIC);
+        assert_eq!(cat.get_category_types('\u{3007}'), CT::KANJI);
+        assert_eq!(cat.get_category_types('\u{0069}'), CT::DEFAULT);
+        assert_eq!(cat.get_category_types('\u{0070}'), CT::ALPHA);
+        assert_eq!(cat.get_category_types('\u{0080}'), CT::DEFAULT);
+    }
 
-        // 1.
-        let mut file = tempfile().expect("Failed to get temporary file");
-        writeln!(file, "#\n").unwrap();
-        writeln!(file, "0x0030..0x0039 NUMERIC").unwrap();
-        writeln!(file, "0x0032         KANJI").unwrap();
-        file.flush().expect("Failed to flush");
-        file.seek(SeekFrom::Start(0)).expect("Failed to seek");
-        let ranges = CharacterCategory::read_character_definition(BufReader::new(file))
-            .expect("Failed to read tmp char def file");
-        let cat = CharacterCategory::compile(ranges);
+    #[test]
+    fn read_cdef_3() {
+        let cat = read_categories(
+            "
+            0x0030..0x0039 KATAKANA
+            0x3007         KANJI KANJINUMERIC
+            0x3008         KANJI KANJINUMERIC
+            0x3009         KANJI KANJINUMERIC
+            0x0039..0x0040 ALPHA
+            0x0030..0x0039 NUMERIC
+            0x0030         KANJI",
+        );
+        assert_eq!(cat.get_category_types('\u{0029}'), CT::DEFAULT);
+        assert_eq!(
+            cat.get_category_types('\u{0030}'),
+            CT::NUMERIC | CT::KATAKANA | CT::KANJI
+        );
+        assert_eq!(
+            cat.get_category_types('\u{0039}'),
+            CT::NUMERIC | CT::ALPHA | CT::KATAKANA
+        );
+        assert_eq!(cat.get_category_types('\u{0040}'), CT::ALPHA);
+        assert_eq!(cat.get_category_types('\u{0041}'), CT::DEFAULT);
+        assert_eq!(
+            cat.get_category_types('\u{3007}'),
+            CT::KANJI | CT::KANJINUMERIC
+        );
+        assert_eq!(cat.get_category_types('\u{4007}'), CT::DEFAULT);
+    }
 
-        assert_eq!(
-            cats_num.iter().map(|v| *v).collect::<CategoryTypes>(),
-            cat.get_category_types(char::from_u32(0x0030).unwrap())
+    #[test]
+    fn read_cdef_4() {
+        let cat = read_categories(
+            "
+            0x4E00..0x9FFF KANJI
+            0x4E8C         KANJI KANJINUMERIC",
         );
+        assert_eq!(cat.get_category_types('男'), CT::KANJI);
+        assert_eq!(cat.get_category_types('\u{4E8B}'), CT::KANJI);
         assert_eq!(
-            cats_num.iter().map(|v| *v).collect::<CategoryTypes>(),
-            cat.get_category_types(char::from_u32(0x0031).unwrap())
+            cat.get_category_types('\u{4E8C}'),
+            CT::KANJI | CT::KANJINUMERIC
         );
-        assert_eq!(
-            cats_kanji_num.iter().map(|v| *v).collect::<CategoryTypes>(),
-            cat.get_category_types(char::from_u32(0x0032).unwrap())
-        );
-        assert_eq!(
-            cats_num.iter().map(|v| *v).collect::<CategoryTypes>(),
-            cat.get_category_types(char::from_u32(0x0033).unwrap())
-        );
-        assert_eq!(
-            cats_num.iter().map(|v| *v).collect::<CategoryTypes>(),
-            cat.get_category_types(char::from_u32(0x0039).unwrap())
-        );
+        assert_eq!(cat.get_category_types('\u{4E8D}'), CT::KANJI);
+    }
 
-        // 2.
-        let mut file = tempfile().expect("Failed to get temporary file");
-        writeln!(file, "#\n ").unwrap();
-        writeln!(file, "0x0030..0x0039 NUMERIC").unwrap();
-        writeln!(file, "0x0070..0x0079 ALPHA").unwrap();
-        writeln!(file, "0x3007         KANJI").unwrap();
-        writeln!(file, "0x0030         KANJI").unwrap();
-        file.flush().expect("Failed to flush");
-        file.seek(SeekFrom::Start(0)).expect("Failed to seek");
-        let ranges = CharacterCategory::read_character_definition(BufReader::new(file))
-            .expect("Failed to read tmp char def file");
-        let cat = CharacterCategory::compile(ranges);
+    #[test]
+    fn read_cdef_holes_1() {
+        let cat = read_categories(
+            "
+            0x0030 USER1
+            0x0032 USER2",
+        );
+        assert_eq!(cat.get_category_types('\u{0029}'), CT::DEFAULT);
+        assert_eq!(cat.get_category_types('\u{0030}'), CT::USER1);
+        assert_eq!(cat.get_category_types('\u{0031}'), CT::DEFAULT);
+        assert_eq!(cat.get_category_types('\u{0032}'), CT::USER2);
+        assert_eq!(cat.get_category_types('\u{0033}'), CT::DEFAULT);
+    }
 
-        assert_eq!(
-            cats_kanji_num.iter().map(|v| *v).collect::<CategoryTypes>(),
-            cat.get_category_types(char::from_u32(0x0030).unwrap())
+    #[test]
+    fn read_cdef_merge_1() {
+        let cat = read_categories(
+            "
+            0x0030 USER1
+            0x0031 USER1",
         );
-        assert_eq!(
-            cats_num.iter().map(|v| *v).collect::<CategoryTypes>(),
-            cat.get_category_types(char::from_u32(0x0039).unwrap())
-        );
-        assert_eq!(
-            cats_kanji.iter().map(|v| *v).collect::<CategoryTypes>(),
-            cat.get_category_types(char::from_u32(0x3007).unwrap())
-        );
-        assert_eq!(
-            cats_default.iter().map(|v| *v).collect::<CategoryTypes>(),
-            cat.get_category_types(char::from_u32(0x0069).unwrap())
-        );
-        assert_eq!(
-            cats_alp.iter().map(|v| *v).collect::<CategoryTypes>(),
-            cat.get_category_types(char::from_u32(0x0070).unwrap())
-        );
-        assert_eq!(
-            cats_default.iter().map(|v| *v).collect::<CategoryTypes>(),
-            cat.get_category_types(char::from_u32(0x0080).unwrap())
-        );
+        assert_eq!(cat.boundaries.len(), 2);
+        assert_eq!(cat.categories.len(), 3);
+        assert_eq!(cat.get_category_types('\u{0029}'), CT::DEFAULT);
+        assert_eq!(cat.get_category_types('\u{0030}'), CT::USER1);
+        assert_eq!(cat.get_category_types('\u{0031}'), CT::USER1);
+        assert_eq!(cat.get_category_types('\u{0032}'), CT::DEFAULT);
+    }
 
-        // 3.
-        let mut file = tempfile().expect("Failed to get temporary file");
-        writeln!(file, "#\n ").unwrap();
-        writeln!(file, "0x0030..0x0039 KATAKANA").unwrap();
-        writeln!(file, "0x3007         KANJI KANJINUMERIC").unwrap();
-        writeln!(file, "0x3008         KANJI KANJINUMERIC").unwrap();
-        writeln!(file, "0x3009         KANJI KANJINUMERIC").unwrap();
-        writeln!(file, "0x0039..0x0040 ALPHA").unwrap();
-        writeln!(file, "0x0030..0x0039 NUMERIC").unwrap();
-        writeln!(file, "0x0030         KANJI").unwrap();
-        file.flush().expect("Failed to flush");
-        file.seek(SeekFrom::Start(0)).expect("Failed to seek");
-        let ranges = CharacterCategory::read_character_definition(BufReader::new(file))
-            .expect("Failed to read tmp char def file");
-        let cat = CharacterCategory::compile(ranges);
+    #[test]
+    fn read_cdef_merge_2() {
+        let cat = read_categories(
+            "
+            0x0030          USER1
+            0x0031..0x0032  USER1",
+        );
+        assert_eq!(cat.boundaries.len(), 2);
+        assert_eq!(cat.categories.len(), 3);
+        assert_eq!(cat.get_category_types('\u{0029}'), CT::DEFAULT);
+        assert_eq!(cat.get_category_types('\u{0030}'), CT::USER1);
+        assert_eq!(cat.get_category_types('\u{0031}'), CT::USER1);
+        assert_eq!(cat.get_category_types('\u{0032}'), CT::USER1);
+        assert_eq!(cat.get_category_types('\u{0033}'), CT::DEFAULT);
+    }
 
-        assert_eq!(
-            cats_default.iter().map(|v| *v).collect::<CategoryTypes>(),
-            cat.get_category_types(char::from_u32(0x0029).unwrap())
+    #[test]
+    fn read_cdef_merge_3() {
+        let cat = read_categories(
+            "
+            0x0030..0x0031  USER1
+            0x0032..0x0033  USER1",
         );
-        assert_eq!(
-            cats_num_kanji_kana
-                .iter()
-                .map(|v| *v)
-                .collect::<CategoryTypes>(),
-            cat.get_category_types(char::from_u32(0x0030).unwrap())
-        );
-        assert_eq!(
-            cats_num_alpha_kana
-                .iter()
-                .map(|v| *v)
-                .collect::<CategoryTypes>(),
-            cat.get_category_types(char::from_u32(0x0039).unwrap())
-        );
-        assert_eq!(
-            cats_alp.iter().map(|v| *v).collect::<CategoryTypes>(),
-            cat.get_category_types(char::from_u32(0x0040).unwrap())
-        );
-        assert_eq!(
-            cats_default.iter().map(|v| *v).collect::<CategoryTypes>(),
-            cat.get_category_types(char::from_u32(0x0041).unwrap())
-        );
-        assert_eq!(
-            cats_kanjinumeric
-                .iter()
-                .map(|v| *v)
-                .collect::<CategoryTypes>(),
-            cat.get_category_types(char::from_u32(0x3007).unwrap())
-        );
-        assert_eq!(
-            cats_default.iter().map(|v| *v).collect::<CategoryTypes>(),
-            cat.get_category_types(char::from_u32(0x4007).unwrap())
-        );
-
-        // 4.
-        let mut file = tempfile().expect("Failed to get temporary file");
-        writeln!(file, "#\n ").unwrap();
-        writeln!(file, "0x4E00..0x9FFF KANJI").unwrap();
-        writeln!(file, "0x4E8C         KANJI KANJINUMERIC").unwrap();
-        file.flush().expect("Failed to flush");
-        file.seek(SeekFrom::Start(0)).expect("Failed to seek");
-        let ranges = CharacterCategory::read_character_definition(BufReader::new(file))
-            .expect("Failed to read tmp char def file");
-        let cat = CharacterCategory::compile(ranges);
-
-        assert_eq!(
-            cats_kanji.iter().map(|v| *v).collect::<CategoryTypes>(),
-            cat.get_category_types('男')
-        );
-        assert_eq!(
-            cats_kanji.iter().map(|v| *v).collect::<CategoryTypes>(),
-            cat.get_category_types(char::from_u32(0x4E8B).unwrap())
-        );
-        assert_eq!(
-            cats_kanjinumeric
-                .iter()
-                .map(|v| *v)
-                .collect::<CategoryTypes>(),
-            cat.get_category_types(char::from_u32(0x4E8C).unwrap())
-        );
-        assert_eq!(
-            cats_kanji.iter().map(|v| *v).collect::<CategoryTypes>(),
-            cat.get_category_types(char::from_u32(0x4E8D).unwrap())
-        );
+        assert_eq!(cat.boundaries.len(), 2);
+        assert_eq!(cat.categories.len(), 3);
+        assert_eq!(cat.get_category_types('\u{0029}'), CT::DEFAULT);
+        assert_eq!(cat.get_category_types('\u{0030}'), CT::USER1);
+        assert_eq!(cat.get_category_types('\u{0031}'), CT::USER1);
+        assert_eq!(cat.get_category_types('\u{0032}'), CT::USER1);
+        assert_eq!(cat.get_category_types('\u{0033}'), CT::USER1);
+        assert_eq!(cat.get_category_types('\u{0034}'), CT::DEFAULT);
     }
 
     #[test]
@@ -520,5 +424,19 @@ mod tests {
         let data = "0x0030..0x0039 FOO";
         let result = CharacterCategory::read_character_definition(data.as_bytes());
         assert_matches!(result, Err(SudachiError::InvalidCharacterCategory(Error::InvalidCategoryType(0, s))) if s == "FOO");
+    }
+
+    #[test]
+    fn check_test_cdef() {
+        let data: &[u8] = include_bytes!("../../tests/resources/char.def");
+        let c = CharacterCategory::from_reader(data).expect("failed to read chars");
+        assert_eq!(c.get_category_types('â'), CT::ALPHA);
+        assert_eq!(c.get_category_types('ｂ'), CT::ALPHA);
+        assert_eq!(c.get_category_types('C'), CT::ALPHA);
+        assert_eq!(c.get_category_types('漢'), CT::KANJI);
+        assert_eq!(c.get_category_types('𡈽'), CT::DEFAULT);
+        assert_eq!(c.get_category_types('ア'), CT::KATAKANA);
+        assert_eq!(c.get_category_types('ｺ'), CT::KATAKANA);
+        assert_eq!(c.get_category_types('ﾞ'), CT::KATAKANA);
     }
 }

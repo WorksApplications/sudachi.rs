@@ -48,7 +48,7 @@ struct PluginSettings {
 impl JoinKatakanaOovPlugin {
     fn is_katakana_node(&self, text: &Utf8InputText, node: &Node) -> bool {
         text.get_char_category_types_range(node.begin..node.end)
-            .contains(&CategoryType::KATAKANA)
+            .contains(CategoryType::KATAKANA)
     }
 
     // fn is_one_char(&self, text: &Utf8InputText, node: &Node) -> bool {
@@ -59,7 +59,7 @@ impl JoinKatakanaOovPlugin {
     fn can_oov_bow_node(&self, text: &Utf8InputText, node: &Node) -> bool {
         !text
             .get_char_category_types(node.begin)
-            .contains(&CategoryType::NOOOVBOW)
+            .contains(CategoryType::NOOOVBOW)
     }
 
     fn is_shorter(&self, text: &Utf8InputText, node: &Node) -> bool {

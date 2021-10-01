@@ -49,17 +49,17 @@ struct PluginSettings {
 }
 
 impl IgnoreYomiganaPlugin {
-    fn has_category_type(&self, c: char, t: &CategoryType) -> bool {
+    fn has_category_type(&self, c: char, t: CategoryType) -> bool {
         self.character_category.get_category_types(c).contains(t)
     }
     fn is_kanji(&self, c: char) -> bool {
-        self.has_category_type(c, &CategoryType::KANJI)
+        self.has_category_type(c, CategoryType::KANJI)
     }
     fn is_hiragana(&self, c: char) -> bool {
-        self.has_category_type(c, &CategoryType::HIRAGANA)
+        self.has_category_type(c, CategoryType::HIRAGANA)
     }
     fn is_katakana(&self, c: char) -> bool {
-        self.has_category_type(c, &CategoryType::KATAKANA)
+        self.has_category_type(c, CategoryType::KATAKANA)
     }
 }
 

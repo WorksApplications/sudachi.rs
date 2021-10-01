@@ -16,7 +16,7 @@
 
 use std::ops::Range;
 
-use crate::dic::category_type::CategoryTypes;
+use crate::dic::category_type::CategoryType;
 
 /// Tokenization target text with original text and utility information
 #[derive(Debug, Default)]
@@ -34,7 +34,7 @@ pub struct Utf8InputText<'a> {
     byte_indexes: Vec<usize>,
 
     /// Category types of each characters
-    char_category_types: Vec<CategoryTypes>,
+    char_category_types: Vec<CategoryType>,
     /// Whether if the character can be a beginning of word
     can_bow_list: Vec<bool>,
     /// The byte_length to the next char where category type continuity ends
@@ -47,7 +47,7 @@ impl<'a> Utf8InputText<'a> {
         modified: String,
         offsets: Vec<usize>,
         byte_indexes: Vec<usize>,
-        char_category_types: Vec<CategoryTypes>,
+        char_category_types: Vec<CategoryType>,
         can_bow_list: Vec<bool>,
         char_category_continuities: Vec<usize>,
     ) -> Utf8InputText<'a> {
@@ -142,23 +142,24 @@ impl Utf8InputText<'_> {
     }
 
     /// Returns a category_types of the character at given byte_idx
-    pub fn get_char_category_types(&self, byte_idx: usize) -> CategoryTypes {
+    pub fn get_char_category_types(&self, byte_idx: usize) -> CategoryType {
         // for OOV and path_rewrite
-        self.char_category_types[self.byte_indexes[byte_idx]].clone()
+        self.char_category_types[self.byte_indexes[byte_idx]]
     }
 
     /// Returns a common category_types of characters at given byte_range
-    pub fn get_char_category_types_range(&self, byte_range: Range<usize>) -> CategoryTypes {
+    pub fn get_char_category_types_range(&self, byte_range: Range<usize>) -> CategoryType {
+        if byte_range.is_empty() {
+            return CategoryType::empty();
+        }
         // for path_rewrite
         // this assumes b < e
         let b = self.byte_indexes[byte_range.start];
         let e = self.byte_indexes[byte_range.end];
 
-        self.char_category_types[b + 1..e]
+        self.char_category_types[b..e]
             .iter()
-            .fold(self.char_category_types[b].clone(), |a, b| {
-                a.intersection(&b).map(|v| *v).collect::<CategoryTypes>()
-            })
+            .fold(CategoryType::all(), |a, b| a & *b)
     }
 
     /// Returns byte length from byte_idx to index where category type continuity ends
