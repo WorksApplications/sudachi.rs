@@ -19,6 +19,7 @@ use std::path::Path;
 
 use memmap2::Mmap;
 
+use crate::analysis::stateless_tokenizer::{DictionaryAccess, StatelessTokenizer};
 use crate::config::Config;
 use crate::config::ConfigError::MissingArgument;
 use crate::dic::grammar::Grammar;
@@ -30,7 +31,6 @@ use crate::plugin::input_text::InputTextPlugin;
 use crate::plugin::oov::OovProviderPlugin;
 use crate::plugin::path_rewrite::PathRewritePlugin;
 use crate::plugin::Plugins;
-use crate::stateless_tokeniser::{DictionaryAccess, StatelessTokenizer};
 
 // Mmap stores file handle, so file field may not be needed
 // but let it be here for the time being

@@ -17,11 +17,11 @@
 use serde::Deserialize;
 use serde_json::Value;
 
+use crate::analysis::{lattice::Lattice, node::Node};
 use crate::config::Config;
 use crate::dic::category_type::CategoryType;
 use crate::dic::grammar::Grammar;
 use crate::input_text::Utf8InputText;
-use crate::lattice::{node::Node, Lattice};
 use crate::plugin::path_rewrite::PathRewritePlugin;
 use crate::prelude::*;
 

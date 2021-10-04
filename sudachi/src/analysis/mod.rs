@@ -16,23 +16,14 @@
 
 use std::str::FromStr;
 
-use crate::morpheme::Morpheme;
-use crate::prelude::*;
+use morpheme::Morpheme;
 
-/// Able to tokenize Japanese text
-pub trait Tokenize {
-    /// Break text into `Morpheme`s
-    fn tokenize(&self, input: &str, mode: Mode, enable_debug: bool)
-        -> SudachiResult<Vec<Morpheme>>;
+use crate::error::SudachiResult;
 
-    /// Split text into sentences then tokenize
-    fn tokenize_sentences(
-        &self,
-        input: &str,
-        mode: Mode,
-        enable_debug: bool,
-    ) -> SudachiResult<Vec<Vec<Morpheme>>>;
-}
+pub mod lattice;
+pub mod morpheme;
+pub mod node;
+pub mod stateless_tokenizer;
 
 /// Unit to split text
 ///
@@ -80,4 +71,19 @@ impl FromStr for Mode {
             _ => Err("Mode must be one of \"A\", \"B\", or \"C\" (in lower or upper case)."),
         }
     }
+}
+
+/// Able to tokenize Japanese text
+pub trait Tokenize {
+    /// Break text into `Morpheme`s
+    fn tokenize(&self, input: &str, mode: Mode, enable_debug: bool)
+        -> SudachiResult<Vec<Morpheme>>;
+
+    /// Split text into sentences then tokenize
+    fn tokenize_sentences(
+        &self,
+        input: &str,
+        mode: Mode,
+        enable_debug: bool,
+    ) -> SudachiResult<Vec<Vec<Morpheme>>>;
 }

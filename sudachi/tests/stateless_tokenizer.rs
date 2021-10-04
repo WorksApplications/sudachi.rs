@@ -18,7 +18,7 @@
 extern crate lazy_static;
 extern crate sudachi;
 
-use sudachi::tokenizer::Mode;
+use sudachi::prelude::Mode;
 
 mod common;
 use crate::common::TestTokenizer;

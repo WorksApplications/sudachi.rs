@@ -20,9 +20,9 @@ use std::sync::Arc;
 use pyo3::exceptions::PyException;
 use pyo3::prelude::*;
 
+use sudachi::analysis::stateless_tokenizer::StatelessTokenizer;
 use sudachi::config::Config;
 use sudachi::dic::dictionary::JapaneseDictionary;
-use sudachi::stateless_tokeniser::StatelessTokenizer;
 
 use crate::tokenizer::{PySplitMode, PyTokenizer};
 

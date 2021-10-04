@@ -21,13 +21,13 @@ use std::fs;
 use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
 
+use crate::analysis::node::Node;
 use crate::config::Config;
 use crate::dic::category_type::CategoryType;
 use crate::dic::character_category::Error as CharacterCategoryError;
 use crate::dic::grammar::Grammar;
 use crate::dic::lexicon::word_infos::WordInfo;
 use crate::input_text::Utf8InputText;
-use crate::lattice::node::Node;
 use crate::plugin::oov::OovProviderPlugin;
 use crate::prelude::*;
 

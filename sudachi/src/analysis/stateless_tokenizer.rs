@@ -1,17 +1,17 @@
 /*
- * Copyright (c) 2021 Works Applications Co., Ltd.
+ *  Copyright (c) 2021 Works Applications Co., Ltd.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ *   Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
  */
 
 use std::ops::Deref;
@@ -21,14 +21,15 @@ use crate::dic::grammar::Grammar;
 use crate::dic::lexicon_set::LexiconSet;
 use crate::error::{SudachiError, SudachiResult};
 use crate::input_text::{Utf8InputText, Utf8InputTextBuilder};
-use crate::lattice::node::Node;
-use crate::lattice::Lattice;
-use crate::morpheme::Morpheme;
 use crate::plugin::input_text::InputTextPlugin;
 use crate::plugin::oov::OovProviderPlugin;
 use crate::plugin::path_rewrite::PathRewritePlugin;
-use crate::prelude::{Mode, Tokenize};
 use crate::sentence_detector::{NonBreakChecker, SentenceDetector};
+
+use super::lattice::Lattice;
+use super::morpheme::Morpheme;
+use super::node::Node;
+use super::{Mode, Tokenize};
 
 /// Provides access to dictionary data
 pub trait DictionaryAccess {

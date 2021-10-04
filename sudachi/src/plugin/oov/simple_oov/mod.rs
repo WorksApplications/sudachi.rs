@@ -17,11 +17,11 @@
 use serde::Deserialize;
 use serde_json::Value;
 
+use crate::analysis::node::Node;
 use crate::config::Config;
 use crate::dic::grammar::Grammar;
 use crate::dic::lexicon::word_infos::WordInfo;
 use crate::input_text::Utf8InputText;
-use crate::lattice::node::Node;
 use crate::plugin::oov::OovProviderPlugin;
 use crate::prelude::*;
 
