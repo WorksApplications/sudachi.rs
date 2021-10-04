@@ -33,6 +33,7 @@ pub mod grammar;
 pub mod header;
 pub mod lexicon;
 pub mod lexicon_set;
+pub mod word_id;
 
 /// A dictionary consists of one system_dict and zero or more user_dicts
 pub struct LoadedDictionary<'a> {
