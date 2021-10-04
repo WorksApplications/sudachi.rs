@@ -16,10 +16,10 @@
 
 use serde_json::Value;
 
+use crate::analysis::node::Node;
 use crate::config::Config;
 use crate::dic::grammar::Grammar;
 use crate::input_text::Utf8InputText;
-use crate::lattice::node::Node;
 use crate::plugin::oov::mecab_oov::MeCabOovPlugin;
 use crate::plugin::oov::simple_oov::SimpleOovPlugin;
 use crate::plugin::PluginCategory;

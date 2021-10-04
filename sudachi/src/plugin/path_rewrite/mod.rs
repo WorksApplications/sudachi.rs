@@ -19,11 +19,11 @@ pub mod join_numeric;
 
 use serde_json::Value;
 
+use crate::analysis::{lattice::Lattice, node::Node};
 use crate::config::Config;
 use crate::dic::grammar::Grammar;
 use crate::dic::lexicon::word_infos::WordInfo;
 use crate::input_text::Utf8InputText;
-use crate::lattice::{node::Node, Lattice};
 use crate::plugin::path_rewrite::join_katakana_oov::JoinKatakanaOovPlugin;
 use crate::plugin::path_rewrite::join_numeric::JoinNumericPlugin;
 use crate::plugin::PluginCategory;

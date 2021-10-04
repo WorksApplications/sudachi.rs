@@ -21,11 +21,11 @@ use std::process;
 
 use structopt::StructOpt;
 
+use sudachi::analysis::stateless_tokenizer::StatelessTokenizer;
 use sudachi::config::Config;
 use sudachi::dic::dictionary::JapaneseDictionary;
 use sudachi::prelude::*;
 use sudachi::sentence_splitter::{SentenceSplitter, SplitSentences};
-use sudachi::stateless_tokeniser::StatelessTokenizer;
 
 #[cfg(feature = "bake_dictionary")]
 const BAKED_DICTIONARY_BYTES: &[u8] = include_bytes!(env!("SUDACHI_DICT_PATH"));

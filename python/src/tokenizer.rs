@@ -19,9 +19,9 @@ use std::sync::Arc;
 use pyo3::exceptions::PyException;
 use pyo3::prelude::*;
 
+use sudachi::analysis::stateless_tokenizer::StatelessTokenizer;
 use sudachi::dic::dictionary::JapaneseDictionary;
 use sudachi::prelude::*;
-use sudachi::stateless_tokeniser::StatelessTokenizer;
 
 use crate::morpheme::PyMorpheme;
 

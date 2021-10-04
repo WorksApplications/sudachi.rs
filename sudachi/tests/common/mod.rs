@@ -18,11 +18,11 @@ use std::path::{Path, PathBuf};
 
 extern crate sudachi;
 use self::sudachi::dic::dictionary::JapaneseDictionary;
-use self::sudachi::stateless_tokeniser::StatelessTokenizer;
 use std::fs;
 use std::fs::File;
 use std::io::Read;
 use std::sync::Arc;
+use sudachi::analysis::stateless_tokenizer::StatelessTokenizer;
 use sudachi::config::Config;
 use sudachi::dic::{grammar::Grammar, header::Header, lexicon::Lexicon};
 use sudachi::prelude::*;

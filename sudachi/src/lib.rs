@@ -21,23 +21,20 @@
 //! [`Tokenizer`](tokenizer/struct.Tokenizer.html) struct, which
 //! implements [`Tokenize`](tokenizer/trait.Tokenize.html).
 
+pub mod analysis;
 pub mod config;
 pub mod dic;
 pub mod error;
 pub mod input_text;
-pub mod lattice;
-pub mod morpheme;
 pub mod plugin;
 pub mod sentence_detector;
 pub mod sentence_splitter;
-pub mod stateless_tokeniser;
-pub mod tokenizer;
 
 pub mod prelude {
     pub use crate::{
+        analysis::morpheme::Morpheme,
+        analysis::{Mode, Tokenize},
         error::SudachiError,
         error::SudachiResult,
-        morpheme::Morpheme,
-        tokenizer::{Mode, Tokenize},
     };
 }
