@@ -22,6 +22,7 @@ use crate::error::SudachiResult;
 
 pub mod lattice;
 pub mod morpheme;
+pub mod morpheme_list;
 pub mod node;
 pub mod stateless_tokenizer;
 

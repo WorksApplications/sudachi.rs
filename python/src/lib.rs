@@ -18,6 +18,7 @@ use pyo3::prelude::*;
 
 pub mod dictionary;
 pub mod morpheme;
+pub mod morpheme_list;
 pub mod tokenizer;
 
 /// module root
