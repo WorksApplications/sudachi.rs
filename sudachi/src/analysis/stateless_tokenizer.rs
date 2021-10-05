@@ -40,6 +40,32 @@ pub trait DictionaryAccess {
     fn path_rewrite_plugins(&self) -> &[Box<dyn PathRewritePlugin + Sync + Send>];
 }
 
+impl<T> DictionaryAccess for T
+where
+    T: Deref,
+    <T as Deref>::Target: DictionaryAccess,
+{
+    fn grammar(&self) -> &Grammar<'_> {
+        <T as Deref>::deref(self).grammar()
+    }
+
+    fn lexicon(&self) -> &LexiconSet<'_> {
+        <T as Deref>::deref(self).lexicon()
+    }
+
+    fn input_text_plugins(&self) -> &[Box<dyn InputTextPlugin + Sync + Send>] {
+        <T as Deref>::deref(self).input_text_plugins()
+    }
+
+    fn oov_provider_plugins(&self) -> &[Box<dyn OovProviderPlugin + Sync + Send>] {
+        <T as Deref>::deref(self).oov_provider_plugins()
+    }
+
+    fn path_rewrite_plugins(&self) -> &[Box<dyn PathRewritePlugin + Sync + Send>] {
+        <T as Deref>::deref(self).path_rewrite_plugins()
+    }
+}
+
 /// Implementation of a Tokenizer which does not have tokenization state.
 ///
 /// This is a wrapper which is generic over dictionary pointers.
@@ -235,7 +261,7 @@ fn build_lattice<'a, 'b, T: DictionaryAccess + ?Sized>(
     Ok(lattice)
 }
 
-fn split_path<T: DictionaryAccess + ?Sized>(
+pub(super) fn split_path<T: DictionaryAccess + ?Sized>(
     dict: &T,
     path: Vec<Node>,
     mode: Mode,
@@ -280,7 +306,7 @@ fn split_path<T: DictionaryAccess + ?Sized>(
     Ok(new_path)
 }
 
-fn dump_path(path: &Vec<Node>) {
+pub(super) fn dump_path(path: &Vec<Node>) {
     for (i, node) in (&path).iter().enumerate() {
         println!("{}: {}", i, node);
     }

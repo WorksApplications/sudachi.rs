@@ -23,6 +23,7 @@ use crate::error::SudachiResult;
 pub mod lattice;
 pub mod morpheme;
 pub mod node;
+pub mod stateful_tokenizer;
 pub mod stateless_tokenizer;
 
 /// Unit to split text

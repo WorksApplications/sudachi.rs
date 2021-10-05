@@ -22,7 +22,8 @@ use crate::analysis::{lattice::Lattice, node::Node};
 use crate::config::Config;
 use crate::dic::category_type::CategoryType;
 use crate::dic::grammar::Grammar;
-use crate::input_text::Utf8InputText;
+use crate::input_text::input_buffer::InputBuffer;
+use crate::input_text::{PathRewriteAPI, Utf8InputText};
 use crate::plugin::path_rewrite::PathRewritePlugin;
 use crate::prelude::*;
 
@@ -76,35 +77,11 @@ impl JoinNumericPlugin {
         }
         Ok(path)
     }
-}
 
-impl PathRewritePlugin for JoinNumericPlugin {
-    fn set_up(
-        &mut self,
-        settings: &Value,
-        _config: &Config,
-        grammar: &Grammar,
-    ) -> SudachiResult<()> {
-        let settings: PluginSettings = serde_json::from_value(settings.clone())?;
-
-        // this pos is fixed
-        let numeric_pos_string = vec!["名詞", "数詞", "*", "*", "*", "*"];
-        let numeric_pos_id = grammar.get_part_of_speech_id(&numeric_pos_string).ok_or(
-            SudachiError::InvalidPartOfSpeech(format!("{:?}", numeric_pos_string)),
-        )?;
-        let enable_normalize = settings.enableNormalize;
-
-        self.numeric_pos_id = numeric_pos_id;
-        self.enable_normalize = enable_normalize.unwrap_or(true);
-
-        Ok(())
-    }
-
-    fn rewrite(
+    fn rewrite_gen<T: PathRewriteAPI>(
         &self,
-        text: &Utf8InputText,
+        text: &T,
         mut path: Vec<Node>,
-        _lattice: &Lattice,
     ) -> SudachiResult<Vec<Node>> {
         let mut begin_idx = -1;
         let mut comma_as_digit = true;
@@ -114,7 +91,7 @@ impl PathRewritePlugin for JoinNumericPlugin {
         while i < path.len() as i32 - 1 {
             i += 1;
             let node = &path[i as usize];
-            let ctypes = text.get_char_category_types_range(node.begin..node.end);
+            let ctypes = text.cat_of_range(node.begin..node.end);
             let s = node
                 .word_info
                 .as_ref()
@@ -195,5 +172,46 @@ impl PathRewritePlugin for JoinNumericPlugin {
         }
 
         Ok(path)
+    }
+}
+
+impl PathRewritePlugin for JoinNumericPlugin {
+    fn set_up(
+        &mut self,
+        settings: &Value,
+        _config: &Config,
+        grammar: &Grammar,
+    ) -> SudachiResult<()> {
+        let settings: PluginSettings = serde_json::from_value(settings.clone())?;
+
+        // this pos is fixed
+        let numeric_pos_string = vec!["名詞", "数詞", "*", "*", "*", "*"];
+        let numeric_pos_id = grammar.get_part_of_speech_id(&numeric_pos_string).ok_or(
+            SudachiError::InvalidPartOfSpeech(format!("{:?}", numeric_pos_string)),
+        )?;
+        let enable_normalize = settings.enableNormalize;
+
+        self.numeric_pos_id = numeric_pos_id;
+        self.enable_normalize = enable_normalize.unwrap_or(true);
+
+        Ok(())
+    }
+
+    fn rewrite(
+        &self,
+        text: &Utf8InputText,
+        mut path: Vec<Node>,
+        _lattice: &Lattice,
+    ) -> SudachiResult<Vec<Node>> {
+        self.rewrite_gen(text, path)
+    }
+
+    fn rewrite2(
+        &self,
+        text: &InputBuffer,
+        path: Vec<Node>,
+        _lattice: &Lattice,
+    ) -> SudachiResult<Vec<Node>> {
+        self.rewrite_gen(text, path)
     }
 }

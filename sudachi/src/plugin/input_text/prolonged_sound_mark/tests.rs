@@ -20,14 +20,14 @@ use serde_json::{Map, Value};
 use crate::config::Config;
 use crate::dic::grammar::Grammar;
 use crate::input_text::Utf8InputTextBuilder;
+use crate::test::zero_grammar;
 
 #[test]
 fn combine_continuous_prolonged_sound_mark() {
     let original = "ゴーール";
     let normalized = "ゴール";
 
-    let bytes = build_mock_bytes();
-    let (grammar, plugin) = setup(&bytes);
+    let (grammar, plugin) = setup();
     let mut builder = Utf8InputTextBuilder::new(original, &grammar);
     plugin.rewrite(&mut builder);
     let text = builder.build();
@@ -48,8 +48,7 @@ fn combined_continuous_prolonged_sound_marks_at_end() {
     let original = "スーパーー";
     let normalized = "スーパー";
 
-    let bytes = build_mock_bytes();
-    let (grammar, plugin) = setup(&bytes);
+    let (grammar, plugin) = setup();
     let mut builder = Utf8InputTextBuilder::new(original, &grammar);
     plugin.rewrite(&mut builder);
     let text = builder.build();
@@ -71,8 +70,7 @@ fn combine_continuous_prolonged_sound_marks_multi_times() {
     let original = "エーービーーーシーーーー";
     let normalized = "エービーシー";
 
-    let bytes = build_mock_bytes();
-    let (grammar, plugin) = setup(&bytes);
+    let (grammar, plugin) = setup();
     let mut builder = Utf8InputTextBuilder::new(original, &grammar);
     plugin.rewrite(&mut builder);
     let text = builder.build();
@@ -96,8 +94,7 @@ fn combine_continuous_prolonged_sound_marks_multi_symbol_types() {
     let original = "エーービ〜〜〜シ〰〰〰〰";
     let normalized = "エービーシー";
 
-    let bytes = build_mock_bytes();
-    let (grammar, plugin) = setup(&bytes);
+    let (grammar, plugin) = setup();
     let mut builder = Utf8InputTextBuilder::new(original, &grammar);
     plugin.rewrite(&mut builder);
     let text = builder.build();
@@ -122,8 +119,7 @@ fn combine_continuous_prolonged_sound_marks_multi_mixed_symbol_types() {
     let original = "エー〜ビ〜〰ーシ〰ー〰〜";
     let normalized = "エービーシー";
 
-    let bytes = build_mock_bytes();
-    let (grammar, plugin) = setup(&bytes);
+    let (grammar, plugin) = setup();
     let mut builder = Utf8InputTextBuilder::new(original, &grammar);
     plugin.rewrite(&mut builder);
     let text = builder.build();
@@ -143,10 +139,26 @@ fn combine_continuous_prolonged_sound_marks_multi_mixed_symbol_types() {
     assert_eq!(36, text.get_original_index(18));
 }
 
-fn setup<'a>(bytes: &'a [u8]) -> (Grammar<'a>, ProlongedSoundMarkPlugin) {
+#[test]
+fn rewrite_one_type() {
+    let (_, plugin) = setup();
+    let mut buffer = InputBuffer::from("スーパーー");
+    plugin.apply_rewrite(&mut buffer).expect("should work");
+    assert_eq!("スーパー", buffer.current());
+}
+
+#[test]
+fn rewrite_multiple_types() {
+    let (_, plugin) = setup();
+    let mut buffer = InputBuffer::from("エー〜ビ〜〰ーシ〰ー〰〜");
+    plugin.apply_rewrite(&mut buffer).expect("should work");
+    assert_eq!("エービーシー", buffer.current());
+}
+
+fn setup<'a>() -> (Grammar<'a>, ProlongedSoundMarkPlugin) {
     let settings = build_mock_setting();
     let config = Config::default();
-    let grammar = build_mock_grammar(&bytes);
+    let grammar = zero_grammar();
     let mut plugin = ProlongedSoundMarkPlugin::default();
     plugin
         .set_up(&settings, &config, &grammar)
@@ -154,17 +166,7 @@ fn setup<'a>(bytes: &'a [u8]) -> (Grammar<'a>, ProlongedSoundMarkPlugin) {
 
     (grammar, plugin)
 }
-fn build_mock_bytes() -> Vec<u8> {
-    let mut buf = Vec::new();
-    // set 0 for all of pos size, left and right id size
-    buf.extend(&(0 as i16).to_le_bytes());
-    buf.extend(&(0 as i16).to_le_bytes());
-    buf.extend(&(0 as i16).to_le_bytes());
-    buf
-}
-fn build_mock_grammar(bytes: &[u8]) -> Grammar {
-    Grammar::new(bytes, 0).expect("Failed to create grammar")
-}
+
 fn build_mock_setting() -> Value {
     let mut map = Map::default();
     map.insert(

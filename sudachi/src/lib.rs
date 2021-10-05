@@ -30,6 +30,9 @@ pub mod plugin;
 pub mod sentence_detector;
 pub mod sentence_splitter;
 
+#[cfg(test)]
+pub mod test;
+
 pub mod prelude {
     pub use crate::{
         analysis::morpheme::MorphemeList,

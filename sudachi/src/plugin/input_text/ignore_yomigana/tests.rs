@@ -19,6 +19,7 @@ use serde_json::Value;
 use std::path::PathBuf;
 
 use crate::input_text::Utf8InputTextBuilder;
+use crate::test::zero_grammar;
 
 const TEST_RESOURCE_DIR_PATH: &str = "tests/resources/";
 
@@ -27,14 +28,7 @@ fn ignore_yomigana_at_middle() {
     let original = "徳島（とくしま）に行く";
     let normalized = "徳島に行く";
 
-    let settings = build_mock_setting();
-    let config = Config::default();
-    let bytes = build_mock_bytes();
-    let grammar = build_mock_grammar(&bytes);
-    let mut plugin = IgnoreYomiganaPlugin::default();
-    plugin
-        .set_up(&settings, &config, &grammar)
-        .expect("Failed to setup plugin");
+    let (plugin, grammar) = setup();
     let mut builder = Utf8InputTextBuilder::new(original, &grammar);
     plugin.rewrite(&mut builder);
 
@@ -53,14 +47,7 @@ fn ignore_yomigana_at_end() {
     let original = "徳島（とくしま）";
     let normalized = "徳島";
 
-    let settings = build_mock_setting();
-    let config = Config::default();
-    let bytes = build_mock_bytes();
-    let grammar = build_mock_grammar(&bytes);
-    let mut plugin = IgnoreYomiganaPlugin::default();
-    plugin
-        .set_up(&settings, &config, &grammar)
-        .expect("Failed to setup plugin");
+    let (plugin, grammar) = setup();
     let mut builder = Utf8InputTextBuilder::new(original, &grammar);
     plugin.rewrite(&mut builder);
 
@@ -76,14 +63,7 @@ fn ignore_yomigana_multiple() {
     let original = "徳島（とくしま）に行（い）く";
     let normalized = "徳島に行く";
 
-    let settings = build_mock_setting();
-    let config = Config::default();
-    let bytes = build_mock_bytes();
-    let grammar = build_mock_grammar(&bytes);
-    let mut plugin = IgnoreYomiganaPlugin::default();
-    plugin
-        .set_up(&settings, &config, &grammar)
-        .expect("Failed to setup plugin");
+    let (plugin, grammar) = setup();
     let mut builder = Utf8InputTextBuilder::new(original, &grammar);
     plugin.rewrite(&mut builder);
 
@@ -102,14 +82,7 @@ fn ignore_yomigana_multiple_brace_types() {
     let original = "徳島(とくしま)に行（い）く";
     let normalized = "徳島に行く";
 
-    let settings = build_mock_setting();
-    let config = Config::default();
-    let bytes = build_mock_bytes();
-    let grammar = build_mock_grammar(&bytes);
-    let mut plugin = IgnoreYomiganaPlugin::default();
-    plugin
-        .set_up(&settings, &config, &grammar)
-        .expect("Failed to setup plugin");
+    let (plugin, grammar) = setup();
     let mut builder = Utf8InputTextBuilder::new(original, &grammar);
     plugin.rewrite(&mut builder);
 
@@ -128,14 +101,7 @@ fn dont_ignore_not_yomigana() {
     let original = "徳島に（よく）行く";
     let normalized = "徳島に（よく）行く";
 
-    let settings = build_mock_setting();
-    let config = Config::default();
-    let bytes = build_mock_bytes();
-    let grammar = build_mock_grammar(&bytes);
-    let mut plugin = IgnoreYomiganaPlugin::default();
-    plugin
-        .set_up(&settings, &config, &grammar)
-        .expect("Failed to setup plugin");
+    let (plugin, grammar) = setup();
     let mut builder = Utf8InputTextBuilder::new(original, &grammar);
     plugin.rewrite(&mut builder);
 
@@ -154,14 +120,7 @@ fn dont_ignore_too_long() {
     let original = "徳島（ながいよみ）に行く";
     let normalized = "徳島（ながいよみ）に行く";
 
-    let settings = build_mock_setting();
-    let config = Config::default();
-    let bytes = build_mock_bytes();
-    let grammar = build_mock_grammar(&bytes);
-    let mut plugin = IgnoreYomiganaPlugin::default();
-    plugin
-        .set_up(&settings, &config, &grammar)
-        .expect("Failed to setup plugin");
+    let (plugin, grammar) = setup();
     let mut builder = Utf8InputTextBuilder::new(original, &grammar);
     plugin.rewrite(&mut builder);
 
@@ -175,6 +134,28 @@ fn dont_ignore_too_long() {
     assert_eq!(33, text.get_original_index(33));
 }
 
+#[test]
+fn ignore_hiragana() {
+    let (plugin, _) = setup();
+    let mut buffer = InputBuffer::from("徳島(とくしま)に行（い）く");
+    plugin
+        .apply_rewrite(&mut buffer)
+        .expect("should not happen");
+    assert_eq!(buffer.current(), "徳島に行く");
+}
+
+fn setup() -> (IgnoreYomiganaPlugin, Grammar<'static>) {
+    let settings = build_mock_setting();
+    let config = Config::default();
+    let mut grammar = zero_grammar();
+    grammar.set_character_category(build_character_category());
+    let mut plugin = IgnoreYomiganaPlugin::default();
+    plugin
+        .set_up(&settings, &config, &grammar)
+        .expect("Failed to setup plugin");
+    (plugin, grammar)
+}
+
 fn build_mock_setting() -> Value {
     let data = r#"
         {
@@ -185,21 +166,8 @@ fn build_mock_setting() -> Value {
     "#;
     serde_json::from_str(data).expect("Failed to parse test settings")
 }
+
 fn build_character_category() -> CharacterCategory {
     let char_cat_file_path = PathBuf::from(TEST_RESOURCE_DIR_PATH.to_string() + "char.def");
     CharacterCategory::from_file(&char_cat_file_path).expect("Failed to load character category")
-}
-fn build_mock_bytes() -> Vec<u8> {
-    let mut buf = Vec::new();
-    // set 0 for all of pos size, left and right id size
-    buf.extend(&(0 as i16).to_le_bytes());
-    buf.extend(&(0 as i16).to_le_bytes());
-    buf.extend(&(0 as i16).to_le_bytes());
-    buf
-}
-fn build_mock_grammar(bytes: &[u8]) -> Grammar {
-    let mut grammar = Grammar::new(bytes, 0).expect("Failed to create grammar");
-    let char_cat = build_character_category();
-    grammar.set_character_category(char_cat);
-    grammar
 }

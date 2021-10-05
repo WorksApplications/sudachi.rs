@@ -14,14 +14,17 @@
  * limitations under the License.
  */
 
+use regex::Regex;
 use serde::Deserialize;
 use serde_json::Value;
 use std::collections::HashSet;
 
 use crate::config::Config;
 use crate::dic::grammar::Grammar;
+use crate::input_text::input_buffer::{EditInput, InputBuffer};
 use crate::input_text::Utf8InputTextBuilder;
 use crate::plugin::input_text::InputTextPlugin;
+use crate::plugin::PluginError;
 use crate::prelude::*;
 
 #[cfg(test)]
@@ -32,6 +35,7 @@ mod tests;
 pub struct ProlongedSoundMarkPlugin {
     psm_set: HashSet<char>,
     replace_symbol: String,
+    regex: Option<Regex>,
 }
 
 /// Struct corresponds with raw config json file.
@@ -40,6 +44,31 @@ pub struct ProlongedSoundMarkPlugin {
 struct PluginSettings {
     prolongedSoundMarks: Vec<char>,
     replacementSymbol: Option<String>,
+}
+
+impl ProlongedSoundMarkPlugin {
+    /// Convert prolongation marks to a Regex which will match at least two patterns
+    fn prolongs_as_regex<I: Iterator<Item = char>>(data: I) -> SudachiResult<Regex> {
+        let mut pattern = String::with_capacity(32);
+        pattern.push('[');
+        for symbol in data {
+            match symbol {
+                ']' | '^' | '\\' => {
+                    return Err(SudachiError::PluginError(PluginError::InvalidDataFormat(
+                        format!("Prolonged symbol {:?} is invalid", symbol),
+                    )))
+                }
+                _ => pattern.push(symbol),
+            }
+        }
+        pattern.push_str("]{2,}");
+        match Regex::new(&pattern) {
+            Ok(re) => Ok(re),
+            Err(e) => Err(SudachiError::PluginError(PluginError::InvalidDataFormat(
+                e.to_string(),
+            ))),
+        }
+    }
 }
 
 impl InputTextPlugin for ProlongedSoundMarkPlugin {
@@ -56,7 +85,7 @@ impl InputTextPlugin for ProlongedSoundMarkPlugin {
 
         self.psm_set = psm_set;
         self.replace_symbol = replace_symbol.unwrap_or("ー".to_string());
-
+        self.regex = Some(Self::prolongs_as_regex(self.psm_set.iter().cloned())?);
         Ok(())
     }
 
@@ -81,5 +110,19 @@ impl InputTextPlugin for ProlongedSoundMarkPlugin {
         if is_psm && n > m_start_idx + 1 {
             builder.replace(m_start_idx - offset..n - offset, &self.replace_symbol);
         }
+    }
+
+    fn rewrite2<'a>(
+        &'a self,
+        input: &InputBuffer,
+        mut edit: EditInput<'a>,
+    ) -> SudachiResult<EditInput<'a>> {
+        let re = self.regex.as_ref().unwrap();
+        let data = input.current();
+
+        for m in re.find_iter(data) {
+            edit.replace_ref(m.range(), &self.replace_symbol)
+        }
+        Ok(edit)
     }
 }

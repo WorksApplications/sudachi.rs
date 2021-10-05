@@ -27,6 +27,7 @@ use crate::dic::category_type::CategoryType;
 use crate::dic::character_category::Error as CharacterCategoryError;
 use crate::dic::grammar::Grammar;
 use crate::dic::lexicon::word_infos::WordInfo;
+use crate::input_text::input_buffer::InputBuffer;
 use crate::input_text::Utf8InputText;
 use crate::plugin::oov::OovProviderPlugin;
 use crate::prelude::*;
@@ -246,6 +247,16 @@ impl OovProviderPlugin for MeCabOovPlugin {
             }
         }
         Ok(nodes)
+    }
+
+    fn provide_oov2(
+        &self,
+        input_text: &InputBuffer,
+        offset: usize,
+        has_other_words: bool,
+        result: &mut Vec<Node>,
+    ) -> SudachiResult<()> {
+        todo!()
     }
 }
 

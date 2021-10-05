@@ -23,7 +23,8 @@ use crate::analysis::{lattice::Lattice, node::Node};
 use crate::config::Config;
 use crate::dic::grammar::Grammar;
 use crate::dic::lexicon::word_infos::WordInfo;
-use crate::input_text::Utf8InputText;
+use crate::input_text::input_buffer::InputBuffer;
+use crate::input_text::{PathRewriteAPI, Utf8InputText};
 use crate::plugin::path_rewrite::join_katakana_oov::JoinKatakanaOovPlugin;
 use crate::plugin::path_rewrite::join_numeric::JoinNumericPlugin;
 use crate::plugin::PluginCategory;
@@ -39,6 +40,14 @@ pub trait PathRewritePlugin: Sync + Send {
     fn rewrite(
         &self,
         text: &Utf8InputText,
+        path: Vec<Node>,
+        lattice: &Lattice,
+    ) -> SudachiResult<Vec<Node>>;
+
+    /// Returns a rewritten path
+    fn rewrite2(
+        &self,
+        text: &InputBuffer,
         path: Vec<Node>,
         lattice: &Lattice,
     ) -> SudachiResult<Vec<Node>>;

@@ -21,6 +21,7 @@ use crate::analysis::node::Node;
 use crate::config::Config;
 use crate::dic::grammar::Grammar;
 use crate::dic::lexicon::word_infos::WordInfo;
+use crate::input_text::input_buffer::InputBuffer;
 use crate::input_text::Utf8InputText;
 use crate::plugin::oov::OovProviderPlugin;
 use crate::prelude::*;
@@ -96,5 +97,36 @@ impl OovProviderPlugin for SimpleOovPlugin {
                 ..Default::default()
             },
         )])
+    }
+
+    fn provide_oov2(
+        &self,
+        input_text: &InputBuffer,
+        offset: usize,
+        has_other_words: bool,
+        result: &mut Vec<Node>,
+    ) -> SudachiResult<()> {
+        if has_other_words {
+            return Ok(());
+        }
+
+        let length = input_text.get_word_candidate_length(offset);
+        let surface = input_text.orig_slice(offset..offset + length);
+
+        result.push(Node::new_oov(
+            self.left_id,
+            self.right_id,
+            self.cost,
+            WordInfo {
+                normalized_form: surface.to_owned(),
+                dictionary_form: surface.to_owned(),
+                surface: surface.to_owned(),
+                head_word_length: length as u16,
+                pos_id: self.oov_pos_id,
+                dictionary_form_word_id: -1,
+                ..Default::default()
+            },
+        ));
+        Ok(())
     }
 }

@@ -22,6 +22,7 @@ use serde_json::Value;
 
 use crate::config::Config;
 use crate::dic::grammar::Grammar;
+use crate::input_text::input_buffer::{EditInput, InputBuffer};
 use crate::input_text::Utf8InputTextBuilder;
 use crate::plugin::input_text::default_input_text::DefaultInputTextPlugin;
 use crate::plugin::input_text::ignore_yomigana::IgnoreYomiganaPlugin;
@@ -39,6 +40,30 @@ pub trait InputTextPlugin: Sync + Send {
     ///
     /// builder::replace will be used inside
     fn rewrite(&self, builder: &mut Utf8InputTextBuilder);
+
+    /// Whether the rewrite process uses chars
+    fn uses_chars(&self) -> bool {
+        false
+    }
+
+    /// Perform rewrites
+    fn apply_rewrite(&self, input: &mut InputBuffer) -> SudachiResult<()> {
+        if self.uses_chars() {
+            input.refresh_chars()
+        }
+        input.with_replacer(|b, r| {
+            #[allow(deprecated)]
+            self.rewrite2(b, r)
+        })
+    }
+
+    /// Actual implementation of rewriting. Call `apply_rewrite` instead.
+    #[deprecated(note = "call apply_rewrite instead")]
+    fn rewrite2<'a>(
+        &'a self,
+        input: &InputBuffer,
+        edit: EditInput<'a>,
+    ) -> SudachiResult<EditInput<'a>>;
 }
 
 impl PluginCategory for dyn InputTextPlugin {

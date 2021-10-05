@@ -17,6 +17,7 @@
 use std::ops::Range;
 
 use crate::dic::category_type::CategoryType;
+use crate::input_text::PathRewriteAPI;
 
 /// Tokenization target text with original text and utility information
 #[derive(Debug, Default)]
@@ -206,5 +207,19 @@ impl Utf8InputText<'_> {
     // this is for testing but exposed to use in plugin test
     pub fn get_original_index(&self, byte_idx: usize) -> usize {
         self.offsets[byte_idx]
+    }
+}
+
+impl PathRewriteAPI for Utf8InputText<'_> {
+    fn cat_of_range(&self, range: Range<usize>) -> CategoryType {
+        self.get_char_category_types_range(range)
+    }
+
+    fn cat_at_byte(&self, offset: usize) -> CategoryType {
+        self.get_char_category_types(offset)
+    }
+
+    fn num_codepts(&self, range: Range<usize>) -> usize {
+        self.code_point_count(range)
     }
 }

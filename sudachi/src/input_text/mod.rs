@@ -14,11 +14,20 @@
  * limitations under the License.
  */
 
+pub mod input_buffer;
 pub mod utf8_input_text;
 pub mod utf8_input_text_builder;
 
+use crate::dic::category_type::CategoryType;
+use std::ops::Range;
 pub use utf8_input_text::Utf8InputText;
 pub use utf8_input_text_builder::Utf8InputTextBuilder;
+
+pub trait PathRewriteAPI {
+    fn cat_of_range(&self, range: Range<usize>) -> CategoryType;
+    fn cat_at_byte(&self, offset: usize) -> CategoryType;
+    fn num_codepts(&self, range: Range<usize>) -> usize;
+}
 
 #[cfg(test)]
 mod tests {
