@@ -19,27 +19,22 @@ extern crate lazy_static;
 
 mod common;
 use common::LEXICON;
+use sudachi::dic::lexicon::LexiconEntry;
 
 #[test]
 fn lookup() {
-    let res = LEXICON
-        .lookup("東京都".as_bytes(), 0)
-        .expect("failed to lookup");
+    let res: Vec<LexiconEntry> = LEXICON.lookup("東京都".as_bytes(), 0).collect();
     assert_eq!(3, res.len());
-    assert_eq!((4, 3), res[0]); // 東
-    assert_eq!((5, 6), res[1]); // 東京
-    assert_eq!((6, 9), res[2]); // 東京都
+    assert_eq!(LexiconEntry::new(4, 3), res[0]); // 東
+    assert_eq!(LexiconEntry::new(5, 6), res[1]); // 東京
+    assert_eq!(LexiconEntry::new(6, 9), res[2]); // 東京都
 
-    let res = LEXICON
-        .lookup("東京都に".as_bytes(), 9)
-        .expect("failed to lookup");
+    let res: Vec<LexiconEntry> = LEXICON.lookup("東京都に".as_bytes(), 9).collect();
     assert_eq!(2, res.len());
-    assert_eq!((1, 12), res[0]); // に(接続助詞)
-    assert_eq!((2, 12), res[1]); // に(格助詞)
+    assert_eq!(LexiconEntry::new(1, 12), res[0]); // に(接続助詞)
+    assert_eq!(LexiconEntry::new(2, 12), res[1]); // に(格助詞)
 
-    let res = LEXICON
-        .lookup("あれ".as_bytes(), 0)
-        .expect("failed to lookup");
+    let res: Vec<LexiconEntry> = LEXICON.lookup("あれ".as_bytes(), 0).collect();
     assert_eq!(0, res.len());
 }
 

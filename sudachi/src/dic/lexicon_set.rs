@@ -17,7 +17,7 @@
 use thiserror::Error;
 
 use crate::dic::lexicon::word_infos::WordInfo;
-use crate::dic::lexicon::Lexicon;
+use crate::dic::lexicon::{Lexicon, LexiconEntry, MAX_DICTIONARIES};
 use crate::prelude::*;
 
 /// Sudachi error
@@ -43,14 +43,11 @@ pub struct LexiconSet<'a> {
 }
 
 impl<'a> LexiconSet<'a> {
-    /// The first 4 bits of word_id are used to indicate that from which lexicon
-    /// the word comes, thus we can only hold 2^4 lexicons in the same time.
-    const MAX_DICTIONARIES: usize = 16;
-
     /// Creates a LexiconSet given a lexicon
     ///
-    /// This assume that given lexicon is from system dictionary
-    pub fn new(system_lexicon: Lexicon) -> LexiconSet {
+    /// It is assumed that the passed lexicon is the system dictionary
+    pub fn new(mut system_lexicon: Lexicon) -> LexiconSet {
+        system_lexicon.set_dic_id(0);
         LexiconSet {
             lexicons: vec![system_lexicon],
             pos_offsets: vec![0],
@@ -62,13 +59,13 @@ impl<'a> LexiconSet<'a> {
     /// pos_offset: number of pos in the grammar
     pub fn append(
         &mut self,
-        lexicon: Lexicon<'a>,
+        mut lexicon: Lexicon<'a>,
         pos_offset: usize,
     ) -> Result<(), LexiconSetError> {
         if self.is_full() {
             return Err(LexiconSetError::TooManyDictionaries);
         }
-
+        lexicon.set_dic_id(self.lexicons.len() as u8);
         self.lexicons.push(lexicon);
         self.pos_offsets.push(pos_offset);
         Ok(())
@@ -76,28 +73,24 @@ impl<'a> LexiconSet<'a> {
 
     /// Returns if dictionary capacity is full
     pub fn is_full(&self) -> bool {
-        self.lexicons.len() >= LexiconSet::MAX_DICTIONARIES
+        self.lexicons.len() >= MAX_DICTIONARIES
     }
 }
 
 impl LexiconSet<'_> {
-    /// Returns a list of word_id and length of words that matches given input
+    /// Returns iterator which yields all words in the dictionary, starting from the `offset` bytes
     ///
-    /// Searches user dictionary first and then system dictionary
-    pub fn lookup(&self, input: &[u8], offset: usize) -> SudachiResult<Vec<(u32, usize)>> {
-        let mut vs: Vec<(u32, usize)> = Vec::new();
-        for (did, user_lexicon) in self.lexicons.iter().enumerate().skip(1) {
-            vs.extend(
-                user_lexicon
-                    .lookup(input, offset)?
-                    .iter()
-                    .map(|(wid, l)| self.build_dictword_id(did, *wid).map(|dwid| (dwid, *l)))
-                    .collect::<Result<Vec<_>, _>>()?,
-            );
-        }
-        vs.extend(self.lexicons[0].lookup(input, offset)?);
-
-        Ok(vs)
+    /// Searches dictionaries in the reverse order: user dictionaries first and then system dictionary
+    pub fn lookup<'b>(
+        &'b self,
+        input: &'b [u8],
+        offset: usize,
+    ) -> impl Iterator<Item = LexiconEntry> + 'b {
+        // word_id fixup was moved to lexicon itself
+        self.lexicons
+            .iter()
+            .rev()
+            .flat_map(move |l| l.lookup(input, offset))
     }
 
     /// Returns word_info for given word_id
