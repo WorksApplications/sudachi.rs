@@ -43,6 +43,40 @@ impl<'a> WordIdTable<'a> {
         let (_rest, result) = word_id_table_parser(self.bytes, self.offset, index)?;
         Ok(result)
     }
+
+    pub fn entries(&self, index: usize) -> WordIdIter {
+        debug_assert!(index < self.bytes.len());
+        let ptr = unsafe { self.bytes.as_ptr().offset((index + self.offset) as isize) };
+        let cnt = unsafe { ptr.read() } as usize;
+        let data_ptr = unsafe { ptr.offset(1) } as *const u32;
+        debug_assert!(index + cnt * std::mem::size_of::<u32>() + 1 <= self.bytes.len());
+        WordIdIter {
+            data: data_ptr,
+            remaining: cnt,
+        }
+    }
+}
+
+pub struct WordIdIter {
+    // this pointer is unaligned!
+    data: *const u32,
+    // number of remaining elements
+    remaining: usize,
+}
+
+impl Iterator for WordIdIter {
+    type Item = u32;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.remaining == 0 {
+            return None;
+        }
+
+        let val = unsafe { self.data.read_unaligned() };
+        self.data = unsafe { self.data.offset(1) };
+        self.remaining -= 1;
+        Some(val)
+    }
 }
 
 fn word_id_table_parser(

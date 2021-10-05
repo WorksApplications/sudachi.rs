@@ -48,7 +48,8 @@ impl NonBreakChecker<'_> {
             if !self.input.can_bow(i) {
                 continue;
             }
-            for (_, end_byte) in self.lexicon.lookup(input_bytes, i)? {
+            for entry in self.lexicon.lookup(input_bytes, i) {
+                let end_byte = entry.end;
                 let char_count = self.input.modified[i..end_byte].chars().count();
                 if end_byte > eos_byte || (end_byte == eos_byte && char_count > 1) {
                     return Ok(true);

@@ -185,14 +185,14 @@ fn build_lattice<'a, 'b, T: DictionaryAccess + ?Sized>(
         }
 
         let mut has_word = false;
-        for (word_id, end) in dict.lexicon().lookup(&input_bytes, i)? {
-            if (end < input_bytes.len()) && !input.can_bow(end) {
+        for e in dict.lexicon().lookup(&input_bytes, i) {
+            if (e.end < input_bytes.len()) && !input.can_bow(e.end) {
                 continue;
             }
             has_word = true;
-            let (left_id, right_id, cost) = dict.lexicon().get_word_param(word_id)?;
-            let node = Node::new(left_id, right_id, cost, word_id);
-            lattice.insert(i, end, node)?;
+            let (left_id, right_id, cost) = dict.lexicon().get_word_param(e.word_id)?;
+            let node = Node::new(left_id, right_id, cost, e.word_id);
+            lattice.insert(i, e.end, node)?;
         }
 
         // OOV

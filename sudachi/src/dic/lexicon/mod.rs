@@ -14,20 +14,28 @@
  * limitations under the License.
  */
 
-use nom::{bytes::complete::take, number::complete::le_u32};
 use std::cmp;
 
+use nom::{bytes::complete::take, number::complete::le_u32};
+
+use crate::error::SudachiNomResult;
+use crate::prelude::*;
+
 use self::trie::Trie;
+use self::trie::TrieEntry;
 use self::word_id_table::WordIdTable;
 use self::word_infos::{WordInfo, WordInfos};
 use self::word_params::WordParams;
-use crate::error::SudachiNomResult;
-use crate::prelude::*;
 
 pub mod trie;
 pub mod word_id_table;
 pub mod word_infos;
 pub mod word_params;
+
+/// The first 4 bits of word_id are used to indicate that from which lexicon
+/// the word comes, thus we can only hold 15 lexicons in the same time.
+/// 16th is reserved for marking OOVs.
+pub const MAX_DICTIONARIES: usize = 15;
 
 /// Dictionary lexicon
 ///
@@ -37,7 +45,10 @@ pub struct Lexicon<'a> {
     word_id_table: WordIdTable<'a>,
     word_params: WordParams<'a>,
     word_infos: WordInfos<'a>,
+    lex_id: u8,
 }
+
+pub type LexiconEntry = TrieEntry;
 
 impl<'a> Lexicon<'a> {
     const USER_DICT_COST_PER_MORPH: i32 = -20;
@@ -70,22 +81,37 @@ impl<'a> Lexicon<'a> {
             word_id_table,
             word_params,
             word_infos,
+            lex_id: u8::MAX,
         })
     }
 
-    /// Returns a list of word_id and length of words that matches given input
-    pub fn lookup(&self, input: &[u8], offset: usize) -> SudachiResult<Vec<(u32, usize)>> {
-        let result = self.trie.common_prefix_search(input, offset)?;
+    /// Assign lexicon id to the current Lexicon
+    pub fn set_dic_id(&mut self, id: u8) {
+        assert!(id < MAX_DICTIONARIES as u8);
+        self.lex_id = id
+    }
 
-        let mut l: Vec<(u32, usize)> = Vec::new(); // (word_id, length)
-        for item in result {
-            let length = item.1;
-            for word_id in self.word_id_table.get(item.0)? {
-                l.push((word_id, length));
-            }
-        }
+    fn word_id(&self, raw_id: u32) -> u32 {
+        let lex_part: u32 = (self.lex_id as u32) << 28;
+        debug_assert!(raw_id & 0xF000_0000 == 0);
+        let word_part = raw_id & 0x0FFF_FFFF;
+        return lex_part | word_part;
+    }
 
-        Ok(l)
+    /// Returns an iterator of word_id and end of words that matches given input
+    pub fn lookup(
+        &'a self,
+        input: &'a [u8],
+        offset: usize,
+    ) -> impl Iterator<Item = LexiconEntry> + 'a {
+        debug_assert!(self.lex_id < MAX_DICTIONARIES as u8);
+        self.trie
+            .common_prefix_iterator(input, offset)
+            .flat_map(move |e| {
+                self.word_id_table
+                    .entries(e.word_id as usize)
+                    .map(move |wid| LexiconEntry::new(self.word_id(wid), e.end))
+            })
     }
 
     /// Returns word_info for given word_id
@@ -105,15 +131,15 @@ impl<'a> Lexicon<'a> {
     /// update word_param cost based on current tokenizer
     pub fn update_cost<T: Tokenize>(&mut self, tokenizer: &T) -> SudachiResult<()> {
         for wid in 0..self.word_params.size() as u32 {
-            if self.word_params.get_cost(wid)? != std::i16::MIN {
+            if self.word_params.get_cost(wid)? != i16::MIN {
                 continue;
             }
             let surface = self.get_word_info(wid)?.surface;
             let ms = tokenizer.tokenize(&surface, Mode::C, false)?;
             let internal_cost = (ms.last().unwrap().cost - ms[0].cost) as i32;
             let cost = internal_cost + Lexicon::USER_DICT_COST_PER_MORPH * ms.len() as i32;
-            let cost = cmp::min(cost, std::i16::MAX as i32);
-            let cost = cmp::max(cost, std::i16::MIN as i32);
+            let cost = cmp::min(cost, i16::MAX as i32);
+            let cost = cmp::max(cost, i16::MIN as i32);
             self.word_params.set_cost(wid, cost as i16);
         }
 

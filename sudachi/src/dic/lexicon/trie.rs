@@ -14,11 +14,70 @@
  * limitations under the License.
  */
 
-use crate::prelude::*;
+#[derive(Debug, Eq, PartialEq, Clone)]
+pub struct TrieEntry {
+    pub word_id: u32,
+    pub end: usize,
+}
+
+impl TrieEntry {
+    pub fn new(id: u32, offset: usize) -> TrieEntry {
+        TrieEntry {
+            word_id: id,
+            end: offset,
+        }
+    }
+}
 
 pub struct Trie {
     array: Vec<u32>,
     size: u32, // number of elements
+}
+
+pub struct TrieEntryIter<'a> {
+    trie: &'a [u32],
+    node_pos: usize,
+    data: &'a [u8],
+    offset: usize,
+}
+
+impl<'a> TrieEntryIter<'a> {
+    fn get(&self, index: usize) -> u32 {
+        debug_assert!(index < self.trie.len());
+        // UB if out of bounds
+        // Should we panic in release builds here instead?
+        // Safe version is not optimized away
+        *unsafe { self.trie.get_unchecked(index) }
+    }
+}
+
+impl<'a> Iterator for TrieEntryIter<'a> {
+    type Item = TrieEntry;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let mut node_pos = self.node_pos;
+        let mut unit;
+
+        for i in self.offset..self.data.len() {
+            // Unwrap is safe: access is always in bounds
+            // It is optimized away: https://rust.godbolt.org/z/va9K3az4n
+            let k = self.data.get(i).unwrap();
+            node_pos ^= *k as usize;
+            unit = self.get(node_pos) as usize;
+            if Trie::label(unit) != *k as usize {
+                return None;
+            }
+
+            node_pos ^= Trie::offset(unit);
+            if Trie::has_leaf(unit) {
+                let r = TrieEntry::new(Trie::value(self.get(node_pos)), i + 1);
+                self.offset = r.end;
+                self.node_pos = node_pos;
+                return Some(r);
+            }
+        }
+        None
+    }
 }
 
 impl Trie {
@@ -30,55 +89,34 @@ impl Trie {
         4 * self.size as usize
     }
 
-    pub fn common_prefix_search(
-        &self,
-        input: &[u8],
+    pub fn common_prefix_iterator<'a>(
+        &'a self,
+        input: &'a [u8],
         offset: usize,
-    ) -> SudachiResult<Vec<(usize, usize)>> {
-        let mut result = Vec::new();
+    ) -> TrieEntryIter<'a> {
+        let unit: usize = self.get(0) as usize;
 
-        let mut node_pos: usize = 0;
-        let mut unit: usize = *self
-            .array
-            .get(node_pos)
-            .ok_or(SudachiError::MissingDictionaryTrie)? as usize;
-        node_pos ^= Trie::offset(unit);
-
-        for i in offset..input.len() {
-            let k = input.get(i).ok_or(SudachiError::MissingDictionaryTrie)?;
-            node_pos ^= *k as usize;
-            unit = *self
-                .array
-                .get(node_pos)
-                .ok_or(SudachiError::MissingDictionaryTrie)? as usize;
-            if Trie::label(unit) != *k as usize {
-                return Ok(result);
-            }
-
-            node_pos ^= Trie::offset(unit);
-            if Trie::has_leaf(unit) {
-                let r = (
-                    Trie::value(
-                        *self
-                            .array
-                            .get(node_pos)
-                            .ok_or(SudachiError::MissingDictionaryTrie)?
-                            as usize,
-                    ),
-                    i + 1,
-                );
-                result.push(r);
-            }
+        TrieEntryIter {
+            node_pos: Trie::offset(unit),
+            data: input,
+            trie: &self.array,
+            offset,
         }
+    }
 
-        Ok(result)
+    fn get(&self, index: usize) -> u32 {
+        debug_assert!(index < self.array.len());
+        // UB if out of bounds
+        // Should we panic in release builds here instead?
+        // Safe version is not optimized away
+        *unsafe { self.array.get_unchecked(index) }
     }
 
     fn has_leaf(unit: usize) -> bool {
         ((unit >> 8) & 1) == 1
     }
 
-    fn value(unit: usize) -> usize {
+    fn value(unit: u32) -> u32 {
         unit & ((1 << 31) - 1)
     }
 
