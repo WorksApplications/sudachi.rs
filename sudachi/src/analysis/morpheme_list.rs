@@ -17,50 +17,63 @@
 use std::ops::Deref;
 
 use crate::analysis::node::Node;
-use crate::dic::grammar::Grammar;
-// use crate::analysis::morpheme::Morpheme;
 use crate::analysis::stateless_tokenizer::DictionaryAccess;
+use crate::dic::grammar::Grammar;
 use crate::dic::lexicon::word_infos::WordInfo;
+use crate::input_text::Utf8InputText;
 use crate::prelude::*;
 
-pub struct MorphemeList<'a, T> {
+pub struct MorphemeList<T> {
     pub dict: T,
-    pub input_text: &'a str,
+    pub input_text: String,
     pub path: Vec<Node>,
 }
 
-impl<'a, T> MorphemeList<'a, T>
+impl<T> MorphemeList<T>
 where
     T: Deref,
     <T as Deref>::Target: DictionaryAccess,
 {
-    pub fn new(dict: T, input_text: &'a str, path: Vec<Node>) -> Self {
+    pub fn new(dict: T, input_text: &Utf8InputText, mut path: Vec<Node>) -> SudachiResult<Self> {
+        for node in &mut path {
+            node.fill_word_info(dict.lexicon())?;
+            // set range for origina text
+            node.set_range(
+                input_text.get_original_index(node.begin),
+                input_text.get_original_index(node.end),
+            )
+        }
+
+        Ok(Self {
+            dict,
+            input_text: input_text.original.to_string(),
+            path,
+        })
+    }
+
+    pub fn empty(dict: T) -> Self {
         Self {
             dict,
-            input_text,
-            path,
+            input_text: "".to_string(),
+            path: Vec::new(),
         }
     }
 
+    fn get_grammar(&self) -> &Grammar {
+        self.dict.grammar()
+    }
+}
+
+impl<T> MorphemeList<T> {
     pub fn iter(&self) -> MorphemeIter<T> {
         MorphemeIter {
             list: &self,
             index: 0,
         }
     }
-}
 
-impl<T> MorphemeList<'_, T>
-where
-    T: Deref,
-    <T as Deref>::Target: DictionaryAccess,
-{
     fn get_node(&self, index: usize) -> &Node {
         &self.path[index]
-    }
-
-    fn get_grammar(&self) -> &Grammar {
-        self.dict.grammar()
     }
 
     fn get_begin(&self, index: usize) -> usize {
@@ -71,28 +84,27 @@ where
         self.path[index].end
     }
 
-    fn get_surface(&self, index: usize) -> &String {
+    fn get_surface(&self, index: usize) -> &str {
         // returns substring of the original text which corresponds to the node at the given index
-        // we will need index mapping between original/modified input text
-        todo!();
+        let node = &self.path[index];
+        &self.input_text[node.begin..node.end]
     }
 
-    fn get_word_info(&self, index: usize) -> WordInfo {
-        self.path[index].word_info.clone().unwrap()
-    }
-
-    fn split(&self, mode: Mode, index: usize, word_info: WordInfo) -> usize {
-        // return type: MorphemeList<'_, T> {
+    fn split(&self, _mode: Mode, _index: usize, _word_info: &WordInfo) -> MorphemeList<T> {
         // Split target node based on the mode
         todo!();
+    }
+
+    fn get_word_info(&self, index: usize) -> &WordInfo {
+        self.path[index].word_info.as_ref().unwrap()
     }
 
     fn is_oov(&self, index: usize) -> bool {
         self.path[index].is_oov
     }
 
-    fn get_internal_cost(&self) -> i32 {
-        if self.size() == 0 {
+    pub fn get_internal_cost(&self) -> i32 {
+        if self.len() == 0 {
             return 0;
         }
 
@@ -101,13 +113,13 @@ where
         last.total_cost - first.total_cost
     }
 
-    fn size(&self) -> usize {
+    pub fn len(&self) -> usize {
         self.path.len()
     }
 }
 
 pub struct MorphemeIter<'a, T> {
-    list: &'a MorphemeList<'a, T>,
+    list: &'a MorphemeList<T>,
     index: usize,
 }
 
@@ -126,7 +138,6 @@ where
         let morpheme = Morpheme {
             list: self.list,
             index: self.index,
-            word_info: None,
         };
 
         self.index += 1;
@@ -135,9 +146,8 @@ where
 }
 
 pub struct Morpheme<'a, T> {
-    list: &'a MorphemeList<'a, T>,
+    list: &'a MorphemeList<T>,
     index: usize,
-    word_info: Option<crate::dic::lexicon::word_infos::WordInfo>,
 }
 
 impl<'a, T> Morpheme<'a, T>
@@ -153,38 +163,44 @@ where
         self.list.get_end(self.index)
     }
 
-    pub fn surface(&self) -> &String {
-        &self.list.get_surface(self.index)
+    pub fn surface(&self) -> &str {
+        self.list.get_surface(self.index)
     }
 
-    pub fn part_of_speech(&mut self) -> &Vec<String> {
+    pub fn part_of_speech(&self) -> SudachiResult<&[String]> {
         let pos_id = self.part_of_speech_id();
-        &self.list.get_grammar().pos_list[pos_id as usize]
+        let pos = self
+            .list
+            .get_grammar()
+            .pos_list
+            .get(pos_id as usize)
+            .ok_or(SudachiError::MissingPartOfSpeech)?;
+        Ok(&pos)
     }
 
-    pub fn part_of_speech_id(&mut self) -> u16 {
+    pub fn part_of_speech_id(&self) -> u16 {
         let wi = self.get_word_info();
         wi.pos_id
     }
 
-    pub fn dictionary_form(&mut self) -> &String {
+    pub fn dictionary_form(&self) -> &str {
         let wi = self.get_word_info();
         &wi.dictionary_form
     }
 
-    pub fn normalized_form(&mut self) -> &String {
+    pub fn normalized_form(&self) -> &str {
         let wi = self.get_word_info();
         &wi.normalized_form
     }
 
-    pub fn reading_form(&mut self) -> &String {
+    pub fn reading_form(&self) -> &str {
         let wi = self.get_word_info();
         &wi.reading_form
     }
 
-    pub fn split(&mut self) -> usize {
+    pub fn split(&self, mode: Mode) -> MorphemeList<T> {
         let wi = self.get_word_info();
-        todo!();
+        self.list.split(mode, self.index, wi)
     }
 
     pub fn is_oov(&self) -> bool {
@@ -199,15 +215,12 @@ where
         self.list.get_node(self.index).get_dictionary_id()
     }
 
-    pub fn synonym_group_ids(&mut self) -> &Vec<u32> {
+    pub fn synonym_group_ids(&self) -> &[u32] {
         let wi = self.get_word_info();
         &wi.synonym_group_ids
     }
 
-    pub fn get_word_info(&mut self) -> &WordInfo {
-        if let None = self.word_info {
-            self.word_info = Some(self.list.get_word_info(self.index));
-        }
-        self.word_info.as_ref().unwrap()
+    pub fn get_word_info(&self) -> &WordInfo {
+        self.list.get_word_info(self.index)
     }
 }
