@@ -56,10 +56,9 @@ impl PyDictionary {
     #[pyo3(text_signature = "($self, mode)")]
     #[args(mode = "None")]
     fn create(&self, mode: Option<PySplitMode>) -> PyTokenizer {
-        let dictionary = self.dictionary.clone();
         let tokenizer = StatelessTokenizer::new(self.dictionary.clone());
         let mode = mode.unwrap_or(PySplitMode::C).into();
 
-        PyTokenizer::new(dictionary, tokenizer, mode)
+        PyTokenizer::new(tokenizer, mode)
     }
 }

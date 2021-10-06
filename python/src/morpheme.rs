@@ -19,10 +19,10 @@ use std::sync::Arc;
 use pyo3::exceptions::PyException;
 use pyo3::prelude::*;
 
+use sudachi::analysis::morpheme::Morpheme;
 use sudachi::dic::dictionary::JapaneseDictionary;
 use sudachi::dic::lexicon::word_infos::WordInfo;
 use sudachi::dic::lexicon_set::LexiconSet;
-use sudachi::prelude::*;
 
 use crate::tokenizer::PySplitMode;
 

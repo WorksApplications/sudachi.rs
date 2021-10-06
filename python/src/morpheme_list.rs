@@ -16,37 +16,22 @@
 
 use std::sync::Arc;
 
-use pyo3::exceptions::PyException;
 use pyo3::prelude::*;
 
-use sudachi::analysis::morpheme_list::{Morpheme, MorphemeList};
-use sudachi::analysis::node::Node;
+use sudachi::analysis::morpheme_list::MorphemeList;
 use sudachi::dic::dictionary::JapaneseDictionary;
-use sudachi::dic::lexicon::word_infos::WordInfo;
-use sudachi::dic::lexicon_set::LexiconSet;
-use sudachi::prelude::*;
-
-use crate::tokenizer::PySplitMode;
 
 #[pyclass]
 pub struct PyMorphemeListWrapper {
     inner: Arc<PyMorphemeList>,
 }
 
-pub struct PyMorphemeList {
-    dict: Arc<JapaneseDictionary>,
-    input_text: String,
-    path: Vec<Node>,
-}
+type PyMorphemeList = MorphemeList<Arc<JapaneseDictionary>>;
 
-impl From<MorphemeList<'_, Arc<JapaneseDictionary>>> for PyMorphemeListWrapper {
+impl From<MorphemeList<Arc<JapaneseDictionary>>> for PyMorphemeListWrapper {
     fn from(morpheme_list: MorphemeList<Arc<JapaneseDictionary>>) -> Self {
         Self {
-            inner: Arc::new(PyMorphemeList {
-                dict: morpheme_list.dict,
-                input_text: morpheme_list.input_text.to_string(),
-                path: morpheme_list.path,
-            }),
+            inner: Arc::new(morpheme_list),
         }
     }
 }
@@ -96,4 +81,12 @@ impl pyo3::iter::PyIterProtocol for PyMorphemeIter {
 pub struct PyMorpheme {
     list: Arc<PyMorphemeList>,
     index: usize,
+}
+
+#[pymethods]
+impl PyMorpheme {
+    fn surface(&self) -> &str {
+        let node = &self.list.path[self.index];
+        &self.list.input_text[node.begin..node.end]
+    }
 }

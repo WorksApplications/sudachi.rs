@@ -23,7 +23,7 @@ use sudachi::analysis::stateless_tokenizer::StatelessTokenizer;
 use sudachi::dic::dictionary::JapaneseDictionary;
 use sudachi::prelude::*;
 
-use crate::morpheme::PyMorpheme;
+use crate::morpheme_list::PyMorphemeListWrapper;
 
 /// Unit to split text
 ///
@@ -81,22 +81,13 @@ impl std::str::FromStr for PySplitMode {
 
 #[pyclass(module = "sudachi.tokenizer", name = "Tokenizer")]
 pub struct PyTokenizer {
-    dictionary: Arc<JapaneseDictionary>,
     tokenizer: StatelessTokenizer<Arc<JapaneseDictionary>>,
     mode: Mode,
 }
 
 impl PyTokenizer {
-    pub fn new(
-        dictionary: Arc<JapaneseDictionary>,
-        tokenizer: StatelessTokenizer<Arc<JapaneseDictionary>>,
-        mode: Mode,
-    ) -> Self {
-        Self {
-            dictionary,
-            tokenizer,
-            mode,
-        }
+    pub fn new(tokenizer: StatelessTokenizer<Arc<JapaneseDictionary>>, mode: Mode) -> Self {
+        Self { tokenizer, mode }
     }
 }
 
@@ -110,7 +101,7 @@ impl PyTokenizer {
         text: &str,
         mode: Option<PySplitMode>,
         enable_debug: Option<bool>, // want to take logger instead of debug flag
-    ) -> PyResult<Vec<PyMorpheme>> {
+    ) -> PyResult<PyMorphemeListWrapper> {
         let mode: Mode = match mode {
             Some(m) => m.into(),
             None => self.mode,
@@ -122,9 +113,7 @@ impl PyTokenizer {
             .map_err(|e| {
                 PyException::new_err(format!("Error while tokenization: {}", e.to_string()))
             })?
-            .into_iter()
-            .map(|m| PyMorpheme::new(m, self.dictionary.clone()))
-            .collect();
+            .into();
 
         Ok(morphemes)
     }
