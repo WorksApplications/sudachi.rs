@@ -28,8 +28,9 @@ use crate::tokenizer::{PySplitMode, PyTokenizer};
 
 #[pyclass(module = "sudachi.dictionary", name = "Dictionary")]
 #[pyo3(text_signature = "(config_path, resource_dir)")]
+#[derive(Clone)]
 pub struct PyDictionary {
-    dictionary: Arc<JapaneseDictionary>,
+    pub dictionary: Arc<JapaneseDictionary>,
 }
 
 #[pymethods]

@@ -23,6 +23,7 @@ use pyo3::types::PyType;
 use sudachi::analysis::morpheme_list::MorphemeList;
 use sudachi::dic::dictionary::JapaneseDictionary;
 
+use crate::dictionary::PyDictionary;
 use crate::morpheme::PyWordInfo;
 use crate::tokenizer::PySplitMode;
 
@@ -36,11 +37,11 @@ pub struct PyMorphemeListWrapper {
 #[pymethods]
 impl PyMorphemeListWrapper {
     #[classmethod]
-    fn empty(_cls: &PyType) -> Self {
-        todo!();
-        // Self {
-        //     inner: Arc::new(PyMorphemeList::empty(dict)),
-        // }
+    #[pyo3(text_signature = "(&self, dict)")]
+    fn empty(_cls: &PyType, dict: PyDictionary) -> Self {
+        Self {
+            inner: Arc::new(PyMorphemeList::empty(dict.dictionary.clone())),
+        }
     }
 
     #[pyo3(text_signature = "(&self)")]
