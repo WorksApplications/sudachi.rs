@@ -54,13 +54,60 @@ where
     pub fn empty(dict: T) -> Self {
         Self {
             dict,
-            input_text: "".to_string(),
+            input_text: String::new(),
             path: Vec::new(),
         }
     }
 
     fn get_grammar(&self) -> &Grammar {
         self.dict.grammar()
+    }
+}
+
+impl<T> MorphemeList<T>
+where
+    T: Deref + Clone,
+    <T as Deref>::Target: DictionaryAccess,
+{
+    pub fn split(&self, mode: Mode, index: usize) -> SudachiResult<MorphemeList<T>> {
+        let input_text = self.input_text.clone();
+
+        let word_ids = match mode {
+            Mode::A => &self.get_word_info(index).a_unit_split,
+            Mode::B => &self.get_word_info(index).b_unit_split,
+            Mode::C => {
+                return Ok(MorphemeList {
+                    dict: self.dict.clone(),
+                    input_text,
+                    path: vec![self.path[index].clone()],
+                })
+            }
+        };
+
+        if word_ids.len() < 2 {
+            return Ok(MorphemeList {
+                dict: self.dict.clone(),
+                input_text,
+                path: vec![self.path[index].clone()],
+            });
+        }
+
+        let mut offset = self.path[index].begin;
+        let mut path = Vec::with_capacity(word_ids.len());
+        for &wid in word_ids {
+            let mut node = Node::new(0, 0, 0, wid);
+            let word_info = self.dict.lexicon().get_word_info(wid)?;
+            node.set_range(offset, offset + word_info.head_word_length as usize);
+            offset += word_info.head_word_length as usize;
+            node.set_word_info(word_info);
+            path.push(node);
+        }
+
+        Ok(MorphemeList {
+            dict: self.dict.clone(),
+            input_text,
+            path,
+        })
     }
 }
 
@@ -72,34 +119,29 @@ impl<T> MorphemeList<T> {
         }
     }
 
-    fn get_node(&self, index: usize) -> &Node {
+    pub fn get_node(&self, index: usize) -> &Node {
         &self.path[index]
     }
 
-    fn get_begin(&self, index: usize) -> usize {
+    pub fn get_begin(&self, index: usize) -> usize {
         self.path[index].begin
     }
 
-    fn get_end(&self, index: usize) -> usize {
+    pub fn get_end(&self, index: usize) -> usize {
         self.path[index].end
     }
 
-    fn get_surface(&self, index: usize) -> &str {
+    pub fn get_surface(&self, index: usize) -> &str {
         // returns substring of the original text which corresponds to the node at the given index
         let node = &self.path[index];
         &self.input_text[node.begin..node.end]
     }
 
-    fn split(&self, _mode: Mode, _index: usize, _word_info: &WordInfo) -> MorphemeList<T> {
-        // Split target node based on the mode
-        todo!();
-    }
-
-    fn get_word_info(&self, index: usize) -> &WordInfo {
+    pub fn get_word_info(&self, index: usize) -> &WordInfo {
         self.path[index].word_info.as_ref().unwrap()
     }
 
-    fn is_oov(&self, index: usize) -> bool {
+    pub fn is_oov(&self, index: usize) -> bool {
         self.path[index].is_oov
     }
 
@@ -155,6 +197,29 @@ where
     T: Deref,
     <T as Deref>::Target: DictionaryAccess,
 {
+    pub fn part_of_speech(&self) -> SudachiResult<&[String]> {
+        let pos_id = self.part_of_speech_id();
+        let pos = self
+            .list
+            .get_grammar()
+            .pos_list
+            .get(pos_id as usize)
+            .ok_or(SudachiError::MissingPartOfSpeech)?;
+        Ok(&pos)
+    }
+}
+
+impl<'a, T> Morpheme<'a, T>
+where
+    T: Deref + Clone,
+    <T as Deref>::Target: DictionaryAccess,
+{
+    pub fn split(&self, mode: Mode) -> SudachiResult<MorphemeList<T>> {
+        self.list.split(mode, self.index)
+    }
+}
+
+impl<'a, T> Morpheme<'a, T> {
     pub fn begin(&self) -> usize {
         self.list.get_begin(self.index)
     }
@@ -165,17 +230,6 @@ where
 
     pub fn surface(&self) -> &str {
         self.list.get_surface(self.index)
-    }
-
-    pub fn part_of_speech(&self) -> SudachiResult<&[String]> {
-        let pos_id = self.part_of_speech_id();
-        let pos = self
-            .list
-            .get_grammar()
-            .pos_list
-            .get(pos_id as usize)
-            .ok_or(SudachiError::MissingPartOfSpeech)?;
-        Ok(&pos)
     }
 
     pub fn part_of_speech_id(&self) -> u16 {
@@ -196,11 +250,6 @@ where
     pub fn reading_form(&self) -> &str {
         let wi = self.get_word_info();
         &wi.reading_form
-    }
-
-    pub fn split(&self, mode: Mode) -> MorphemeList<T> {
-        let wi = self.get_word_info();
-        self.list.split(mode, self.index, wi)
     }
 
     pub fn is_oov(&self) -> bool {
