@@ -76,7 +76,7 @@ impl FromStr for Mode {
 
 /// Able to tokenize Japanese text
 pub trait Tokenize {
-    type Dictionary: ?Sized;
+    type Dictionary;
 
     /// Break text into `Morpheme`s
     fn tokenize<'a>(
@@ -84,7 +84,7 @@ pub trait Tokenize {
         input: &'a str,
         mode: Mode,
         enable_debug: bool,
-    ) -> SudachiResult<MorphemeList<&'a Self::Dictionary>>;
+    ) -> SudachiResult<MorphemeList<Self::Dictionary>>;
 
     /// Split text into sentences then tokenize
     fn tokenize_sentences<'a>(
@@ -92,5 +92,5 @@ pub trait Tokenize {
         input: &'a str,
         mode: Mode,
         enable_debug: bool,
-    ) -> SudachiResult<Vec<MorphemeList<&'a Self::Dictionary>>>;
+    ) -> SudachiResult<Vec<MorphemeList<Self::Dictionary>>>;
 }

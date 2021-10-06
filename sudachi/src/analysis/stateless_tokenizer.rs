@@ -62,23 +62,24 @@ where
     }
 }
 
-impl<T: Deref> Tokenize for StatelessTokenizer<T>
+impl<T> Tokenize for StatelessTokenizer<T>
 where
+    T: Deref + Clone,
     <T as Deref>::Target: DictionaryAccess,
 {
-    type Dictionary = <T as Deref>::Target;
+    type Dictionary = T;
 
     fn tokenize<'a>(
         &'a self,
         input: &'a str,
         mode: Mode,
         enable_debug: bool,
-    ) -> SudachiResult<MorphemeList<&'a Self::Dictionary>> {
+    ) -> SudachiResult<MorphemeList<Self::Dictionary>> {
         let dict = Deref::deref(&self.dict);
         let input = build_input_text(dict, input);
         let path = tokenize_input_text(dict, &input, mode, enable_debug)?;
 
-        Ok(MorphemeList::new(dict, &input, path)?)
+        Ok(MorphemeList::new(self.dict.clone(), &input, path)?)
     }
 
     fn tokenize_sentences<'a>(
@@ -86,18 +87,18 @@ where
         input: &'a str,
         mode: Mode,
         enable_debug: bool,
-    ) -> SudachiResult<Vec<MorphemeList<&'a Self::Dictionary>>> {
-        let dict = Deref::deref(&self.dict);
+    ) -> SudachiResult<Vec<MorphemeList<Self::Dictionary>>> {
         if input.is_empty() {
-            return Ok(vec![MorphemeList::empty(dict)]);
+            return Ok(vec![MorphemeList::empty(self.dict.clone())]);
         }
 
+        let dict = Deref::deref(&self.dict);
         let input = build_input_text(dict, input);
         split_sentences(dict.lexicon(), &input)?
             .iter()
             .map(|s| {
                 let path = tokenize_input_text(dict, s, mode, enable_debug)?;
-                MorphemeList::new(dict, &s, path)
+                MorphemeList::new(self.dict.clone(), &s, path)
             })
             .collect()
     }

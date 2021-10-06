@@ -91,7 +91,7 @@ impl TestTokenizer {
         &'a self,
         data: &'a str,
         mode: Mode,
-    ) -> MorphemeList<&'a JapaneseDictionary> {
+    ) -> MorphemeList<Arc<JapaneseDictionary>> {
         let result = self.tok.tokenize(data, mode, false);
         result.expect("tokenization failed")
     }
