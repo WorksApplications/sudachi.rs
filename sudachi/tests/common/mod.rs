@@ -87,7 +87,11 @@ impl TestTokenizer {
         return TestTokenizer { tok };
     }
 
-    pub fn tokenize(&self, data: &str, mode: Mode) -> Vec<Morpheme> {
+    pub fn tokenize<'a>(
+        &'a self,
+        data: &'a str,
+        mode: Mode,
+    ) -> MorphemeList<&'a JapaneseDictionary> {
         let result = self.tok.tokenize(data, mode, false);
         result.expect("tokenization failed")
     }

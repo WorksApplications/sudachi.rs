@@ -110,7 +110,7 @@ impl<'a> Lexicon<'a> {
             }
             let surface = self.get_word_info(wid)?.surface;
             let ms = tokenizer.tokenize(&surface, Mode::C, false)?;
-            let internal_cost = (ms.last().unwrap().cost - ms[0].cost) as i32;
+            let internal_cost = ms.get_internal_cost();
             let cost = internal_cost + Lexicon::USER_DICT_COST_PER_MORPH * ms.len() as i32;
             let cost = cmp::min(cost, std::i16::MAX as i32);
             let cost = cmp::max(cost, std::i16::MIN as i32);

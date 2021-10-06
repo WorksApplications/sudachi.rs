@@ -32,7 +32,7 @@ pub mod sentence_splitter;
 
 pub mod prelude {
     pub use crate::{
-        analysis::morpheme::Morpheme,
+        analysis::morpheme_list::MorphemeList,
         analysis::{Mode, Tokenize},
         error::SudachiError,
         error::SudachiResult,

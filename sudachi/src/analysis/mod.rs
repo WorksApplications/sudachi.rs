@@ -16,7 +16,7 @@
 
 use std::str::FromStr;
 
-use morpheme::Morpheme;
+use morpheme_list::MorphemeList;
 
 use crate::error::SudachiResult;
 
@@ -76,15 +76,21 @@ impl FromStr for Mode {
 
 /// Able to tokenize Japanese text
 pub trait Tokenize {
-    /// Break text into `Morpheme`s
-    fn tokenize(&self, input: &str, mode: Mode, enable_debug: bool)
-        -> SudachiResult<Vec<Morpheme>>;
+    type Dictionary: ?Sized;
 
-    /// Split text into sentences then tokenize
-    fn tokenize_sentences(
-        &self,
-        input: &str,
+    /// Break text into `Morpheme`s
+    fn tokenize<'a>(
+        &'a self,
+        input: &'a str,
         mode: Mode,
         enable_debug: bool,
-    ) -> SudachiResult<Vec<Vec<Morpheme>>>;
+    ) -> SudachiResult<MorphemeList<&'a Self::Dictionary>>;
+
+    /// Split text into sentences then tokenize
+    fn tokenize_sentences<'a>(
+        &'a self,
+        input: &'a str,
+        mode: Mode,
+        enable_debug: bool,
+    ) -> SudachiResult<Vec<MorphemeList<&'a Self::Dictionary>>>;
 }
