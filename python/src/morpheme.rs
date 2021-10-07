@@ -18,7 +18,7 @@ use std::sync::Arc;
 
 use pyo3::exceptions::{self, PyException};
 use pyo3::prelude::*;
-use pyo3::types::PyType;
+use pyo3::types::{PyList, PyType};
 
 use sudachi::analysis::morpheme::MorphemeList;
 use sudachi::dic::dictionary::JapaneseDictionary;
@@ -39,7 +39,7 @@ pub struct PyMorphemeListWrapper {
 impl PyMorphemeListWrapper {
     /// Returns an empty morpheme list with dictionary
     #[classmethod]
-    #[pyo3(text_signature = "(&self, dict)")]
+    #[pyo3(text_signature = "(dict)")]
     fn empty(_cls: &PyType, dict: PyDictionary) -> Self {
         Self {
             inner: Arc::new(PyMorphemeList::empty(dict.dictionary.clone())),
@@ -47,12 +47,12 @@ impl PyMorphemeListWrapper {
     }
 
     /// Returns the total cost of the path
-    #[pyo3(text_signature = "(&self)")]
+    #[pyo3(text_signature = "($self)")]
     fn get_internal_cost(&self) -> i32 {
         self.inner.get_internal_cost()
     }
 
-    #[pyo3(text_signature = "(&self)")]
+    #[pyo3(text_signature = "($self)")]
     fn size(&self) -> usize {
         self.inner.len()
     }
@@ -165,14 +165,14 @@ impl PyMorpheme {
     }
 
     /// Returns the surface
-    #[pyo3(text_signature = "(&self)")]
+    #[pyo3(text_signature = "($self)")]
     fn surface(&self) -> &str {
         self.list.get_surface(self.index)
     }
 
     /// Returns the part of speech
     #[pyo3(text_signature = "($self)")]
-    fn part_of_speech(&self) -> PyResult<Vec<String>> {
+    fn part_of_speech(&self, py: Python) -> PyResult<Py<PyList>> {
         let pos_id = self.part_of_speech_id();
         let pos = self
             .list
@@ -180,7 +180,7 @@ impl PyMorpheme {
             .pos_list
             .get(pos_id as usize)
             .ok_or(PyException::new_err(format!("Error pos not found")))?;
-        Ok(pos.clone())
+        Ok(PyList::new(py, pos).into())
     }
 
     /// Returns the id of the part of speech in the dictionary
@@ -239,11 +239,9 @@ impl PyMorpheme {
 
     /// Returns the list of synonym group ids
     #[pyo3(text_signature = "($self)")]
-    fn synonym_group_ids(&self) -> Vec<u32> {
-        self.list
-            .get_word_info(self.index)
-            .synonym_group_ids
-            .clone()
+    fn synonym_group_ids(&self, py: Python) -> Py<PyList> {
+        let ids = &self.list.get_word_info(self.index).synonym_group_ids;
+        PyList::new(py, ids).into()
     }
 
     /// Returns the word info
