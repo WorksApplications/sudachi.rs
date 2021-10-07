@@ -1,22 +1,22 @@
 /*
- * Copyright (c) 2021 Works Applications Co., Ltd.
+ *  Copyright (c) 2021 Works Applications Co., Ltd.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ *   Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
  */
 
 use std::str::FromStr;
 
-use morpheme::Morpheme;
+use morpheme::MorphemeList;
 
 use crate::error::SudachiResult;
 
@@ -75,9 +75,15 @@ impl FromStr for Mode {
 
 /// Able to tokenize Japanese text
 pub trait Tokenize {
+    type Dictionary;
+
     /// Break text into `Morpheme`s
-    fn tokenize(&self, input: &str, mode: Mode, enable_debug: bool)
-        -> SudachiResult<Vec<Morpheme>>;
+    fn tokenize(
+        &self,
+        input: &str,
+        mode: Mode,
+        enable_debug: bool,
+    ) -> SudachiResult<MorphemeList<Self::Dictionary>>;
 
     /// Split text into sentences then tokenize
     fn tokenize_sentences(
@@ -85,5 +91,5 @@ pub trait Tokenize {
         input: &str,
         mode: Mode,
         enable_debug: bool,
-    ) -> SudachiResult<Vec<Vec<Morpheme>>>;
+    ) -> SudachiResult<Vec<MorphemeList<Self::Dictionary>>>;
 }

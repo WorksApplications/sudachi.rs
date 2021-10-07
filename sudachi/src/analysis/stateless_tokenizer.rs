@@ -27,7 +27,7 @@ use crate::plugin::path_rewrite::PathRewritePlugin;
 use crate::sentence_detector::{NonBreakChecker, SentenceDetector};
 
 use super::lattice::Lattice;
-use super::morpheme::Morpheme;
+use super::morpheme::MorphemeList;
 use super::node::Node;
 use super::{Mode, Tokenize};
 
@@ -62,44 +62,52 @@ where
     }
 }
 
-impl<T: Deref> Tokenize for StatelessTokenizer<T>
+impl<T> Tokenize for StatelessTokenizer<T>
 where
+    T: Deref + Clone,
     <T as Deref>::Target: DictionaryAccess,
 {
-    fn tokenize(
-        &self,
-        input: &str,
+    type Dictionary = T;
+
+    fn tokenize<'a>(
+        &'a self,
+        input: &'a str,
         mode: Mode,
         enable_debug: bool,
-    ) -> SudachiResult<Vec<Morpheme>> {
+    ) -> SudachiResult<MorphemeList<Self::Dictionary>> {
         let dict = Deref::deref(&self.dict);
-        let input_text = build_input_text(dict, input);
-        tokenize_input_text(dict, &input_text, mode, enable_debug)
+        let input = build_input_text(dict, input);
+        let path = tokenize_input_text(dict, &input, mode, enable_debug)?;
+
+        Ok(MorphemeList::new(self.dict.clone(), &input, path)?)
     }
 
-    fn tokenize_sentences(
-        &self,
-        input: &str,
+    fn tokenize_sentences<'a>(
+        &'a self,
+        input: &'a str,
         mode: Mode,
         enable_debug: bool,
-    ) -> SudachiResult<Vec<Vec<Morpheme>>> {
+    ) -> SudachiResult<Vec<MorphemeList<Self::Dictionary>>> {
         if input.is_empty() {
-            return Ok(vec![Vec::new()]);
+            return Ok(vec![MorphemeList::empty(self.dict.clone())]);
         }
 
         let dict = Deref::deref(&self.dict);
         let input = build_input_text(dict, input);
         split_sentences(dict.lexicon(), &input)?
             .iter()
-            .map(|s| tokenize_input_text(dict, s, mode, enable_debug))
+            .map(|s| {
+                let path = tokenize_input_text(dict, s, mode, enable_debug)?;
+                MorphemeList::new(self.dict.clone(), &s, path)
+            })
             .collect()
     }
 }
 
-fn split_sentences<'a, 'b>(
+fn split_sentences<'a, 'b: 'a>(
     lexicon: &'a LexiconSet,
     input: &'b Utf8InputText<'a>,
-) -> SudachiResult<Vec<Utf8InputText<'b>>> {
+) -> SudachiResult<Vec<Utf8InputText<'a>>> {
     let mut sentences = Vec::new();
     let mut checker = NonBreakChecker::new(lexicon, input);
     let detector = SentenceDetector::new();
@@ -134,10 +142,10 @@ fn build_input_text<'b, T: DictionaryAccess + ?Sized>(
 
 fn tokenize_input_text<'a, T: DictionaryAccess + ?Sized>(
     dict: &'a T,
-    input: &Utf8InputText,
+    input: &'a Utf8InputText,
     mode: Mode,
     enable_debug: bool,
-) -> SudachiResult<Vec<Morpheme<'a>>> {
+) -> SudachiResult<Vec<Node>> {
     if enable_debug {
         println!("=== Input dump:\n{}", input.modified);
     }
@@ -168,9 +176,7 @@ fn tokenize_input_text<'a, T: DictionaryAccess + ?Sized>(
         println!("===");
     };
 
-    path.iter()
-        .map(|node| Morpheme::new(&node, &input, dict.grammar(), dict.lexicon()))
-        .collect::<SudachiResult<Vec<_>>>()
+    Ok(path)
 }
 
 fn build_lattice<'a, 'b, T: DictionaryAccess + ?Sized>(

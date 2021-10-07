@@ -16,12 +16,13 @@
 
 use std::fs::File;
 use std::io::{self, BufRead, BufReader, BufWriter, Write};
+use std::ops::Deref;
 use std::path::PathBuf;
 use std::process;
 
 use structopt::StructOpt;
 
-use sudachi::analysis::stateless_tokenizer::StatelessTokenizer;
+use sudachi::analysis::stateless_tokenizer::{DictionaryAccess, StatelessTokenizer};
 use sudachi::config::Config;
 use sudachi::dic::dictionary::JapaneseDictionary;
 use sudachi::prelude::*;
@@ -142,12 +143,16 @@ fn main() {
 }
 
 /// Format and write morphemes into writer
-fn write_sentence(
+fn write_sentence<T>(
     writer: &mut Box<dyn Write>,
-    morpheme_list: Vec<Morpheme>,
+    morpheme_list: MorphemeList<T>,
     print_all: bool,
     wakati: bool,
-) -> io::Result<()> {
+) -> io::Result<()>
+where
+    T: Deref,
+    <T as Deref>::Target: DictionaryAccess,
+{
     if wakati {
         let surface_list = morpheme_list
             .iter()
@@ -155,12 +160,15 @@ fn write_sentence(
             .collect::<Vec<_>>();
         writeln!(writer, "{}", surface_list.join(" "))?;
     } else {
-        for morpheme in morpheme_list {
+        for morpheme in morpheme_list.iter() {
             write!(
                 writer,
                 "{}\t{}\t{}",
                 morpheme.surface(),
-                morpheme.pos().expect("Missing part of speech").join(","),
+                morpheme
+                    .part_of_speech()
+                    .expect("Missing part of speech")
+                    .join(","),
                 morpheme.normalized_form()
             )?;
             if print_all {
@@ -169,10 +177,10 @@ fn write_sentence(
                     "\t{}\t{}\t{}\t{:?}",
                     morpheme.dictionary_form(),
                     morpheme.reading_form(),
-                    morpheme.dictionary_id,
-                    morpheme.word_info.synonym_group_ids,
+                    morpheme.dictionary_id(),
+                    morpheme.synonym_group_ids(),
                 )?;
-                if morpheme.is_oov {
+                if morpheme.is_oov() {
                     write!(writer, "\t(OOV)")?;
                 }
             }
