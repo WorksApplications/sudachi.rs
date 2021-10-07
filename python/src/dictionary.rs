@@ -30,7 +30,7 @@ use crate::tokenizer::{PySplitMode, PyTokenizer};
 #[pyo3(text_signature = "(config_path, resource_dir)")]
 #[derive(Clone)]
 pub struct PyDictionary {
-    pub dictionary: Arc<JapaneseDictionary>,
+    pub(super) dictionary: Arc<JapaneseDictionary>,
 }
 
 #[pymethods]
