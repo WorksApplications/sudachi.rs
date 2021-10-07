@@ -48,7 +48,7 @@ impl PyMorphemeListWrapper {
 
     /// Returns the total cost of the path
     #[pyo3(text_signature = "(&self)")]
-    fn get_total_cost(&self) -> i32 {
+    fn get_internal_cost(&self) -> i32 {
         self.inner.get_internal_cost()
     }
 
@@ -69,10 +69,7 @@ impl From<MorphemeList<Arc<JapaneseDictionary>>> for PyMorphemeListWrapper {
 #[pyproto]
 impl pyo3::basic::PyObjectProtocol for PyMorphemeListWrapper {
     fn __str__(&self) -> &str {
-        // input_text and path may not matches after MorphemeList.split
-        let begin = self.inner.get_begin(0);
-        let end = self.inner.get_end(self.size() - 1);
-        &self.inner.input_text[begin..end]
+        self.inner.surface()
     }
 }
 
@@ -126,7 +123,7 @@ impl pyo3::iter::PyIterProtocol for PyMorphemeIter {
     }
 
     fn __next__(mut slf: PyRefMut<Self>) -> Option<PyMorpheme> {
-        if let None = slf.list.path.get(slf.index) {
+        if slf.index >= slf.list.len() {
             return None;
         }
 
@@ -175,14 +172,15 @@ impl PyMorpheme {
 
     /// Returns the part of speech
     #[pyo3(text_signature = "($self)")]
-    fn part_of_speech(&self) -> Vec<String> {
-        self.list
-            .dict
-            .grammar()
+    fn part_of_speech(&self) -> PyResult<Vec<String>> {
+        let pos_id = self.part_of_speech_id();
+        let pos = self
+            .list
+            .get_grammar()
             .pos_list
-            .get(self.part_of_speech_id() as usize)
-            .unwrap()
-            .clone()
+            .get(pos_id as usize)
+            .ok_or(PyException::new_err(format!("Error pos not found")))?;
+        Ok(pos.clone())
     }
 
     /// Returns the id of the part of speech in the dictionary

@@ -25,9 +25,9 @@ use crate::prelude::*;
 
 /// A list of morphemes
 pub struct MorphemeList<T> {
-    pub dict: T,
-    pub input_text: String,
-    pub path: Vec<Node>,
+    dict: T,
+    input_text: String,
+    path: Vec<Node>,
 }
 
 impl<T> MorphemeList<T>
@@ -63,7 +63,7 @@ where
         }
     }
 
-    fn get_grammar(&self) -> &Grammar {
+    pub fn get_grammar(&self) -> &Grammar {
         self.dict.grammar()
     }
 }
@@ -124,6 +124,17 @@ impl<T> MorphemeList<T> {
         }
     }
 
+    pub fn surface(&self) -> &str {
+        if self.len() == 0 {
+            return &self.input_text;
+        }
+
+        // input_text and path may not match after MorphemeList.split
+        let begin = self.path[0].begin;
+        let end = self.path[self.len() - 1].end;
+        &self.input_text[begin..end]
+    }
+
     pub fn get_node(&self, index: usize) -> &Node {
         &self.path[index]
     }
@@ -166,6 +177,7 @@ impl<T> MorphemeList<T> {
     }
 }
 
+/// Iterates over morpheme list
 pub struct MorphemeIter<'a, T> {
     list: &'a MorphemeList<T>,
     index: usize,
@@ -213,7 +225,7 @@ where
             .pos_list
             .get(pos_id as usize)
             .ok_or(SudachiError::MissingPartOfSpeech)?;
-        Ok(&pos)
+        Ok(pos)
     }
 }
 
