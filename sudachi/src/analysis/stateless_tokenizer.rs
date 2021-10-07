@@ -27,7 +27,7 @@ use crate::plugin::path_rewrite::PathRewritePlugin;
 use crate::sentence_detector::{NonBreakChecker, SentenceDetector};
 
 use super::lattice::Lattice;
-use super::morpheme_list::MorphemeList;
+use super::morpheme::MorphemeList;
 use super::node::Node;
 use super::{Mode, Tokenize};
 
