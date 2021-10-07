@@ -21,7 +21,7 @@ use crate::analysis::Mode;
 use crate::dic::category_type::CategoryType;
 use crate::error::SudachiResult;
 use crate::input_text::input_buffer::InputBuffer;
-use crate::input_text::PathRewriteAPI;
+use crate::input_text::InputTextIndex;
 
 struct StatefulTokenizer<D>
 where

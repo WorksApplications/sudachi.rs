@@ -103,6 +103,9 @@ pub enum SudachiError {
 
     #[error("No out of vocabulary plugin provided")]
     NoOOVPluginProvided,
+
+    #[error("Input is too long, it can't be more than {1} bytes, was {0}")]
+    InputTooLong(usize, usize),
 }
 
 pub type SudachiNomResult<I, O> = nom::IResult<I, O, SudachiNomError<I>>;

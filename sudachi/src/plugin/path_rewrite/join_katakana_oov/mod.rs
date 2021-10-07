@@ -22,7 +22,7 @@ use crate::config::Config;
 use crate::dic::category_type::CategoryType;
 use crate::dic::grammar::Grammar;
 use crate::input_text::input_buffer::InputBuffer;
-use crate::input_text::{PathRewriteAPI, Utf8InputText};
+use crate::input_text::{InputTextIndex, Utf8InputText};
 use crate::plugin::path_rewrite::PathRewritePlugin;
 use crate::prelude::*;
 
@@ -47,7 +47,7 @@ struct PluginSettings {
 }
 
 impl JoinKatakanaOovPlugin {
-    fn is_katakana_node<T: PathRewriteAPI>(&self, text: &T, node: &Node) -> bool {
+    fn is_katakana_node<T: InputTextIndex>(&self, text: &T, node: &Node) -> bool {
         text.cat_of_range(node.begin..node.end)
             .contains(CategoryType::KATAKANA)
     }
@@ -57,17 +57,17 @@ impl JoinKatakanaOovPlugin {
     //     b + text.get_code_points_offset_length(b, 1) == node.end
     // }
 
-    fn can_oov_bow_node<T: PathRewriteAPI>(&self, text: &T, node: &Node) -> bool {
+    fn can_oov_bow_node<T: InputTextIndex>(&self, text: &T, node: &Node) -> bool {
         !text
             .cat_at_byte(node.begin)
             .contains(CategoryType::NOOOVBOW)
     }
 
-    fn is_shorter<T: PathRewriteAPI>(&self, text: &T, node: &Node) -> bool {
+    fn is_shorter<T: InputTextIndex>(&self, text: &T, node: &Node) -> bool {
         text.num_codepts(node.begin..node.end) < self.min_length
     }
 
-    fn rewrite_gen<T: PathRewriteAPI>(
+    fn rewrite_gen<T: InputTextIndex>(
         &self,
         text: &T,
         mut path: Vec<Node>,

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-use regex::{Regex, RegexBuilder};
+use regex::Regex;
 use serde::Deserialize;
 use serde_json::Value;
 use std::collections::HashSet;

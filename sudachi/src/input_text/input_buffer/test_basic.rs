@@ -17,9 +17,25 @@
 use super::*;
 
 #[test]
-fn create_works() {
+fn new_build() {
     let mut buffer = InputBuffer::new();
     buffer.reset().push_str("宇宙人");
     buffer.start_build();
     assert_eq!(buffer.current(), "宇宙人")
+}
+
+#[test]
+fn curr_slice() {
+    let buffer = InputBuffer::from("宇宙人");
+    assert_eq!(buffer.curr_slice(0..3), "宇");
+    assert_eq!(buffer.curr_slice(3..6), "宙");
+    assert_eq!(buffer.curr_slice(6..9), "人");
+}
+
+#[test]
+fn orig_slice() {
+    let buffer = InputBuffer::from("宇宙人");
+    assert_eq!(buffer.orig_slice(0..3), "宇");
+    assert_eq!(buffer.orig_slice(3..6), "宙");
+    assert_eq!(buffer.orig_slice(6..9), "人");
 }

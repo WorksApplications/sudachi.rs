@@ -23,7 +23,7 @@ use crate::config::Config;
 use crate::dic::category_type::CategoryType;
 use crate::dic::grammar::Grammar;
 use crate::input_text::input_buffer::InputBuffer;
-use crate::input_text::{PathRewriteAPI, Utf8InputText};
+use crate::input_text::{InputTextIndex, Utf8InputText};
 use crate::plugin::path_rewrite::PathRewritePlugin;
 use crate::prelude::*;
 
@@ -78,7 +78,7 @@ impl JoinNumericPlugin {
         Ok(path)
     }
 
-    fn rewrite_gen<T: PathRewriteAPI>(
+    fn rewrite_gen<T: InputTextIndex>(
         &self,
         text: &T,
         mut path: Vec<Node>,

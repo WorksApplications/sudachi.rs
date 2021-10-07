@@ -28,7 +28,7 @@ use crate::dic::character_category::Error as CharacterCategoryError;
 use crate::dic::grammar::Grammar;
 use crate::dic::lexicon::word_infos::WordInfo;
 use crate::input_text::input_buffer::InputBuffer;
-use crate::input_text::Utf8InputText;
+use crate::input_text::{InputTextIndex, Utf8InputText};
 use crate::plugin::oov::OovProviderPlugin;
 use crate::prelude::*;
 
@@ -168,6 +168,54 @@ impl MeCabOovPlugin {
         };
         Node::new_oov(oov.left_id, oov.right_id, oov.cost, word_info)
     }
+
+    fn provide_oov_gen<T: InputTextIndex>(
+        &self,
+        input: &T,
+        offset: usize,
+        has_other_words: bool,
+        mut nodes: &mut Vec<Node>,
+    ) -> SudachiResult<()> {
+        let byte_len = input.cat_continuous_len(offset);
+        if byte_len == 0 {
+            return Ok(());
+        }
+
+        for ctype in input.cat_at_byte(offset).iter() {
+            let cinfo = match self.categories.get(&ctype) {
+                Some(ci) => ci,
+                None => continue,
+            };
+            if !cinfo.is_invoke && has_other_words {
+                continue;
+            }
+
+            let mut llength = byte_len;
+            let oovs = match self.oov_list.get(&cinfo.category_type) {
+                Some(v) => v,
+                None => continue,
+            };
+
+            if cinfo.is_group {
+                let s = input.curr_slice(offset..offset + byte_len);
+                for oov in oovs {
+                    nodes.push(self.get_oov_node(&s, oov, byte_len as u16));
+                }
+                llength -= 1;
+            }
+            for i in 1..cinfo.length + 1 {
+                let sublength = input.byte_distance(offset, i as usize);
+                if sublength > llength {
+                    break;
+                }
+                let s = input.curr_slice(offset..offset + sublength);
+                for oov in oovs {
+                    nodes.push(self.get_oov_node(&s, oov, sublength as u16));
+                }
+            }
+        }
+        Ok(())
+    }
 }
 
 impl OovProviderPlugin for MeCabOovPlugin {
@@ -208,44 +256,7 @@ impl OovProviderPlugin for MeCabOovPlugin {
         has_other_words: bool,
     ) -> SudachiResult<Vec<Node>> {
         let mut nodes = vec![];
-        let byte_len = input_text.get_char_category_continuous_length(offset);
-        if byte_len == 0 {
-            return Ok(nodes);
-        }
-
-        for ctype in input_text.get_char_category_types(offset).iter() {
-            let cinfo = match self.categories.get(&ctype) {
-                Some(ci) => ci,
-                None => continue,
-            };
-            if !cinfo.is_invoke && has_other_words {
-                continue;
-            }
-
-            let mut llength = byte_len;
-            let oovs = match self.oov_list.get(&cinfo.category_type) {
-                Some(v) => v,
-                None => continue,
-            };
-
-            if cinfo.is_group {
-                let s = input_text.get_substring(offset..offset + byte_len);
-                for oov in oovs {
-                    nodes.push(self.get_oov_node(&s, oov, byte_len as u16));
-                }
-                llength -= 1;
-            }
-            for i in 1..cinfo.length + 1 {
-                let sublength = input_text.get_code_points_offset_length(offset, i as usize);
-                if sublength > llength {
-                    break;
-                }
-                let s = input_text.get_substring(offset..offset + sublength);
-                for oov in oovs {
-                    nodes.push(self.get_oov_node(&s, oov, sublength as u16));
-                }
-            }
-        }
+        self.provide_oov_gen(input_text, offset, has_other_words, &mut nodes);
         Ok(nodes)
     }
 
@@ -256,7 +267,7 @@ impl OovProviderPlugin for MeCabOovPlugin {
         has_other_words: bool,
         result: &mut Vec<Node>,
     ) -> SudachiResult<()> {
-        todo!()
+        self.provide_oov_gen(input_text, offset, has_other_words, result)
     }
 }
 
