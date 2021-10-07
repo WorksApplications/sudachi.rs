@@ -23,6 +23,7 @@ use crate::dic::lexicon::word_infos::WordInfo;
 use crate::input_text::Utf8InputText;
 use crate::prelude::*;
 
+/// A list of morphemes
 pub struct MorphemeList<T> {
     pub dict: T,
     pub input_text: String,
@@ -36,8 +37,10 @@ where
 {
     pub fn new(dict: T, input_text: &Utf8InputText, mut path: Vec<Node>) -> SudachiResult<Self> {
         for node in &mut path {
+            // fill word_info of all nodes
             node.fill_word_info(dict.lexicon())?;
-            // set range for origina text
+
+            // overwrite the range for the original text
             node.set_range(
                 input_text.get_original_index(node.begin),
                 input_text.get_original_index(node.end),
@@ -51,6 +54,7 @@ where
         })
     }
 
+    /// Returns an empty morpheme list.
     pub fn empty(dict: T) -> Self {
         Self {
             dict,
@@ -69,6 +73,7 @@ where
     T: Deref + Clone,
     <T as Deref>::Target: DictionaryAccess,
 {
+    /// Returns a new morpheme list splitting the morpheme with a given mode.
     pub fn split(&self, mode: Mode, index: usize) -> SudachiResult<MorphemeList<T>> {
         let input_text = self.input_text.clone();
 
@@ -131,8 +136,8 @@ impl<T> MorphemeList<T> {
         self.path[index].end
     }
 
+    /// Returns a substring of the original text which corresponds to the morpheme
     pub fn get_surface(&self, index: usize) -> &str {
-        // returns substring of the original text which corresponds to the node at the given index
         let node = &self.path[index];
         &self.input_text[node.begin..node.end]
     }
@@ -145,6 +150,7 @@ impl<T> MorphemeList<T> {
         self.path[index].is_oov
     }
 
+    /// Returns the total cost of the path
     pub fn get_internal_cost(&self) -> i32 {
         if self.len() == 0 {
             return 0;
@@ -187,16 +193,18 @@ where
     }
 }
 
+/// A morpheme (basic semantic unit of language)
 pub struct Morpheme<'a, T> {
     list: &'a MorphemeList<T>,
     index: usize,
 }
 
-impl<'a, T> Morpheme<'a, T>
+impl<T> Morpheme<'_, T>
 where
     T: Deref,
     <T as Deref>::Target: DictionaryAccess,
 {
+    /// Returns the part of speech
     pub fn part_of_speech(&self) -> SudachiResult<&[String]> {
         let pos_id = self.part_of_speech_id();
         let pos = self
@@ -209,67 +217,96 @@ where
     }
 }
 
-impl<'a, T> Morpheme<'a, T>
+impl<T> Morpheme<'_, T>
 where
     T: Deref + Clone,
     <T as Deref>::Target: DictionaryAccess,
 {
+    /// Returns new morpheme list splitting the morpheme with given mode.
     pub fn split(&self, mode: Mode) -> SudachiResult<MorphemeList<T>> {
         self.list.split(mode, self.index)
     }
 }
 
-impl<'a, T> Morpheme<'a, T> {
+impl<T> Morpheme<'_, T> {
+    /// Returns the begin index of morpheme in the original text
     pub fn begin(&self) -> usize {
         self.list.get_begin(self.index)
     }
 
+    /// Returns the end index of morpehme in the original text
     pub fn end(&self) -> usize {
         self.list.get_end(self.index)
     }
 
+    /// Returns a substring of the original text which corresponds to the morpheme
     pub fn surface(&self) -> &str {
         self.list.get_surface(self.index)
     }
 
     pub fn part_of_speech_id(&self) -> u16 {
-        let wi = self.get_word_info();
-        wi.pos_id
+        self.get_word_info().pos_id
     }
 
+    /// Returns the dictionary form of morpheme
+    ///
+    /// "Dictionary form" means a word's lemma and "終止形" in Japanese.
     pub fn dictionary_form(&self) -> &str {
-        let wi = self.get_word_info();
-        &wi.dictionary_form
+        &self.get_word_info().dictionary_form
     }
 
+    /// Returns the normalized form of morpheme
+    ///
+    /// This method returns the form normalizing inconsistent spellings and inflected forms
     pub fn normalized_form(&self) -> &str {
-        let wi = self.get_word_info();
-        &wi.normalized_form
+        &self.get_word_info().normalized_form
     }
 
+    /// Returns the reading form of morpheme.
+    ///
+    /// Returns Japanese syllabaries 'フリガナ' in katakana.
     pub fn reading_form(&self) -> &str {
-        let wi = self.get_word_info();
-        &wi.reading_form
+        &self.get_word_info().reading_form
     }
 
+    /// Returns if this morpheme is out of vocabulary
     pub fn is_oov(&self) -> bool {
         self.list.is_oov(self.index)
     }
 
+    /// Returns the word id of morpheme
     pub fn word_id(&self) -> Option<u32> {
         self.list.get_node(self.index).word_id
     }
 
+    /// Returns the dictionary id where the morpheme belongs
+    ///
+    /// Return -1 if the morpheme is oov
     pub fn dictionary_id(&self) -> i32 {
         self.list.get_node(self.index).get_dictionary_id()
     }
 
     pub fn synonym_group_ids(&self) -> &[u32] {
-        let wi = self.get_word_info();
-        &wi.synonym_group_ids
+        &self.get_word_info().synonym_group_ids
     }
 
     pub fn get_word_info(&self) -> &WordInfo {
         self.list.get_word_info(self.index)
+    }
+}
+
+impl<T> std::fmt::Debug for Morpheme<'_, T>
+where
+    T: Deref,
+    <T as Deref>::Target: DictionaryAccess,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Morpheme")
+            .field("surface", &self.surface())
+            .field("pos", &self.part_of_speech())
+            .field("normalized_form", &self.normalized_form())
+            .field("reading_form", &self.reading_form())
+            .field("dictionary_form", &self.dictionary_form())
+            .finish()
     }
 }

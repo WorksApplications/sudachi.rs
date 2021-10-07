@@ -29,6 +29,7 @@ use crate::tokenizer::PySplitMode;
 
 type PyMorphemeList = MorphemeList<Arc<JapaneseDictionary>>;
 
+/// A list of morphemes
 #[pyclass(module = "sudachi.morpheme", name = "MorphemeList")]
 pub struct PyMorphemeListWrapper {
     inner: Arc<PyMorphemeList>,
@@ -36,6 +37,7 @@ pub struct PyMorphemeListWrapper {
 
 #[pymethods]
 impl PyMorphemeListWrapper {
+    /// Returns an empty morpheme list with dictionary
     #[classmethod]
     #[pyo3(text_signature = "(&self, dict)")]
     fn empty(_cls: &PyType, dict: PyDictionary) -> Self {
@@ -44,6 +46,7 @@ impl PyMorphemeListWrapper {
         }
     }
 
+    /// Returns the total cost of the path
     #[pyo3(text_signature = "(&self)")]
     fn get_total_cost(&self) -> i32 {
         self.inner.get_internal_cost()
@@ -66,7 +69,10 @@ impl From<MorphemeList<Arc<JapaneseDictionary>>> for PyMorphemeListWrapper {
 #[pyproto]
 impl pyo3::basic::PyObjectProtocol for PyMorphemeListWrapper {
     fn __str__(&self) -> &str {
-        &self.inner.input_text
+        // input_text and path may not matches after MorphemeList.split
+        let begin = self.inner.get_begin(0);
+        let end = self.inner.get_end(self.size() - 1);
+        &self.inner.input_text[begin..end]
     }
 }
 
@@ -80,7 +86,9 @@ impl pyo3::sequence::PySequenceProtocol for PyMorphemeListWrapper {
         let len = self.__len__() as isize;
         if idx < -len || len <= idx {
             return Err(PyErr::new::<exceptions::PyIndexError, _>(format!(
-                "index out of range"
+                "index out of range: the len is {} but the index is {}",
+                self.__len__(),
+                idx
             )));
         }
         let index = if idx < 0 { idx + len } else { idx } as usize;
@@ -105,7 +113,7 @@ impl pyo3::iter::PyIterProtocol for PyMorphemeListWrapper {
     }
 }
 
-#[pyclass]
+#[pyclass(module = "sudachi.morpheme", name = "MorphemeIter")]
 pub struct PyMorphemeIter {
     list: Arc<PyMorphemeList>,
     index: usize,
@@ -132,10 +140,17 @@ impl pyo3::iter::PyIterProtocol for PyMorphemeIter {
     }
 }
 
-#[pyclass]
+#[pyclass(module = "sudachi.morpheme", name = "Morpheme")]
 pub struct PyMorpheme {
     list: Arc<PyMorphemeList>,
     index: usize,
+}
+
+#[pyproto]
+impl pyo3::basic::PyObjectProtocol for PyMorpheme {
+    fn __str__(&self) -> &str {
+        self.surface()
+    }
 }
 
 #[pymethods]
