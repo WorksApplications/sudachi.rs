@@ -80,19 +80,19 @@ impl pyo3::sequence::PySequenceProtocol for PyMorphemeListWrapper {
     }
 
     fn __getitem__(&self, idx: isize) -> PyResult<PyMorpheme> {
+        // pyo3 automatically adds len when a negative idx is given
         let len = self.__len__() as isize;
-        if idx < -len || len <= idx {
+        if idx < 0 || len <= idx {
             return Err(PyErr::new::<exceptions::PyIndexError, _>(format!(
-                "index out of range: the len is {} but the index is {}",
+                "morphemelist index out of range: the len is {} but the index is {}",
                 self.__len__(),
                 idx
             )));
         }
-        let index = if idx < 0 { idx + len } else { idx } as usize;
 
         Ok(PyMorpheme {
             list: self.inner.clone(),
-            index,
+            index: idx as usize,
         })
     }
 }
