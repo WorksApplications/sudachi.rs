@@ -17,10 +17,12 @@
 use std::path::{Path, PathBuf};
 
 extern crate sudachi;
+use self::sudachi::analysis::stateful_tokenizer::StatefulTokenizer;
 use self::sudachi::dic::dictionary::JapaneseDictionary;
 use std::fs;
 use std::fs::File;
 use std::io::Read;
+use std::rc::Rc;
 use std::sync::Arc;
 use sudachi::analysis::stateless_tokenizer::StatelessTokenizer;
 use sudachi::config::Config;
@@ -103,6 +105,35 @@ impl TestTokenizer {
     }
 }
 
-// lazy_static! {
-//     pub static ref TEST_TOKENIZER: TestTokenizer = TestTokenizer::new();
-// }
+pub struct TestStatefulTokenizer {
+    tok: StatefulTokenizer<Rc<JapaneseDictionary>>,
+    result: MorphemeList<Rc<JapaneseDictionary>>,
+}
+
+#[allow(unused)]
+impl TestStatefulTokenizer {
+    pub fn new(mode: Mode) -> TestStatefulTokenizer {
+        let dic = Rc::new(JapaneseDictionary::from_cfg(&TEST_CONFIG).expect("works"));
+        Self {
+            tok: StatefulTokenizer::new(dic.clone(), mode),
+            result: MorphemeList::empty(dic),
+        }
+    }
+
+    pub fn tokenize(&mut self, data: &str) -> &MorphemeList<Rc<JapaneseDictionary>> {
+        self.tok.reset().push_str(data);
+        self.tok.do_tokenize().expect("tokenization failed");
+        self.result
+            .collect_results(&mut self.tok)
+            .expect("collection failed");
+        &self.result
+    }
+
+    pub fn dict(&self) -> &JapaneseDictionary {
+        self.tok.dict()
+    }
+
+    pub fn set_mode(&mut self, mode: Mode) -> Mode {
+        self.tok.set_mode(mode)
+    }
+}

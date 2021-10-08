@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-use std::ops::Deref;
+use std::ops::{Deref, Index};
 
 use crate::analysis::node::Node;
 use crate::analysis::stateful_tokenizer::StatefulTokenizer;
@@ -180,6 +180,11 @@ impl<T> MorphemeList<T> {
 
     pub fn len(&self) -> usize {
         self.path.len()
+    }
+
+    pub fn get(&self, index: usize) -> Morpheme<T> {
+        debug_assert!(index < self.path.len());
+        Morpheme { list: self, index }
     }
 }
 

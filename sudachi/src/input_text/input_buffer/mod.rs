@@ -131,6 +131,7 @@ impl InputBuffer {
     pub fn build(&mut self, grammar: &Grammar) -> SudachiResult<()> {
         debug_assert_eq!(self.state, BufferState::RW);
         self.state = BufferState::RO;
+        self.mod_chars.clear();
         let cats = &grammar.character_category;
         let mut last_offset = 0;
         let mut last_chidx = 0;
@@ -174,7 +175,7 @@ impl InputBuffer {
         // go from the back and set it prev + 1 when chars are compatible
         self.mod_cat_continuity.resize(self.mod_chars.len(), 1);
         let mut cat = *self.mod_cat.last().unwrap_or(&CategoryType::all());
-        for i in (0..=self.mod_cat.len() - 2).rev() {
+        for i in (0..self.mod_cat.len() - 1).rev() {
             let cur = self.mod_cat[i];
             let common = cur & cat;
             if !common.is_empty() {
@@ -195,9 +196,14 @@ impl InputBuffer {
     }
 
     fn commit(&mut self) -> SudachiResult<()> {
-        if !self.replaces.is_empty() {
-            self.mod_chars.clear()
+        if self.replaces.is_empty() {
+            return Ok(());
         }
+
+        self.mod_chars.clear();
+        self.modified_2.clear();
+        self.m2o_2.clear();
+
         let sz = edit::resolve_edits(
             &self.modified,
             &self.m2o,

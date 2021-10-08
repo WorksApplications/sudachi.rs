@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-use crate::input_text::input_buffer::{MAX_LENGTH, REALLY_MAX_LENGTH};
+use crate::input_text::input_buffer::REALLY_MAX_LENGTH;
 use std::ops::Range;
 
 pub struct ReplaceOp<'a> {
@@ -132,22 +132,16 @@ fn add_replace(
     what: Range<usize>,
     with: &str,
 ) -> isize {
+    if with.is_empty() {
+        return -(what.len() as isize);
+    }
     target.push_str(with);
-    let old_mapping = &source_mapping[what.clone()];
-    let old_len = what.len();
-    let new_len = with.len();
-    if new_len >= old_len {
-        for i in 0..old_len {
-            target_mapping.push(old_mapping[i]);
-        }
-        let last_value = source_mapping[what.end];
-        for _ in old_len..new_len {
-            target_mapping.push(last_value);
-        }
-    } else {
-        for i in 0..new_len {
-            target_mapping.push(old_mapping[i]);
-        }
+
+    // the first char of replacing string will correspond with whole replaced string
+    target_mapping.push(source_mapping[what.start]);
+    let pos = source_mapping[what.end];
+    for _ in 1..with.len() {
+        target_mapping.push(pos);
     }
     with.len() as isize - what.len() as isize
 }
@@ -224,7 +218,7 @@ mod test {
             })
             .expect("should not break");
         assert_eq!(0, buffer.replaces.len());
-        assert_eq!(buffer.m2o, &[0, 1, 2, 3, 3, 3, 3, 4, 5, 6, 7, 8, 9]);
+        assert_eq!(buffer.m2o, &[0, 3, 3, 3, 3, 3, 3, 4, 5, 6, 7, 8, 9]);
         assert_eq!(buffer.current(), "銀河宙人");
         assert_eq!(buffer.orig_slice(0..6), "宇");
         assert_eq!(buffer.orig_slice(0..3), "宇");
@@ -241,7 +235,7 @@ mod test {
             })
             .expect("should not break");
         assert_eq!(0, buffer.replaces.len());
-        assert_eq!(buffer.m2o, &[0, 1, 2, 3, 4, 5, 6, 6, 6, 6, 7, 8, 9]);
+        assert_eq!(buffer.m2o, &[0, 1, 2, 3, 6, 6, 6, 6, 6, 6, 7, 8, 9]);
         assert_eq!(buffer.current(), "宇銀河人");
         assert_eq!(buffer.orig_slice(3..9), "宙");
         assert_eq!(buffer.orig_slice(3..6), "宙");
@@ -258,7 +252,7 @@ mod test {
             })
             .expect("should not break");
         assert_eq!(0, buffer.replaces.len());
-        assert_eq!(buffer.m2o, &[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 9, 9, 9]);
+        assert_eq!(buffer.m2o, &[0, 1, 2, 3, 4, 5, 6, 9, 9, 9, 9, 9, 9]);
         assert_eq!(buffer.current(), "宇宙銀河");
         assert_eq!(buffer.orig_slice(6..12), "人");
         assert_eq!(buffer.orig_slice(6..9), "人");
@@ -276,7 +270,7 @@ mod test {
             .expect("should not break");
         assert_eq!(0, buffer.replaces.len());
         assert_eq!(buffer.current(), "河人");
-        assert_eq!(buffer.m2o, &[0, 1, 2, 6, 7, 8, 9]);
+        assert_eq!(buffer.m2o, &[0, 6, 6, 6, 7, 8, 9]);
         assert_eq!(buffer.orig_slice(0..3), "宇宙");
         assert_eq!(buffer.orig_slice(3..6), "人");
     }
@@ -292,7 +286,7 @@ mod test {
             .expect("should not break");
         assert_eq!(0, buffer.replaces.len());
         assert_eq!(buffer.current(), "宇河");
-        assert_eq!(buffer.m2o, &[0, 1, 2, 3, 4, 5, 9]);
+        assert_eq!(buffer.m2o, &[0, 1, 2, 3, 9, 9, 9]);
         assert_eq!(buffer.orig_slice(0..3), "宇");
         assert_eq!(buffer.orig_slice(3..6), "宙人");
     }
@@ -361,5 +355,23 @@ mod test {
         assert_eq!(buffer.orig_slice(0..1), "â");
         assert_eq!(buffer.orig_slice(1..2), "ｂ");
         assert_eq!(buffer.orig_slice(2..3), "C");
+    }
+
+    #[test]
+    fn replace_with_more_cnt() {
+        let mut buffer = InputBuffer::from("あ");
+        buffer
+            .with_replacer(|_, mut r| {
+                r.replace_ref(0..3, "abc");
+                Ok(r)
+            })
+            .expect("should not break");
+        assert_eq!(0, buffer.replaces.len());
+        assert_eq!(buffer.current(), "abc");
+        assert_eq!(buffer.m2o, &[0, 3, 3, 3]);
+        assert_eq!(buffer.orig_slice(0..3), "あ");
+        assert_eq!(buffer.orig_slice(0..1), "あ");
+        assert_eq!(buffer.orig_slice(1..2), "");
+        assert_eq!(buffer.orig_slice(2..3), "");
     }
 }

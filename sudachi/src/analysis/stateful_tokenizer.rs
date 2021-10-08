@@ -35,9 +35,48 @@ where
     oov: Vec<Node>,
 }
 
+impl<D: DictionaryAccess + Clone> StatefulTokenizer<D> {
+    /// Get a clone of current dictionary
+    pub fn dict_clone(&self) -> D {
+        self.dictionary.clone()
+    }
+}
+
 impl<D: DictionaryAccess> StatefulTokenizer<D> {
+    /// Create a new non-debug stateful tokenizer
+    pub fn new(dic: D, mode: Mode) -> Self {
+        Self::create(dic, false, mode)
+    }
+
+    /// Create a new debug stateful tokenizer with the following options
+    pub fn create(dic: D, debug: bool, mode: Mode) -> Self {
+        Self {
+            dictionary: dic,
+            input: InputBuffer::default(),
+            debug,
+            mode,
+            top_path: Vec::new(),
+            oov: Vec::with_capacity(10),
+        }
+    }
+
+    pub fn set_debug(&mut self, debug: bool) -> bool {
+        std::mem::replace(&mut self.debug, debug)
+    }
+
+    pub fn set_mode(&mut self, mode: Mode) -> Mode {
+        std::mem::replace(&mut self.mode, mode)
+    }
+
     pub fn reset(&mut self) -> &mut String {
+        self.top_path.clear();
+        self.oov.clear();
         self.input.reset()
+    }
+
+    /// Borrow current dictionary
+    pub fn dict(&self) -> &D {
+        &self.dictionary
     }
 
     pub fn do_tokenize(&mut self) -> SudachiResult<()> {
@@ -87,9 +126,9 @@ impl<D: DictionaryAccess> StatefulTokenizer<D> {
     }
 
     pub fn swap_result(&mut self, input: &mut String, result: &mut Vec<Node>) {
+        translate_node_ranges(&mut self.top_path, &self.input);
         self.input.swap_original(input);
         std::mem::swap(&mut self.top_path, result);
-        translate_node_ranges(result, &self.input);
     }
 
     fn rewrite_input(&mut self) -> SudachiResult<()> {
