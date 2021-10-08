@@ -34,7 +34,7 @@ pub trait InputTextIndex {
     /// Number of codepoints in the range indexed by byte indices
     fn num_codepts(&self, range: Range<usize>) -> usize;
 
-    /// Number of codepoints to the right of the offset with the same character category
+    /// Number of bytes to the right of the offset with the same character category
     ///
     /// Java name: getCharCategoryContinuousLength
     fn cat_continuous_len(&self, offset: usize) -> usize;

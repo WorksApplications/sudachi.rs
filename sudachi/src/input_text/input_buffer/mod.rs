@@ -17,6 +17,8 @@
 mod edit;
 #[cfg(test)]
 mod test_basic;
+#[cfg(test)]
+mod test_ported;
 
 pub use self::edit::EditInput;
 use crate::dic::category_type::CategoryType;
@@ -41,6 +43,10 @@ impl Default for BufferState {
     }
 }
 
+/// InputBuffer
+///
+/// By saying char we actually mean Unicode codepoint here.
+/// In the context of this struct these terms are synonyms.
 #[derive(Default)]
 pub struct InputBuffer {
     /// Original input data, output is done on this
@@ -65,10 +71,10 @@ pub struct InputBuffer {
     /// Character categories. Char-based indexing.
     mod_cat: Vec<CategoryType>,
     /// Number of codepoints with the same category. Char-based indexing.
-    mod_category_continuity: Vec<usize>,
-    /// This very temporaliy keeps the replace data.
-    /// 'static lifetime is a lie, it is incorrect to use it outside `with_replacer` function
-    /// or its callees.
+    mod_cat_continuity: Vec<usize>,
+    /// This very temporarily keeps the replacement data.
+    /// 'static lifetime is a lie and it is **incorrect** to use
+    /// it outside `with_replacer` function or its callees.
     replaces: Vec<edit::ReplaceOp<'static>>,
     /// Current state of the buffer
     state: BufferState,
@@ -82,13 +88,17 @@ impl InputBuffer {
     /// Resets the input buffer, so it could be used to process new input.
     /// New input should be written to the returned mutable reference.
     pub fn reset(&mut self) -> &mut String {
+        // extended buffers can be ignored during cleaning,
+        // they will be cleaned before usage automatically
         self.original.clear();
         self.modified.clear();
         self.m2o.clear();
         self.mod_chars.clear();
         self.mod_c2b.clear();
+        self.mod_b2c.clear();
         self.mod_bow.clear();
-        self.mod_category_continuity.clear();
+        self.mod_cat.clear();
+        self.mod_cat_continuity.clear();
         self.state = BufferState::Clean;
         &mut self.original
     }
@@ -114,10 +124,46 @@ impl InputBuffer {
         Ok(())
     }
 
-    pub fn build(&mut self, _grammar: &Grammar) -> SudachiResult<()> {
+    pub fn build(&mut self, grammar: &Grammar) -> SudachiResult<()> {
         debug_assert_eq!(self.state, BufferState::RW);
         self.state = BufferState::RO;
+        let cats = &grammar.character_category;
+        let mut last_offset = 0;
+        let mut last_chidx = 0;
+        for (chidx, (bidx, ch)) in self.modified.char_indices().enumerate() {
+            self.mod_chars.push(ch);
+            self.mod_cat.push(cats.get_category_types(ch));
+            self.mod_c2b.push(bidx);
+            self.mod_b2c
+                .extend(std::iter::repeat(last_chidx).take(bidx - last_offset));
+            last_offset = bidx;
+            last_chidx = chidx;
+        }
+        // trailing indices for the last codepoint
+        self.mod_b2c
+            .extend(std::iter::repeat(last_chidx).take(self.modified.len() - last_offset));
+        // sentinel values for range translations
+        self.mod_c2b.push(self.mod_b2c.len());
+        self.mod_b2c.push(last_chidx + 1);
+
+        self.fill_cat_continuity();
+
         Ok(())
+    }
+
+    fn fill_cat_continuity(&mut self) {
+        self.mod_cat_continuity.resize(self.mod_chars.len(), 1);
+        let mut cat = *self.mod_cat.last().unwrap_or(&CategoryType::all());
+        for i in (0..=self.mod_cat.len() - 2).rev() {
+            let cur = self.mod_cat[i];
+            let common = cur & cat;
+            if !common.is_empty() {
+                self.mod_cat_continuity[i] = self.mod_cat_continuity[i + 1] + 1;
+                cat = common;
+            } else {
+                cat = cur;
+            }
+        }
     }
 
     fn make_editor<'a>(&mut self) -> EditInput<'a> {
@@ -199,9 +245,12 @@ impl InputBuffer {
         &self.mod_chars
     }
 
+    pub fn get_original_index(&self, index: usize) -> usize {
+        self.m2o[index]
+    }
+
     pub fn swap_original(&mut self, target: &mut String) {
         std::mem::swap(&mut self.original, target);
-        self.original.clear();
         self.state = BufferState::Clean;
     }
 
@@ -224,7 +273,11 @@ impl InputBuffer {
 
 impl InputTextIndex for InputBuffer {
     fn cat_of_range(&self, range: Range<usize>) -> CategoryType {
-        todo!()
+        debug_assert_eq!(self.state, BufferState::RO);
+        let range_c = self.mod_b2c[range.start]..self.mod_b2c[range.end];
+        self.mod_cat[range_c]
+            .iter()
+            .fold(CategoryType::all(), |a, b| a & *b)
     }
 
     fn cat_at_byte(&self, offset: usize) -> CategoryType {
@@ -242,12 +295,17 @@ impl InputTextIndex for InputBuffer {
 
     fn cat_continuous_len(&self, offset: usize) -> usize {
         debug_assert_eq!(self.state, BufferState::RO);
-        todo!()
+        let start_c = self.mod_b2c[offset];
+        let length = self.mod_cat_continuity[start_c];
+        let end_c = start_c + length;
+        self.mod_c2b[end_c] - offset
     }
 
     fn byte_distance(&self, byte: usize, codepts: usize) -> usize {
         debug_assert_eq!(self.state, BufferState::RO);
-        todo!()
+        let start_c = self.mod_b2c[byte];
+        let tgt_c = start_c + codepts;
+        self.mod_c2b[tgt_c] - byte
     }
 
     fn orig_slice(&self, range: Range<usize>) -> &str {

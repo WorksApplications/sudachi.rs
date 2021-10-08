@@ -14,12 +14,29 @@
  *  limitations under the License.
  */
 
+use crate::dic::character_category::CharacterCategory;
 use crate::dic::grammar::Grammar;
+use lazy_static::lazy_static;
 
 const ZERO_GRAMMAR_BYTES: &[u8] = &[0u8; 6];
 
+/// Returns Grammar with empty data
 pub fn zero_grammar() -> Grammar<'static> {
     Grammar::new(ZERO_GRAMMAR_BYTES, 0).expect("Failed to make grammar")
+}
+
+const TEST_CHAR_DEF: &[u8] = include_bytes!("../tests/resources/char.def");
+
+lazy_static! {
+    pub static ref CHAR_CAT: CharacterCategory =
+        CharacterCategory::from_reader(TEST_CHAR_DEF).unwrap();
+}
+
+/// Returns grammar that has test character categories
+pub fn cat_grammar() -> Grammar<'static> {
+    let mut grammar = zero_grammar();
+    grammar.set_character_category(CHAR_CAT.clone());
+    grammar
 }
 
 #[test]
