@@ -75,3 +75,62 @@ fn get_char_category_continuous_length() {
     assert_eq!(6, input.cat_continuous_len(26));
     assert_eq!(1, input.cat_continuous_len(31));
 }
+
+// replace_* tests -> new edit tests are better and easier to figure about
+
+#[test]
+fn get_byte_length_by_code_points() {
+    let grammar = cat_grammar();
+    let mut input = InputBuffer::from("âｂC1あ234漢字𡈽アｺﾞ");
+    input.build(&grammar).expect("works");
+    assert_eq!(2, input.byte_distance(0, 1));
+    assert_eq!(7, input.byte_distance(0, 4));
+    assert_eq!(1, input.byte_distance(10, 1));
+    assert_eq!(1, input.byte_distance(11, 1));
+    assert_eq!(1, input.byte_distance(12, 1));
+    assert_eq!(6, input.byte_distance(13, 2));
+    assert_eq!(4, input.byte_distance(19, 1));
+    assert_eq!(9, input.byte_distance(23, 3));
+}
+
+#[test]
+fn code_point_count() {
+    let grammar = cat_grammar();
+    let mut input = InputBuffer::from("âｂC1あ234漢字𡈽アｺﾞ");
+    input.build(&grammar).expect("works");
+    assert_eq!(1, input.num_codepts(0..2));
+    assert_eq!(4, input.num_codepts(0..7));
+    assert_eq!(2, input.num_codepts(13..19));
+}
+
+#[test]
+fn can_bow() {
+    let grammar = cat_grammar();
+    let mut input = InputBuffer::from("âｂC1あ234漢字𡈽アｺﾞ");
+    input.build(&grammar).expect("works");
+    assert!(input.can_bow(0)); // â
+    assert!(!input.can_bow(1));
+    assert!(!input.can_bow(2)); // ｂ
+    assert!(!input.can_bow(3));
+    assert!(!input.can_bow(4));
+    assert!(!input.can_bow(5)); // C
+    assert!(input.can_bow(6)); // 1
+    assert!(input.can_bow(7)); // あ
+
+    assert!(input.can_bow(19)); // 𡈽
+    assert!(!input.can_bow(20));
+    assert!(!input.can_bow(21));
+    assert!(!input.can_bow(22));
+    assert!(input.can_bow(23)); // ア
+}
+
+#[test]
+fn get_word_candidate_length() {
+    let grammar = cat_grammar();
+    let mut input = InputBuffer::from("âｂC1あ234漢字𡈽アｺﾞ");
+    input.build(&grammar).expect("works");
+    assert_eq!(6, input.get_word_candidate_length(0));
+    assert_eq!(1, input.get_word_candidate_length(6));
+    assert_eq!(4, input.get_word_candidate_length(19));
+    assert_eq!(3, input.get_word_candidate_length(29));
+}

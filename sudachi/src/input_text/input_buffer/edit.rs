@@ -14,6 +14,7 @@
  *  limitations under the License.
  */
 
+use crate::input_text::input_buffer::{MAX_LENGTH, REALLY_MAX_LENGTH};
 use std::ops::Range;
 
 pub struct ReplaceOp<'a> {
@@ -91,13 +92,14 @@ pub fn resolve_edits(
     target: &mut String,
     target_mapping: &mut Vec<usize>,
     edits: &mut Vec<ReplaceOp>,
-) {
+) -> usize {
     let mut start: usize = 0;
+    let mut cur_len: isize = source.len() as isize;
     for edit in edits.drain(..) {
         target.push_str(&source[start..edit.what.start]);
         target_mapping.extend(source_mapping[start..edit.what.start].iter());
         start = edit.what.end;
-        match edit.with {
+        cur_len += match edit.with {
             ReplaceTgt::Str(s) => {
                 add_replace(source_mapping, target, target_mapping, edit.what, &s)
             }
@@ -109,10 +111,18 @@ pub fn resolve_edits(
                 edit.what,
                 c.encode_utf8(&mut [0; 4]),
             ),
+        };
+        if cur_len > REALLY_MAX_LENGTH as isize {
+            return cur_len as usize;
         }
     }
     target.push_str(&source[start..]);
     target_mapping.extend(source_mapping[start..].iter());
+    // first byte of mapping MUST be 0
+    if let Some(v) = target_mapping.first_mut() {
+        *v = 0;
+    }
+    cur_len as usize
 }
 
 fn add_replace(
@@ -121,7 +131,7 @@ fn add_replace(
     target_mapping: &mut Vec<usize>,
     what: Range<usize>,
     with: &str,
-) {
+) -> isize {
     target.push_str(with);
     let old_mapping = &source_mapping[what.clone()];
     let old_len = what.len();
@@ -139,6 +149,7 @@ fn add_replace(
             target_mapping.push(old_mapping[i]);
         }
     }
+    with.len() as isize - what.len() as isize
 }
 
 #[cfg(test)]
@@ -173,6 +184,20 @@ mod test {
         assert_eq!(0, buffer.replaces.len());
         assert_eq!(buffer.current(), "宇銀人");
         assert_eq!(buffer.orig_slice(3..6), "宙");
+    }
+
+    #[test]
+    fn edit_ref_2_borrow() {
+        let s = String::from("銀");
+        let mut buffer = InputBuffer::from("宇宙人");
+        buffer
+            .with_replacer(|_, mut r| {
+                r.replace_ref(3..6, &s);
+                Ok(r)
+            })
+            .expect("should not break");
+        assert_eq!(0, buffer.replaces.len());
+        assert_eq!(buffer.current(), "宇銀人");
     }
 
     #[test]
@@ -241,6 +266,22 @@ mod test {
     }
 
     #[test]
+    fn replace_start_w_shorter() {
+        let mut buffer = InputBuffer::from("宇宙人");
+        buffer
+            .with_replacer(|_, mut r| {
+                r.replace_ref(0..6, "河");
+                Ok(r)
+            })
+            .expect("should not break");
+        assert_eq!(0, buffer.replaces.len());
+        assert_eq!(buffer.current(), "河人");
+        assert_eq!(buffer.m2o, &[0, 1, 2, 6, 7, 8, 9]);
+        assert_eq!(buffer.orig_slice(0..3), "宇宙");
+        assert_eq!(buffer.orig_slice(3..6), "人");
+    }
+
+    #[test]
     fn replace_end_w_shorter() {
         let mut buffer = InputBuffer::from("宇宙人");
         buffer
@@ -257,18 +298,68 @@ mod test {
     }
 
     #[test]
-    fn replace_start_w_shorter() {
+    fn replace_start_w_none() {
         let mut buffer = InputBuffer::from("宇宙人");
         buffer
             .with_replacer(|_, mut r| {
-                r.replace_ref(0..6, "河");
+                r.replace_ref(0..6, "");
                 Ok(r)
             })
             .expect("should not break");
         assert_eq!(0, buffer.replaces.len());
-        assert_eq!(buffer.current(), "河人");
-        assert_eq!(buffer.m2o, &[0, 1, 2, 6, 7, 8, 9]);
+        assert_eq!(buffer.current(), "人");
+        assert_eq!(buffer.m2o, &[0, 7, 8, 9]);
+        assert_eq!(buffer.orig_slice(0..3), "宇宙人");
+    }
+
+    #[test]
+    fn replace_start_w_none_2() {
+        let mut buffer = InputBuffer::from("宇宙人");
+        buffer
+            .with_replacer(|_, mut r| {
+                r.replace_ref(0..3, "");
+                Ok(r)
+            })
+            .expect("should not break");
+        assert_eq!(0, buffer.replaces.len());
+        assert_eq!(buffer.current(), "宙人");
+        assert_eq!(buffer.m2o, &[0, 4, 5, 6, 7, 8, 9]);
         assert_eq!(buffer.orig_slice(0..3), "宇宙");
         assert_eq!(buffer.orig_slice(3..6), "人");
+    }
+
+    #[test]
+    fn replace_end_w_none() {
+        let mut buffer = InputBuffer::from("宇宙人");
+        buffer
+            .with_replacer(|_, mut r| {
+                r.replace_ref(3..9, "");
+                Ok(r)
+            })
+            .expect("should not break");
+        assert_eq!(0, buffer.replaces.len());
+        assert_eq!(buffer.current(), "宇");
+        assert_eq!(buffer.m2o, &[0, 1, 2, 9]);
+        assert_eq!(buffer.orig_slice(0..3), "宇宙人");
+    }
+
+    #[test]
+    fn replace_diff_width() {
+        let mut buffer = InputBuffer::from("âｂC1あ");
+        buffer
+            .with_replacer(|_, mut r| {
+                r.replace_ref(0..2, "a");
+                r.replace_ref(2..5, "b");
+                r.replace_ref(5..6, "c");
+                Ok(r)
+            })
+            .expect("should not break");
+        assert_eq!(0, buffer.replaces.len());
+        assert_eq!(buffer.current(), "abc1あ");
+        assert_eq!(buffer.m2o, &[0, 2, 5, 6, 7, 8, 9, 10]);
+        assert_eq!(buffer.orig_slice(0..3), "âｂC");
+        assert_eq!(buffer.orig_slice(0..1), "â");
+        assert_eq!(buffer.orig_slice(1..2), "ｂ");
+        assert_eq!(buffer.orig_slice(2..3), "C");
     }
 }

@@ -28,7 +28,11 @@ use std::ops::Range;
 use crate::error::{SudachiError, SudachiResult};
 use crate::input_text::InputTextIndex;
 
-const MAX_LENGTH: usize = 32 * 1024;
+/// limit on the maximum length of the input types, in bytes, 4/3 of u16::MAX
+const MAX_LENGTH: usize = u16::MAX as usize / 4 * 3;
+
+/// if the limit of the rewritten sentence is more than this number, then all bets are off
+const REALLY_MAX_LENGTH: usize = u16::MAX as usize;
 
 #[derive(Eq, PartialEq, Debug)]
 enum BufferState {
@@ -130,14 +134,27 @@ impl InputBuffer {
         let cats = &grammar.character_category;
         let mut last_offset = 0;
         let mut last_chidx = 0;
+
+        let non_starting = CategoryType::ALPHA | CategoryType::GREEK | CategoryType::CYRILLIC;
+        let mut prev_cat = CategoryType::empty();
+        self.mod_bow.resize(self.modified.len(), false);
+
         for (chidx, (bidx, ch)) in self.modified.char_indices().enumerate() {
             self.mod_chars.push(ch);
-            self.mod_cat.push(cats.get_category_types(ch));
+            let cat = cats.get_category_types(ch);
+            self.mod_cat.push(cat);
             self.mod_c2b.push(bidx);
             self.mod_b2c
                 .extend(std::iter::repeat(last_chidx).take(bidx - last_offset));
             last_offset = bidx;
             last_chidx = chidx;
+
+            self.mod_bow[bidx] = if cat.intersects(non_starting) {
+                !cat.intersects(prev_cat)
+            } else {
+                true
+            };
+            prev_cat = cat;
         }
         // trailing indices for the last codepoint
         self.mod_b2c
@@ -152,6 +169,9 @@ impl InputBuffer {
     }
 
     fn fill_cat_continuity(&mut self) {
+        // single pass algorithm
+        // by default continuity is 1 codepoint
+        // go from the back and set it prev + 1 when chars are compatible
         self.mod_cat_continuity.resize(self.mod_chars.len(), 1);
         let mut cat = *self.mod_cat.last().unwrap_or(&CategoryType::all());
         for i in (0..=self.mod_cat.len() - 2).rev() {
@@ -174,19 +194,24 @@ impl InputBuffer {
         return EditInput::new(replaces);
     }
 
-    fn commit(&mut self) {
+    fn commit(&mut self) -> SudachiResult<()> {
         if !self.replaces.is_empty() {
             self.mod_chars.clear()
         }
-        edit::resolve_edits(
+        let sz = edit::resolve_edits(
             &self.modified,
             &self.m2o,
             &mut self.modified_2,
             &mut self.m2o_2,
             &mut self.replaces,
         );
+        if sz > REALLY_MAX_LENGTH {
+            // super improbable, but still
+            return Err(SudachiError::InputTooLong(sz, REALLY_MAX_LENGTH));
+        }
         std::mem::swap(&mut self.modified, &mut self.modified_2);
         std::mem::swap(&mut self.m2o, &mut self.m2o_2);
+        Ok(())
     }
 
     fn rollback(&mut self) {
@@ -207,10 +232,7 @@ impl InputBuffer {
         // And the API forces user to return it by value
         let replacer: EditInput<'a> = self.make_editor();
         match func(self, replacer) {
-            Ok(_) => {
-                self.commit();
-                Ok(())
-            }
+            Ok(_) => self.commit(),
             Err(e) => {
                 self.rollback();
                 Err(e)
@@ -256,13 +278,22 @@ impl InputBuffer {
 
     pub fn can_bow(&self, offset: usize) -> bool {
         debug_assert_eq!(self.state, BufferState::RO);
-        let cpidx = self.mod_b2c[offset];
-        self.mod_bow[cpidx]
+        self.mod_bow[offset]
     }
 
-    pub fn get_word_candidate_length(&self, offset: usize) -> usize {
+    /// Returns a byte_length to the next can_bow point
+    ///
+    /// Used by SimpleOOV plugin
+    pub fn get_word_candidate_length(&self, byte_idx: usize) -> usize {
         debug_assert_eq!(self.state, BufferState::RO);
-        todo!()
+        let byte_length = self.modified.len();
+
+        for i in (byte_idx + 1)..byte_length {
+            if self.can_bow(i) {
+                return i - byte_idx;
+            }
+        }
+        byte_length - byte_idx
     }
 
     pub fn to_orig(&self, range: Range<usize>) -> Range<usize> {
@@ -290,7 +321,7 @@ impl InputTextIndex for InputBuffer {
         debug_assert_eq!(self.state, BufferState::RO);
         let start = self.mod_b2c[range.start];
         let end = self.mod_b2c[range.end];
-        end - start - 1
+        end - start
     }
 
     fn cat_continuous_len(&self, offset: usize) -> usize {
@@ -310,6 +341,8 @@ impl InputTextIndex for InputBuffer {
 
     fn orig_slice(&self, range: Range<usize>) -> &str {
         debug_assert_ne!(self.state, BufferState::Clean);
+        debug_assert!(self.modified.is_char_boundary(range.start));
+        debug_assert!(self.modified.is_char_boundary(range.end));
         &self.original[self.to_orig(range)]
     }
 

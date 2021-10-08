@@ -41,6 +41,7 @@ pub trait InputTextIndex {
 
     /// Distance in bytes between the char indexed by `byte`
     /// and the char, relative to it by `codepts`.
+    /// Java name:
     fn byte_distance(&self, byte: usize, codepts: usize) -> usize;
 
     /// Returns substring of original text by indices from the current text

@@ -41,7 +41,7 @@ impl<D: DictionaryAccess> StatefulTokenizer<D> {
     }
 
     pub fn do_tokenize(&mut self) -> SudachiResult<()> {
-        self.input.start_build();
+        self.input.start_build()?;
         self.rewrite_input()?;
         self.input.build(self.dictionary.grammar())?;
         let debug = self.debug;

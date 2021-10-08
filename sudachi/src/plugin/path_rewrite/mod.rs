@@ -24,7 +24,7 @@ use crate::config::Config;
 use crate::dic::grammar::Grammar;
 use crate::dic::lexicon::word_infos::WordInfo;
 use crate::input_text::input_buffer::InputBuffer;
-use crate::input_text::{InputTextIndex, Utf8InputText};
+use crate::input_text::Utf8InputText;
 use crate::plugin::path_rewrite::join_katakana_oov::JoinKatakanaOovPlugin;
 use crate::plugin::path_rewrite::join_numeric::JoinNumericPlugin;
 use crate::plugin::PluginCategory;
