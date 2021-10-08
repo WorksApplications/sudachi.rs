@@ -41,10 +41,7 @@ impl<'a> EditInput<'a> {
     pub fn replace_ref(&mut self, range: Range<usize>, result: &'a str) {
         let op = ReplaceOp {
             what: range,
-            // SAFETY: Lifetime parameters enforce correct lifetime of this reference.
-            // This reference can be created ONLY inside with_replacer call.
-            // This reference lifetime will end before returning from with_replacer call.
-            with: ReplaceTgt::Ref(unsafe { std::mem::transmute(result) }),
+            with: ReplaceTgt::Ref(result),
         };
         self.replaces.push(op);
     }
