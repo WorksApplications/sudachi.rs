@@ -111,7 +111,7 @@ impl OovProviderPlugin for SimpleOovPlugin {
         }
 
         let length = input_text.get_word_candidate_length(offset);
-        let surface = input_text.orig_slice(offset..offset + length);
+        let surface = input_text.curr_slice(offset..offset + length);
 
         result.push(Node::new_oov(
             self.left_id,

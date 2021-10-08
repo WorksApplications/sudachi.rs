@@ -17,6 +17,7 @@
 use std::ops::Deref;
 
 use crate::analysis::node::Node;
+use crate::analysis::stateful_tokenizer::StatefulTokenizer;
 use crate::analysis::stateless_tokenizer::DictionaryAccess;
 use crate::dic::grammar::Grammar;
 use crate::dic::lexicon::word_infos::WordInfo;
@@ -36,22 +37,13 @@ where
     <T as Deref>::Target: DictionaryAccess,
 {
     pub fn new(dict: T, input_text: &Utf8InputText, mut path: Vec<Node>) -> SudachiResult<Self> {
-        for node in &mut path {
-            // fill word_info of all nodes
-            node.fill_word_info(dict.lexicon())?;
-
-            // overwrite the range for the original text
-            node.set_range(
-                input_text.get_original_index(node.begin),
-                input_text.get_original_index(node.end),
-            )
-        }
-
-        Ok(Self {
+        let mut list = Self {
             dict,
             input_text: input_text.original.to_string(),
             path,
-        })
+        };
+        list.fill_word_info()?;
+        Ok(list)
     }
 
     /// Returns an empty morpheme list.
@@ -63,8 +55,22 @@ where
         }
     }
 
+    pub fn collect_results(&mut self, analyzer: &mut StatefulTokenizer<T>) -> SudachiResult<()> {
+        analyzer.swap_result(&mut self.input_text, &mut self.path);
+        self.fill_word_info()
+    }
+
     pub fn get_grammar(&self) -> &Grammar {
         self.dict.grammar()
+    }
+
+    fn fill_word_info(&mut self) -> SudachiResult<()> {
+        let lexicon = self.dict.lexicon();
+        for node in self.path.iter_mut() {
+            // fill word_info of all nodes
+            node.fill_word_info(lexicon)?;
+        }
+        Ok(())
     }
 }
 

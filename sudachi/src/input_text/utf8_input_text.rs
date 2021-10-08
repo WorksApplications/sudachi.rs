@@ -238,4 +238,8 @@ impl InputTextIndex for Utf8InputText<'_> {
     fn curr_slice(&self, range: Range<usize>) -> &str {
         &self.modified[range]
     }
+
+    fn to_orig(&self, range: Range<usize>) -> Range<usize> {
+        self.get_original_index(range.start)..self.get_original_index(range.end)
+    }
 }

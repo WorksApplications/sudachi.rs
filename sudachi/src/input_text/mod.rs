@@ -49,6 +49,9 @@ pub trait InputTextIndex {
 
     /// Returns substring of the current (modified) text by indices from the current text
     fn curr_slice(&self, range: Range<usize>) -> &str;
+
+    /// Translate range from current state to original
+    fn to_orig(&self, range: Range<usize>) -> Range<usize>;
 }
 
 #[cfg(test)]

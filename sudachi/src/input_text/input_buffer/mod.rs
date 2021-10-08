@@ -295,11 +295,6 @@ impl InputBuffer {
         }
         byte_length - byte_idx
     }
-
-    pub fn to_orig(&self, range: Range<usize>) -> Range<usize> {
-        debug_assert_ne!(self.state, BufferState::Clean);
-        self.m2o[range.start]..self.m2o[range.end]
-    }
 }
 
 impl InputTextIndex for InputBuffer {
@@ -349,5 +344,10 @@ impl InputTextIndex for InputBuffer {
     fn curr_slice(&self, range: Range<usize>) -> &str {
         debug_assert_ne!(self.state, BufferState::Clean);
         &self.modified[range]
+    }
+
+    fn to_orig(&self, range: Range<usize>) -> Range<usize> {
+        debug_assert_ne!(self.state, BufferState::Clean);
+        self.m2o[range.start]..self.m2o[range.end]
     }
 }

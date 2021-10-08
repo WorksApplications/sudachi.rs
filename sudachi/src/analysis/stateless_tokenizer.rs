@@ -14,6 +14,7 @@
  *  limitations under the License.
  */
 
+use crate::analysis::node::translate_node_ranges;
 use std::ops::Deref;
 
 use crate::dic::category_type::CategoryType;
@@ -195,12 +196,14 @@ fn tokenize_input_text<'a, T: DictionaryAccess + ?Sized>(
     for plugin in dict.path_rewrite_plugins() {
         path = plugin.rewrite(&input, path, &lattice)?;
     }
-    let path = split_path(dict, path, mode)?;
+    let mut path = split_path(dict, path, mode)?;
     if enable_debug {
         println!("=== After Rewriting:");
         dump_path(&path);
         println!("===");
     };
+
+    translate_node_ranges(&mut path, input);
 
     Ok(path)
 }

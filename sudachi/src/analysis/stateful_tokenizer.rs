@@ -15,7 +15,7 @@
  */
 
 use crate::analysis::lattice::Lattice;
-use crate::analysis::node::Node;
+use crate::analysis::node::{translate_node_ranges, Node};
 use crate::analysis::stateless_tokenizer::{dump_path, split_path, DictionaryAccess};
 use crate::analysis::Mode;
 use crate::dic::category_type::CategoryType;
@@ -23,7 +23,7 @@ use crate::error::SudachiResult;
 use crate::input_text::input_buffer::InputBuffer;
 use crate::input_text::InputTextIndex;
 
-struct StatefulTokenizer<D>
+pub struct StatefulTokenizer<D>
 where
     D: DictionaryAccess,
 {
@@ -89,6 +89,7 @@ impl<D: DictionaryAccess> StatefulTokenizer<D> {
     pub fn swap_result(&mut self, input: &mut String, result: &mut Vec<Node>) {
         self.input.swap_original(input);
         std::mem::swap(&mut self.top_path, result);
+        translate_node_ranges(result, &self.input);
     }
 
     fn rewrite_input(&mut self) -> SudachiResult<()> {
