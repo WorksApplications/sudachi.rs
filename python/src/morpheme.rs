@@ -31,6 +31,7 @@ type PyMorphemeList = MorphemeList<Arc<JapaneseDictionary>>;
 
 /// A list of morphemes
 #[pyclass(module = "sudachi.morpheme", name = "MorphemeList")]
+#[repr(transparent)]
 pub struct PyMorphemeListWrapper {
     inner: Arc<PyMorphemeList>,
 }
