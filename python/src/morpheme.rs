@@ -40,9 +40,11 @@ impl PyMorphemeListWrapper {
     /// Returns an empty morpheme list with dictionary
     #[classmethod]
     #[pyo3(text_signature = "(dict)")]
-    fn empty(_cls: &PyType, dict: PyDictionary) -> Self {
+    fn empty(_cls: &PyType, dict: &PyDictionary) -> Self {
         Self {
-            inner: Arc::new(PyMorphemeList::empty(dict.dictionary.clone())),
+            inner: Arc::new(PyMorphemeList::empty(
+                dict.dictionary.as_ref().unwrap().clone(),
+            )),
         }
     }
 
