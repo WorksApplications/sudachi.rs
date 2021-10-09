@@ -14,8 +14,6 @@
  *  limitations under the License.
  */
 
-use std::ops::Deref;
-
 use crate::analysis::node::Node;
 use crate::analysis::stateful_tokenizer::StatefulTokenizer;
 use crate::analysis::stateless_tokenizer::DictionaryAccess;
@@ -31,11 +29,7 @@ pub struct MorphemeList<T> {
     path: Vec<Node>,
 }
 
-impl<T> MorphemeList<T>
-where
-    T: Deref,
-    <T as Deref>::Target: DictionaryAccess,
-{
+impl<T: DictionaryAccess> MorphemeList<T> {
     pub fn new(dict: T, input_text: &Utf8InputText, path: Vec<Node>) -> SudachiResult<Self> {
         let mut list = Self {
             dict,
@@ -55,7 +49,10 @@ where
         }
     }
 
-    pub fn collect_results(&mut self, analyzer: &mut StatefulTokenizer<T>) -> SudachiResult<()> {
+    pub fn collect_results<U: DictionaryAccess>(
+        &mut self,
+        analyzer: &mut StatefulTokenizer<U>,
+    ) -> SudachiResult<()> {
         analyzer.swap_result(&mut self.input_text, &mut self.path);
         self.fill_word_info()
     }
@@ -74,11 +71,7 @@ where
     }
 }
 
-impl<T> MorphemeList<T>
-where
-    T: Deref + Clone,
-    <T as Deref>::Target: DictionaryAccess,
-{
+impl<T: DictionaryAccess + Clone> MorphemeList<T> {
     /// Returns a new morpheme list splitting the morpheme with a given mode.
     pub fn split(&self, mode: Mode, index: usize) -> SudachiResult<MorphemeList<T>> {
         let input_text = self.input_text.clone();
@@ -194,11 +187,7 @@ pub struct MorphemeIter<'a, T> {
     index: usize,
 }
 
-impl<'a, T> Iterator for MorphemeIter<'a, T>
-where
-    T: Deref,
-    <T as Deref>::Target: DictionaryAccess,
-{
+impl<'a, T: DictionaryAccess> Iterator for MorphemeIter<'a, T> {
     type Item = Morpheme<'a, T>;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -222,11 +211,7 @@ pub struct Morpheme<'a, T> {
     index: usize,
 }
 
-impl<T> Morpheme<'_, T>
-where
-    T: Deref,
-    <T as Deref>::Target: DictionaryAccess,
-{
+impl<T: DictionaryAccess> Morpheme<'_, T> {
     /// Returns the part of speech
     pub fn part_of_speech(&self) -> SudachiResult<&[String]> {
         let pos_id = self.part_of_speech_id();
@@ -240,11 +225,7 @@ where
     }
 }
 
-impl<T> Morpheme<'_, T>
-where
-    T: Deref + Clone,
-    <T as Deref>::Target: DictionaryAccess,
-{
+impl<T: DictionaryAccess + Clone> Morpheme<'_, T> {
     /// Returns new morpheme list splitting the morpheme with given mode.
     pub fn split(&self, mode: Mode) -> SudachiResult<MorphemeList<T>> {
         self.list.split(mode, self.index)
@@ -318,11 +299,7 @@ impl<T> Morpheme<'_, T> {
     }
 }
 
-impl<T> std::fmt::Debug for Morpheme<'_, T>
-where
-    T: Deref,
-    <T as Deref>::Target: DictionaryAccess,
-{
+impl<T: DictionaryAccess> std::fmt::Debug for Morpheme<'_, T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Morpheme")
             .field("surface", &self.surface())

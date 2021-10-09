@@ -14,20 +14,16 @@
  *  limitations under the License.
  */
 
-use crate::analysis::node::translate_node_ranges;
+use crate::analysis::stateful_tokenizer::StatefulTokenizer;
 use std::ops::Deref;
 
-use crate::dic::category_type::CategoryType;
 use crate::dic::grammar::Grammar;
 use crate::dic::lexicon_set::LexiconSet;
 use crate::error::{SudachiError, SudachiResult};
-use crate::input_text::{Utf8InputText, Utf8InputTextBuilder};
 use crate::plugin::input_text::InputTextPlugin;
 use crate::plugin::oov::OovProviderPlugin;
 use crate::plugin::path_rewrite::PathRewritePlugin;
-use crate::sentence_detector::{NonBreakChecker, SentenceDetector};
 
-use super::lattice::Lattice;
 use super::morpheme::MorphemeList;
 use super::node::Node;
 use super::{Mode, Tokenize};
@@ -75,15 +71,17 @@ pub struct StatelessTokenizer<T> {
     dict: T,
 }
 
+impl<T: DictionaryAccess> StatelessTokenizer<T> {
+    pub fn new(dict: T) -> StatelessTokenizer<T> {
+        StatelessTokenizer { dict }
+    }
+}
+
 impl<T> StatelessTokenizer<T>
 where
     T: Deref,
     <T as Deref>::Target: DictionaryAccess,
 {
-    pub fn new(dict: T) -> StatelessTokenizer<T> {
-        StatelessTokenizer { dict }
-    }
-
     pub fn as_dict(&self) -> &<T as Deref>::Target {
         return Deref::deref(&self.dict);
     }
@@ -91,8 +89,7 @@ where
 
 impl<T> Tokenize for StatelessTokenizer<T>
 where
-    T: Deref + Clone,
-    <T as Deref>::Target: DictionaryAccess,
+    T: DictionaryAccess + Clone,
 {
     type Dictionary = T;
 
@@ -102,166 +99,13 @@ where
         mode: Mode,
         enable_debug: bool,
     ) -> SudachiResult<MorphemeList<Self::Dictionary>> {
-        let dict = Deref::deref(&self.dict);
-        let input = build_input_text(dict, input);
-        let path = tokenize_input_text(dict, &input, mode, enable_debug)?;
-
-        Ok(MorphemeList::new(self.dict.clone(), &input, path)?)
+        let mut tok = StatefulTokenizer::create(&self.dict, enable_debug, mode);
+        tok.reset().push_str(input);
+        tok.do_tokenize()?;
+        let mut ml = MorphemeList::empty(self.dict.clone());
+        ml.collect_results(&mut tok)?;
+        Ok(ml)
     }
-
-    fn tokenize_sentences<'a>(
-        &'a self,
-        input: &'a str,
-        mode: Mode,
-        enable_debug: bool,
-    ) -> SudachiResult<Vec<MorphemeList<Self::Dictionary>>> {
-        if input.is_empty() {
-            return Ok(vec![MorphemeList::empty(self.dict.clone())]);
-        }
-
-        let dict = Deref::deref(&self.dict);
-        let input = build_input_text(dict, input);
-        split_sentences(dict.lexicon(), &input)?
-            .iter()
-            .map(|s| {
-                let path = tokenize_input_text(dict, s, mode, enable_debug)?;
-                MorphemeList::new(self.dict.clone(), &s, path)
-            })
-            .collect()
-    }
-}
-
-fn split_sentences<'a, 'b: 'a>(
-    lexicon: &'a LexiconSet,
-    input: &'b Utf8InputText<'a>,
-) -> SudachiResult<Vec<Utf8InputText<'a>>> {
-    let mut sentences = Vec::new();
-    let mut checker = NonBreakChecker::new(lexicon, input);
-    let detector = SentenceDetector::new();
-    loop {
-        let byte_length = detector
-            .get_eos(&input.modified[checker.bos..], Some(&checker))?
-            .abs() as usize; // detector mey return negative value
-        if byte_length == 0 {
-            break;
-        }
-        let mut eos = checker.bos + byte_length;
-        if eos < input.modified.len() {
-            eos = input.get_next_in_original(eos - 1);
-        }
-        sentences.push(input.slice(checker.bos, eos));
-        checker.bos = eos;
-    }
-    Ok(sentences)
-}
-
-fn build_input_text<'b, T: DictionaryAccess + ?Sized>(
-    dict: &T,
-    input: &'b str,
-) -> Utf8InputText<'b> {
-    let mut builder = Utf8InputTextBuilder::new(input, dict.grammar());
-
-    for plugin in dict.input_text_plugins() {
-        plugin.rewrite(&mut builder);
-    }
-    builder.build()
-}
-
-fn tokenize_input_text<'a, T: DictionaryAccess + ?Sized>(
-    dict: &'a T,
-    input: &'a Utf8InputText,
-    mode: Mode,
-    enable_debug: bool,
-) -> SudachiResult<Vec<Node>> {
-    if enable_debug {
-        println!("=== Input dump:\n{}", input.modified);
-    }
-
-    let lattice = build_lattice(dict, input)?;
-    if enable_debug {
-        println!("=== Lattice dump:");
-        lattice.dump(dict.grammar(), dict.lexicon())?;
-    };
-
-    let mut path = lattice.get_best_path()?;
-    // fill word_info to safely unwrap during path_rewrite and split_path
-    for node in &mut path {
-        node.fill_word_info(dict.lexicon())?;
-    }
-    if enable_debug {
-        println!("=== Before Rewriting:");
-        dump_path(&path);
-    };
-
-    for plugin in dict.path_rewrite_plugins() {
-        path = plugin.rewrite(&input, path, &lattice)?;
-    }
-    let mut path = split_path(dict, path, mode)?;
-    if enable_debug {
-        println!("=== After Rewriting:");
-        dump_path(&path);
-        println!("===");
-    };
-
-    translate_node_ranges(&mut path, input);
-
-    Ok(path)
-}
-
-fn build_lattice<'a, 'b, T: DictionaryAccess + ?Sized>(
-    dict: &'a T,
-    input: &'b Utf8InputText,
-) -> SudachiResult<Lattice<'a>> {
-    let input_bytes = input.modified.as_bytes();
-    let mut lattice = Lattice::new(dict.grammar(), input_bytes.len());
-    for (i, _) in input_bytes.iter().enumerate() {
-        if !input.can_bow(i) || !lattice.has_previous_node(i) {
-            continue;
-        }
-
-        let mut has_word = false;
-        for e in dict.lexicon().lookup(&input_bytes, i) {
-            if (e.end < input_bytes.len()) && !input.can_bow(e.end) {
-                continue;
-            }
-            has_word = true;
-            let (left_id, right_id, cost) = dict.lexicon().get_word_param(e.word_id)?;
-            let node = Node::new(left_id, right_id, cost, e.word_id);
-            lattice.insert(i, e.end, node)?;
-        }
-
-        // OOV
-        if !input
-            .get_char_category_types(i)
-            .contains(CategoryType::NOOOVBOW)
-        {
-            for oov_provider in dict.oov_provider_plugins() {
-                for node in oov_provider.get_oov(&input, i, has_word)? {
-                    has_word = true;
-                    lattice.insert(node.begin, node.end, node)?;
-                }
-            }
-        }
-        if !has_word {
-            // use last oov_provider as default
-            for node in dict
-                .oov_provider_plugins()
-                .last()
-                .unwrap()
-                .get_oov(&input, i, has_word)?
-            {
-                has_word = true;
-                lattice.insert(node.begin, node.end, node)?;
-            }
-        }
-
-        if !has_word {
-            panic!("no morpheme found at {}", i);
-        }
-    }
-    lattice.connect_eos_node()?;
-
-    Ok(lattice)
 }
 
 pub(super) fn split_path<T: DictionaryAccess + ?Sized>(

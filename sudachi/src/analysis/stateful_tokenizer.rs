@@ -23,10 +23,7 @@ use crate::error::SudachiResult;
 use crate::input_text::input_buffer::InputBuffer;
 use crate::input_text::InputTextIndex;
 
-pub struct StatefulTokenizer<D>
-where
-    D: DictionaryAccess,
-{
+pub struct StatefulTokenizer<D> {
     dictionary: D,
     input: InputBuffer,
     debug: bool,

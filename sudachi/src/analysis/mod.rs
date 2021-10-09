@@ -85,12 +85,4 @@ pub trait Tokenize {
         mode: Mode,
         enable_debug: bool,
     ) -> SudachiResult<MorphemeList<Self::Dictionary>>;
-
-    /// Split text into sentences then tokenize
-    fn tokenize_sentences(
-        &self,
-        input: &str,
-        mode: Mode,
-        enable_debug: bool,
-    ) -> SudachiResult<Vec<MorphemeList<Self::Dictionary>>>;
 }
