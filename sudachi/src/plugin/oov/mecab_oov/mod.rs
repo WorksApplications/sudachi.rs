@@ -28,7 +28,7 @@ use crate::dic::character_category::Error as CharacterCategoryError;
 use crate::dic::grammar::Grammar;
 use crate::dic::lexicon::word_infos::WordInfo;
 use crate::input_text::input_buffer::InputBuffer;
-use crate::input_text::{InputTextIndex, Utf8InputText};
+use crate::input_text::InputTextIndex;
 use crate::plugin::oov::OovProviderPlugin;
 use crate::prelude::*;
 
@@ -247,17 +247,6 @@ impl OovProviderPlugin for MeCabOovPlugin {
         self.oov_list = oov_list;
 
         Ok(())
-    }
-
-    fn provide_oov(
-        &self,
-        input_text: &Utf8InputText,
-        offset: usize,
-        has_other_words: bool,
-    ) -> SudachiResult<Vec<Node>> {
-        let mut nodes = vec![];
-        self.provide_oov_gen(input_text, offset, has_other_words, &mut nodes)?;
-        Ok(nodes)
     }
 
     fn provide_oov2(

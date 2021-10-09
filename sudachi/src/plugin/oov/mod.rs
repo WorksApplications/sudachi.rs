@@ -20,7 +20,6 @@ use crate::analysis::node::Node;
 use crate::config::Config;
 use crate::dic::grammar::Grammar;
 use crate::input_text::input_buffer::InputBuffer;
-use crate::input_text::Utf8InputText;
 use crate::plugin::oov::mecab_oov::MeCabOovPlugin;
 use crate::plugin::oov::simple_oov::SimpleOovPlugin;
 use crate::plugin::PluginCategory;
@@ -34,29 +33,6 @@ pub trait OovProviderPlugin: Sync + Send {
     /// Loads necessary information for the plugin
     fn set_up(&mut self, settings: &Value, config: &Config, grammar: &Grammar)
         -> SudachiResult<()>;
-
-    /// Generate a list of oov nodes
-    fn provide_oov(
-        &self,
-        input_text: &Utf8InputText,
-        offset: usize,
-        has_other_words: bool,
-    ) -> SudachiResult<Vec<Node>>;
-
-    /// Fills range field of generated nodes and returns.
-    fn get_oov(
-        &self,
-        input_text: &Utf8InputText,
-        offset: usize,
-        has_other_words: bool,
-    ) -> SudachiResult<Vec<Node>> {
-        let mut nodes = self.provide_oov(input_text, offset, has_other_words)?;
-        for node in &mut nodes {
-            let length = node.word_info.as_ref().unwrap().head_word_length as usize;
-            node.set_range(offset, offset + length);
-        }
-        Ok(nodes)
-    }
 
     fn get_oov2(
         &self,
