@@ -23,7 +23,7 @@ use crate::config::Config;
 use crate::dic::category_type::CategoryType;
 use crate::dic::grammar::Grammar;
 use crate::input_text::input_buffer::InputBuffer;
-use crate::input_text::{InputTextIndex, Utf8InputText};
+use crate::input_text::InputTextIndex;
 use crate::plugin::path_rewrite::PathRewritePlugin;
 use crate::prelude::*;
 
@@ -198,15 +198,6 @@ impl PathRewritePlugin for JoinNumericPlugin {
     }
 
     fn rewrite(
-        &self,
-        text: &Utf8InputText,
-        path: Vec<Node>,
-        _lattice: &Lattice,
-    ) -> SudachiResult<Vec<Node>> {
-        self.rewrite_gen(text, path)
-    }
-
-    fn rewrite2(
         &self,
         text: &InputBuffer,
         path: Vec<Node>,

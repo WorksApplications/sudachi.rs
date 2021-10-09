@@ -19,16 +19,19 @@ use super::*;
 use crate::dic::character_category::CharacterCategory;
 use crate::dic::grammar::Grammar;
 use crate::dic::lexicon::word_infos::WordInfo;
-use crate::input_text::Utf8InputTextBuilder;
+use crate::test::zero_grammar;
+use lazy_static::lazy_static;
+
+fn build_text(data: &str) -> InputBuffer {
+    let mut buf = InputBuffer::from(data);
+    buf.build(&GRAMMAR).expect("should not fail");
+    buf
+}
 
 #[test]
 fn digit_1() {
     let plugin = build_plugin();
-    let bytes = build_mock_bytes();
-    let grammar = build_mock_grammar(&bytes);
-
-    let builder = Utf8InputTextBuilder::new("123円20銭", &grammar);
-    let text = builder.build();
+    let text = build_text("123円20銭");
     let path = vec![
         build_node_num("1", "1", 1, 0),
         build_node_num("2", "2", 1, 1),
@@ -39,7 +42,7 @@ fn digit_1() {
         build_node_oov("銭", "銭", 3, 8),
     ];
     let path = plugin
-        .rewrite(&text, path, &Lattice::new(&grammar, 0))
+        .rewrite(&text, path, &Lattice::new(&GRAMMAR, 0))
         .expect("Failed to rewrite path");
     assert_eq!(4, path.len());
     assert_eq!("123", path[0].word_info.as_ref().unwrap().surface);
@@ -49,11 +52,7 @@ fn digit_1() {
 #[test]
 fn digit_2() {
     let plugin = build_plugin();
-    let bytes = build_mock_bytes();
-    let grammar = build_mock_grammar(&bytes);
-
-    let builder = Utf8InputTextBuilder::new("080-121", &grammar);
-    let text = builder.build();
+    let text = build_text("080-121");
     let path = vec![
         build_node_num("0", "0", 1, 0),
         build_node_num("8", "8", 1, 1),
@@ -64,7 +63,7 @@ fn digit_2() {
         build_node_num("1", "1", 1, 6),
     ];
     let path = plugin
-        .rewrite(&text, path, &Lattice::new(&grammar, 0))
+        .rewrite(&text, path, &Lattice::new(&GRAMMAR, 0))
         .expect("Failed to rewrite path");
     assert_eq!(3, path.len());
     assert_eq!("080", path[0].word_info.as_ref().unwrap().surface);
@@ -74,11 +73,7 @@ fn digit_2() {
 #[test]
 fn kanji_numeric() {
     let plugin = build_plugin();
-    let bytes = build_mock_bytes();
-    let grammar = build_mock_grammar(&bytes);
-
-    let builder = Utf8InputTextBuilder::new("一二三万二千円", &grammar);
-    let text = builder.build();
+    let text = build_text("一二三万二千円");
     let path = vec![
         build_node_num("一", "一", 3, 0),
         build_node_num("二", "二", 3, 3),
@@ -89,20 +84,19 @@ fn kanji_numeric() {
         build_node_oov("円", "円", 3, 18),
     ];
     let path = plugin
-        .rewrite(&text, path, &Lattice::new(&grammar, 0))
+        .rewrite(&text, path, &Lattice::new(&GRAMMAR, 0))
         .expect("Failed to rewrite path");
     assert_eq!(2, path.len());
     assert_eq!("一二三万二千", path[0].word_info.as_ref().unwrap().surface);
 
-    let builder = Utf8InputTextBuilder::new("二百百", &grammar);
-    let text = builder.build();
+    let text = build_text("二百百");
     let path = vec![
         build_node_num("二", "二", 3, 0),
         build_node_oov("百", "百", 3, 3),
         build_node_oov("百", "百", 3, 6),
     ];
     let path = plugin
-        .rewrite(&text, path, &Lattice::new(&grammar, 0))
+        .rewrite(&text, path, &Lattice::new(&GRAMMAR, 0))
         .expect("Failed to rewrite path");
     assert_eq!(3, path.len());
 }
@@ -110,11 +104,7 @@ fn kanji_numeric() {
 #[test]
 fn normalize() {
     let plugin = build_plugin();
-    let bytes = build_mock_bytes();
-    let grammar = build_mock_grammar(&bytes);
-
-    let builder = Utf8InputTextBuilder::new("一二三万二千円", &grammar);
-    let text = builder.build();
+    let text = build_text("一二三万二千円");
     let path = vec![
         build_node_num("一", "一", 3, 0),
         build_node_num("二", "二", 3, 3),
@@ -125,7 +115,7 @@ fn normalize() {
         build_node_oov("円", "円", 3, 18),
     ];
     let path = plugin
-        .rewrite(&text, path, &Lattice::new(&grammar, 0))
+        .rewrite(&text, path, &Lattice::new(&GRAMMAR, 0))
         .expect("Failed to rewrite path");
     assert_eq!(2, path.len());
     assert_eq!(
@@ -137,15 +127,11 @@ fn normalize() {
 #[test]
 fn normalized_with_not_numeric() {
     let plugin = build_plugin();
-    let bytes = build_mock_bytes();
-    let grammar = build_mock_grammar(&bytes);
-
-    let builder = Utf8InputTextBuilder::new("六三四", &grammar);
-    let text = builder.build();
+    let text = build_text("六三四");
     // 六三四 is in the dictionary
     let path = vec![build_node_oov("六三四", "六三四", 9, 0)];
     let path = plugin
-        .rewrite(&text, path, &Lattice::new(&grammar, 0))
+        .rewrite(&text, path, &Lattice::new(&GRAMMAR, 0))
         .expect("Failed to rewrite path");
     assert_eq!(1, path.len());
     assert_eq!(
@@ -157,11 +143,7 @@ fn normalized_with_not_numeric() {
 #[test]
 fn point() {
     let plugin = build_plugin();
-    let bytes = build_mock_bytes();
-    let grammar = build_mock_grammar(&bytes);
-
-    let builder = Utf8InputTextBuilder::new("1.002", &grammar);
-    let text = builder.build();
+    let text = build_text("1.002");
     let path = vec![
         build_node_num("1", "1", 1, 0),
         build_node_oov(".", ".", 1, 1),
@@ -170,13 +152,12 @@ fn point() {
         build_node_num("2", "2", 1, 4),
     ];
     let path = plugin
-        .rewrite(&text, path, &Lattice::new(&grammar, 0))
+        .rewrite(&text, path, &Lattice::new(&GRAMMAR, 0))
         .expect("Failed to rewrite path");
     assert_eq!(1, path.len());
     assert_eq!("1.002", path[0].word_info.as_ref().unwrap().normalized_form);
 
-    let builder = Utf8InputTextBuilder::new(".002", &grammar);
-    let text = builder.build();
+    let text = build_text(".002");
     let path = vec![
         build_node_oov(".", ".", 1, 0),
         build_node_num("0", "0", 1, 1),
@@ -184,28 +165,26 @@ fn point() {
         build_node_num("2", "2", 1, 3),
     ];
     let path = plugin
-        .rewrite(&text, path, &Lattice::new(&grammar, 0))
+        .rewrite(&text, path, &Lattice::new(&GRAMMAR, 0))
         .expect("Failed to rewrite path");
     assert_eq!(2, path.len());
     assert_eq!(".", path[0].word_info.as_ref().unwrap().normalized_form);
     assert_eq!("002", path[1].word_info.as_ref().unwrap().normalized_form);
 
-    let builder = Utf8InputTextBuilder::new("22.", &grammar);
-    let text = builder.build();
+    let text = build_text("22.");
     let path = vec![
         build_node_num("2", "2", 1, 0),
         build_node_num("2", "2", 1, 1),
         build_node_oov(".", ".", 1, 2),
     ];
     let path = plugin
-        .rewrite(&text, path, &Lattice::new(&grammar, 0))
+        .rewrite(&text, path, &Lattice::new(&GRAMMAR, 0))
         .expect("Failed to rewrite path");
     assert_eq!(2, path.len());
     assert_eq!("22", path[0].word_info.as_ref().unwrap().normalized_form);
     assert_eq!(".", path[1].word_info.as_ref().unwrap().normalized_form);
 
-    let builder = Utf8InputTextBuilder::new("22.節", &grammar);
-    let text = builder.build();
+    let text = build_text("22.節");
     let path = vec![
         build_node_num("2", "2", 1, 0),
         build_node_num("2", "2", 1, 1),
@@ -213,26 +192,24 @@ fn point() {
         build_node_oov("節", "節", 3, 3),
     ];
     let path = plugin
-        .rewrite(&text, path, &Lattice::new(&grammar, 0))
+        .rewrite(&text, path, &Lattice::new(&GRAMMAR, 0))
         .expect("Failed to rewrite path");
     assert_eq!(3, path.len());
     assert_eq!("22", path[0].word_info.as_ref().unwrap().normalized_form);
     assert_eq!(".", path[1].word_info.as_ref().unwrap().normalized_form);
 
-    let builder = Utf8InputTextBuilder::new(".c", &grammar);
-    let text = builder.build();
+    let text = build_text(".c");
     let path = vec![
         build_node_oov(".", ".", 1, 0),
         build_node_oov("c", "c", 1, 1),
     ];
     let path = plugin
-        .rewrite(&text, path, &Lattice::new(&grammar, 0))
+        .rewrite(&text, path, &Lattice::new(&GRAMMAR, 0))
         .expect("Failed to rewrite path");
     assert_eq!(2, path.len());
     assert_eq!(".", path[0].word_info.as_ref().unwrap().normalized_form);
 
-    let builder = Utf8InputTextBuilder::new("1.20.3", &grammar);
-    let text = builder.build();
+    let text = build_text("1.20.3");
     let path = vec![
         build_node_num("1", "1", 1, 0),
         build_node_oov(".", ".", 1, 1),
@@ -242,13 +219,12 @@ fn point() {
         build_node_num("3", "3", 1, 5),
     ];
     let path = plugin
-        .rewrite(&text, path, &Lattice::new(&grammar, 0))
+        .rewrite(&text, path, &Lattice::new(&GRAMMAR, 0))
         .expect("Failed to rewrite path");
     assert_eq!(5, path.len());
     assert_eq!("20", path[2].word_info.as_ref().unwrap().normalized_form);
 
-    let builder = Utf8InputTextBuilder::new("652...", &grammar);
-    let text = builder.build();
+    let text = build_text("652...");
     let path = vec![
         build_node_num("6", "6", 1, 0),
         build_node_num("5", "5", 1, 1),
@@ -258,7 +234,7 @@ fn point() {
         build_node_oov(".", ".", 1, 5),
     ];
     let path = plugin
-        .rewrite(&text, path, &Lattice::new(&grammar, 0))
+        .rewrite(&text, path, &Lattice::new(&GRAMMAR, 0))
         .expect("Failed to rewrite path");
     assert_eq!(4, path.len());
     assert_eq!("652", path[0].word_info.as_ref().unwrap().normalized_form);
@@ -267,11 +243,7 @@ fn point() {
 #[test]
 fn comma() {
     let plugin = build_plugin();
-    let bytes = build_mock_bytes();
-    let grammar = build_mock_grammar(&bytes);
-
-    let builder = Utf8InputTextBuilder::new("2,00,000,000円", &grammar);
-    let text = builder.build();
+    let text = build_text("2,00,000,000円");
     let path = vec![
         build_node_num("2", "2", 1, 0),
         build_node_oov(",", ",", 1, 1),
@@ -288,7 +260,7 @@ fn comma() {
         build_node_oov("円", "円", 3, 12),
     ];
     let path = plugin
-        .rewrite(&text, path, &Lattice::new(&grammar, 0))
+        .rewrite(&text, path, &Lattice::new(&GRAMMAR, 0))
         .expect("Failed to rewrite path");
     assert_eq!(8, path.len());
     assert_eq!("2", path[0].word_info.as_ref().unwrap().normalized_form);
@@ -299,17 +271,15 @@ fn comma() {
     assert_eq!(",", path[5].word_info.as_ref().unwrap().normalized_form);
     assert_eq!("000", path[6].word_info.as_ref().unwrap().normalized_form);
 
-    let builder = Utf8InputTextBuilder::new(",", &grammar);
-    let text = builder.build();
+    let text = build_text(",");
     let path = vec![build_node_oov(",", ",", 1, 0)];
     let path = plugin
-        .rewrite(&text, path, &Lattice::new(&grammar, 0))
+        .rewrite(&text, path, &Lattice::new(&GRAMMAR, 0))
         .expect("Failed to rewrite path");
     assert_eq!(1, path.len());
     assert_eq!(",", path[0].word_info.as_ref().unwrap().normalized_form);
 
-    let builder = Utf8InputTextBuilder::new("652,,,", &grammar);
-    let text = builder.build();
+    let text = build_text("652,,,");
     let path = vec![
         build_node_num("6", "6", 1, 0),
         build_node_num("5", "5", 1, 1),
@@ -319,13 +289,12 @@ fn comma() {
         build_node_oov(",", ",", 1, 5),
     ];
     let path = plugin
-        .rewrite(&text, path, &Lattice::new(&grammar, 0))
+        .rewrite(&text, path, &Lattice::new(&GRAMMAR, 0))
         .expect("Failed to rewrite path");
     assert_eq!(4, path.len());
     assert_eq!("652", path[0].word_info.as_ref().unwrap().normalized_form);
 
-    let builder = Utf8InputTextBuilder::new("256,5.50389", &grammar);
-    let text = builder.build();
+    let text = build_text("256,5.50389");
     let path = vec![
         build_node_num("2", "2", 1, 0),
         build_node_num("5", "5", 1, 1),
@@ -340,7 +309,7 @@ fn comma() {
         build_node_num("9", "9", 1, 10),
     ];
     let path = plugin
-        .rewrite(&text, path, &Lattice::new(&grammar, 0))
+        .rewrite(&text, path, &Lattice::new(&GRAMMAR, 0))
         .expect("Failed to rewrite path");
     assert_eq!(3, path.len());
     assert_eq!("256", path[0].word_info.as_ref().unwrap().normalized_form);
@@ -349,8 +318,7 @@ fn comma() {
         path[2].word_info.as_ref().unwrap().normalized_form
     );
 
-    let builder = Utf8InputTextBuilder::new("256,550.389", &grammar);
-    let text = builder.build();
+    let text = build_text("256,550.389");
     let path = vec![
         build_node_num("2", "2", 1, 0),
         build_node_num("5", "5", 1, 1),
@@ -365,7 +333,7 @@ fn comma() {
         build_node_num("9", "9", 1, 10),
     ];
     let path = plugin
-        .rewrite(&text, path, &Lattice::new(&grammar, 0))
+        .rewrite(&text, path, &Lattice::new(&GRAMMAR, 0))
         .expect("Failed to rewrite path");
     assert_eq!(1, path.len());
     assert_eq!(
@@ -377,11 +345,7 @@ fn comma() {
 #[test]
 fn single_node() {
     let mut plugin = build_plugin();
-    let bytes = build_mock_bytes();
-    let grammar = build_mock_grammar(&bytes);
-
-    let builder = Utf8InputTextBuilder::new("猫三匹", &grammar);
-    let text = builder.build();
+    let text = build_text("猫三匹");
     let _path = vec![
         build_node_oov("猫", "猫", 3, 0),
         build_node_num("三", "三", 3, 3),
@@ -389,14 +353,14 @@ fn single_node() {
     ];
 
     let path = plugin
-        .rewrite(&text, _path.clone(), &Lattice::new(&grammar, 0))
+        .rewrite(&text, _path.clone(), &Lattice::new(&GRAMMAR, 0))
         .expect("Failed to rewrite path");
     assert_eq!(3, path.len());
     assert_eq!("3", path[1].word_info.as_ref().unwrap().normalized_form);
 
     plugin.enable_normalize = false;
     let path = plugin
-        .rewrite(&text, _path.clone(), &Lattice::new(&grammar, 0))
+        .rewrite(&text, _path.clone(), &Lattice::new(&GRAMMAR, 0))
         .expect("Failed to rewrite path");
     assert_eq!(3, path.len());
     assert_eq!("三", path[1].word_info.as_ref().unwrap().normalized_form);
@@ -452,18 +416,13 @@ fn build_character_category() -> CharacterCategory {
     CharacterCategory::from_reader(CHAR_DEF).expect("Failed to load character category")
 }
 
-fn build_mock_bytes() -> Vec<u8> {
-    let mut buf = Vec::new();
-    // set 0 for all of pos size, left and right id size
-    buf.extend(&(0 as i16).to_le_bytes());
-    buf.extend(&(0 as i16).to_le_bytes());
-    buf.extend(&(0 as i16).to_le_bytes());
-    buf
-}
-
-fn build_mock_grammar(bytes: &[u8]) -> Grammar {
-    let mut grammar = Grammar::new(bytes, 0).expect("Failed to create grammar");
+fn build_mock_grammar() -> Grammar<'static> {
+    let mut grammar = zero_grammar();
     let char_cat = build_character_category();
     grammar.set_character_category(char_cat);
     grammar
+}
+
+lazy_static! {
+    static ref GRAMMAR: Grammar<'static> = build_mock_grammar();
 }
