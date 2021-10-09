@@ -170,6 +170,9 @@ impl InputBuffer {
     }
 
     fn fill_cat_continuity(&mut self) {
+        if self.mod_chars.is_empty() {
+            return;
+        }
         // single pass algorithm
         // by default continuity is 1 codepoint
         // go from the back and set it prev + 1 when chars are compatible
@@ -336,7 +339,7 @@ impl InputTextIndex for InputBuffer {
     fn byte_distance(&self, byte: usize, codepts: usize) -> usize {
         debug_assert_eq!(self.state, BufferState::RO);
         let start_c = self.mod_b2c[byte];
-        let tgt_c = start_c + codepts;
+        let tgt_c = (start_c + codepts).min(self.mod_chars.len());
         self.mod_c2b[tgt_c] - byte
     }
 

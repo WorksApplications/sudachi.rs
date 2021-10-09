@@ -15,6 +15,7 @@
  */
 
 use super::*;
+use crate::test::zero_grammar;
 
 #[test]
 fn new_build() {
@@ -38,4 +39,16 @@ fn orig_slice() {
     assert_eq!(buffer.orig_slice(0..3), "宇");
     assert_eq!(buffer.orig_slice(3..6), "宙");
     assert_eq!(buffer.orig_slice(6..9), "人");
+}
+
+#[test]
+fn byte_distance() {
+    let mut buffer = InputBuffer::from("宇宙人");
+    let g = zero_grammar();
+    buffer.build(&g).expect("failed");
+    assert_eq!(3, buffer.byte_distance(0, 1));
+    assert_eq!(6, buffer.byte_distance(0, 2));
+    assert_eq!(9, buffer.byte_distance(0, 3));
+    // this returns result to last character if out of bounds
+    assert_eq!(9, buffer.byte_distance(0, 4));
 }

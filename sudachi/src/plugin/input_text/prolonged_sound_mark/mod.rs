@@ -54,8 +54,10 @@ impl ProlongedSoundMarkPlugin {
         pattern.push('[');
         for symbol in data {
             match symbol {
-                '-' | '[' | ']' | '^' | '\\' => write!(pattern, "\\u{{{:X}}}", symbol as u32).expect("should not happen"),
-                c => pattern.push(c)
+                '-' | '[' | ']' | '^' | '\\' => {
+                    write!(pattern, "\\u{{{:X}}}", symbol as u32).expect("should not happen")
+                }
+                c => pattern.push(c),
             }
         }
         pattern.push_str("]{2,}");
