@@ -99,12 +99,10 @@ where
         mode: Mode,
         enable_debug: bool,
     ) -> SudachiResult<MorphemeList<Self::Dictionary>> {
-        let mut tok = StatefulTokenizer::create(&self.dict, enable_debug, mode);
+        let mut tok = StatefulTokenizer::create(self.dict.clone(), enable_debug, mode);
         tok.reset().push_str(input);
         tok.do_tokenize()?;
-        let mut ml = MorphemeList::empty(self.dict.clone());
-        ml.collect_results(&mut tok)?;
-        Ok(ml)
+        tok.into_morpheme_list()
     }
 }
 

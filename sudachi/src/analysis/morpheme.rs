@@ -19,7 +19,6 @@ use crate::analysis::stateful_tokenizer::StatefulTokenizer;
 use crate::analysis::stateless_tokenizer::DictionaryAccess;
 use crate::dic::grammar::Grammar;
 use crate::dic::lexicon::word_infos::WordInfo;
-use crate::input_text::Utf8InputText;
 use crate::prelude::*;
 
 /// A list of morphemes
@@ -30,10 +29,10 @@ pub struct MorphemeList<T> {
 }
 
 impl<T: DictionaryAccess> MorphemeList<T> {
-    pub fn new(dict: T, input_text: &Utf8InputText, path: Vec<Node>) -> SudachiResult<Self> {
+    pub fn from_components(dict: T, original: String, path: Vec<Node>) -> SudachiResult<Self> {
         let mut list = Self {
             dict,
-            input_text: input_text.original.to_string(),
+            input_text: original,
             path,
         };
         list.fill_word_info()?;

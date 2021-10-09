@@ -285,6 +285,10 @@ impl InputBuffer {
         self.state = BufferState::Clean;
     }
 
+    pub fn into_original(self) -> String {
+        self.original
+    }
+
     pub fn can_bow(&self, offset: usize) -> bool {
         debug_assert_eq!(self.state, BufferState::RO);
         self.mod_bow[offset]

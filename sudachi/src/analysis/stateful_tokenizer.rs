@@ -22,6 +22,7 @@ use crate::dic::category_type::CategoryType;
 use crate::error::SudachiResult;
 use crate::input_text::input_buffer::InputBuffer;
 use crate::input_text::InputTextIndex;
+use crate::prelude::MorphemeList;
 
 pub struct StatefulTokenizer<D> {
     dictionary: D,
@@ -187,5 +188,10 @@ impl<D: DictionaryAccess> StatefulTokenizer<D> {
         lattice.connect_eos_node()?;
 
         Ok(lattice)
+    }
+
+    pub fn into_morpheme_list(mut self) -> SudachiResult<MorphemeList<D>> {
+        translate_node_ranges(&mut self.top_path, &self.input);
+        MorphemeList::from_components(self.dictionary, self.input.into_original(), self.top_path)
     }
 }
