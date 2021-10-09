@@ -16,6 +16,8 @@
 
 use std::cmp;
 
+use crate::analysis::stateful_tokenizer::StatefulTokenizer;
+use crate::analysis::stateless_tokenizer::DictionaryAccess;
 use nom::{bytes::complete::take, number::complete::le_u32};
 
 use crate::error::SudachiNomResult;
@@ -129,13 +131,17 @@ impl<'a> Lexicon<'a> {
     }
 
     /// update word_param cost based on current tokenizer
-    pub fn update_cost<T: Tokenize>(&mut self, tokenizer: &T) -> SudachiResult<()> {
+    pub fn update_cost<D: DictionaryAccess>(&mut self, dict: &D) -> SudachiResult<()> {
+        let mut tok = StatefulTokenizer::create(dict, false, Mode::C);
+        let mut ms = MorphemeList::empty(dict);
         for wid in 0..self.word_params.size() as u32 {
             if self.word_params.get_cost(wid)? != i16::MIN {
                 continue;
             }
             let surface = self.get_word_info(wid)?.surface;
-            let ms = tokenizer.tokenize(&surface, Mode::C, false)?;
+            tok.reset().push_str(&surface);
+            tok.do_tokenize()?;
+            ms.collect_results(&mut tok)?;
             let internal_cost = ms.get_internal_cost();
             let cost = internal_cost + Lexicon::USER_DICT_COST_PER_MORPH * ms.len() as i32;
             let cost = cmp::min(cost, i16::MAX as i32);

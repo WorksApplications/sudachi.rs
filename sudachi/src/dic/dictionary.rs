@@ -19,7 +19,7 @@ use std::path::Path;
 
 use memmap2::Mmap;
 
-use crate::analysis::stateless_tokenizer::{DictionaryAccess, StatelessTokenizer};
+use crate::analysis::stateless_tokenizer::DictionaryAccess;
 use crate::config::Config;
 use crate::config::ConfigError::MissingArgument;
 use crate::dic::grammar::Grammar;
@@ -162,8 +162,7 @@ impl JapaneseDictionary {
 
         // we need to update lexicon first, since it needs the current number of pos
         let mut user_lexicon = user_dict.lexicon;
-        let tokenizer = StatelessTokenizer::new(&self);
-        user_lexicon.update_cost(&tokenizer)?;
+        user_lexicon.update_cost(&self)?;
 
         self._lexicon
             .append(user_lexicon, self._grammar.pos_list.len())?;
