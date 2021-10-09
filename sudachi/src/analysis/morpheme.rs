@@ -297,6 +297,10 @@ impl<T> Morpheme<'_, T> {
     pub fn get_word_info(&self) -> &WordInfo {
         self.list.get_word_info(self.index)
     }
+
+    pub fn index(&self) -> usize {
+        self.index
+    }
 }
 
 impl<T: DictionaryAccess> std::fmt::Debug for Morpheme<'_, T> {

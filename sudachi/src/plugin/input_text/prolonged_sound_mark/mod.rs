@@ -18,6 +18,7 @@ use regex::Regex;
 use serde::Deserialize;
 use serde_json::Value;
 use std::collections::HashSet;
+use std::fmt::Write;
 
 use crate::config::Config;
 use crate::dic::grammar::Grammar;
@@ -53,12 +54,8 @@ impl ProlongedSoundMarkPlugin {
         pattern.push('[');
         for symbol in data {
             match symbol {
-                ']' | '^' | '\\' => {
-                    return Err(SudachiError::PluginError(PluginError::InvalidDataFormat(
-                        format!("Prolonged symbol {:?} is invalid", symbol),
-                    )))
-                }
-                _ => pattern.push(symbol),
+                '-' | '[' | ']' | '^' | '\\' => write!(pattern, "\\u{{{:X}}}", symbol as u32).expect("should not happen"),
+                c => pattern.push(c)
             }
         }
         pattern.push_str("]{2,}");
