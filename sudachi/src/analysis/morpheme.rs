@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-use std::ops::{Deref, Index};
+use std::ops::Deref;
 
 use crate::analysis::node::Node;
 use crate::analysis::stateful_tokenizer::StatefulTokenizer;
@@ -36,7 +36,7 @@ where
     T: Deref,
     <T as Deref>::Target: DictionaryAccess,
 {
-    pub fn new(dict: T, input_text: &Utf8InputText, mut path: Vec<Node>) -> SudachiResult<Self> {
+    pub fn new(dict: T, input_text: &Utf8InputText, path: Vec<Node>) -> SudachiResult<Self> {
         let mut list = Self {
             dict,
             input_text: input_text.original.to_string(),

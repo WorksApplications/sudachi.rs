@@ -174,7 +174,7 @@ impl MeCabOovPlugin {
         input: &T,
         offset: usize,
         has_other_words: bool,
-        mut nodes: &mut Vec<Node>,
+        nodes: &mut Vec<Node>,
     ) -> SudachiResult<()> {
         let byte_len = input.cat_continuous_len(offset);
         if byte_len == 0 {
@@ -256,7 +256,7 @@ impl OovProviderPlugin for MeCabOovPlugin {
         has_other_words: bool,
     ) -> SudachiResult<Vec<Node>> {
         let mut nodes = vec![];
-        self.provide_oov_gen(input_text, offset, has_other_words, &mut nodes);
+        self.provide_oov_gen(input_text, offset, has_other_words, &mut nodes)?;
         Ok(nodes)
     }
 

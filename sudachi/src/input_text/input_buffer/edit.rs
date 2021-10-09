@@ -57,7 +57,6 @@ impl<'a> EditInput<'a> {
 
     /// Replace range with owned String
     pub fn replace_own(&mut self, range: Range<usize>, result: String) {
-        let nchars = result.chars().count();
         let op = ReplaceOp {
             what: range,
             with: ReplaceTgt::Str(result),
@@ -146,7 +145,6 @@ fn add_replace(
 #[cfg(test)]
 mod test {
     use super::super::InputBuffer;
-    use super::*;
     use crate::input_text::InputTextIndex;
 
     #[test]

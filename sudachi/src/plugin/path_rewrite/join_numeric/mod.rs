@@ -200,7 +200,7 @@ impl PathRewritePlugin for JoinNumericPlugin {
     fn rewrite(
         &self,
         text: &Utf8InputText,
-        mut path: Vec<Node>,
+        path: Vec<Node>,
         _lattice: &Lattice,
     ) -> SudachiResult<Vec<Node>> {
         self.rewrite_gen(text, path)

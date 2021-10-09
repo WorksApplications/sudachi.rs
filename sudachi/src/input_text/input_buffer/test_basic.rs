@@ -20,7 +20,7 @@ use super::*;
 fn new_build() {
     let mut buffer = InputBuffer::new();
     buffer.reset().push_str("宇宙人");
-    buffer.start_build();
+    buffer.start_build().expect("does not fail");
     assert_eq!(buffer.current(), "宇宙人")
 }
 

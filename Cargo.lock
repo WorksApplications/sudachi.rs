@@ -591,8 +591,6 @@ name = "sudachi-cli"
 version = "0.1.0"
 dependencies = [
  "cfg-if",
- "join_katakana_oov",
- "join_numeric",
  "structopt",
  "sudachi",
 ]
