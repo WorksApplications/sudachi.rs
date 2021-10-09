@@ -34,7 +34,7 @@ pub trait OovProviderPlugin: Sync + Send {
     fn set_up(&mut self, settings: &Value, config: &Config, grammar: &Grammar)
         -> SudachiResult<()>;
 
-    fn get_oov2(
+    fn get_oov(
         &self,
         input_text: &InputBuffer,
         offset: usize,
@@ -42,7 +42,7 @@ pub trait OovProviderPlugin: Sync + Send {
         result: &mut Vec<Node>,
     ) -> SudachiResult<()> {
         let size = result.len();
-        self.provide_oov2(input_text, offset, has_other_words, result)?;
+        self.provide_oov(input_text, offset, has_other_words, result)?;
         for i in size..result.len() {
             let node = &mut result[i];
             let length = node.word_info.as_ref().unwrap().head_word_length as usize;
@@ -52,7 +52,7 @@ pub trait OovProviderPlugin: Sync + Send {
     }
 
     /// Generate a list of oov nodes
-    fn provide_oov2(
+    fn provide_oov(
         &self,
         input_text: &InputBuffer,
         offset: usize,

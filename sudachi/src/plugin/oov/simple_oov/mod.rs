@@ -70,7 +70,7 @@ impl OovProviderPlugin for SimpleOovPlugin {
         Ok(())
     }
 
-    fn provide_oov2(
+    fn provide_oov(
         &self,
         input_text: &InputBuffer,
         offset: usize,

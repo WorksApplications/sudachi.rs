@@ -249,7 +249,7 @@ impl OovProviderPlugin for MeCabOovPlugin {
         Ok(())
     }
 
-    fn provide_oov2(
+    fn provide_oov(
         &self,
         input_text: &InputBuffer,
         offset: usize,

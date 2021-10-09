@@ -162,7 +162,7 @@ impl<D: DictionaryAccess> StatefulTokenizer<D> {
             // OOV
             if !input.cat_at_byte(i).contains(CategoryType::NOOOVBOW) {
                 for oov_provider in dict.oov_provider_plugins() {
-                    oov_provider.get_oov2(&input, i, has_word, oovs)?;
+                    oov_provider.get_oov(&input, i, has_word, oovs)?;
                 }
                 for node in oovs.drain(..) {
                     has_word = true;
@@ -173,7 +173,7 @@ impl<D: DictionaryAccess> StatefulTokenizer<D> {
                 dict.oov_provider_plugins()
                     .last()
                     .unwrap()
-                    .get_oov2(&input, i, has_word, oovs)?;
+                    .get_oov(&input, i, has_word, oovs)?;
                 // use last oov_provider as default
                 for node in oovs.drain(..) {
                     has_word = true;
