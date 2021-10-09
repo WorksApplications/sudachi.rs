@@ -18,39 +18,35 @@ use fancy_regex::Regex;
 use lazy_static::lazy_static;
 
 use crate::dic::lexicon_set::LexiconSet;
-use crate::input_text::Utf8InputText;
 use crate::prelude::*;
 
 /// A checker for words that cross boundaries
 pub struct NonBreakChecker<'a> {
     lexicon: &'a LexiconSet<'a>,
-    input: &'a Utf8InputText<'a>,
     pub bos: usize,
 }
 impl<'a> NonBreakChecker<'a> {
-    pub fn new(lexicon: &'a LexiconSet<'a>, input: &'a Utf8InputText<'a>) -> Self {
-        NonBreakChecker {
-            lexicon,
-            input,
-            bos: 0,
-        }
+    pub fn new(lexicon: &'a LexiconSet<'a>) -> Self {
+        NonBreakChecker { lexicon, bos: 0 }
     }
 }
 impl NonBreakChecker<'_> {
     /// Returns whether there is a word that crosses the boundary
-    fn has_non_break_word(&self, length: usize) -> SudachiResult<bool> {
+    /// TODO: this implementation is broken now
+    fn has_non_break_word(&self, input: &str, length: usize) -> SudachiResult<bool> {
         // assume that SentenceDetector::get_eos called with self.input[self.bos..]
         let eos_byte = self.bos + length;
-        let input_bytes = self.input.modified.as_bytes();
+        let input_bytes = input.as_bytes();
         const LOOKUP_BYTE_LENGTH: usize = 64;
         let lookup_start = std::cmp::max(LOOKUP_BYTE_LENGTH, eos_byte) - LOOKUP_BYTE_LENGTH;
         for i in lookup_start..eos_byte {
-            if !self.input.can_bow(i) {
-                continue;
-            }
+            // TODO: fixme
+            // if !input.can_bow(i) {
+            //     continue;
+            // }
             for entry in self.lexicon.lookup(input_bytes, i) {
                 let end_byte = entry.end;
-                let char_count = self.input.modified[i..end_byte].chars().count();
+                let char_count = input[i..end_byte].chars().count();
                 if end_byte > eos_byte || (end_byte == eos_byte && char_count > 1) {
                     return Ok(true);
                 }
@@ -146,7 +142,7 @@ impl SentenceDetector {
                 continue;
             }
             if let Some(ck) = &checker {
-                if ck.has_non_break_word(eos)? {
+                if ck.has_non_break_word(input, eos)? {
                     continue;
                 }
             }
