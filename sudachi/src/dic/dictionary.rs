@@ -82,6 +82,15 @@ impl Drop for StorageBackend {
     }
 }
 
+// It is self-referential struct with 'static lifetime as a workaround
+// for the impossibility to specify the correct lifetime for
+// those fields. Accessor functions always provide the correct lifetime,
+// tied to the lifetime of the struct itself.
+// It is safe to move this structure around because the
+// pointers from memory mappings themselves are stable and
+// will not change if the structure will be moved around.
+// This structure is always read only after creation and is safe to share
+// between threads.
 pub struct JapaneseDictionary {
     backend: StorageBackend,
     plugins: Plugins,
