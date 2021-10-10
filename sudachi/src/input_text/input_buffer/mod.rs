@@ -349,8 +349,14 @@ impl InputTextIndex for InputBuffer {
 
     fn orig_slice(&self, range: Range<usize>) -> &str {
         debug_assert_ne!(self.state, BufferState::Clean);
-        debug_assert!(self.modified.is_char_boundary(range.start));
-        debug_assert!(self.modified.is_char_boundary(range.end));
+        debug_assert!(
+            self.modified.is_char_boundary(range.start),
+            "start is off char boundary"
+        );
+        debug_assert!(
+            self.modified.is_char_boundary(range.end),
+            "end is off char boundary"
+        );
         &self.original[self.to_orig(range)]
     }
 
