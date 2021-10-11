@@ -85,24 +85,24 @@ impl PyTokenizer {
     /// Break text into morphemes
     ///
     /// This ignores the logger provided
-    #[pyo3(text_signature = "($self, text, /, mode, logger, enable_debug)")]
-    #[args(text, mode = "None", logger = "None", enable_debug = "None")]
+    #[pyo3(text_signature = "($self, text, /, mode, logger)")]
+    #[args(text, mode = "None", logger = "None")]
     #[allow(unused_variables)]
     fn tokenize(
         &self,
         text: &str,
         mode: Option<PySplitMode>,
         logger: Option<PyObject>,
-        enable_debug: Option<bool>,
     ) -> PyResult<PyMorphemeListWrapper> {
         let mode: Mode = match mode {
             Some(m) => m.into(),
             None => self.mode,
         };
+        let enable_debug = false;
 
         let morphemes = self
             .tokenizer
-            .tokenize(text, mode, enable_debug.unwrap_or(false))
+            .tokenize(text, mode, enable_debug)
             .map_err(|e| {
                 PyException::new_err(format!("Error while tokenization: {}", e.to_string()))
             })?
