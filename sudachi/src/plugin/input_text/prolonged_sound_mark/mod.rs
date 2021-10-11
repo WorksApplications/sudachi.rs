@@ -22,7 +22,7 @@ use std::fmt::Write;
 
 use crate::config::Config;
 use crate::dic::grammar::Grammar;
-use crate::input_text::input_buffer::{EditInput, InputBuffer};
+use crate::input_text::input_buffer::{InputBuffer, InputEditor};
 use crate::plugin::input_text::InputTextPlugin;
 use crate::plugin::PluginError;
 use crate::prelude::*;
@@ -90,8 +90,8 @@ impl InputTextPlugin for ProlongedSoundMarkPlugin {
     fn rewrite_impl<'a>(
         &'a self,
         input: &InputBuffer,
-        mut edit: EditInput<'a>,
-    ) -> SudachiResult<EditInput<'a>> {
+        mut edit: InputEditor<'a>,
+    ) -> SudachiResult<InputEditor<'a>> {
         let re = self.regex.as_ref().unwrap();
         let data = input.current();
 

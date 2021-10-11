@@ -25,7 +25,7 @@ use crate::config::Config;
 use crate::dic::category_type::CategoryType;
 use crate::dic::character_category::CharacterCategory;
 use crate::dic::grammar::Grammar;
-use crate::input_text::input_buffer::{EditInput, InputBuffer};
+use crate::input_text::input_buffer::{InputBuffer, InputEditor};
 use crate::plugin::input_text::InputTextPlugin;
 use crate::plugin::PluginError;
 use crate::prelude::*;
@@ -151,8 +151,8 @@ impl InputTextPlugin for IgnoreYomiganaPlugin {
     fn rewrite_impl<'a>(
         &'a self,
         input: &InputBuffer,
-        mut edit: EditInput<'a>,
-    ) -> SudachiResult<EditInput<'a>> {
+        mut edit: InputEditor<'a>,
+    ) -> SudachiResult<InputEditor<'a>> {
         let regex = self.regex.as_ref().unwrap();
 
         let data = input.current();

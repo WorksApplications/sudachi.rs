@@ -22,7 +22,7 @@ use serde_json::Value;
 
 use crate::config::Config;
 use crate::dic::grammar::Grammar;
-use crate::input_text::input_buffer::{EditInput, InputBuffer};
+use crate::input_text::input_buffer::{InputBuffer, InputEditor};
 use crate::plugin::input_text::default_input_text::DefaultInputTextPlugin;
 use crate::plugin::input_text::ignore_yomigana::IgnoreYomiganaPlugin;
 use crate::plugin::input_text::prolonged_sound_mark::ProlongedSoundMarkPlugin;
@@ -45,7 +45,7 @@ pub trait InputTextPlugin: Sync + Send {
         if self.uses_chars() {
             input.refresh_chars()
         }
-        input.with_replacer(|b, r| {
+        input.with_editor(|b, r| {
             // deprecation is to discourage calling the work function
             #[allow(deprecated)]
             self.rewrite_impl(b, r)
@@ -57,8 +57,8 @@ pub trait InputTextPlugin: Sync + Send {
     fn rewrite_impl<'a>(
         &'a self,
         input: &InputBuffer,
-        edit: EditInput<'a>,
-    ) -> SudachiResult<EditInput<'a>>;
+        edit: InputEditor<'a>,
+    ) -> SudachiResult<InputEditor<'a>>;
 }
 
 impl PluginCategory for dyn InputTextPlugin {

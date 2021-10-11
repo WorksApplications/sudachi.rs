@@ -20,7 +20,7 @@ mod test_basic;
 #[cfg(test)]
 mod test_ported;
 
-pub use self::edit::EditInput;
+pub use self::edit::InputEditor;
 use crate::dic::category_type::CategoryType;
 use crate::dic::grammar::Grammar;
 use std::ops::Range;
@@ -47,7 +47,7 @@ impl Default for BufferState {
     }
 }
 
-/// InputBuffer
+/// InputBuffer - prepares the input data for the analysis
 ///
 /// By saying char we actually mean Unicode codepoint here.
 /// In the context of this struct these terms are synonyms.
@@ -190,14 +190,6 @@ impl InputBuffer {
         }
     }
 
-    fn make_editor<'a>(&mut self) -> EditInput<'a> {
-        // SAFETY: while it is possible to write into borrowed replaces
-        // the buffer object itself will be accessible as RO
-        let replaces: &'a mut Vec<edit::ReplaceOp<'a>> =
-            unsafe { std::mem::transmute(&mut self.replaces) };
-        return EditInput::new(replaces);
-    }
-
     fn commit(&mut self) -> SudachiResult<()> {
         if self.replaces.is_empty() {
             return Ok(());
@@ -227,20 +219,28 @@ impl InputBuffer {
         self.replaces.clear()
     }
 
+    fn make_editor<'a>(&mut self) -> InputEditor<'a> {
+        // SAFETY: while it is possible to write into borrowed replaces
+        // the buffer object itself will be accessible as RO
+        let replaces: &'a mut Vec<edit::ReplaceOp<'a>> =
+            unsafe { std::mem::transmute(&mut self.replaces) };
+        return InputEditor::new(replaces);
+    }
+
     /// Execute a function which can modify the contents of the current buffer
     ///
-    /// Must perform
-    pub fn with_replacer<'a, F>(&mut self, func: F) -> SudachiResult<()>
+    /// Edit can borrow &str from the context with the borrow checker working correctly     
+    pub fn with_editor<'a, F>(&mut self, func: F) -> SudachiResult<()>
     where
-        F: FnOnce(&InputBuffer, EditInput<'a>) -> SudachiResult<EditInput<'a>>,
+        F: FnOnce(&InputBuffer, InputEditor<'a>) -> SudachiResult<InputEditor<'a>>,
         F: 'a,
     {
         debug_assert_eq!(self.state, BufferState::RW);
         // InputBufferReplacer should have 'a lifetime parameter for API safety
         // It is impossible to create it outside of this function
         // And the API forces user to return it by value
-        let replacer: EditInput<'a> = self.make_editor();
-        match func(self, replacer) {
+        let editor: InputEditor<'a> = self.make_editor();
+        match func(self, editor) {
             Ok(_) => self.commit(),
             Err(e) => {
                 self.rollback();

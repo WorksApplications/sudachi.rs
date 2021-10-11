@@ -28,13 +28,13 @@ enum ReplaceTgt<'a> {
     Str(String),
 }
 
-pub struct EditInput<'a> {
+pub struct InputEditor<'a> {
     replaces: &'a mut Vec<ReplaceOp<'a>>,
 }
 
-impl<'a> EditInput<'a> {
-    pub(super) fn new(replaces: &'a mut Vec<ReplaceOp<'a>>) -> EditInput {
-        EditInput { replaces }
+impl<'a> InputEditor<'a> {
+    pub(super) fn new(replaces: &'a mut Vec<ReplaceOp<'a>>) -> InputEditor {
+        InputEditor { replaces }
     }
 
     /// Replace range with a &str
@@ -151,7 +151,7 @@ mod test {
     fn edit_ref_1() {
         let mut buffer = InputBuffer::from("宇宙人");
         buffer
-            .with_replacer(|_, mut r| {
+            .with_editor(|_, mut r| {
                 r.replace_ref(3..6, "銀");
                 Ok(r)
             })
@@ -165,7 +165,7 @@ mod test {
     fn edit_char_1() {
         let mut buffer = InputBuffer::from("宇宙人");
         buffer
-            .with_replacer(|_, mut r| {
+            .with_editor(|_, mut r| {
                 r.replace_char(3..6, '銀');
                 Ok(r)
             })
@@ -180,7 +180,7 @@ mod test {
         let s = String::from("銀");
         let mut buffer = InputBuffer::from("宇宙人");
         buffer
-            .with_replacer(|_, mut r| {
+            .with_editor(|_, mut r| {
                 r.replace_ref(3..6, &s);
                 Ok(r)
             })
@@ -193,7 +193,7 @@ mod test {
     fn edit_str_1() {
         let mut buffer = InputBuffer::from("宇宙人");
         buffer
-            .with_replacer(|_, mut r| {
+            .with_editor(|_, mut r| {
                 r.replace_own(3..6, String::from("銀"));
                 Ok(r)
             })
@@ -207,7 +207,7 @@ mod test {
     fn replace_start_w_longer() {
         let mut buffer = InputBuffer::from("宇宙人");
         buffer
-            .with_replacer(|_, mut r| {
+            .with_editor(|_, mut r| {
                 r.replace_ref(0..3, "銀河");
                 Ok(r)
             })
@@ -224,7 +224,7 @@ mod test {
     fn replace_mid_w_longer() {
         let mut buffer = InputBuffer::from("宇宙人");
         buffer
-            .with_replacer(|_, mut r| {
+            .with_editor(|_, mut r| {
                 r.replace_ref(3..6, "銀河");
                 Ok(r)
             })
@@ -241,7 +241,7 @@ mod test {
     fn replace_end_w_longer() {
         let mut buffer = InputBuffer::from("宇宙人");
         buffer
-            .with_replacer(|_, mut r| {
+            .with_editor(|_, mut r| {
                 r.replace_ref(6..9, "銀河");
                 Ok(r)
             })
@@ -258,7 +258,7 @@ mod test {
     fn replace_start_w_shorter() {
         let mut buffer = InputBuffer::from("宇宙人");
         buffer
-            .with_replacer(|_, mut r| {
+            .with_editor(|_, mut r| {
                 r.replace_ref(0..6, "河");
                 Ok(r)
             })
@@ -274,7 +274,7 @@ mod test {
     fn replace_end_w_shorter() {
         let mut buffer = InputBuffer::from("宇宙人");
         buffer
-            .with_replacer(|_, mut r| {
+            .with_editor(|_, mut r| {
                 r.replace_ref(3..9, "河");
                 Ok(r)
             })
@@ -290,7 +290,7 @@ mod test {
     fn replace_start_w_none() {
         let mut buffer = InputBuffer::from("宇宙人");
         buffer
-            .with_replacer(|_, mut r| {
+            .with_editor(|_, mut r| {
                 r.replace_ref(0..6, "");
                 Ok(r)
             })
@@ -305,7 +305,7 @@ mod test {
     fn replace_start_w_none_2() {
         let mut buffer = InputBuffer::from("宇宙人");
         buffer
-            .with_replacer(|_, mut r| {
+            .with_editor(|_, mut r| {
                 r.replace_ref(0..3, "");
                 Ok(r)
             })
@@ -321,7 +321,7 @@ mod test {
     fn replace_end_w_none() {
         let mut buffer = InputBuffer::from("宇宙人");
         buffer
-            .with_replacer(|_, mut r| {
+            .with_editor(|_, mut r| {
                 r.replace_ref(3..9, "");
                 Ok(r)
             })
@@ -336,7 +336,7 @@ mod test {
     fn replace_diff_width() {
         let mut buffer = InputBuffer::from("âｂC1あ");
         buffer
-            .with_replacer(|_, mut r| {
+            .with_editor(|_, mut r| {
                 r.replace_ref(0..2, "a");
                 r.replace_ref(2..5, "b");
                 r.replace_ref(5..6, "c");
@@ -356,7 +356,7 @@ mod test {
     fn replace_with_more_cnt() {
         let mut buffer = InputBuffer::from("あ");
         buffer
-            .with_replacer(|_, mut r| {
+            .with_editor(|_, mut r| {
                 r.replace_ref(0..3, "abc");
                 Ok(r)
             })

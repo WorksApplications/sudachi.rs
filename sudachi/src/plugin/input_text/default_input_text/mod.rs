@@ -26,7 +26,7 @@ use unicode_normalization::{is_nfkc_quick, IsNormalized, UnicodeNormalization};
 
 use crate::config::Config;
 use crate::dic::grammar::Grammar;
-use crate::input_text::input_buffer::{EditInput, InputBuffer};
+use crate::input_text::input_buffer::{InputBuffer, InputEditor};
 use crate::plugin::input_text::InputTextPlugin;
 use crate::prelude::*;
 
@@ -155,8 +155,8 @@ impl DefaultInputTextPlugin {
     fn replace_fast<'a>(
         &'a self,
         buffer: &InputBuffer,
-        mut replacer: EditInput<'a>,
-    ) -> SudachiResult<EditInput<'a>> {
+        mut replacer: InputEditor<'a>,
+    ) -> SudachiResult<InputEditor<'a>> {
         let cur = buffer.current();
         let checker = self.full_checker.as_ref().unwrap();
 
@@ -173,8 +173,8 @@ impl DefaultInputTextPlugin {
     fn replace_slow<'a>(
         &'a self,
         buffer: &InputBuffer,
-        mut replacer: EditInput<'a>,
-    ) -> SudachiResult<EditInput<'a>> {
+        mut replacer: InputEditor<'a>,
+    ) -> SudachiResult<InputEditor<'a>> {
         let cur = buffer.current();
         let checker = self.anchored_checker.as_ref().unwrap();
         let mut min_offset = 0;
@@ -227,7 +227,7 @@ impl DefaultInputTextPlugin {
     fn handle_normalization_slow<'a, I: Iterator<Item = char>>(
         &'a self,
         mut data: I,
-        replacer: &mut EditInput<'a>,
+        replacer: &mut InputEditor<'a>,
         start: usize,
         len: usize,
         ch: char,
@@ -272,8 +272,8 @@ impl InputTextPlugin for DefaultInputTextPlugin {
     fn rewrite_impl<'a>(
         &'a self,
         buffer: &InputBuffer,
-        edit: EditInput<'a>,
-    ) -> SudachiResult<EditInput<'a>> {
+        edit: InputEditor<'a>,
+    ) -> SudachiResult<InputEditor<'a>> {
         let chars = buffer.current_chars();
         let need_nkfc = match is_nfkc_quick(chars.iter().cloned()) {
             IsNormalized::Yes => false,
