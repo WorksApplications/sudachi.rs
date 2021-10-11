@@ -48,7 +48,7 @@ pub trait InputTextPlugin: Sync + Send {
         input.with_replacer(|b, r| {
             // deprecation is to discourage calling the work function
             #[allow(deprecated)]
-                self.rewrite_impl(b, r)
+            self.rewrite_impl(b, r)
         })
     }
 

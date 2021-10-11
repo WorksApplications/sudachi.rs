@@ -15,13 +15,9 @@
  */
 
 pub mod input_buffer;
-pub mod utf8_input_text;
-pub mod utf8_input_text_builder;
 
 use crate::dic::category_type::CategoryType;
 use std::ops::Range;
-pub use utf8_input_text::Utf8InputText;
-pub use utf8_input_text_builder::Utf8InputTextBuilder;
 
 /// Provides fast indexed access into the input text
 pub trait InputTextIndex {
@@ -53,6 +49,3 @@ pub trait InputTextIndex {
     /// Translate range from current state to original
     fn to_orig(&self, range: Range<usize>) -> Range<usize>;
 }
-
-#[cfg(test)]
-mod u8_text_tests;
