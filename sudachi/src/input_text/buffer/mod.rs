@@ -85,6 +85,7 @@ pub struct InputBuffer {
 }
 
 impl InputBuffer {
+    /// Creates new InputBuffer
     pub fn new() -> InputBuffer {
         InputBuffer::default()
     }
@@ -117,6 +118,7 @@ impl InputBuffer {
         buf
     }
 
+    /// Moves InputBuffer into RW state, making it possible to perform edits on it
     pub fn start_build(&mut self) -> SudachiResult<()> {
         if self.original.len() > MAX_LENGTH {
             return Err(SudachiError::InputTooLong(self.original.len(), MAX_LENGTH));
@@ -128,6 +130,7 @@ impl InputBuffer {
         Ok(())
     }
 
+    /// Finalizes InputBuffer state, making it RO
     pub fn build(&mut self, grammar: &Grammar) -> SudachiResult<()> {
         debug_assert_eq!(self.state, BufferState::RW);
         self.state = BufferState::RO;
@@ -136,6 +139,7 @@ impl InputBuffer {
         let mut last_offset = 0;
         let mut last_chidx = 0;
 
+        // Special cases for BOW logic
         let non_starting = CategoryType::ALPHA | CategoryType::GREEK | CategoryType::CYRILLIC;
         let mut prev_cat = CategoryType::empty();
         self.mod_bow.resize(self.modified.len(), false);
@@ -150,6 +154,7 @@ impl InputBuffer {
             last_offset = bidx;
             last_chidx = chidx;
 
+            // BOW logic: for special cases check if the previous char is compatible
             self.mod_bow[bidx] = if cat.intersects(non_starting) {
                 !cat.intersects(prev_cat)
             } else {
@@ -260,35 +265,45 @@ impl InputBuffer {
 
 // RO Accessors
 impl InputBuffer {
+    /// Borrow original data
     pub fn original(&self) -> &str {
         debug_assert_ne!(self.state, BufferState::Clean);
         &self.original
     }
 
+    /// Borrow modified data
     pub fn current(&self) -> &str {
         debug_assert_ne!(self.state, BufferState::Clean);
         &self.modified
     }
 
+    /// Borrow array of current characters
     pub fn current_chars(&self) -> &[char] {
         debug_assert_ne!(self.state, BufferState::Clean);
         debug_assert_eq!(self.modified.is_empty(), self.mod_chars.is_empty());
         &self.mod_chars
     }
 
+    /// Get index of the current byte in original sentence
+    /// Bytes not on character boundaries are not supported
     pub fn get_original_index(&self, index: usize) -> usize {
+        debug_assert!(self.modified.is_char_boundary(index));
         self.m2o[index]
     }
 
+    /// Swaps original data with the passed location
     pub fn swap_original(&mut self, target: &mut String) {
         std::mem::swap(&mut self.original, target);
         self.state = BufferState::Clean;
     }
 
+    /// Return original data as owned, consuming itself
     pub fn into_original(self) -> String {
         self.original
     }
 
+    /// Whether the byte can start a new word.
+    /// Supports bytes not on character boundaries.
     pub fn can_bow(&self, offset: usize) -> bool {
         debug_assert_eq!(self.state, BufferState::RO);
         self.mod_bow[offset]
