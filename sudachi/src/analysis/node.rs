@@ -19,6 +19,7 @@ use std::fmt;
 use crate::dic::grammar::Grammar;
 use crate::dic::lexicon::word_infos::WordInfo;
 use crate::dic::lexicon_set::LexiconSet;
+use crate::input_text::InputTextIndex;
 use crate::prelude::*;
 
 /// Lattice node
@@ -172,5 +173,16 @@ impl fmt::Display for Node {
             self.right_id,
             self.cost
         )
+    }
+}
+
+/// Converts node ranges from modified to originals
+///
+/// Tokenizers are expected to provide output in the original indices
+pub fn translate_node_ranges<T: InputTextIndex>(nodes: &mut [Node], buffer: &T) {
+    for n in nodes {
+        let range = buffer.to_orig(n.begin..n.end);
+        n.begin = range.start;
+        n.end = range.end;
     }
 }

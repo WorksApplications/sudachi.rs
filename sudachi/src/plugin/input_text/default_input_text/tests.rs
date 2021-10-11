@@ -18,8 +18,8 @@ use claim::assert_matches;
 use serde_json::{Map, Value};
 
 use crate::config::Config;
-use crate::dic::grammar::Grammar;
-use crate::input_text::Utf8InputTextBuilder;
+use crate::input_text::InputTextIndex;
+use crate::test::zero_grammar;
 
 use super::*;
 
@@ -28,54 +28,24 @@ const ORIGINAL_TEXT: &str = "ÂＢΓД㈱ｶﾞウ゛⼼Ⅲ";
 const NORMALIZED_TEXT: &str = "âbγд(株)ガヴ⼼ⅲ";
 
 #[test]
-fn before_rewrite() {
-    let bytes = build_mock_bytes();
-    let grammar = build_mock_grammar(&bytes);
-    let builder = Utf8InputTextBuilder::new(ORIGINAL_TEXT, &grammar);
-
-    let text = builder.build();
-    assert_eq!(30, text.modified.as_bytes().len());
-    let expected = b"\xc3\x82\xef\xbc\xa2\xce\x93\xd0\x94\xe3\x88\xb1\xef\xbd\xb6\xef\xbe\x9e\xe3\x82\xa6\xe3\x82\x9b\xe2\xbc\xbc\xe2\x85\xa2";
-    assert_eq!(expected, text.modified.as_bytes());
-
-    assert_eq!(0, text.get_original_index(0));
-    assert_eq!(2, text.get_original_index(1));
-    assert_eq!(2, text.get_original_index(2));
-    assert_eq!(5, text.get_original_index(4));
-    assert_eq!(7, text.get_original_index(7));
-    assert_eq!(12, text.get_original_index(12));
-    assert_eq!(24, text.get_original_index(24));
-    assert_eq!(27, text.get_original_index(27));
-    assert_eq!(30, text.get_original_index(30));
-}
-
-#[test]
 fn after_rewrite() {
-    let settings = build_mock_setting_from_file_name("rewrite.def");
-    let config = Config::default();
-    let bytes = build_mock_bytes();
-    let grammar = build_mock_grammar(&bytes);
-    let mut plugin = DefaultInputTextPlugin::default();
-    plugin
-        .set_up(&settings, &config, &grammar)
-        .expect("Failed to setup plugin");
-    let mut builder = Utf8InputTextBuilder::new(ORIGINAL_TEXT, &grammar);
-    plugin.rewrite(&mut builder);
+    let plugin = test_plugin();
+    let mut text = InputBuffer::from(ORIGINAL_TEXT);
+    plugin.rewrite(&mut text).expect("succeeds");
 
-    let text = builder.build();
-    assert_eq!(NORMALIZED_TEXT, text.modified);
-    assert_eq!(24, text.modified.as_bytes().len());
+    assert_eq!(NORMALIZED_TEXT, text.current());
+    assert_eq!(24, text.current().len());
     let expected = b"\xc3\xa2\x62\xce\xb3\xd0\xb4\x28\xe6\xa0\xaa\x29\xe3\x82\xac\xe3\x83\xb4\xe2\xbc\xbc\xe2\x85\xb2";
-    assert_eq!(expected, text.modified.as_bytes());
-    assert_eq!(0, text.get_original_index(0));
-    assert_eq!(2, text.get_original_index(1));
-    assert_eq!(2, text.get_original_index(2));
-    assert_eq!(5, text.get_original_index(3));
-    assert_eq!(9, text.get_original_index(7));
-    assert_eq!(12, text.get_original_index(8));
-    assert_eq!(12, text.get_original_index(11));
-    assert_eq!(18, text.get_original_index(15));
-    assert_eq!(24, text.get_original_index(17));
+    assert_eq!(expected, text.current().as_bytes());
+    assert_eq!("Â", text.orig_slice(0..2));
+    assert_eq!("Ｂ", text.orig_slice(2..3));
+    assert_eq!("Γ", text.orig_slice(3..5));
+    assert_eq!("Д", text.orig_slice(5..7));
+    assert_eq!("㈱", text.orig_slice(7..12));
+    assert_eq!("ｶﾞ", text.orig_slice(12..15));
+    assert_eq!("ウ゛", text.orig_slice(15..18));
+    assert_eq!("⼼", text.orig_slice(18..21));
+    assert_eq!("Ⅲ", text.orig_slice(21..24));
 }
 
 #[test]
@@ -105,17 +75,65 @@ fn replace_list_duplicates() {
     assert_matches!(result, Err(SudachiError::InvalidDataFormat(2, _)));
 }
 
-fn build_mock_bytes() -> Vec<u8> {
-    let mut buf = Vec::new();
-    // set 0 for all of pos size, left and right id size
-    buf.extend(&(0 as i16).to_le_bytes());
-    buf.extend(&(0 as i16).to_le_bytes());
-    buf.extend(&(0 as i16).to_le_bytes());
-    buf
+#[test]
+fn rewrite_hiragana() {
+    let plugin = test_plugin();
+    let mut buffer = InputBuffer::from("ひらがな");
+    plugin.rewrite(&mut buffer).expect("rewrite failed");
+    assert_eq!(buffer.current(), "ひらがな");
 }
-fn build_mock_grammar(bytes: &[u8]) -> Grammar {
-    Grammar::new(bytes, 0).expect("Failed to create grammar")
+
+#[test]
+fn nfkc_works() {
+    let plugin = test_plugin();
+    let mut buffer = InputBuffer::from("ひＢら①がⅢな");
+    plugin.rewrite(&mut buffer).expect("rewrite failed");
+    assert_eq!(buffer.current(), "ひbら1がⅲな");
 }
+
+#[test]
+fn lowercasing_works_simple() {
+    let plugin = test_plugin();
+    let mut buffer = InputBuffer::from("ひЗДらTESTがЕСЬな");
+    plugin.rewrite(&mut buffer).expect("rewrite failed");
+    assert_eq!(buffer.current(), "ひздらtestがесьな");
+}
+
+#[test]
+fn lowercasing_works_difficult() {
+    let plugin = test_plugin();
+    let mut buffer = InputBuffer::from("ひらİがẞなΣ");
+    plugin.rewrite(&mut buffer).expect("rewrite failed");
+    assert_eq!(buffer.current(), "ひらi\u{307}がßなσ");
+}
+
+#[test]
+fn replacement_works() {
+    let plugin = test_plugin();
+    let mut buffer = InputBuffer::from("ウ゛");
+    plugin.rewrite(&mut buffer).expect("rewrite failed");
+    assert_eq!(buffer.current(), "ヴ");
+}
+
+#[test]
+fn full_normalization_works() {
+    let plugin = test_plugin();
+    let mut buffer = InputBuffer::from(ORIGINAL_TEXT);
+    plugin.rewrite(&mut buffer).expect("rewrite failed");
+    assert_eq!(buffer.current(), NORMALIZED_TEXT);
+}
+
+fn test_plugin() -> DefaultInputTextPlugin {
+    let settings = build_mock_setting_from_file_name("rewrite.def");
+    let config = Config::default();
+    let grammar = zero_grammar();
+    let mut plugin = DefaultInputTextPlugin::default();
+    plugin
+        .set_up(&settings, &config, &grammar)
+        .expect("Failed to setup plugin");
+    plugin
+}
+
 fn build_mock_setting_from_file_name(rewrite_def_file: &str) -> Value {
     let mut map = Map::default();
     map.insert(

@@ -19,7 +19,7 @@ use std::path::Path;
 
 use memmap2::Mmap;
 
-use crate::analysis::stateless_tokenizer::{DictionaryAccess, StatelessTokenizer};
+use crate::analysis::stateless_tokenizer::DictionaryAccess;
 use crate::config::Config;
 use crate::config::ConfigError::MissingArgument;
 use crate::dic::grammar::Grammar;
@@ -82,6 +82,15 @@ impl Drop for StorageBackend {
     }
 }
 
+// It is self-referential struct with 'static lifetime as a workaround
+// for the impossibility to specify the correct lifetime for
+// those fields. Accessor functions always provide the correct lifetime,
+// tied to the lifetime of the struct itself.
+// It is safe to move this structure around because the
+// pointers from memory mappings themselves are stable and
+// will not change if the structure will be moved around.
+// This structure is always read only after creation and is safe to share
+// between threads.
 pub struct JapaneseDictionary {
     backend: StorageBackend,
     plugins: Plugins,
@@ -162,8 +171,7 @@ impl JapaneseDictionary {
 
         // we need to update lexicon first, since it needs the current number of pos
         let mut user_lexicon = user_dict.lexicon;
-        let tokenizer = StatelessTokenizer::new(&self);
-        user_lexicon.update_cost(&tokenizer)?;
+        user_lexicon.update_cost(&self)?;
 
         self._lexicon
             .append(user_lexicon, self._grammar.pos_list.len())?;

@@ -14,13 +14,11 @@
  *  limitations under the License.
  */
 
-use std::ops::Deref;
-
 use crate::analysis::node::Node;
+use crate::analysis::stateful_tokenizer::StatefulTokenizer;
 use crate::analysis::stateless_tokenizer::DictionaryAccess;
 use crate::dic::grammar::Grammar;
 use crate::dic::lexicon::word_infos::WordInfo;
-use crate::input_text::Utf8InputText;
 use crate::prelude::*;
 
 /// A list of morphemes
@@ -30,28 +28,15 @@ pub struct MorphemeList<T> {
     path: Vec<Node>,
 }
 
-impl<T> MorphemeList<T>
-where
-    T: Deref,
-    <T as Deref>::Target: DictionaryAccess,
-{
-    pub fn new(dict: T, input_text: &Utf8InputText, mut path: Vec<Node>) -> SudachiResult<Self> {
-        for node in &mut path {
-            // fill word_info of all nodes
-            node.fill_word_info(dict.lexicon())?;
-
-            // overwrite the range for the original text
-            node.set_range(
-                input_text.get_original_index(node.begin),
-                input_text.get_original_index(node.end),
-            )
-        }
-
-        Ok(Self {
+impl<T: DictionaryAccess> MorphemeList<T> {
+    pub fn from_components(dict: T, original: String, path: Vec<Node>) -> SudachiResult<Self> {
+        let mut list = Self {
             dict,
-            input_text: input_text.original.to_string(),
+            input_text: original,
             path,
-        })
+        };
+        list.fill_word_info()?;
+        Ok(list)
     }
 
     /// Returns an empty morpheme list.
@@ -63,16 +48,29 @@ where
         }
     }
 
+    pub fn collect_results<U: DictionaryAccess>(
+        &mut self,
+        analyzer: &mut StatefulTokenizer<U>,
+    ) -> SudachiResult<()> {
+        analyzer.swap_result(&mut self.input_text, &mut self.path);
+        self.fill_word_info()
+    }
+
     pub fn get_grammar(&self) -> &Grammar {
         self.dict.grammar()
     }
+
+    fn fill_word_info(&mut self) -> SudachiResult<()> {
+        let lexicon = self.dict.lexicon();
+        for node in self.path.iter_mut() {
+            // fill word_info of all nodes
+            node.fill_word_info(lexicon)?;
+        }
+        Ok(())
+    }
 }
 
-impl<T> MorphemeList<T>
-where
-    T: Deref + Clone,
-    <T as Deref>::Target: DictionaryAccess,
-{
+impl<T: DictionaryAccess + Clone> MorphemeList<T> {
     /// Returns a new morpheme list splitting the morpheme with a given mode.
     pub fn split(&self, mode: Mode, index: usize) -> SudachiResult<MorphemeList<T>> {
         let input_text = self.input_text.clone();
@@ -175,6 +173,11 @@ impl<T> MorphemeList<T> {
     pub fn len(&self) -> usize {
         self.path.len()
     }
+
+    pub fn get(&self, index: usize) -> Morpheme<T> {
+        debug_assert!(index < self.path.len());
+        Morpheme { list: self, index }
+    }
 }
 
 /// Iterates over morpheme list
@@ -183,11 +186,7 @@ pub struct MorphemeIter<'a, T> {
     index: usize,
 }
 
-impl<'a, T> Iterator for MorphemeIter<'a, T>
-where
-    T: Deref,
-    <T as Deref>::Target: DictionaryAccess,
-{
+impl<'a, T: DictionaryAccess> Iterator for MorphemeIter<'a, T> {
     type Item = Morpheme<'a, T>;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -211,11 +210,7 @@ pub struct Morpheme<'a, T> {
     index: usize,
 }
 
-impl<T> Morpheme<'_, T>
-where
-    T: Deref,
-    <T as Deref>::Target: DictionaryAccess,
-{
+impl<T: DictionaryAccess> Morpheme<'_, T> {
     /// Returns the part of speech
     pub fn part_of_speech(&self) -> SudachiResult<&[String]> {
         let pos_id = self.part_of_speech_id();
@@ -229,11 +224,7 @@ where
     }
 }
 
-impl<T> Morpheme<'_, T>
-where
-    T: Deref + Clone,
-    <T as Deref>::Target: DictionaryAccess,
-{
+impl<T: DictionaryAccess + Clone> Morpheme<'_, T> {
     /// Returns new morpheme list splitting the morpheme with given mode.
     pub fn split(&self, mode: Mode) -> SudachiResult<MorphemeList<T>> {
         self.list.split(mode, self.index)
@@ -305,13 +296,13 @@ impl<T> Morpheme<'_, T> {
     pub fn get_word_info(&self) -> &WordInfo {
         self.list.get_word_info(self.index)
     }
+
+    pub fn index(&self) -> usize {
+        self.index
+    }
 }
 
-impl<T> std::fmt::Debug for Morpheme<'_, T>
-where
-    T: Deref,
-    <T as Deref>::Target: DictionaryAccess,
-{
+impl<T: DictionaryAccess> std::fmt::Debug for Morpheme<'_, T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Morpheme")
             .field("surface", &self.surface())

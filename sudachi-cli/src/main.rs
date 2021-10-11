@@ -22,7 +22,8 @@ use std::process;
 
 use structopt::StructOpt;
 
-use sudachi::analysis::stateless_tokenizer::{DictionaryAccess, StatelessTokenizer};
+use sudachi::analysis::stateful_tokenizer::StatefulTokenizer;
+use sudachi::analysis::stateless_tokenizer::DictionaryAccess;
 use sudachi::config::Config;
 use sudachi::dic::dictionary::JapaneseDictionary;
 use sudachi::prelude::*;
@@ -101,13 +102,14 @@ fn main() {
     };
 
     // output: stdout or file
-    let mut writer: Box<dyn Write> = match &args.output_file {
-        Some(output_path) => Box::new(BufWriter::new(
+    let inner_writer: Box<dyn Write> = match &args.output_file {
+        Some(output_path) => Box::new(
             File::create(&output_path)
                 .unwrap_or_else(|_| panic!("Failed to open output file {:?}", &output_path)),
-        )),
-        None => Box::new(BufWriter::new(io::stdout())),
+        ),
+        None => Box::new(io::stdout()),
     };
+    let mut writer = BufWriter::new(inner_writer);
 
     // load config file
     let config = Config::new(
@@ -119,9 +121,11 @@ fn main() {
 
     let dict = JapaneseDictionary::from_cfg(&config)
         .unwrap_or_else(|e| panic!("Failed to create dictionary: {:?}", e));
-    let tokenizer = StatelessTokenizer::new(&dict);
-
+    let mut tokenizer = StatefulTokenizer::create(&dict, enable_debug, mode);
     let splitter = SentenceSplitter::with_limit(32 * 1024);
+    let mut morphemes = MorphemeList::empty(&dict);
+
+    let is_stdout = args.output_file.is_none();
 
     // tokenize and output results
     for line in reader.lines() {
@@ -131,21 +135,28 @@ fn main() {
                 writeln!(&mut writer, "{}", sentence).expect("Failed to write output");
                 continue;
             }
+            tokenizer.reset().push_str(sentence);
+            tokenizer.do_tokenize().expect("Failed to tokenize input");
 
-            let morphemes = tokenizer
-                .tokenize(sentence, mode, enable_debug)
-                .expect("Failed to tokenize input");
+            morphemes
+                .collect_results(&mut tokenizer)
+                .expect("failed to collect results");
 
-            write_sentence(&mut writer, morphemes, print_all, wakati)
+            write_sentence(&mut writer, &morphemes, print_all, wakati)
                 .expect("Failed to write output");
         }
+        if is_stdout {
+            writer.flush().expect("flush failed");
+        }
     }
+    // it is recommended to call write before dropping BufWriter
+    writer.flush().expect("flush failed");
 }
 
 /// Format and write morphemes into writer
 fn write_sentence<T>(
-    writer: &mut Box<dyn Write>,
-    morpheme_list: MorphemeList<T>,
+    writer: &mut BufWriter<Box<dyn Write>>,
+    morphemes: &MorphemeList<T>,
     print_all: bool,
     wakati: bool,
 ) -> io::Result<()>
@@ -154,13 +165,18 @@ where
     <T as Deref>::Target: DictionaryAccess,
 {
     if wakati {
-        let surface_list = morpheme_list
-            .iter()
-            .map(|m| m.surface().to_string())
-            .collect::<Vec<_>>();
-        writeln!(writer, "{}", surface_list.join(" "))?;
+        if morphemes.len() == 0 {
+            writer.write(b"\n")?;
+            return Ok(());
+        }
+        let last_idx = morphemes.len() - 1;
+        for m in morphemes.iter() {
+            writer.write(m.surface().as_bytes())?;
+            let trailer = if m.index() != last_idx { b" " } else { b"\n" };
+            writer.write(trailer)?;
+        }
     } else {
-        for morpheme in morpheme_list.iter() {
+        for morpheme in morphemes.iter() {
             write!(
                 writer,
                 "{}\t{}\t{}",

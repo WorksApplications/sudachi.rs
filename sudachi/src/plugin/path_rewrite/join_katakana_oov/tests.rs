@@ -19,38 +19,36 @@ use super::*;
 use crate::dic::character_category::CharacterCategory;
 use crate::dic::grammar::Grammar;
 use crate::dic::lexicon::word_infos::WordInfo;
-use crate::input_text::Utf8InputTextBuilder;
+use crate::test::zero_grammar;
+use lazy_static::lazy_static;
 
 #[test]
 fn katakana_length() {
     let mut plugin = JoinKatakanaOovPlugin::default();
-    let bytes = build_mock_bytes();
-    let grammar = build_mock_grammar(&bytes);
-    let builder = Utf8InputTextBuilder::new("アイアイウ", &grammar);
-    let text = builder.build();
+    let text = build_text("アイアイウ");
     let _path = vec![build_node_ai(0, 6, 5562), build_node_aiu(6, 15, 12578)];
 
     plugin.min_length = 0;
     let path = plugin
-        .rewrite(&text, _path.clone(), &Lattice::new(&grammar, 0))
+        .rewrite(&text, _path.clone(), &Lattice::new(&GRAMMAR, 0))
         .expect("Failed to rewrite path");
     assert_eq!(2, path.len());
 
     plugin.min_length = 1;
     let path = plugin
-        .rewrite(&text, _path.clone(), &Lattice::new(&grammar, 0))
+        .rewrite(&text, _path.clone(), &Lattice::new(&GRAMMAR, 0))
         .expect("Failed to rewrite path");
     assert_eq!(2, path.len());
 
     plugin.min_length = 2;
     let path = plugin
-        .rewrite(&text, _path.clone(), &Lattice::new(&grammar, 0))
+        .rewrite(&text, _path.clone(), &Lattice::new(&GRAMMAR, 0))
         .expect("Failed to rewrite path");
     assert_eq!(2, path.len());
 
     plugin.min_length = 3;
     let path = plugin
-        .rewrite(&text, _path.clone(), &Lattice::new(&grammar, 0))
+        .rewrite(&text, _path.clone(), &Lattice::new(&GRAMMAR, 0))
         .expect("Failed to rewrite path");
     assert_eq!(1, path.len());
 }
@@ -58,15 +56,12 @@ fn katakana_length() {
 #[test]
 fn part_of_speech() {
     let mut plugin = JoinKatakanaOovPlugin::default();
-    let bytes = build_mock_bytes();
-    let grammar = build_mock_grammar(&bytes);
-    let builder = Utf8InputTextBuilder::new("アイアイウ", &grammar);
-    let text = builder.build();
+    let text = build_text("アイアイウ");
     let path = vec![build_node_ai(0, 6, 5562), build_node_aiu(6, 15, 12578)];
 
     plugin.min_length = 3;
     let path = plugin
-        .rewrite(&text, path, &Lattice::new(&grammar, 0))
+        .rewrite(&text, path, &Lattice::new(&GRAMMAR, 0))
         .expect("Failed to rewrite path");
     assert_eq!(1, path.len());
     assert!(!path[0].is_oov);
@@ -75,10 +70,7 @@ fn part_of_speech() {
 #[test]
 fn start_with_middle() {
     let mut plugin = JoinKatakanaOovPlugin::default();
-    let bytes = build_mock_bytes();
-    let grammar = build_mock_grammar(&bytes);
-    let builder = Utf8InputTextBuilder::new("アイウアイアイウ", &grammar);
-    let text = builder.build();
+    let text = build_text("アイウアイアイウ");
     let path = vec![
         build_node_aiu(0, 9, 5562),
         build_node_ai(9, 15, 12578),
@@ -87,7 +79,7 @@ fn start_with_middle() {
 
     plugin.min_length = 3;
     let path = plugin
-        .rewrite(&text, path, &Lattice::new(&grammar, 0))
+        .rewrite(&text, path, &Lattice::new(&GRAMMAR, 0))
         .expect("Failed to rewrite path");
     assert_eq!(1, path.len());
 }
@@ -95,10 +87,7 @@ fn start_with_middle() {
 #[test]
 fn start_with_tail() {
     let mut plugin = JoinKatakanaOovPlugin::default();
-    let bytes = build_mock_bytes();
-    let grammar = build_mock_grammar(&bytes);
-    let builder = Utf8InputTextBuilder::new("アイウアイウアイ", &grammar);
-    let text = builder.build();
+    let text = build_text("アイウアイウアイ");
     let path = vec![
         build_node_aiu(0, 9, 5562),
         build_node_aiu(9, 18, 12578),
@@ -107,40 +96,37 @@ fn start_with_tail() {
 
     plugin.min_length = 3;
     let path = plugin
-        .rewrite(&text, path, &Lattice::new(&grammar, 0))
+        .rewrite(&text, path, &Lattice::new(&GRAMMAR, 0))
         .expect("Failed to rewrite path");
     assert_eq!(1, path.len());
 }
 
 #[test]
 fn with_noovbow() {
-    let bytes = build_mock_bytes();
-    let grammar = build_mock_grammar(&bytes);
     let mut plugin = JoinKatakanaOovPlugin::default();
     plugin.min_length = 3;
 
-    let builder = Utf8InputTextBuilder::new("ァアイアイウ", &grammar);
-    let text = builder.build();
+    let text = build_text("ァアイアイウ");
+
     let path = vec![
         build_node_oov(0, 3, 6447, "ァ", 3),
         build_node_aiu(3, 9, 13969),
         build_node_ai(9, 18, 20985),
     ];
     let path = plugin
-        .rewrite(&text, path, &Lattice::new(&grammar, 0))
+        .rewrite(&text, path, &Lattice::new(&GRAMMAR, 0))
         .expect("Failed to rewrite path");
     assert_eq!(2, path.len());
     assert_eq!("ァ", path[0].word_info.clone().unwrap().surface);
 
-    let builder = Utf8InputTextBuilder::new("アイウァアイウ", &grammar);
-    let text = builder.build();
+    let text = build_text("アイウァアイウ");
     let path = vec![
         build_node_aiu(0, 9, 5562),
         build_node_oov(9, 12, 13613, "ァ", 3),
         build_node_aiu(12, 21, 21135),
     ];
     let path = plugin
-        .rewrite(&text, path, &Lattice::new(&grammar, 0))
+        .rewrite(&text, path, &Lattice::new(&GRAMMAR, 0))
         .expect("Failed to rewrite path");
     assert_eq!(1, path.len());
 }
@@ -195,24 +181,25 @@ fn build_node_oov(start: usize, end: usize, cost: i32, surface: &str, length: u1
     node_ai
 }
 
+fn build_text(data: &str) -> InputBuffer {
+    let mut buf = InputBuffer::from(data);
+    buf.build(&GRAMMAR).expect("should not fail");
+    buf
+}
+
 const CHAR_DEF: &[u8] = include_bytes!("test_char.def");
 
 fn build_character_category() -> CharacterCategory {
     CharacterCategory::from_reader(CHAR_DEF).expect("Failed to load character category")
 }
 
-fn build_mock_bytes() -> Vec<u8> {
-    let mut buf = Vec::new();
-    // set 0 for all of pos size, left and right id size
-    buf.extend(&(0 as i16).to_le_bytes());
-    buf.extend(&(0 as i16).to_le_bytes());
-    buf.extend(&(0 as i16).to_le_bytes());
-    buf
-}
-
-fn build_mock_grammar(bytes: &[u8]) -> Grammar {
-    let mut grammar = Grammar::new(bytes, 0).expect("Failed to create grammar");
+fn build_mock_grammar() -> Grammar<'static> {
+    let mut grammar = zero_grammar();
     let char_cat = build_character_category();
     grammar.set_character_category(char_cat);
     grammar
+}
+
+lazy_static! {
+    static ref GRAMMAR: Grammar<'static> = build_mock_grammar();
 }

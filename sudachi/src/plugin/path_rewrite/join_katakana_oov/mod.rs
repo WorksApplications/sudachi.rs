@@ -21,7 +21,8 @@ use crate::analysis::{lattice::Lattice, node::Node};
 use crate::config::Config;
 use crate::dic::category_type::CategoryType;
 use crate::dic::grammar::Grammar;
-use crate::input_text::Utf8InputText;
+use crate::input_text::InputBuffer;
+use crate::input_text::InputTextIndex;
 use crate::plugin::path_rewrite::PathRewritePlugin;
 use crate::prelude::*;
 
@@ -46,8 +47,8 @@ struct PluginSettings {
 }
 
 impl JoinKatakanaOovPlugin {
-    fn is_katakana_node(&self, text: &Utf8InputText, node: &Node) -> bool {
-        text.get_char_category_types_range(node.begin..node.end)
+    fn is_katakana_node<T: InputTextIndex>(&self, text: &T, node: &Node) -> bool {
+        text.cat_of_range(node.begin..node.end)
             .contains(CategoryType::KATAKANA)
     }
 
@@ -56,41 +57,19 @@ impl JoinKatakanaOovPlugin {
     //     b + text.get_code_points_offset_length(b, 1) == node.end
     // }
 
-    fn can_oov_bow_node(&self, text: &Utf8InputText, node: &Node) -> bool {
+    fn can_oov_bow_node<T: InputTextIndex>(&self, text: &T, node: &Node) -> bool {
         !text
-            .get_char_category_types(node.begin)
+            .cat_at_byte(node.begin)
             .contains(CategoryType::NOOOVBOW)
     }
 
-    fn is_shorter(&self, text: &Utf8InputText, node: &Node) -> bool {
-        text.code_point_count(node.begin..node.end) < self.min_length
-    }
-}
-
-impl PathRewritePlugin for JoinKatakanaOovPlugin {
-    fn set_up(
-        &mut self,
-        settings: &Value,
-        _config: &Config,
-        grammar: &Grammar,
-    ) -> SudachiResult<()> {
-        let settings: PluginSettings = serde_json::from_value(settings.clone())?;
-
-        let oov_pos_string: Vec<&str> = settings.oovPOS.iter().map(|s| s.as_str()).collect();
-        let oov_pos_id = grammar.get_part_of_speech_id(&oov_pos_string).ok_or(
-            SudachiError::InvalidPartOfSpeech(format!("{:?}", oov_pos_string)),
-        )?;
-        let min_length = settings.minLength;
-
-        self.oov_pos_id = oov_pos_id;
-        self.min_length = min_length;
-
-        Ok(())
+    fn is_shorter<T: InputTextIndex>(&self, text: &T, node: &Node) -> bool {
+        text.num_codepts(node.begin..node.end) < self.min_length
     }
 
-    fn rewrite(
+    fn rewrite_gen<T: InputTextIndex>(
         &self,
-        text: &Utf8InputText,
+        text: &T,
         mut path: Vec<Node>,
         _lattice: &Lattice,
     ) -> SudachiResult<Vec<Node>> {
@@ -140,5 +119,36 @@ impl PathRewritePlugin for JoinKatakanaOovPlugin {
         }
 
         Ok(path)
+    }
+}
+
+impl PathRewritePlugin for JoinKatakanaOovPlugin {
+    fn set_up(
+        &mut self,
+        settings: &Value,
+        _config: &Config,
+        grammar: &Grammar,
+    ) -> SudachiResult<()> {
+        let settings: PluginSettings = serde_json::from_value(settings.clone())?;
+
+        let oov_pos_string: Vec<&str> = settings.oovPOS.iter().map(|s| s.as_str()).collect();
+        let oov_pos_id = grammar.get_part_of_speech_id(&oov_pos_string).ok_or(
+            SudachiError::InvalidPartOfSpeech(format!("{:?}", oov_pos_string)),
+        )?;
+        let min_length = settings.minLength;
+
+        self.oov_pos_id = oov_pos_id;
+        self.min_length = min_length;
+
+        Ok(())
+    }
+
+    fn rewrite(
+        &self,
+        text: &InputBuffer,
+        path: Vec<Node>,
+        lattice: &Lattice,
+    ) -> SudachiResult<Vec<Node>> {
+        self.rewrite_gen(text, path, lattice)
     }
 }

@@ -566,6 +566,7 @@ dependencies = [
 name = "sudachi"
 version = "0.1.0"
 dependencies = [
+ "aho-corasick",
  "bitflags",
  "claim",
  "default_input_text",
@@ -576,6 +577,7 @@ dependencies = [
  "libloading",
  "memmap2",
  "nom",
+ "regex",
  "serde",
  "serde_json",
  "simple_oov",
@@ -589,8 +591,6 @@ name = "sudachi-cli"
 version = "0.1.0"
 dependencies = [
  "cfg-if",
- "join_katakana_oov",
- "join_numeric",
  "structopt",
  "sudachi",
 ]

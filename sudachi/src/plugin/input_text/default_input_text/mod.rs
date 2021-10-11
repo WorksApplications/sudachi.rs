@@ -14,18 +14,19 @@
  * limitations under the License.
  */
 
-use serde::Deserialize;
-use serde_json::Value;
-use std::cmp;
 use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
-use unicode_normalization::UnicodeNormalization;
+
+use aho_corasick::{AhoCorasick, AhoCorasickBuilder, MatchKind};
+use serde::Deserialize;
+use serde_json::Value;
+use unicode_normalization::{is_nfkc_quick, IsNormalized, UnicodeNormalization};
 
 use crate::config::Config;
 use crate::dic::grammar::Grammar;
-use crate::input_text::Utf8InputTextBuilder;
+use crate::input_text::{InputBuffer, InputEditor};
 use crate::plugin::input_text::InputTextPlugin;
 use crate::prelude::*;
 
@@ -43,6 +44,11 @@ pub struct DefaultInputTextPlugin {
     key_lengths: HashMap<char, usize>,
     /// Replacement mapping
     replace_char_map: HashMap<String, String>,
+    /// Checks whether the full string contains symbols to normalize
+    full_checker: Option<AhoCorasick>,
+    /// Checks the same as previous, but checks only prefix
+    anchored_checker: Option<AhoCorasick>,
+    replacements: Vec<String>,
 }
 
 /// Struct corresponds with raw config json file.
@@ -109,7 +115,132 @@ impl DefaultInputTextPlugin {
         self.key_lengths = key_lengths;
         self.replace_char_map = replace_char_map;
 
+        let mut values: Vec<String> = Vec::new();
+        let mut keys: Vec<String> = Vec::new();
+
+        for (k, v) in self.replace_char_map.iter() {
+            keys.push(k.clone());
+            values.push(v.clone());
+        }
+
+        self.full_checker = Some(
+            AhoCorasickBuilder::new()
+                .dfa(true)
+                .match_kind(MatchKind::LeftmostLongest)
+                .build(keys.clone()),
+        );
+
+        self.anchored_checker = Some(
+            AhoCorasickBuilder::new()
+                .dfa(true)
+                .match_kind(MatchKind::LeftmostLongest)
+                .anchored(true)
+                .build(keys),
+        );
+
+        self.replacements = values;
+
         Ok(())
+    }
+
+    fn should_ignore(&self, ch: char) -> bool {
+        self.ignore_normalize_set.contains(&ch)
+    }
+
+    /// Fast case: lowercasing is not needed and the string is already in NFKC
+    /// Use AhoCorasick automaton to find all replacements and replace them
+    ///
+    /// Ignores are not used here, forced replacements have higher priority
+    /// Fast version does not need to walk every character!
+    fn replace_fast<'a>(
+        &'a self,
+        buffer: &InputBuffer,
+        mut replacer: InputEditor<'a>,
+    ) -> SudachiResult<InputEditor<'a>> {
+        let cur = buffer.current();
+        let checker = self.full_checker.as_ref().unwrap();
+
+        for m in checker.find_iter(cur) {
+            let replacement = self.replacements.get(m.pattern()).unwrap();
+            replacer.replace_ref(m.start()..m.end(), replacement);
+        }
+
+        Ok(replacer)
+    }
+
+    /// Slow case: need to handle lowercasing or NFKC normalization
+    /// Slow version needs to walk every character
+    fn replace_slow<'a>(
+        &'a self,
+        buffer: &InputBuffer,
+        mut replacer: InputEditor<'a>,
+    ) -> SudachiResult<InputEditor<'a>> {
+        let cur = buffer.current();
+        let checker = self.anchored_checker.as_ref().unwrap();
+        let mut min_offset = 0;
+
+        for (offset, ch) in cur.char_indices() {
+            if offset < min_offset {
+                continue;
+            }
+            // 1. replacement as defined by char.def
+            if let Some(m) = checker.earliest_find(&cur[offset..]) {
+                let range = offset..offset + m.end();
+                let replacement = self.replacements[m.pattern()].as_str();
+                min_offset = range.end;
+                replacer.replace_ref(range, replacement);
+                continue;
+            }
+
+            // 2. handle normalization
+            let need_lowercase = ch.is_uppercase();
+            let need_nkfc = !self.should_ignore(ch)
+                && match is_nfkc_quick(std::iter::once(ch)) {
+                    IsNormalized::Yes => false,
+                    _ => true,
+                };
+
+            // iterator types are incompatible, so calls can't be moved outside branches
+            match (need_lowercase, need_nkfc) {
+                //no need to do anything
+                (false, false) => continue,
+                // only lowercasing
+                (true, false) => {
+                    let chars = ch.to_lowercase();
+                    self.handle_normalization_slow(chars, &mut replacer, offset, ch.len_utf8(), ch)
+                }
+                // only normalization
+                (false, true) => {
+                    let chars = std::iter::once(ch).nfkc();
+                    self.handle_normalization_slow(chars, &mut replacer, offset, ch.len_utf8(), ch)
+                }
+                // both
+                (true, true) => {
+                    let chars = ch.to_lowercase().nfkc();
+                    self.handle_normalization_slow(chars, &mut replacer, offset, ch.len_utf8(), ch)
+                }
+            }
+        }
+        Ok(replacer)
+    }
+
+    fn handle_normalization_slow<'a, I: Iterator<Item = char>>(
+        &'a self,
+        mut data: I,
+        replacer: &mut InputEditor<'a>,
+        start: usize,
+        len: usize,
+        ch: char,
+    ) {
+        match data.next() {
+            Some(ch2) => {
+                if ch2 == ch {
+                    return;
+                }
+                replacer.replace_char_iter(start..start + len, ch2, data)
+            }
+            None => return,
+        }
     }
 }
 
@@ -134,67 +265,27 @@ impl InputTextPlugin for DefaultInputTextPlugin {
         Ok(())
     }
 
-    fn rewrite(&self, builder: &mut Utf8InputTextBuilder) {
-        let mut offset: i32 = 0;
-        let mut next_offset: i32 = 0;
-        let chars: Vec<_> = builder.modified.chars().collect();
+    fn uses_chars(&self) -> bool {
+        true
+    }
 
-        let mut i: i32 = -1;
-        loop {
-            i += 1;
-            if i as usize >= chars.len() {
-                break;
-            }
-            let mut text_loop = false;
-            offset += next_offset;
-            next_offset = 0;
-            let original = chars[i as usize];
+    fn rewrite_impl<'a>(
+        &'a self,
+        buffer: &InputBuffer,
+        edit: InputEditor<'a>,
+    ) -> SudachiResult<InputEditor<'a>> {
+        let chars = buffer.current_chars();
+        let need_nkfc = match is_nfkc_quick(chars.iter().cloned()) {
+            IsNormalized::Yes => false,
+            _ => true,
+        };
 
-            // 1. replace char without normalize
-            let max_length = cmp::min(
-                self.key_lengths.get(&original).map(|v| *v).unwrap_or(0),
-                chars.len() - i as usize,
-            );
-            for j in (1..max_length + 1).rev() {
-                if let Some(replace) = self
-                    .replace_char_map
-                    .get(&chars[i as usize..i as usize + j].iter().collect::<String>())
-                {
-                    let start = (i + offset) as usize;
-                    builder.replace(start..start + j, replace);
-                    next_offset += replace.chars().count() as i32 - j as i32;
-                    i += (j - 1) as i32;
-                    text_loop = true;
-                    break;
-                }
-            }
-            if text_loop {
-                continue;
-            }
+        let need_lowercase = chars.iter().any(|c| c.is_uppercase());
 
-            // 2. normalize
-            // 2-1. capital alphabet (not only Latin but Greek, Cyrillic, etc.) -> small
-            let original = original.to_string();
-            let lower = original.to_lowercase();
-            // char::to_lowercase may returns multiple chars
-            // here we check first one only.
-            let lower_first_char = lower.chars().next().unwrap();
-            let replace: String;
-            if self.ignore_normalize_set.contains(&lower_first_char) {
-                if original == lower {
-                    continue;
-                }
-                replace = lower;
-            } else {
-                // 2-2. normalize (except in ignore_normalize)
-                // e.g. full-width alphabet -> half-width / ligature / etc.
-                replace = lower.nfkc().collect::<String>();
-            }
-            next_offset = replace.chars().count() as i32 - 1;
-            if original != replace {
-                let start = (i + offset) as usize;
-                builder.replace(start..start + 1, &replace);
-            }
+        if need_nkfc || need_lowercase {
+            self.replace_slow(buffer, edit)
+        } else {
+            self.replace_fast(buffer, edit)
         }
     }
 }

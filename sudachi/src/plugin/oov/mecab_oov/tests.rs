@@ -17,7 +17,10 @@
 use std::io::{Seek, SeekFrom, Write};
 
 use claim::assert_matches;
+use lazy_static::lazy_static;
 use tempfile::tempfile;
+
+use crate::dic::character_category::CharacterCategory;
 
 use super::*;
 
@@ -33,18 +36,19 @@ fn provide_oov000() {
             length: 0,
         },
     );
-    let text = "あいうえお";
-    let text = build_input_text(text, 0, 3, CategoryType::KANJI);
 
-    let nodes = plugin
-        .provide_oov(&text, 0, false)
-        .expect("Failed to generate oovs");
-    assert!(nodes.is_empty());
+    let text = input_text("あいうcd");
+    let mut res: Vec<Node> = vec![];
 
-    let nodes = plugin
-        .provide_oov(&text, 0, true)
+    plugin
+        .provide_oov(&text, 0, false, &mut res)
         .expect("Failed to generate oovs");
-    assert!(nodes.is_empty());
+    assert!(res.is_empty());
+
+    plugin
+        .provide_oov(&text, 0, true, &mut res)
+        .expect("Failed to generate oovs");
+    assert!(res.is_empty());
 }
 
 #[test]
@@ -59,16 +63,17 @@ fn provide_oov100() {
             length: 0,
         },
     );
-    let text = "あいうえお";
-    let text = build_input_text(text, 0, 3, CategoryType::KANJI);
 
-    let nodes = plugin
-        .provide_oov(&text, 0, false)
+    let text = input_text("あいうf");
+    let mut nodes: Vec<Node> = vec![];
+
+    plugin
+        .provide_oov(&text, 0, false, &mut nodes)
         .expect("Failed to generate oovs");
     assert!(nodes.is_empty());
 
-    let nodes = plugin
-        .provide_oov(&text, 0, true)
+    plugin
+        .provide_oov(&text, 0, true, &mut nodes)
         .expect("Failed to generate oovs");
     assert!(nodes.is_empty());
 }
@@ -85,11 +90,11 @@ fn provide_oov010() {
             length: 0,
         },
     );
-    let text = "あいうえお";
-    let text = build_input_text(text, 0, 3, CategoryType::KANJI);
+    let text = input_text("あいうeo");
+    let mut nodes: Vec<Node> = vec![];
 
-    let nodes = plugin
-        .provide_oov(&text, 0, false)
+    plugin
+        .provide_oov(&text, 0, false, &mut nodes)
         .expect("Failed to generate oovs");
     assert_eq!(1, nodes.len());
     let wi = nodes[0].word_info.as_ref().unwrap();
@@ -97,8 +102,9 @@ fn provide_oov010() {
     assert_eq!(9, wi.head_word_length);
     assert_eq!(1, wi.pos_id);
 
-    let nodes = plugin
-        .provide_oov(&text, 0, true)
+    nodes.clear();
+    plugin
+        .provide_oov(&text, 0, true, &mut nodes)
         .expect("Failed to generate oovs");
     assert!(nodes.is_empty());
 }
@@ -115,11 +121,11 @@ fn provide_oov110() {
             length: 0,
         },
     );
-    let text = "あいうえお";
-    let text = build_input_text(text, 0, 3, CategoryType::KANJI);
+    let text = input_text("あいうeo");
+    let mut nodes: Vec<Node> = vec![];
 
-    let nodes = plugin
-        .provide_oov(&text, 0, false)
+    plugin
+        .provide_oov(&text, 0, false, &mut nodes)
         .expect("Failed to generate oovs");
     assert_eq!(1, nodes.len());
     let wi = nodes[0].word_info.as_ref().unwrap();
@@ -127,8 +133,9 @@ fn provide_oov110() {
     assert_eq!(9, wi.head_word_length);
     assert_eq!(1, wi.pos_id);
 
-    let nodes = plugin
-        .provide_oov(&text, 0, true)
+    nodes.clear();
+    plugin
+        .provide_oov(&text, 0, true, &mut nodes)
         .expect("Failed to generate oovs");
     assert_eq!(1, nodes.len());
 }
@@ -145,11 +152,11 @@ fn provide_oov002() {
             length: 2,
         },
     );
-    let text = "あいうえお";
-    let text = build_input_text(text, 0, 3, CategoryType::KANJI);
+    let text = input_text("あいうeo");
+    let mut nodes: Vec<Node> = vec![];
 
-    let nodes = plugin
-        .provide_oov(&text, 0, false)
+    plugin
+        .provide_oov(&text, 0, false, &mut nodes)
         .expect("Failed to generate oovs");
     assert_eq!(2, nodes.len());
 
@@ -163,8 +170,9 @@ fn provide_oov002() {
     assert_eq!(6, wi.head_word_length);
     assert_eq!(1, wi.pos_id);
 
-    let nodes = plugin
-        .provide_oov(&text, 0, true)
+    nodes.clear();
+    plugin
+        .provide_oov(&text, 0, true, &mut nodes)
         .expect("Failed to generate oovs");
     assert!(nodes.is_empty());
 }
@@ -181,11 +189,11 @@ fn provide_oov012() {
             length: 2,
         },
     );
-    let text = "あいうえお";
-    let text = build_input_text(text, 0, 3, CategoryType::KANJI);
+    let text = input_text("あいうeo");
+    let mut nodes: Vec<Node> = vec![];
 
-    let nodes = plugin
-        .provide_oov(&text, 0, false)
+    plugin
+        .provide_oov(&text, 0, false, &mut nodes)
         .expect("Failed to generate oovs");
     assert_eq!(3, nodes.len());
 
@@ -204,8 +212,9 @@ fn provide_oov012() {
     assert_eq!(6, wi.head_word_length);
     assert_eq!(1, wi.pos_id);
 
-    let nodes = plugin
-        .provide_oov(&text, 0, true)
+    nodes.clear();
+    plugin
+        .provide_oov(&text, 0, true, &mut nodes)
         .expect("Failed to generate oovs");
     assert!(nodes.is_empty());
 }
@@ -222,11 +231,11 @@ fn provide_oov112() {
             length: 2,
         },
     );
-    let text = "あいうえお";
-    let text = build_input_text(text, 0, 3, CategoryType::KANJI);
+    let text = input_text("あいうeo");
+    let mut nodes: Vec<Node> = vec![];
 
-    let nodes = plugin
-        .provide_oov(&text, 0, false)
+    plugin
+        .provide_oov(&text, 0, false, &mut nodes)
         .expect("Failed to generate oovs");
     assert_eq!(3, nodes.len());
 
@@ -245,8 +254,9 @@ fn provide_oov112() {
     assert_eq!(6, wi.head_word_length);
     assert_eq!(1, wi.pos_id);
 
-    let nodes = plugin
-        .provide_oov(&text, 0, true)
+    nodes.clear();
+    plugin
+        .provide_oov(&text, 0, true, &mut nodes)
         .expect("Failed to generate oovs");
     assert_eq!(3, nodes.len());
 }
@@ -263,11 +273,11 @@ fn provide_oov006() {
             length: 6,
         },
     );
-    let text = "あいうえお";
-    let text = build_input_text(text, 0, 3, CategoryType::KANJI);
+    let text = input_text("あいうeo");
+    let mut nodes: Vec<Node> = vec![];
 
-    let nodes = plugin
-        .provide_oov(&text, 0, false)
+    plugin
+        .provide_oov(&text, 0, false, &mut nodes)
         .expect("Failed to generate oovs");
     assert_eq!(3, nodes.len());
 
@@ -286,8 +296,9 @@ fn provide_oov006() {
     assert_eq!(9, wi.head_word_length);
     assert_eq!(1, wi.pos_id);
 
-    let nodes = plugin
-        .provide_oov(&text, 0, true)
+    nodes.clear();
+    plugin
+        .provide_oov(&text, 0, true, &mut nodes)
         .expect("Failed to generate oovs");
     assert!(nodes.is_empty());
 }
@@ -304,21 +315,21 @@ fn provide_oov_multi_oov() {
             length: 0,
         },
     );
-    let text = "あいうえお";
-    let text = build_input_text(text, 0, 3, CategoryType::KANJINUMERIC);
+    let text = input_text("アイウeo");
+    let mut nodes: Vec<Node> = vec![];
 
-    let nodes = plugin
-        .provide_oov(&text, 0, false)
+    plugin
+        .provide_oov(&text, 0, false, &mut nodes)
         .expect("Failed to generate oovs");
     assert_eq!(2, nodes.len());
 
     let wi = nodes[0].word_info.as_ref().unwrap();
-    assert_eq!("あいう", wi.surface);
+    assert_eq!("アイウ", wi.surface);
     assert_eq!(9, wi.head_word_length);
     assert_eq!(1, wi.pos_id);
 
     let wi = nodes[1].word_info.as_ref().unwrap();
-    assert_eq!("あいう", wi.surface);
+    assert_eq!("アイウ", wi.surface);
     assert_eq!(9, wi.head_word_length);
     assert_eq!(2, wi.pos_id);
 }
@@ -326,11 +337,11 @@ fn provide_oov_multi_oov() {
 #[test]
 fn provide_oov_without_cinfo() {
     let plugin = build_plugin();
-    let text = "あいうえお";
-    let text = build_input_text(text, 0, 3, CategoryType::KANJI);
+    let text = input_text("あいうeo");
+    let mut nodes: Vec<Node> = vec![];
 
-    let nodes = plugin
-        .provide_oov(&text, 0, false)
+    plugin
+        .provide_oov(&text, 0, false, &mut nodes)
         .expect("Failed to generate oovs");
     assert!(nodes.is_empty());
 }
@@ -339,35 +350,32 @@ fn provide_oov_without_cinfo() {
 fn provide_oov_without_oov_list() {
     let mut plugin = build_plugin();
     plugin.categories.insert(
-        CategoryType::HIRAGANA,
+        CategoryType::ALPHA,
         CategoryInfo {
-            category_type: CategoryType::HIRAGANA,
+            category_type: CategoryType::ALPHA,
             is_invoke: false,
             is_group: true,
             length: 0,
         },
     );
-    let text = "あいうえお";
-    let text = build_input_text(text, 0, 3, CategoryType::HIRAGANA);
+    let text = input_text("あいうeo");
+    let mut nodes: Vec<Node> = vec![];
 
-    let nodes = plugin
-        .provide_oov(&text, 0, false)
+    plugin
+        .provide_oov(&text, 0, false, &mut nodes)
         .expect("Failed to generate oovs");
     assert!(nodes.is_empty());
 }
 
 #[test]
 fn read_character_property() {
-    let mut file = tempfile().expect("Failed to get temporary file");
-    writeln!(file, "#\n").unwrap();
-    writeln!(file, "DEFAULT 0 1 2").unwrap();
-    writeln!(file, "ALPHA 1 0 0").unwrap();
-    writeln!(file, "0x0000...0x0002 ALPHA").unwrap();
-    file.flush().expect("Failed to flush");
-    file.seek(SeekFrom::Start(0)).expect("Failed to seek");
-
-    let categories = MeCabOovPlugin::read_character_property(BufReader::new(file))
-        .expect("Failed to read tmp file");
+    let data = "
+        DEFAULT 0 1 2
+        ALPHA 1 0 0
+        0x0000...0x0002 ALPHA
+    ";
+    let categories =
+        MeCabOovPlugin::read_character_property(data.as_bytes()).expect("Failed to read tmp file");
     assert!(!categories.get(&CategoryType::DEFAULT).unwrap().is_invoke);
     assert!(categories.get(&CategoryType::DEFAULT).unwrap().is_group);
     assert_eq!(2, categories.get(&CategoryType::DEFAULT).unwrap().length);
@@ -519,35 +527,25 @@ fn build_plugin() -> MeCabOovPlugin {
     plugin
 }
 
-fn build_input_text<'a>(
-    text: &'a str,
-    begin: usize,
-    end: usize,
-    ctype: CategoryType,
-) -> Utf8InputText<'a> {
-    // assume text = "あいうえお"
-    let offsets = vec![0, 0, 0, 3, 3, 3, 6, 6, 6, 9, 9, 9, 12, 12, 12, 15];
-    let byte_indexes = vec![0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 5];
-    let mut char_category_types = vec![CategoryType::default(); 5];
-    for i in begin..end {
-        char_category_types[i].insert(ctype);
-    }
-    let can_bow_list = vec![true; 5];
-    let mut char_category_continuities = vec![0; 15];
-    for i in begin * 3..end * 3 {
-        char_category_continuities[i] = (end - begin) * 3 - i;
-    }
+lazy_static! {
+    static ref DATA: Vec<u8> = build_mock_bytes();
+    static ref GRAMMAR: Grammar<'static> = build_mock_grammar(&DATA);
+}
 
-    let text = Utf8InputText::new(
-        text,
-        String::from(text),
-        offsets,
-        byte_indexes,
-        char_category_types,
-        can_bow_list,
-        char_category_continuities,
-    );
-    text
+fn input_text(data: &str) -> InputBuffer {
+    let mut buf = InputBuffer::from(data);
+    buf.build(&GRAMMAR).expect("does not fail");
+    buf
+}
+
+const ALL_KANJI_CAT: &str = "
+0x0061..0x007A ALPHA    #a-z
+0x3041..0x309F  KANJI # HIRAGANA
+0x30A1..0x30FF  KANJINUMERIC # KATAKANA
+";
+
+fn char_cats() -> CharacterCategory {
+    CharacterCategory::from_reader(ALL_KANJI_CAT.as_bytes()).unwrap()
 }
 
 fn build_mock_bytes() -> Vec<u8> {
@@ -569,5 +567,7 @@ fn build_mock_bytes() -> Vec<u8> {
 }
 
 fn build_mock_grammar(bytes: &[u8]) -> Grammar {
-    Grammar::new(bytes, 0).expect("Failed to create grammar")
+    let mut grammar = Grammar::new(bytes, 0).expect("Failed to create grammar");
+    grammar.set_character_category(char_cats());
+    grammar
 }

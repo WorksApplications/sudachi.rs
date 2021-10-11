@@ -19,19 +19,15 @@ extern crate lazy_static;
 
 mod common;
 use common::TestTokenizer;
-use common::GRAMMAR;
 
-use sudachi::input_text::Utf8InputTextBuilder;
 use sudachi::sentence_detector::{NonBreakChecker, SentenceDetector};
 
 #[test]
 fn get_eos_with_non_break_checker() {
     let text = "ばな。なです。";
-    let builder = Utf8InputTextBuilder::new(&text, &GRAMMAR);
-    let input = builder.build();
     let tokenizer = TestTokenizer::new();
     let lexicon = tokenizer.dict().lexicon();
-    let checker = NonBreakChecker::new(lexicon, &input);
+    let checker = NonBreakChecker::new(lexicon);
 
     let sd = SentenceDetector::new();
     assert_eq!(sd.get_eos(text, Some(&checker)).unwrap(), 21);

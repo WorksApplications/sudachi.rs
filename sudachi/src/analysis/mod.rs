@@ -23,6 +23,7 @@ use crate::error::SudachiResult;
 pub mod lattice;
 pub mod morpheme;
 pub mod node;
+pub mod stateful_tokenizer;
 pub mod stateless_tokenizer;
 
 /// Unit to split text
@@ -84,12 +85,4 @@ pub trait Tokenize {
         mode: Mode,
         enable_debug: bool,
     ) -> SudachiResult<MorphemeList<Self::Dictionary>>;
-
-    /// Split text into sentences then tokenize
-    fn tokenize_sentences(
-        &self,
-        input: &str,
-        mode: Mode,
-        enable_debug: bool,
-    ) -> SudachiResult<Vec<MorphemeList<Self::Dictionary>>>;
 }

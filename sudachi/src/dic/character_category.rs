@@ -17,6 +17,8 @@
 use std::collections::BTreeSet;
 use std::fs;
 use std::io::{BufRead, BufReader};
+use std::iter::FusedIterator;
+use std::ops::Range;
 use std::path::PathBuf;
 
 use thiserror::Error;
@@ -36,10 +38,13 @@ pub enum Error {
 
     #[error("Multiple definition for type {1} at line {0}")]
     MultipleTypeDefinition(usize, String),
+
+    #[error("Invalid character {0:X} at line {1}")]
+    InvalidChar(u32, usize),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-struct Range {
+struct CatRange {
     begin: u32,
     end: u32,
     categories: CategoryType,
@@ -98,8 +103,8 @@ impl CharacterCategory {
     /// Definition example:
     ///     "0x0030..0x0039 NUMERIC"
     ///     "0x3008         KANJI KANJINUMERIC"
-    fn read_character_definition<T: BufRead>(reader: T) -> SudachiResult<Vec<Range>> {
-        let mut ranges: Vec<Range> = Vec::new();
+    fn read_character_definition<T: BufRead>(reader: T) -> SudachiResult<Vec<CatRange>> {
+        let mut ranges: Vec<CatRange> = Vec::new();
         for (i, line) in reader.lines().enumerate() {
             let line = line?;
             let line = line.trim();
@@ -126,6 +131,17 @@ impl CharacterCategory {
                     Error::InvalidFormat(i),
                 ));
             }
+            if char::from_u32(begin).is_none() {
+                return Err(SudachiError::InvalidCharacterCategory(Error::InvalidChar(
+                    begin, i,
+                )));
+            }
+
+            if char::from_u32(end).is_none() {
+                return Err(SudachiError::InvalidCharacterCategory(Error::InvalidChar(
+                    end, i,
+                )));
+            }
 
             let mut categories = CategoryType::empty();
             for elem in cols[1..]
@@ -142,7 +158,7 @@ impl CharacterCategory {
                 });
             }
 
-            ranges.push(Range {
+            ranges.push(CatRange {
                 begin,
                 end,
                 categories,
@@ -156,7 +172,7 @@ impl CharacterCategory {
     ///
     /// Transforms given range_list to non overlapped range list
     /// to apply binary search in get_category_types
-    fn compile(ranges: &Vec<Range>) -> CharacterCategory {
+    fn compile(ranges: &Vec<CatRange>) -> CharacterCategory {
         if ranges.is_empty() {
             return CharacterCategory::default();
         }
@@ -221,7 +237,7 @@ impl CharacterCategory {
     }
 
     /// Find sorted list of all boundaries
-    fn collect_boundaries(data: &Vec<Range>) -> Vec<u32> {
+    fn collect_boundaries(data: &Vec<CatRange>) -> Vec<u32> {
         let mut boundaries = BTreeSet::new();
         for i in data {
             boundaries.insert(i.begin);
@@ -243,7 +259,49 @@ impl CharacterCategory {
             Err(idx) => self.categories[idx],
         }
     }
+
+    pub fn iter(&self) -> CharCategoryIter {
+        CharCategoryIter {
+            categories: self,
+            current: 0,
+        }
+    }
 }
+
+pub struct CharCategoryIter<'a> {
+    categories: &'a CharacterCategory,
+    current: usize,
+}
+
+impl Iterator for CharCategoryIter<'_> {
+    type Item = (Range<char>, CategoryType);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.current == self.categories.boundaries.len() + 1 {
+            return None;
+        }
+
+        // char casts are safe, we are checking for correctness during the data load
+        let range = if self.current == self.categories.boundaries.len() {
+            let left = char::from_u32(*self.categories.boundaries.last().unwrap()).unwrap();
+            (left..char::MAX, *self.categories.categories.last().unwrap())
+        } else if self.current == 0 {
+            let right = char::from_u32(*self.categories.boundaries.first().unwrap()).unwrap();
+            let r = (0 as char)..right as char;
+            (r, self.categories.categories[0])
+        } else {
+            let left = char::from_u32(self.categories.boundaries[self.current - 1]).unwrap();
+            let right = char::from_u32(self.categories.boundaries[self.current]).unwrap();
+            let cat = self.categories.categories[self.current];
+            (left..right, cat)
+        };
+
+        self.current += 1;
+        Some(range)
+    }
+}
+
+impl FusedIterator for CharCategoryIter<'_> {}
 
 #[cfg(test)]
 mod tests {
@@ -452,5 +510,66 @@ mod tests {
         assert_eq!(c.get_category_types('ア'), CT::KATAKANA);
         assert_eq!(c.get_category_types('ｺ'), CT::KATAKANA);
         assert_eq!(c.get_category_types('ﾞ'), CT::KATAKANA);
+    }
+
+    #[test]
+    fn iter_cdef_holes_1() {
+        let cat = read_categories(
+            "
+            0x0030 USER1
+            0x0032 USER2",
+        );
+        let mut iter = cat.iter();
+        assert_matches!(
+            iter.next(),
+            Some((
+                Range {
+                    start: '\x00',
+                    end: '\x30'
+                },
+                CT::DEFAULT
+            ))
+        );
+        assert_matches!(
+            iter.next(),
+            Some((
+                Range {
+                    start: '\x30',
+                    end: '\x31'
+                },
+                CT::USER1
+            ))
+        );
+        assert_matches!(
+            iter.next(),
+            Some((
+                Range {
+                    start: '\x31',
+                    end: '\x32'
+                },
+                CT::DEFAULT
+            ))
+        );
+        assert_matches!(
+            iter.next(),
+            Some((
+                Range {
+                    start: '\x32',
+                    end: '\x33'
+                },
+                CT::USER2
+            ))
+        );
+        assert_matches!(
+            iter.next(),
+            Some((
+                Range {
+                    start: '\x33',
+                    end: char::MAX
+                },
+                CT::DEFAULT
+            ))
+        );
+        assert_eq!(iter.next(), None);
     }
 }
