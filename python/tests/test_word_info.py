@@ -27,6 +27,45 @@ class TestTokenizer(unittest.TestCase):
             resource_dir, 'sudachi.json'), resource_dir)
         self.tokenizer_obj = self.dict_.create()
 
+    def test_wordinfo(self):
+        # た
+        wi = self.tokenizer_obj.tokenize('た', SplitMode.C)[0].get_word_info()
+        self.assertEqual('た', wi.surface)
+        self.assertEqual(3, wi.head_word_length)
+        self.assertEqual(0, wi.pos_id)
+        self.assertEqual('た', wi.normalized_form)
+        self.assertEqual(-1, wi.dictionary_form_word_id)
+        self.assertEqual('た', wi.dictionary_form)
+        self.assertEqual('タ', wi.reading_form)
+        self.assertEqual([], wi.a_unit_split)
+        self.assertEqual([], wi.b_unit_split)
+        self.assertEqual([], wi.word_structure)
+
+        # 行っ
+        wi = self.tokenizer_obj.tokenize('行っ', SplitMode.C)[0].get_word_info()
+        self.assertEqual('行っ', wi.surface)
+        self.assertEqual('行く', wi.normalized_form)
+        self.assertEqual(7, wi.dictionary_form_word_id)
+        self.assertEqual('行く', wi.dictionary_form)
+
+        # 東京都
+        wi = self.tokenizer_obj.tokenize('東京都', SplitMode.C)[0].get_word_info()
+        self.assertEqual('東京都', wi.surface)
+        self.assertEqual([5, 9], wi.a_unit_split)
+        self.assertEqual([], wi.b_unit_split)
+        self.assertEqual([5, 9], wi.word_structure)
+        self.assertEqual([], wi.synonym_group_ids)
+
+    def test_wordinfo_with_longword(self):
+        s = "0123456789" * 30
+        wi = self.tokenizer_obj.tokenize(s, SplitMode.C)[0].get_word_info()
+        self.assertEqual(300, len(wi.surface))
+        self.assertEqual(300, wi.head_word_length)
+        self.assertEqual(300, len(wi.normalized_form))
+        self.assertEqual(-1, wi.dictionary_form_word_id)
+        self.assertEqual(300, len(wi.dictionary_form))
+        self.assertEqual(570, len(wi.reading_form))
+
     def test_wordinfo_surface(self):
         wi = self.tokenizer_obj.tokenize('京都', SplitMode.C)[0].get_word_info()
         self.assertEqual(wi.surface, "京都")
@@ -45,7 +84,7 @@ class TestTokenizer(unittest.TestCase):
 
     def test_wordinfo_pos(self):
         wi = self.tokenizer_obj.tokenize('東', SplitMode.C)[0].get_word_info()
-        self.assertEqual(wi.pos_id,     4)
+        self.assertEqual(wi.pos_id, 4)
 
         wi = self.tokenizer_obj.tokenize('東京府', SplitMode.C)[0].get_word_info()
         self.assertEqual(wi.pos_id, 3)
