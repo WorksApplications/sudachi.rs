@@ -23,7 +23,6 @@ use std::fmt::Write;
 use crate::config::Config;
 use crate::dic::grammar::Grammar;
 use crate::input_text::input_buffer::{EditInput, InputBuffer};
-use crate::input_text::Utf8InputTextBuilder;
 use crate::plugin::input_text::InputTextPlugin;
 use crate::plugin::PluginError;
 use crate::prelude::*;
@@ -88,30 +87,7 @@ impl InputTextPlugin for ProlongedSoundMarkPlugin {
         Ok(())
     }
 
-    fn rewrite(&self, builder: &mut Utf8InputTextBuilder) {
-        let text = builder.modified.clone();
-        let n = builder.modified.chars().count();
-        let mut offset = 0;
-        let mut is_psm = false;
-        let mut m_start_idx = n;
-        for (i, c) in text.chars().enumerate() {
-            if !is_psm && self.psm_set.contains(&c) {
-                is_psm = true;
-                m_start_idx = i;
-            } else if is_psm && !self.psm_set.contains(&c) {
-                if i > m_start_idx + 1 {
-                    builder.replace(m_start_idx - offset..i - offset, &self.replace_symbol);
-                    offset += i - m_start_idx - 1;
-                }
-                is_psm = false;
-            }
-        }
-        if is_psm && n > m_start_idx + 1 {
-            builder.replace(m_start_idx - offset..n - offset, &self.replace_symbol);
-        }
-    }
-
-    fn rewrite2<'a>(
+    fn rewrite_impl<'a>(
         &'a self,
         input: &InputBuffer,
         mut edit: EditInput<'a>,

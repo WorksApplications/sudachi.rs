@@ -31,7 +31,7 @@ const NORMALIZED_TEXT: &str = "âbγд(株)ガヴ⼼ⅲ";
 fn after_rewrite() {
     let plugin = test_plugin();
     let mut text = InputBuffer::from(ORIGINAL_TEXT);
-    plugin.apply_rewrite(&mut text).expect("succeeds");
+    plugin.rewrite(&mut text).expect("succeeds");
 
     assert_eq!(NORMALIZED_TEXT, text.current());
     assert_eq!(24, text.current().len());
@@ -79,7 +79,7 @@ fn replace_list_duplicates() {
 fn rewrite_hiragana() {
     let plugin = test_plugin();
     let mut buffer = InputBuffer::from("ひらがな");
-    plugin.apply_rewrite(&mut buffer).expect("rewrite failed");
+    plugin.rewrite(&mut buffer).expect("rewrite failed");
     assert_eq!(buffer.current(), "ひらがな");
 }
 
@@ -87,7 +87,7 @@ fn rewrite_hiragana() {
 fn nfkc_works() {
     let plugin = test_plugin();
     let mut buffer = InputBuffer::from("ひＢら①がⅢな");
-    plugin.apply_rewrite(&mut buffer).expect("rewrite failed");
+    plugin.rewrite(&mut buffer).expect("rewrite failed");
     assert_eq!(buffer.current(), "ひbら1がⅲな");
 }
 
@@ -95,7 +95,7 @@ fn nfkc_works() {
 fn lowercasing_works_simple() {
     let plugin = test_plugin();
     let mut buffer = InputBuffer::from("ひЗДらTESTがЕСЬな");
-    plugin.apply_rewrite(&mut buffer).expect("rewrite failed");
+    plugin.rewrite(&mut buffer).expect("rewrite failed");
     assert_eq!(buffer.current(), "ひздらtestがесьな");
 }
 
@@ -103,7 +103,7 @@ fn lowercasing_works_simple() {
 fn lowercasing_works_difficult() {
     let plugin = test_plugin();
     let mut buffer = InputBuffer::from("ひらİがẞなΣ");
-    plugin.apply_rewrite(&mut buffer).expect("rewrite failed");
+    plugin.rewrite(&mut buffer).expect("rewrite failed");
     assert_eq!(buffer.current(), "ひらi\u{307}がßなσ");
 }
 
@@ -111,7 +111,7 @@ fn lowercasing_works_difficult() {
 fn replacement_works() {
     let plugin = test_plugin();
     let mut buffer = InputBuffer::from("ウ゛");
-    plugin.apply_rewrite(&mut buffer).expect("rewrite failed");
+    plugin.rewrite(&mut buffer).expect("rewrite failed");
     assert_eq!(buffer.current(), "ヴ");
 }
 
@@ -119,7 +119,7 @@ fn replacement_works() {
 fn full_normalization_works() {
     let plugin = test_plugin();
     let mut buffer = InputBuffer::from(ORIGINAL_TEXT);
-    plugin.apply_rewrite(&mut buffer).expect("rewrite failed");
+    plugin.rewrite(&mut buffer).expect("rewrite failed");
     assert_eq!(buffer.current(), NORMALIZED_TEXT);
 }
 

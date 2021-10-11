@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-use std::cmp;
 use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::io::{BufRead, BufReader};
@@ -28,7 +27,6 @@ use unicode_normalization::{is_nfkc_quick, IsNormalized, UnicodeNormalization};
 use crate::config::Config;
 use crate::dic::grammar::Grammar;
 use crate::input_text::input_buffer::{EditInput, InputBuffer};
-use crate::input_text::Utf8InputTextBuilder;
 use crate::plugin::input_text::InputTextPlugin;
 use crate::prelude::*;
 
@@ -267,75 +265,11 @@ impl InputTextPlugin for DefaultInputTextPlugin {
         Ok(())
     }
 
-    fn rewrite(&self, builder: &mut Utf8InputTextBuilder) {
-        let mut offset: i32 = 0;
-        let mut next_offset: i32 = 0;
-        let chars: Vec<_> = builder.modified.chars().collect();
-
-        let mut i: i32 = -1;
-        loop {
-            i += 1;
-            if i as usize >= chars.len() {
-                break;
-            }
-            let mut text_loop = false;
-            offset += next_offset;
-            next_offset = 0;
-            let original = chars[i as usize];
-
-            // 1. replace char without normalize
-            let max_length = cmp::min(
-                self.key_lengths.get(&original).map(|v| *v).unwrap_or(0),
-                chars.len() - i as usize,
-            );
-            for j in (1..max_length + 1).rev() {
-                if let Some(replace) = self
-                    .replace_char_map
-                    .get(&chars[i as usize..i as usize + j].iter().collect::<String>())
-                {
-                    let start = (i + offset) as usize;
-                    builder.replace(start..start + j, replace);
-                    next_offset += replace.chars().count() as i32 - j as i32;
-                    i += (j - 1) as i32;
-                    text_loop = true;
-                    break;
-                }
-            }
-            if text_loop {
-                continue;
-            }
-
-            // 2. normalize
-            // 2-1. capital alphabet (not only Latin but Greek, Cyrillic, etc.) -> small
-            let original = original.to_string();
-            let lower = original.to_lowercase();
-            // char::to_lowercase may returns multiple chars
-            // here we check first one only.
-            let lower_first_char = lower.chars().next().unwrap();
-            let replace: String;
-            if self.ignore_normalize_set.contains(&lower_first_char) {
-                if original == lower {
-                    continue;
-                }
-                replace = lower;
-            } else {
-                // 2-2. normalize (except in ignore_normalize)
-                // e.g. full-width alphabet -> half-width / ligature / etc.
-                replace = lower.nfkc().collect::<String>();
-            }
-            next_offset = replace.chars().count() as i32 - 1;
-            if original != replace {
-                let start = (i + offset) as usize;
-                builder.replace(start..start + 1, &replace);
-            }
-        }
-    }
-
     fn uses_chars(&self) -> bool {
         true
     }
 
-    fn rewrite2<'a>(
+    fn rewrite_impl<'a>(
         &'a self,
         buffer: &InputBuffer,
         edit: EditInput<'a>,

@@ -28,7 +28,7 @@ fn combine_continuous_prolonged_sound_mark() {
 
     let (_, plugin) = setup();
     let mut text = InputBuffer::from(original);
-    plugin.apply_rewrite(&mut text).expect("succeeds");
+    plugin.rewrite(&mut text).expect("succeeds");
 
     assert_eq!(original, text.original());
     assert_eq!(normalized, text.current());
@@ -48,7 +48,7 @@ fn combined_continuous_prolonged_sound_marks_at_end() {
 
     let (_, plugin) = setup();
     let mut text = InputBuffer::from(original);
-    plugin.apply_rewrite(&mut text).expect("succeeds");
+    plugin.rewrite(&mut text).expect("succeeds");
 
     assert_eq!(original, text.original());
     assert_eq!(normalized, text.current());
@@ -70,7 +70,7 @@ fn combine_continuous_prolonged_sound_marks_multi_times() {
 
     let (_, plugin) = setup();
     let mut text = InputBuffer::from(original);
-    plugin.apply_rewrite(&mut text).expect("succeeds");
+    plugin.rewrite(&mut text).expect("succeeds");
 
     assert_eq!(original, text.original());
     assert_eq!(normalized, text.current());
@@ -94,7 +94,7 @@ fn combine_continuous_prolonged_sound_marks_multi_symbol_types() {
 
     let (_, plugin) = setup();
     let mut text = InputBuffer::from(original);
-    plugin.apply_rewrite(&mut text).expect("succeeds");
+    plugin.rewrite(&mut text).expect("succeeds");
 
     assert_eq!(original, text.original());
     assert_eq!(normalized, text.current());
@@ -119,7 +119,7 @@ fn combine_continuous_prolonged_sound_marks_multi_mixed_symbol_types() {
 
     let (_, plugin) = setup();
     let mut text = InputBuffer::from(original);
-    plugin.apply_rewrite(&mut text).expect("succeeds");
+    plugin.rewrite(&mut text).expect("succeeds");
 
     assert_eq!(original, text.original());
     assert_eq!(normalized, text.current());

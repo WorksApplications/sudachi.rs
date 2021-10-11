@@ -131,7 +131,7 @@ impl<D: DictionaryAccess> StatefulTokenizer<D> {
 
     fn rewrite_input(&mut self) -> SudachiResult<()> {
         for p in self.dictionary.input_text_plugins() {
-            p.apply_rewrite(&mut self.input)?;
+            p.rewrite(&mut self.input)?;
         }
         Ok(())
     }

@@ -29,7 +29,7 @@ fn ignore_yomigana_at_middle() {
 
     let mut text = InputBuffer::from(original);
     let (plugin, _) = setup();
-    plugin.apply_rewrite(&mut text).expect("succeeded");
+    plugin.rewrite(&mut text).expect("succeeded");
 
     assert_eq!(original, text.original());
     assert_eq!(normalized, text.current());
@@ -47,7 +47,7 @@ fn ignore_yomigana_at_end() {
 
     let mut text = InputBuffer::from(original);
     let (plugin, _) = setup();
-    plugin.apply_rewrite(&mut text).expect("succeeded");
+    plugin.rewrite(&mut text).expect("succeeded");
 
     assert_eq!(original, text.original());
     assert_eq!(normalized, text.current());
@@ -62,7 +62,7 @@ fn ignore_yomigana_multiple() {
 
     let mut text = InputBuffer::from(original);
     let (plugin, _) = setup();
-    plugin.apply_rewrite(&mut text).expect("succeeded");
+    plugin.rewrite(&mut text).expect("succeeded");
 
     assert_eq!(original, text.original());
     assert_eq!(normalized, text.current());
@@ -80,7 +80,7 @@ fn ignore_yomigana_multiple_brace_types() {
 
     let mut text = InputBuffer::from(original);
     let (plugin, _) = setup();
-    plugin.apply_rewrite(&mut text).expect("succeeded");
+    plugin.rewrite(&mut text).expect("succeeded");
 
     assert_eq!(original, text.original());
     assert_eq!(normalized, text.current());
@@ -98,7 +98,7 @@ fn dont_ignore_not_yomigana() {
 
     let mut text = InputBuffer::from(original);
     let (plugin, _) = setup();
-    plugin.apply_rewrite(&mut text).expect("succeeded");
+    plugin.rewrite(&mut text).expect("succeeded");
 
     assert_eq!(original, text.original());
     assert_eq!(normalized, text.current());
@@ -116,7 +116,7 @@ fn dont_ignore_too_long() {
 
     let mut text = InputBuffer::from(original);
     let (plugin, _) = setup();
-    plugin.apply_rewrite(&mut text).expect("succeeded");
+    plugin.rewrite(&mut text).expect("succeeded");
 
     assert_eq!(original, text.original());
     assert_eq!(normalized, text.current());
@@ -131,9 +131,7 @@ fn dont_ignore_too_long() {
 fn ignore_hiragana() {
     let (plugin, _) = setup();
     let mut buffer = InputBuffer::from("徳島(とくしま)に行（い）く");
-    plugin
-        .apply_rewrite(&mut buffer)
-        .expect("should not happen");
+    plugin.rewrite(&mut buffer).expect("should not happen");
     assert_eq!(buffer.current(), "徳島に行く");
 }
 
