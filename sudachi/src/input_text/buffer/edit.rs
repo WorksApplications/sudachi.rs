@@ -82,6 +82,9 @@ impl<'a> InputEditor<'a> {
     }
 }
 
+// Edits are assumed to be sorted (from start to end) and non-overlapping.
+// This is not checked right now (may be we should check this in debug mode)
+// Current plugin implementations satisfy this criteria.
 pub fn resolve_edits(
     source: &str,
     source_mapping: &Vec<usize>,
