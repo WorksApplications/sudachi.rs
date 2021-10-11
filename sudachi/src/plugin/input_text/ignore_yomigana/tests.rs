@@ -18,7 +18,6 @@ use super::*;
 use serde_json::Value;
 use std::path::PathBuf;
 
-use crate::input_text::Utf8InputTextBuilder;
 use crate::test::zero_grammar;
 
 const TEST_RESOURCE_DIR_PATH: &str = "tests/resources/";
@@ -28,13 +27,12 @@ fn ignore_yomigana_at_middle() {
     let original = "徳島（とくしま）に行く";
     let normalized = "徳島に行く";
 
-    let (plugin, grammar) = setup();
-    let mut builder = Utf8InputTextBuilder::new(original, &grammar);
-    plugin.rewrite(&mut builder);
+    let mut text = InputBuffer::from(original);
+    let (plugin, _) = setup();
+    plugin.apply_rewrite(&mut text).expect("succeeded");
 
-    let text = builder.build();
-    assert_eq!(original, text.original);
-    assert_eq!(normalized, text.modified);
+    assert_eq!(original, text.original());
+    assert_eq!(normalized, text.current());
     assert_eq!(0, text.get_original_index(0));
     assert_eq!(3, text.get_original_index(3));
     assert_eq!(24, text.get_original_index(6));
@@ -47,13 +45,12 @@ fn ignore_yomigana_at_end() {
     let original = "徳島（とくしま）";
     let normalized = "徳島";
 
-    let (plugin, grammar) = setup();
-    let mut builder = Utf8InputTextBuilder::new(original, &grammar);
-    plugin.rewrite(&mut builder);
+    let mut text = InputBuffer::from(original);
+    let (plugin, _) = setup();
+    plugin.apply_rewrite(&mut text).expect("succeeded");
 
-    let text = builder.build();
-    assert_eq!(original, text.original);
-    assert_eq!(normalized, text.modified);
+    assert_eq!(original, text.original());
+    assert_eq!(normalized, text.current());
     assert_eq!(0, text.get_original_index(0));
     assert_eq!(3, text.get_original_index(3));
 }
@@ -63,13 +60,12 @@ fn ignore_yomigana_multiple() {
     let original = "徳島（とくしま）に行（い）く";
     let normalized = "徳島に行く";
 
-    let (plugin, grammar) = setup();
-    let mut builder = Utf8InputTextBuilder::new(original, &grammar);
-    plugin.rewrite(&mut builder);
+    let mut text = InputBuffer::from(original);
+    let (plugin, _) = setup();
+    plugin.apply_rewrite(&mut text).expect("succeeded");
 
-    let text = builder.build();
-    assert_eq!(original, text.original);
-    assert_eq!(normalized, text.modified);
+    assert_eq!(original, text.original());
+    assert_eq!(normalized, text.current());
     assert_eq!(0, text.get_original_index(0));
     assert_eq!(3, text.get_original_index(3));
     assert_eq!(24, text.get_original_index(6));
@@ -82,13 +78,12 @@ fn ignore_yomigana_multiple_brace_types() {
     let original = "徳島(とくしま)に行（い）く";
     let normalized = "徳島に行く";
 
-    let (plugin, grammar) = setup();
-    let mut builder = Utf8InputTextBuilder::new(original, &grammar);
-    plugin.rewrite(&mut builder);
+    let mut text = InputBuffer::from(original);
+    let (plugin, _) = setup();
+    plugin.apply_rewrite(&mut text).expect("succeeded");
 
-    let text = builder.build();
-    assert_eq!(original, text.original);
-    assert_eq!(normalized, text.modified);
+    assert_eq!(original, text.original());
+    assert_eq!(normalized, text.current());
     assert_eq!(0, text.get_original_index(0));
     assert_eq!(3, text.get_original_index(3));
     assert_eq!(20, text.get_original_index(6));
@@ -101,13 +96,12 @@ fn dont_ignore_not_yomigana() {
     let original = "徳島に（よく）行く";
     let normalized = "徳島に（よく）行く";
 
-    let (plugin, grammar) = setup();
-    let mut builder = Utf8InputTextBuilder::new(original, &grammar);
-    plugin.rewrite(&mut builder);
+    let mut text = InputBuffer::from(original);
+    let (plugin, _) = setup();
+    plugin.apply_rewrite(&mut text).expect("succeeded");
 
-    let text = builder.build();
-    assert_eq!(original, text.original);
-    assert_eq!(normalized, text.modified);
+    assert_eq!(original, text.original());
+    assert_eq!(normalized, text.current());
     assert_eq!(0, text.get_original_index(0));
     assert_eq!(3, text.get_original_index(3));
     assert_eq!(6, text.get_original_index(6));
@@ -120,13 +114,12 @@ fn dont_ignore_too_long() {
     let original = "徳島（ながいよみ）に行く";
     let normalized = "徳島（ながいよみ）に行く";
 
-    let (plugin, grammar) = setup();
-    let mut builder = Utf8InputTextBuilder::new(original, &grammar);
-    plugin.rewrite(&mut builder);
+    let mut text = InputBuffer::from(original);
+    let (plugin, _) = setup();
+    plugin.apply_rewrite(&mut text).expect("succeeded");
 
-    let text = builder.build();
-    assert_eq!(original, text.original);
-    assert_eq!(normalized, text.modified);
+    assert_eq!(original, text.original());
+    assert_eq!(normalized, text.current());
     assert_eq!(0, text.get_original_index(0));
     assert_eq!(3, text.get_original_index(3));
     assert_eq!(6, text.get_original_index(6));
