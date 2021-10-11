@@ -27,7 +27,7 @@ use crate::dic::category_type::CategoryType;
 use crate::dic::character_category::Error as CharacterCategoryError;
 use crate::dic::grammar::Grammar;
 use crate::dic::lexicon::word_infos::WordInfo;
-use crate::input_text::input_buffer::InputBuffer;
+use crate::input_text::InputBuffer;
 use crate::input_text::InputTextIndex;
 use crate::plugin::oov::OovProviderPlugin;
 use crate::prelude::*;

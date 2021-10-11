@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-use crate::input_text::input_buffer::REALLY_MAX_LENGTH;
+use crate::input_text::buffer::REALLY_MAX_LENGTH;
 use std::ops::Range;
 
 pub struct ReplaceOp<'a> {

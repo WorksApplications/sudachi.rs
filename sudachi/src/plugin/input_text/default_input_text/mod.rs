@@ -26,7 +26,7 @@ use unicode_normalization::{is_nfkc_quick, IsNormalized, UnicodeNormalization};
 
 use crate::config::Config;
 use crate::dic::grammar::Grammar;
-use crate::input_text::input_buffer::{InputBuffer, InputEditor};
+use crate::input_text::{InputBuffer, InputEditor};
 use crate::plugin::input_text::InputTextPlugin;
 use crate::prelude::*;
 

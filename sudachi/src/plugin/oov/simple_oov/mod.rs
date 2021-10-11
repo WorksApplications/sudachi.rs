@@ -21,7 +21,7 @@ use crate::analysis::node::Node;
 use crate::config::Config;
 use crate::dic::grammar::Grammar;
 use crate::dic::lexicon::word_infos::WordInfo;
-use crate::input_text::input_buffer::InputBuffer;
+use crate::input_text::InputBuffer;
 use crate::input_text::InputTextIndex;
 use crate::plugin::oov::OovProviderPlugin;
 use crate::prelude::*;

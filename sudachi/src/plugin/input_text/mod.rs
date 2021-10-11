@@ -22,7 +22,7 @@ use serde_json::Value;
 
 use crate::config::Config;
 use crate::dic::grammar::Grammar;
-use crate::input_text::input_buffer::{InputBuffer, InputEditor};
+use crate::input_text::{InputBuffer, InputEditor};
 use crate::plugin::input_text::default_input_text::DefaultInputTextPlugin;
 use crate::plugin::input_text::ignore_yomigana::IgnoreYomiganaPlugin;
 use crate::plugin::input_text::prolonged_sound_mark::ProlongedSoundMarkPlugin;

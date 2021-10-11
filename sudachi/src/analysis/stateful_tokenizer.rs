@@ -20,7 +20,7 @@ use crate::analysis::stateless_tokenizer::{dump_path, split_path, DictionaryAcce
 use crate::analysis::Mode;
 use crate::dic::category_type::CategoryType;
 use crate::error::SudachiResult;
-use crate::input_text::input_buffer::InputBuffer;
+use crate::input_text::InputBuffer;
 use crate::input_text::InputTextIndex;
 use crate::prelude::MorphemeList;
 

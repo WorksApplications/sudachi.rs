@@ -25,7 +25,7 @@ use crate::config::Config;
 use crate::dic::category_type::CategoryType;
 use crate::dic::character_category::CharacterCategory;
 use crate::dic::grammar::Grammar;
-use crate::input_text::input_buffer::{InputBuffer, InputEditor};
+use crate::input_text::{InputBuffer, InputEditor};
 use crate::plugin::input_text::InputTextPlugin;
 use crate::plugin::PluginError;
 use crate::prelude::*;

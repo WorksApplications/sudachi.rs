@@ -21,7 +21,7 @@ use crate::analysis::{lattice::Lattice, node::Node};
 use crate::config::Config;
 use crate::dic::category_type::CategoryType;
 use crate::dic::grammar::Grammar;
-use crate::input_text::input_buffer::InputBuffer;
+use crate::input_text::InputBuffer;
 use crate::input_text::InputTextIndex;
 use crate::plugin::path_rewrite::PathRewritePlugin;
 use crate::prelude::*;

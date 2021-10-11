@@ -14,10 +14,13 @@
  * limitations under the License.
  */
 
-pub mod input_buffer;
+mod buffer;
 
 use crate::dic::category_type::CategoryType;
 use std::ops::Range;
+
+pub use self::buffer::InputBuffer;
+pub use self::buffer::InputEditor;
 
 /// Provides fast indexed access into the input text
 pub trait InputTextIndex {

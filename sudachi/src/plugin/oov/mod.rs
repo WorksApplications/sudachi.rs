@@ -19,7 +19,7 @@ use serde_json::Value;
 use crate::analysis::node::Node;
 use crate::config::Config;
 use crate::dic::grammar::Grammar;
-use crate::input_text::input_buffer::InputBuffer;
+use crate::input_text::InputBuffer;
 use crate::plugin::oov::mecab_oov::MeCabOovPlugin;
 use crate::plugin::oov::simple_oov::SimpleOovPlugin;
 use crate::plugin::PluginCategory;
