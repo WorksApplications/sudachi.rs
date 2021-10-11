@@ -11,6 +11,7 @@ README*.html
 
 # python binding
 python/dist
+__pycache__/
 .env
 *.egg-info
 *.so
