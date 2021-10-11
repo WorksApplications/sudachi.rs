@@ -135,7 +135,7 @@ $ env SUDACHI_DICT_PATH=/path/to/my-sudachi.dic cargo build --release --features
 
 ### 4. インストール
 ```
-sudachi.rs/ $ cargo install --path .
+sudachi.rs/ $ cargo install --path sudachi-cli/
 
 $ which sudachi
 /Users/<USER>/.cargo/bin/sudachi
