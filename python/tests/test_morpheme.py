@@ -15,7 +15,7 @@
 import os
 import unittest
 
-from sudachi.sudachi import Dictionary, SplitMode
+from sudachi import Dictionary, SplitMode
 
 
 class TestTokenizer(unittest.TestCase):

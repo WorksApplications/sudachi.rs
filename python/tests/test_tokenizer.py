@@ -15,7 +15,7 @@
 import os
 import unittest
 
-from sudachi.sudachi import Dictionary, SplitMode
+from sudachi import Dictionary, Tokenizer
 
 
 class TestTokenizer(unittest.TestCase):
@@ -101,17 +101,17 @@ class TestTokenizer(unittest.TestCase):
         self.assertEqual(ms[3].normalized_form(), '.')
 
     def test_tokenizer_morpheme_split(self):
-        ms = self.tokenizer_obj.tokenize('東京都', SplitMode.C)
+        ms = self.tokenizer_obj.tokenize('東京都', Tokenizer.SplitMode.C)
         self.assertEqual(1, ms.size())
         self.assertEqual(ms[0].surface(), '東京都')
 
-        ms_a = ms[0].split(SplitMode.A)
+        ms_a = ms[0].split(Tokenizer.SplitMode.A)
         self.assertEqual(2, ms_a.size())
         self.assertEqual(ms_a[0].surface(), '東京')
         self.assertEqual(ms_a[1].surface(), '都')
 
     def test_tokenizer_morpheme_list_range(self):
-        ms = self.tokenizer_obj.tokenize('東京都', SplitMode.A)
+        ms = self.tokenizer_obj.tokenize('東京都', Tokenizer.SplitMode.A)
         self.assertEqual(2, ms.size())
         self.assertEqual(ms[0].surface(), '東京')
         self.assertEqual(ms[1].surface(), '都')
