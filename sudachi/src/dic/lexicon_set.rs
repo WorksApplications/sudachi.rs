@@ -81,6 +81,7 @@ impl LexiconSet<'_> {
     /// Returns iterator which yields all words in the dictionary, starting from the `offset` bytes
     ///
     /// Searches dictionaries in the reverse order: user dictionaries first and then system dictionary
+    #[inline]
     pub fn lookup<'b>(
         &'b self,
         input: &'b [u8],

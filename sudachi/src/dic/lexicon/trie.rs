@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+use std::iter::FusedIterator;
+
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub struct TrieEntry {
     pub word_id: u32,
@@ -21,6 +23,7 @@ pub struct TrieEntry {
 }
 
 impl TrieEntry {
+    #[inline]
     pub fn new(id: u32, offset: usize) -> TrieEntry {
         TrieEntry {
             word_id: id,
@@ -42,6 +45,7 @@ pub struct TrieEntryIter<'a> {
 }
 
 impl<'a> TrieEntryIter<'a> {
+    #[inline(always)]
     fn get(&self, index: usize) -> u32 {
         debug_assert!(index < self.trie.len());
         // UB if out of bounds
@@ -54,6 +58,7 @@ impl<'a> TrieEntryIter<'a> {
 impl<'a> Iterator for TrieEntryIter<'a> {
     type Item = TrieEntry;
 
+    #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         let mut node_pos = self.node_pos;
         let mut unit;
@@ -80,6 +85,8 @@ impl<'a> Iterator for TrieEntryIter<'a> {
     }
 }
 
+impl FusedIterator for TrieEntryIter<'_> {}
+
 impl Trie {
     pub fn new(array: Vec<u32>, size: u32) -> Trie {
         Trie { array, size }
@@ -89,6 +96,7 @@ impl Trie {
         4 * self.size as usize
     }
 
+    #[inline]
     pub fn common_prefix_iterator<'a>(
         &'a self,
         input: &'a [u8],
@@ -104,6 +112,7 @@ impl Trie {
         }
     }
 
+    #[inline(always)]
     fn get(&self, index: usize) -> u32 {
         debug_assert!(index < self.array.len());
         // UB if out of bounds
@@ -112,18 +121,22 @@ impl Trie {
         *unsafe { self.array.get_unchecked(index) }
     }
 
+    #[inline(always)]
     fn has_leaf(unit: usize) -> bool {
         ((unit >> 8) & 1) == 1
     }
 
+    #[inline(always)]
     fn value(unit: u32) -> u32 {
         unit & ((1 << 31) - 1)
     }
 
+    #[inline(always)]
     fn label(unit: usize) -> usize {
         unit & ((1 << 31) | 0xFF)
     }
 
+    #[inline(always)]
     fn offset(unit: usize) -> usize {
         (unit >> 10) << ((unit & (1 << 9)) >> 6)
     }

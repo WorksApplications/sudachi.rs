@@ -93,6 +93,7 @@ impl<'a> Lexicon<'a> {
         self.lex_id = id
     }
 
+    #[inline]
     fn word_id(&self, raw_id: u32) -> u32 {
         let lex_part: u32 = (self.lex_id as u32) << 28;
         debug_assert!(raw_id & 0xF000_0000 == 0);
@@ -101,6 +102,7 @@ impl<'a> Lexicon<'a> {
     }
 
     /// Returns an iterator of word_id and end of words that matches given input
+    #[inline]
     pub fn lookup(
         &'a self,
         input: &'a [u8],
