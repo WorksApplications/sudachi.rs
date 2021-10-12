@@ -18,13 +18,14 @@ use nom::{bytes::complete::take, number::complete::le_i16};
 use std::collections::HashMap;
 
 use crate::error::SudachiNomResult;
+use crate::hash::RoMu;
 use crate::prelude::*;
 
 pub struct WordParams<'a> {
     bytes: &'a [u8],
     size: u32,
     offset: usize,
-    cost_map: HashMap<u32, i16>,
+    cost_map: HashMap<u32, i16, RoMu>,
 }
 
 impl<'a> WordParams<'a> {
@@ -35,7 +36,7 @@ impl<'a> WordParams<'a> {
             bytes,
             size,
             offset,
-            cost_map: HashMap::new(),
+            cost_map: HashMap::with_hasher(RoMu::new()),
         }
     }
 

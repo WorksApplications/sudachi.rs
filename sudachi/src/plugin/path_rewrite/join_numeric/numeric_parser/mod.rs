@@ -14,9 +14,11 @@
  * limitations under the License.
  */
 
+use lazy_static::lazy_static;
 use std::collections::HashMap;
 
 mod string_number;
+use crate::hash::RoMu;
 use string_number::StringNumber;
 
 /// State of the parser
@@ -31,7 +33,6 @@ pub enum Error {
 /// Parses number written by arabic or kanji
 #[derive(Debug)]
 pub struct NumericParser {
-    char_to_num: HashMap<char, i32>,
     digit_length: usize,
     is_first_digit: bool,
     has_comma: bool,
@@ -42,34 +43,42 @@ pub struct NumericParser {
     tmp: StringNumber,
 }
 
+lazy_static! {
+    static ref CHAR_TO_NUM: HashMap<char, i32, RoMu> = make_char_to_num_data();
+}
+
+fn make_char_to_num_data() -> HashMap<char, i32, RoMu> {
+    let char_to_num_data = [
+        ('〇', 0),
+        ('一', 1),
+        ('二', 2),
+        ('三', 3),
+        ('四', 4),
+        ('五', 5),
+        ('六', 6),
+        ('七', 7),
+        ('八', 8),
+        ('九', 9),
+        ('十', -1),
+        ('百', -2),
+        ('千', -3),
+        ('万', -4),
+        ('億', -8),
+        ('兆', -12),
+    ];
+
+    let char_to_num: HashMap<_, _, RoMu> = char_to_num_data
+        .iter()
+        .map(|(k, v)| (*k, *v))
+        .chain((0..10).map(|i| (i.to_string().chars().next().unwrap(), i)))
+        .collect();
+
+    char_to_num
+}
+
 impl NumericParser {
     pub fn new() -> NumericParser {
-        let char_to_num_data = [
-            ('〇', 0),
-            ('一', 1),
-            ('二', 2),
-            ('三', 3),
-            ('四', 4),
-            ('五', 5),
-            ('六', 6),
-            ('七', 7),
-            ('八', 8),
-            ('九', 9),
-            ('十', -1),
-            ('百', -2),
-            ('千', -3),
-            ('万', -4),
-            ('億', -8),
-            ('兆', -12),
-        ];
-        let char_to_num: HashMap<_, _> = char_to_num_data
-            .iter()
-            .map(|(k, v)| (*k, *v))
-            .chain((0..10).map(|i| (i.to_string().chars().next().unwrap(), i)))
-            .collect();
-
         NumericParser {
-            char_to_num,
             digit_length: 0,
             is_first_digit: true,
             has_comma: false,
@@ -120,7 +129,7 @@ impl NumericParser {
             return true;
         }
 
-        let n = match self.char_to_num.get(c) {
+        let n = match CHAR_TO_NUM.get(c) {
             None => return false,
             Some(v) => *v,
         };

@@ -26,6 +26,7 @@ use unicode_normalization::{is_nfkc_quick, IsNormalized, UnicodeNormalization};
 
 use crate::config::Config;
 use crate::dic::grammar::Grammar;
+use crate::hash::RoMu;
 use crate::input_text::{InputBuffer, InputEditor};
 use crate::plugin::input_text::InputTextPlugin;
 use crate::prelude::*;
@@ -39,7 +40,7 @@ const DEFAULT_REWRITE_DEF_FILE: &str = "rewrite.def";
 #[derive(Default)]
 pub struct DefaultInputTextPlugin {
     /// Set of characters to skip normalization
-    ignore_normalize_set: HashSet<char>,
+    ignore_normalize_set: HashSet<char, RoMu>,
     /// Mapping from a character to the maximum char_length of possible replacement
     key_lengths: HashMap<char, usize>,
     /// Replacement mapping
@@ -70,7 +71,7 @@ impl DefaultInputTextPlugin {
     ///         Same target string cannot be defined multiple times
     ///     Empty or line starts with "#" will be ignored
     fn read_rewrite_lists<T: BufRead>(&mut self, reader: T) -> SudachiResult<()> {
-        let mut ignore_normalize_set = HashSet::new();
+        let mut ignore_normalize_set = HashSet::with_hasher(RoMu::new());
         let mut key_lengths = HashMap::new();
         let mut replace_char_map = HashMap::new();
         for (i, line) in reader.lines().enumerate() {
@@ -143,6 +144,7 @@ impl DefaultInputTextPlugin {
         Ok(())
     }
 
+    #[inline]
     fn should_ignore(&self, ch: char) -> bool {
         self.ignore_normalize_set.contains(&ch)
     }

@@ -30,6 +30,7 @@ pub mod plugin;
 pub mod sentence_detector;
 pub mod sentence_splitter;
 
+mod hash;
 #[cfg(test)]
 pub mod test;
 
