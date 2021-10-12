@@ -24,6 +24,7 @@ use std::hash::{Hash, Hasher};
 use crate::dic::character_category::CharacterCategory;
 use crate::dic::utf16_string_parser;
 use crate::error::SudachiNomResult;
+use crate::hash::RoMu;
 use crate::prelude::*;
 
 /// Dictionary grammar
@@ -39,7 +40,7 @@ pub struct Grammar<'a> {
     pub storage_size: usize,
 
     /// The mapping to overload cost table
-    connect_cost_map: HashMap<ConnPair, i16>,
+    connect_cost_map: HashMap<ConnPair, i16, RoMu>,
 
     /// The mapping from character to character_category_type
     pub character_category: CharacterCategory,
@@ -74,13 +75,12 @@ impl<'a> Grammar<'a> {
         let connect_table_offset = buf.len() - rest.len();
         let storage_size =
             (connect_table_offset - offset) + 2 * left_id_size as usize * right_id_size as usize;
-        let connect_cost_map = HashMap::new();
 
         Ok(Grammar {
             bytes: buf,
             pos_list,
             connect_table_offset,
-            connect_cost_map,
+            connect_cost_map: HashMap::with_hasher(RoMu::new()),
             left_id_size,
             _right_id_size: right_id_size,
             storage_size,
