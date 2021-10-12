@@ -14,14 +14,16 @@
  * limitations under the License.
  */
 
+mod output;
+
 use std::fs::File;
 use std::io::{self, BufRead, BufReader, BufWriter, Write};
-use std::ops::Deref;
 use std::path::PathBuf;
 use std::process;
 
 use structopt::StructOpt;
 
+use crate::output::SudachiOutput;
 use sudachi::analysis::stateful_tokenizer::StatefulTokenizer;
 use sudachi::analysis::stateless_tokenizer::DictionaryAccess;
 use sudachi::config::Config;
@@ -88,8 +90,7 @@ fn main() {
             process::exit(1);
         }
     };
-    let print_all = args.print_all;
-    let wakati = args.wakati;
+
     let enable_debug = args.enable_debug;
 
     // input: stdin or file
@@ -127,6 +128,8 @@ fn main() {
 
     let is_stdout = args.output_file.is_none();
 
+    let format = make_output::<&JapaneseDictionary>(&args);
+
     // tokenize and output results
     for line in reader.lines() {
         let input = line.expect("Failed to read line");
@@ -142,7 +145,8 @@ fn main() {
                 .collect_results(&mut tokenizer)
                 .expect("failed to collect results");
 
-            write_sentence(&mut writer, &morphemes, print_all, wakati)
+            format
+                .write(&mut writer, &morphemes)
                 .expect("Failed to write output");
         }
         if is_stdout {
@@ -153,58 +157,10 @@ fn main() {
     writer.flush().expect("flush failed");
 }
 
-/// Format and write morphemes into writer
-fn write_sentence<T>(
-    writer: &mut BufWriter<Box<dyn Write>>,
-    morphemes: &MorphemeList<T>,
-    print_all: bool,
-    wakati: bool,
-) -> io::Result<()>
-where
-    T: Deref,
-    <T as Deref>::Target: DictionaryAccess,
-{
-    if wakati {
-        if morphemes.len() == 0 {
-            writer.write(b"\n")?;
-            return Ok(());
-        }
-        let last_idx = morphemes.len() - 1;
-        for m in morphemes.iter() {
-            writer.write(m.surface().as_bytes())?;
-            let trailer = if m.index() != last_idx { b" " } else { b"\n" };
-            writer.write(trailer)?;
-        }
+fn make_output<T: DictionaryAccess>(cli: &Cli) -> Box<dyn SudachiOutput<T>> {
+    if cli.wakati {
+        Box::new(output::Wakachi::default())
     } else {
-        for morpheme in morphemes.iter() {
-            write!(
-                writer,
-                "{}\t{}\t{}",
-                morpheme.surface(),
-                morpheme
-                    .part_of_speech()
-                    .expect("Missing part of speech")
-                    .join(","),
-                morpheme.normalized_form()
-            )?;
-            if print_all {
-                write!(
-                    writer,
-                    "\t{}\t{}\t{}\t{:?}",
-                    morpheme.dictionary_form(),
-                    morpheme.reading_form(),
-                    morpheme.dictionary_id(),
-                    morpheme.synonym_group_ids(),
-                )?;
-                if morpheme.is_oov() {
-                    write!(writer, "\t(OOV)")?;
-                }
-            }
-            writeln!(writer, "")?;
-        }
-        writeln!(writer, "EOS")?;
+        Box::new(output::Simple::new(cli.print_all))
     }
-
-    writer.flush().expect("Failed to flush writer");
-    Ok(())
 }
