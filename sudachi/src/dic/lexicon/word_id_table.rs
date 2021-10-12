@@ -14,11 +14,8 @@
  * limitations under the License.
  */
 
-use nom::bytes::complete::take;
-
-use crate::dic::u32_array_parser;
-use crate::error::SudachiNomResult;
-use crate::prelude::*;
+use std::iter::FusedIterator;
+use std::ptr::NonNull;
 
 pub struct WordIdTable<'a> {
     bytes: &'a [u8],
@@ -39,11 +36,7 @@ impl<'a> WordIdTable<'a> {
         4 + self.size as usize
     }
 
-    pub fn get(&self, index: usize) -> SudachiResult<Vec<u32>> {
-        let (_rest, result) = word_id_table_parser(self.bytes, self.offset, index)?;
-        Ok(result)
-    }
-
+    #[inline]
     pub fn entries(&self, index: usize) -> WordIdIter {
         debug_assert!(index < self.bytes.len());
         let ptr = unsafe { self.bytes.as_ptr().offset((index + self.offset) as isize) };
@@ -51,38 +44,35 @@ impl<'a> WordIdTable<'a> {
         let data_ptr = unsafe { ptr.offset(1) } as *const u32;
         debug_assert!(index + cnt * std::mem::size_of::<u32>() + 1 <= self.bytes.len());
         WordIdIter {
-            data: data_ptr,
+            data: unsafe { NonNull::new_unchecked(data_ptr as _) },
             remaining: cnt,
         }
     }
 }
 
 pub struct WordIdIter {
-    // this pointer is unaligned!
-    data: *const u32,
-    // number of remaining elements
+    /// This pointer is unaligned and must be read from using unaligned reads.
+    /// Using NonNull makes Option<Self> be the same as the struct itself.
+    data: NonNull<u32>,
+    /// number of remaining elements
     remaining: usize,
 }
 
 impl Iterator for WordIdIter {
     type Item = u32;
 
+    #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         if self.remaining == 0 {
             return None;
         }
+        let ptr = self.data.as_ptr();
 
-        let val = unsafe { self.data.read_unaligned() };
-        self.data = unsafe { self.data.offset(1) };
+        let val = unsafe { ptr.read_unaligned() };
+        self.data = unsafe { NonNull::new_unchecked(ptr.offset(1)) };
         self.remaining -= 1;
         Some(val)
     }
 }
 
-fn word_id_table_parser(
-    input: &[u8],
-    offset: usize,
-    index: usize,
-) -> SudachiNomResult<&[u8], Vec<u32>> {
-    nom::sequence::preceded(take(offset + index), u32_array_parser)(input)
-}
+impl FusedIterator for WordIdIter {}
