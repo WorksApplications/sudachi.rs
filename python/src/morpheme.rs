@@ -81,13 +81,7 @@ impl PyMorphemeListWrapper {
 
 impl From<MorphemeList<Arc<JapaneseDictionary>>> for PyMorphemeListWrapper {
     fn from(morpheme_list: MorphemeList<Arc<JapaneseDictionary>>) -> Self {
-        let mut boundaries = Vec::with_capacity(morpheme_list.len() + 1);
-        let mut offset = 0;
-        boundaries.push(offset);
-        for m in morpheme_list.iter() {
-            offset += m.surface().chars().count();
-            boundaries.push(offset);
-        }
+        let boundaries = build_python_string_boundaries(&morpheme_list);
 
         Self {
             inner: Arc::new(PyMorphemeList {
@@ -96,6 +90,26 @@ impl From<MorphemeList<Arc<JapaneseDictionary>>> for PyMorphemeListWrapper {
             }),
         }
     }
+}
+
+fn build_python_string_boundaries(
+    morpheme_list: &MorphemeList<Arc<JapaneseDictionary>>,
+) -> Vec<usize> {
+    if morpheme_list.len() == 0 {
+        return Vec::with_capacity(0);
+    }
+
+    let prefix = &morpheme_list.get_full_input_text()[..morpheme_list.get_begin(0)];
+    let mut offset = prefix.chars().count();
+
+    let mut boundaries = Vec::with_capacity(morpheme_list.len() + 1);
+    boundaries.push(offset);
+    for m in morpheme_list.iter() {
+        offset += m.surface().chars().count();
+        boundaries.push(offset);
+    }
+
+    boundaries
 }
 
 #[pyproto]
