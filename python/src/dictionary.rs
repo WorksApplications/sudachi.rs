@@ -149,7 +149,8 @@ fn get_absolute_dict_path(py: Python, dict_type: DictionaryType) -> PyResult<Pat
     let dict_path = PathBuf::from(pkg_path)
         .parent()
         .unwrap()
-        .join("resources/system.dic");
+        .join("resources")
+        .join("system.dic");
 
     Ok(dict_path)
 }
