@@ -1,6 +1,7 @@
 # sudachi.rs - English README
 
 [![Rust](https://github.com/WorksApplications/sudachi.rs/actions/workflows/rust.yml/badge.svg)](https://github.com/WorksApplications/sudachi.rs/actions/workflows/rust.yml)
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FWorksApplications%2Fsudachi.rs.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2FWorksApplications%2Fsudachi.rs?ref=badge_shield)
 
 **2021-07-07 UPDATE: The official Sudachi team will take over this project** (cf. [日本語形態素解析器 SudachiPy の 現状と今後について - Speaker Deck](https://speakerdeck.com/waptech/ri-ben-yu-xing-tai-su-jie-xi-qi-sudachipy-false-xian-zhuang-tojin-hou-nituite?slide=28))
 
@@ -244,3 +245,7 @@ $ echo "外国人参政権" | sudachi -m A -w
 
 - [Sudachi Logo](https://github.com/WorksApplications/Sudachi/blob/develop/docs/Sudachi.png)
 - Crab illustration: [Pixabay](https://pixabay.com/ja/vectors/%E5%8B%95%E7%89%A9-%E3%82%AB%E3%83%8B-%E7%94%B2%E6%AE%BB%E9%A1%9E-%E6%B5%B7-2029728/)
+
+
+## License
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FWorksApplications%2Fsudachi.rs.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2FWorksApplications%2Fsudachi.rs?ref=badge_large)
