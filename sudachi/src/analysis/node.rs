@@ -19,8 +19,40 @@ use std::fmt;
 use crate::dic::grammar::Grammar;
 use crate::dic::lexicon::word_infos::WordInfo;
 use crate::dic::lexicon_set::LexiconSet;
+use crate::dic::word_id::WordId;
 use crate::input_text::InputTextIndex;
 use crate::prelude::*;
+
+pub trait RightId {
+    fn right_id(&self) -> u16;
+}
+
+pub trait PathCost {
+    fn total_cost(&self) -> i32;
+
+    #[inline]
+    fn is_connected_to_bos(&self) -> bool {
+        self.total_cost() == i32::MAX
+    }
+}
+
+pub trait LatticeNode: RightId {
+    fn begin(&self) -> usize;
+    fn end(&self) -> usize;
+    fn cost(&self) -> i16;
+    fn word_id(&self) -> WordId;
+    fn left_id(&self) -> u16;
+
+    #[inline]
+    fn is_oov(&self) -> bool {
+        self.word_id().is_oov()
+    }
+
+    #[inline]
+    fn is_system_node(&self) -> bool {
+        self.word_id().is_system()
+    }
+}
 
 /// Lattice node
 #[derive(Clone, Debug, Default)]

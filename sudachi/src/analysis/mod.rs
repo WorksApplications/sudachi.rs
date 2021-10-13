@@ -20,9 +20,11 @@ use morpheme::MorphemeList;
 
 use crate::error::SudachiResult;
 
+mod inner;
 pub mod lattice;
 pub mod morpheme;
 pub mod node;
+mod slattice;
 pub mod stateful_tokenizer;
 pub mod stateless_tokenizer;
 
