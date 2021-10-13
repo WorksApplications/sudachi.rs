@@ -84,9 +84,14 @@ impl PyDictionary {
             }
         };
 
-        let config = Config::new(config_path, resource_dir, dict_path).map_err(|e| {
+        let mut config = Config::new(config_path, resource_dir, dict_path).map_err(|e| {
             PyException::new_err(format!("Error loading config: {}", e.to_string()))
         })?;
+
+        // sudachi.json does not have systemDict key or its value is ""
+        if config.system_dict.is_none() || config.system_dict.as_ref().unwrap().is_dir() {
+            config.system_dict = Some(find_dict_path(py, DictionaryType::Core)?);
+        }
 
         let dictionary = Arc::new(JapaneseDictionary::from_cfg(&config).map_err(|e| {
             PyException::new_err(format!(
