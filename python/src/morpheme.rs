@@ -32,7 +32,7 @@ struct PyMorphemeList {
     list: MorphemeList<Arc<JapaneseDictionary>>,
 
     /// Stores character based index boundaries of morphemes to bridge
-    /// Rust's byte-based string index and Python's char-based.
+    /// Rust's byte-based string index and Python's codepoint-based one.
     ///
     /// `morphemes[i].surface` equals to `morphemes.surface[boundaries[i]:boundaries[i+1]]`.
     /// `boundaries.len()` equals to `morphemes.len() + 1` if MorphemeList is not empty.
