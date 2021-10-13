@@ -1,3 +1,8 @@
+from .sudachi import dictionary
+from .sudachi import tokenizer
+from .sudachi import morpheme
+from .sudachi import morphemelist
+
 from .sudachi import (
     Dictionary,
     Tokenizer,

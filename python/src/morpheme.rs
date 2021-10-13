@@ -47,7 +47,7 @@ impl Deref for PyMorphemeList {
 }
 
 /// A list of morphemes
-#[pyclass(module = "sudachi.morpheme", name = "MorphemeList")]
+#[pyclass(module = "sudachi.morphemelist", name = "MorphemeList")]
 #[repr(transparent)]
 pub struct PyMorphemeListWrapper {
     inner: Arc<PyMorphemeList>,
@@ -156,7 +156,7 @@ impl pyo3::iter::PyIterProtocol for PyMorphemeListWrapper {
     }
 }
 
-#[pyclass(module = "sudachi.morpheme", name = "MorphemeIter")]
+#[pyclass(module = "sudachi.morphemelist", name = "MorphemeIter")]
 pub struct PyMorphemeIter {
     list: Arc<PyMorphemeList>,
     index: usize,

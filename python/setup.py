@@ -19,7 +19,8 @@ setup(
     name="sudachi",
     version="0.1",
     rust_extensions=[RustExtension("sudachi.sudachi", binding=Binding.PyO3)],
-    packages=["sudachi"],
+    packages=["sudachi", "sudachi.dictionary", "sudachi.tokenizer",
+              "sudachi.morpheme", "sudachi.morphemelist"],
     package_dir={"": "py_src"},
     # rust extensions are not zip safe, just like C-extensions.
     zip_safe=False,
