@@ -65,9 +65,7 @@ impl<'a> Lattice<'a> {
                 continue;
             }
 
-            let connect_cost = self
-                .grammar
-                .get_connect_cost(l_node.right_id, r_node.left_id)?;
+            let connect_cost = self.grammar.connect_cost(l_node.right_id, r_node.left_id);
             let cost = l_node.total_cost + connect_cost as i32;
             if cost < r_node.total_cost {
                 r_node.total_cost = cost;
@@ -165,7 +163,7 @@ impl<'a> Lattice<'a> {
                 );
 
                 for l_node in &self.end_lists[r_node.begin] {
-                    let connect_cost = grammar.get_connect_cost(l_node.right_id, r_node.left_id)?;
+                    let connect_cost = grammar.connect_cost(l_node.right_id, r_node.left_id);
                     print!(" {}", connect_cost);
                 }
                 println!();

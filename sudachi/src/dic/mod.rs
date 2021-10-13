@@ -27,6 +27,7 @@ use lexicon_set::LexiconSet;
 
 pub mod category_type;
 pub mod character_category;
+mod connect;
 pub mod dictionary;
 pub mod grammar;
 pub mod header;

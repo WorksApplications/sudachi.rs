@@ -14,47 +14,30 @@
  * limitations under the License.
  */
 
+use crate::dic::character_category::CharacterCategory;
+use crate::dic::connect::ConnectionMatrix;
+use crate::dic::utf16_string_parser;
+use crate::error::SudachiNomResult;
+use crate::prelude::*;
 use nom::{
     bytes::complete::take,
     number::complete::{le_i16, le_u16},
 };
-use std::collections::HashMap;
-use std::hash::{Hash, Hasher};
-
-use crate::dic::character_category::CharacterCategory;
-use crate::dic::utf16_string_parser;
-use crate::error::SudachiNomResult;
-use crate::hash::RoMu;
-use crate::prelude::*;
 
 /// Dictionary grammar
 ///
 /// Contains part_of_speech list and connection cost map.
 /// It also holds character category.
 pub struct Grammar<'a> {
-    bytes: &'a [u8],
+    _bytes: &'a [u8],
     pub pos_list: Vec<Vec<String>>,
-    connect_table_offset: usize,
-    left_id_size: i16,
-    _right_id_size: i16,
     pub storage_size: usize,
 
     /// The mapping to overload cost table
-    connect_cost_map: HashMap<ConnPair, i16, RoMu>,
+    connection: ConnectionMatrix<'a>,
 
     /// The mapping from character to character_category_type
     pub character_category: CharacterCategory,
-}
-
-#[derive(Eq, PartialEq)]
-struct ConnPair(i16, i16);
-
-impl Hash for ConnPair {
-    #[inline]
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        let val = (self.1 as u32) << 16 | (self.0 as u32);
-        state.write_u32(val)
-    }
 }
 
 impl<'a> Grammar<'a> {
@@ -76,13 +59,17 @@ impl<'a> Grammar<'a> {
         let storage_size =
             (connect_table_offset - offset) + 2 * left_id_size as usize * right_id_size as usize;
 
-        Ok(Grammar {
-            bytes: buf,
-            pos_list,
+        let conn = ConnectionMatrix::from_offset_size(
+            buf,
             connect_table_offset,
-            connect_cost_map: HashMap::with_hasher(RoMu::new()),
-            left_id_size,
-            _right_id_size: right_id_size,
+            left_id_size as usize,
+            right_id_size as usize,
+        )?;
+
+        Ok(Grammar {
+            _bytes: buf,
+            pos_list,
+            connection: conn,
             storage_size,
             character_category: CharacterCategory::default(),
         })
@@ -92,20 +79,9 @@ impl<'a> Grammar<'a> {
     ///
     /// left_id: right_id of left node
     /// right_id: left_if of right node
-    pub fn get_connect_cost(&self, left_id: i16, right_id: i16) -> SudachiResult<i16> {
-        if let Some(v) = self.connect_cost_map.get(&ConnPair(left_id, right_id)) {
-            return Ok(*v);
-        }
-
-        let (_rest, connect_cost) = connect_cost_parser(
-            self.bytes,
-            self.connect_table_offset,
-            left_id as usize,
-            self.left_id_size as usize,
-            right_id as usize,
-        )?;
-
-        Ok(connect_cost)
+    #[inline(always)]
+    pub fn connect_cost(&self, left_id: i16, right_id: i16) -> i16 {
+        self.connection.cost(left_id as u16, right_id as u16)
     }
 
     /// Sets character category
@@ -121,9 +97,9 @@ impl<'a> Grammar<'a> {
     /// left_id: right_id of left node
     /// right_id: left_if of right node
     pub fn set_connect_cost(&mut self, left_id: i16, right_id: i16, cost: i16) {
-        // for edit connection cose plugin
-        self.connect_cost_map
-            .insert(ConnPair(left_id, right_id), cost);
+        // for edit connection cost plugin
+        self.connection
+            .update(left_id as u16, right_id as u16, cost);
     }
 
     /// Returns a pos_id of given pos in the grammar
@@ -162,19 +138,6 @@ fn grammar_parser(
     )(input)
 }
 
-fn connect_cost_parser(
-    input: &[u8],
-    offset: usize,
-    left_id: usize,
-    left_id_size: usize,
-    right_id: usize,
-) -> SudachiNomResult<&[u8], i16> {
-    nom::sequence::preceded(
-        take(offset + (left_id * 2) + (2 * left_id_size * right_id)),
-        le_i16,
-    )(input)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -205,18 +168,9 @@ mod tests {
     fn get_connect_cost() {
         let bytes = setup_bytes();
         let grammar = Grammar::new(&bytes, 0).expect("failed to create grammar");
-        assert_eq!(
-            0,
-            grammar.get_connect_cost(0, 0).expect("failed to get cost")
-        );
-        assert_eq!(
-            -100,
-            grammar.get_connect_cost(2, 1).expect("failed to get cost")
-        );
-        assert_eq!(
-            200,
-            grammar.get_connect_cost(1, 2).expect("failed to get cost")
-        );
+        assert_eq!(0, grammar.connect_cost(0, 0));
+        assert_eq!(-100, grammar.connect_cost(2, 1));
+        assert_eq!(200, grammar.connect_cost(1, 2));
     }
 
     #[test]
@@ -224,10 +178,7 @@ mod tests {
         let bytes = setup_bytes();
         let mut grammar = Grammar::new(&bytes, 0).expect("failed to create grammar");
         grammar.set_connect_cost(0, 0, 300);
-        assert_eq!(
-            300,
-            grammar.get_connect_cost(0, 0).expect("failed to get cost")
-        );
+        assert_eq!(300, grammar.connect_cost(0, 0));
     }
 
     #[test]

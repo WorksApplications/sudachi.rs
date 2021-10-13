@@ -89,17 +89,16 @@ mod tests {
         plugin.edit(&mut grammar);
         assert_eq!(
             Grammar::INHIBITED_CONNECTION,
-            grammar
-                .get_connect_cost(left, right)
-                .expect("Failed to get cost during test")
+            grammar.connect_cost(left, right)
         );
     }
 
     fn build_mock_bytes() -> Vec<u8> {
         let mut buf = Vec::new();
-        // set 0 for all of pos size, left and right id size
+        // 0 - pos size, 1x1 connection with 0 element
         buf.extend(&(0 as i16).to_le_bytes());
-        buf.extend(&(0 as i16).to_le_bytes());
+        buf.extend(&(1 as i16).to_le_bytes());
+        buf.extend(&(1 as i16).to_le_bytes());
         buf.extend(&(0 as i16).to_le_bytes());
         buf
     }
