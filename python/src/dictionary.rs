@@ -15,9 +15,10 @@
  */
 
 use std::path::PathBuf;
+use std::str::FromStr;
 use std::sync::Arc;
 
-use pyo3::exceptions::PyException;
+use pyo3::exceptions::{self, PyException};
 use pyo3::prelude::*;
 
 use sudachi::analysis::stateless_tokenizer::StatelessTokenizer;
@@ -25,6 +26,36 @@ use sudachi::config::Config;
 use sudachi::dic::dictionary::JapaneseDictionary;
 
 use crate::tokenizer::{PySplitMode, PyTokenizer};
+
+pub enum DictionaryType {
+    Small,
+    Core,
+    Full,
+}
+
+impl DictionaryType {
+    fn to_str(&self) -> &str {
+        match self {
+            Self::Small => "small",
+            Self::Core => "core",
+            Self::Full => "full",
+        }
+    }
+}
+
+impl FromStr for DictionaryType {
+    type Err = PyErr;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "small" => Ok(Self::Small),
+            "core" => Ok(Self::Core),
+            "full" => Ok(Self::Full),
+            _ => Err(PyErr::new::<exceptions::PyValueError, _>(
+                "dict_type must be \"small\", \"core\", or \"full\"",
+            )),
+        }
+    }
+}
 
 #[pyclass(module = "sudachi.dictionary", name = "Dictionary")]
 #[pyo3(text_signature = "(config_path, resource_dir)")]
@@ -38,9 +69,22 @@ pub struct PyDictionary {
 impl PyDictionary {
     /// Creates a sudachi dictionary
     #[new]
-    #[args(config_path = "None", resource_dir = "None")]
-    fn new(config_path: Option<PathBuf>, resource_dir: Option<PathBuf>) -> PyResult<Self> {
-        let config = Config::new(config_path, resource_dir, None).map_err(|e| {
+    #[args(config_path = "None", resource_dir = "None", dict_type = "None")]
+    fn new(
+        py: Python,
+        config_path: Option<PathBuf>,
+        resource_dir: Option<PathBuf>,
+        dict_type: Option<&str>,
+    ) -> PyResult<Self> {
+        let dict_path = match dict_type {
+            None => None,
+            Some(dt) => {
+                let dict_type = DictionaryType::from_str(dt)?;
+                Some(find_dict_path(py, dict_type)?)
+            }
+        };
+
+        let config = Config::new(config_path, resource_dir, dict_path).map_err(|e| {
             PyException::new_err(format!("Error loading config: {}", e.to_string()))
         })?;
 
@@ -71,4 +115,34 @@ impl PyDictionary {
     fn close(&mut self) {
         self.dictionary = None;
     }
+}
+
+fn find_dict_path(py: Python, dict_type: DictionaryType) -> PyResult<PathBuf> {
+    let pkg_name = String::from("sudachidict_") + dict_type.to_str();
+    let module_spec = PyModule::import(py, "importlib.util")?
+        .getattr("find_spec")?
+        .call1((&pkg_name,))?;
+
+    if module_spec.is_none() {
+        return Err(PyErr::new::<exceptions::PyModuleNotFoundError, _>(format!(
+            "Package `{}` does not exist.\nYou may install it with a command `$ pip install {}`",
+            &pkg_name, &pkg_name
+        )));
+    }
+
+    get_absolute_dict_path(py, dict_type)
+}
+
+fn get_absolute_dict_path(py: Python, dict_type: DictionaryType) -> PyResult<PathBuf> {
+    let pkg_name = String::from("sudachidict_") + dict_type.to_str();
+    let pkg_path = PyModule::import(py, &pkg_name)?
+        .getattr("__file__")?
+        .cast_as::<pyo3::types::PyString>()?
+        .to_str()?;
+    let dict_path = PathBuf::from(pkg_path)
+        .parent()
+        .unwrap()
+        .join("resources/system.dic");
+
+    Ok(dict_path)
 }
