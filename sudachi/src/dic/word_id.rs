@@ -38,7 +38,9 @@ impl Display for WordId {
 const WORD_MASK: u32 = 0x0fffffff;
 
 impl WordId {
-    pub fn from_raw(raw: u32) -> WordId { WordId { raw } }
+    pub fn from_raw(raw: u32) -> WordId {
+        WordId { raw }
+    }
 
     pub fn new(dic: u8, word: u32) -> WordId {
         debug_assert_eq!(word & (!WORD_MASK), 0);
@@ -64,7 +66,7 @@ impl WordId {
     pub fn is_user(&self) -> bool {
         match self.dic() {
             0 | 0xf => false,
-            _ => true
+            _ => true,
         }
     }
 
