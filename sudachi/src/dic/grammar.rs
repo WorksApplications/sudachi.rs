@@ -19,11 +19,12 @@ use nom::{
     number::complete::{le_i16, le_u16},
 };
 use std::collections::HashMap;
-use std::i16;
+use std::hash::{Hash, Hasher};
 
 use crate::dic::character_category::CharacterCategory;
 use crate::dic::utf16_string_parser;
 use crate::error::SudachiNomResult;
+use crate::hash::RoMu;
 use crate::prelude::*;
 
 /// Dictionary grammar
@@ -39,10 +40,21 @@ pub struct Grammar<'a> {
     pub storage_size: usize,
 
     /// The mapping to overload cost table
-    connect_cost_map: HashMap<(i16, i16), i16>,
+    connect_cost_map: HashMap<ConnPair, i16, RoMu>,
 
     /// The mapping from character to character_category_type
     pub character_category: CharacterCategory,
+}
+
+#[derive(Eq, PartialEq)]
+struct ConnPair(i16, i16);
+
+impl Hash for ConnPair {
+    #[inline]
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        let val = (self.1 as u32) << 16 | (self.0 as u32);
+        state.write_u32(val)
+    }
 }
 
 impl<'a> Grammar<'a> {
@@ -63,13 +75,12 @@ impl<'a> Grammar<'a> {
         let connect_table_offset = buf.len() - rest.len();
         let storage_size =
             (connect_table_offset - offset) + 2 * left_id_size as usize * right_id_size as usize;
-        let connect_cost_map = HashMap::new();
 
         Ok(Grammar {
             bytes: buf,
             pos_list,
             connect_table_offset,
-            connect_cost_map,
+            connect_cost_map: HashMap::with_hasher(RoMu::new()),
             left_id_size,
             _right_id_size: right_id_size,
             storage_size,
@@ -82,7 +93,7 @@ impl<'a> Grammar<'a> {
     /// left_id: right_id of left node
     /// right_id: left_if of right node
     pub fn get_connect_cost(&self, left_id: i16, right_id: i16) -> SudachiResult<i16> {
-        if let Some(v) = self.connect_cost_map.get(&(left_id, right_id)) {
+        if let Some(v) = self.connect_cost_map.get(&ConnPair(left_id, right_id)) {
             return Ok(*v);
         }
 
@@ -111,7 +122,8 @@ impl<'a> Grammar<'a> {
     /// right_id: left_if of right node
     pub fn set_connect_cost(&mut self, left_id: i16, right_id: i16, cost: i16) {
         // for edit connection cose plugin
-        self.connect_cost_map.insert((left_id, right_id), cost);
+        self.connect_cost_map
+            .insert(ConnPair(left_id, right_id), cost);
     }
 
     /// Returns a pos_id of given pos in the grammar

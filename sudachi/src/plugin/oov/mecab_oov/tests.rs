@@ -423,7 +423,7 @@ fn read_oov() {
 
     let bytes = build_mock_bytes();
     let grammar = build_mock_grammar(&bytes);
-    let mut categories = HashMap::new();
+    let mut categories = HashMap::with_hasher(RoMu::new());
     categories.insert(
         CategoryType::DEFAULT,
         CategoryInfo {
@@ -448,7 +448,7 @@ fn read_oov() {
 fn read_oov_with_too_few_columns() {
     let bytes = build_mock_bytes();
     let grammar = build_mock_grammar(&bytes);
-    let mut categories = HashMap::new();
+    let mut categories = HashMap::with_hasher(RoMu::new());
     categories.insert(
         CategoryType::DEFAULT,
         CategoryInfo {
@@ -468,7 +468,7 @@ fn read_oov_with_too_few_columns() {
 fn read_oov_with_undefined_type() {
     let bytes = build_mock_bytes();
     let grammar = build_mock_grammar(&bytes);
-    let mut categories = HashMap::new();
+    let mut categories = HashMap::with_hasher(RoMu::new());
     categories.insert(
         CategoryType::DEFAULT,
         CategoryInfo {
@@ -488,7 +488,7 @@ fn read_oov_with_undefined_type() {
 fn read_oov_with_category_not_in_character_property() {
     let bytes = build_mock_bytes();
     let grammar = build_mock_grammar(&bytes);
-    let mut categories = HashMap::new();
+    let mut categories = HashMap::with_hasher(RoMu::new());
     categories.insert(
         CategoryType::DEFAULT,
         CategoryInfo {

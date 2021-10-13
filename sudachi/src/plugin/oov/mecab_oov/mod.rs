@@ -27,6 +27,7 @@ use crate::dic::category_type::CategoryType;
 use crate::dic::character_category::Error as CharacterCategoryError;
 use crate::dic::grammar::Grammar;
 use crate::dic::lexicon::word_infos::WordInfo;
+use crate::hash::RoMu;
 use crate::input_text::InputBuffer;
 use crate::input_text::InputTextIndex;
 use crate::plugin::oov::OovProviderPlugin;
@@ -41,8 +42,8 @@ const DEFAULT_UNK_DEF_FILE: &str = "unk.def";
 /// provides MeCab oov nodes
 #[derive(Default)]
 pub struct MeCabOovPlugin {
-    categories: HashMap<CategoryType, CategoryInfo>,
-    oov_list: HashMap<CategoryType, Vec<OOV>>,
+    categories: HashMap<CategoryType, CategoryInfo, RoMu>,
+    oov_list: HashMap<CategoryType, Vec<OOV>, RoMu>,
 }
 
 /// Struct corresponds with raw config json file.
@@ -59,8 +60,8 @@ impl MeCabOovPlugin {
     /// See resources/char.def for the syntax
     fn read_character_property<T: BufRead>(
         reader: T,
-    ) -> SudachiResult<HashMap<CategoryType, CategoryInfo>> {
-        let mut categories = HashMap::new();
+    ) -> SudachiResult<HashMap<CategoryType, CategoryInfo, RoMu>> {
+        let mut categories = HashMap::with_hasher(RoMu::new());
         for (i, line) in reader.lines().enumerate() {
             let line = line?;
             let line = line.trim();
@@ -110,10 +111,10 @@ impl MeCabOovPlugin {
     /// Each line contains: CategoryType, left_id, right_id, cost, and pos
     fn read_oov<T: BufRead>(
         reader: T,
-        categories: &HashMap<CategoryType, CategoryInfo>,
+        categories: &HashMap<CategoryType, CategoryInfo, RoMu>,
         grammar: &Grammar,
-    ) -> SudachiResult<HashMap<CategoryType, Vec<OOV>>> {
-        let mut oov_list: HashMap<CategoryType, Vec<OOV>> = HashMap::new();
+    ) -> SudachiResult<HashMap<CategoryType, Vec<OOV>, RoMu>> {
+        let mut oov_list: HashMap<CategoryType, Vec<OOV>, RoMu> = HashMap::with_hasher(RoMu::new());
         for (i, line) in reader.lines().enumerate() {
             let line = line?;
             let line = line.trim();
