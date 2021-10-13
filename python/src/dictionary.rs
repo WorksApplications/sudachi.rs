@@ -79,8 +79,9 @@ impl PyDictionary {
         let dict_path = match dict_type {
             None => None,
             Some(dt) => {
-                let dict_type = DictionaryType::from_str(dt)?;
-                Some(find_dict_path(py, dict_type)?)
+                // let dict_type = DictionaryType::from_str(dt)?;
+                // Some(find_dict_path(py, dict_type)?)
+                Some(find_dict_path_py(py, dt)?)
             }
         };
 
@@ -90,7 +91,8 @@ impl PyDictionary {
 
         // sudachi.json does not have systemDict key or its value is ""
         if config.system_dict.is_none() || config.system_dict.as_ref().unwrap().is_dir() {
-            config.system_dict = Some(find_dict_path(py, DictionaryType::Core)?);
+            // config.system_dict = Some(find_dict_path(py, DictionaryType::Core)?);
+            config.system_dict = Some(find_dict_path_py(py, "core")?);
         }
 
         let dictionary = Arc::new(JapaneseDictionary::from_cfg(&config).map_err(|e| {
@@ -150,4 +152,22 @@ fn get_absolute_dict_path(py: Python, dict_type: DictionaryType) -> PyResult<Pat
         .join("resources/system.dic");
 
     Ok(dict_path)
+}
+
+fn find_dict_path_py(py: Python, dict_type: &str) -> PyResult<PathBuf> {
+    let source_file = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("py_src")
+        .join("sudachi")
+        .join("dictionary_path.py");
+    let code = std::fs::read_to_string(source_file)?;
+    let module = PyModule::from_code(py, &code, "file", "module")?;
+    let path = PathBuf::from(
+        module
+            .getattr("find_dict_path")?
+            .call1((dict_type,))?
+            .cast_as::<pyo3::types::PyString>()?
+            .to_str()?,
+    );
+
+    Ok(path)
 }
