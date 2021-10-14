@@ -14,6 +14,7 @@
  *  limitations under the License.
  */
 
+use std::ops::Deref;
 use std::sync::Arc;
 
 use pyo3::exceptions::{self, PyException};
@@ -27,7 +28,23 @@ use crate::dictionary::PyDictionary;
 use crate::tokenizer::PySplitMode;
 use crate::word_info::PyWordInfo;
 
-type PyMorphemeList = MorphemeList<Arc<JapaneseDictionary>>;
+struct PyMorphemeList {
+    list: MorphemeList<Arc<JapaneseDictionary>>,
+
+    /// Stores character based index boundaries of morphemes to bridge
+    /// Rust's byte-based string index and Python's codepoint-based one.
+    ///
+    /// `morphemes[i].surface` equals to `morphemes.surface[boundaries[i]:boundaries[i+1]]`.
+    /// `boundaries.len()` equals to `morphemes.len() + 1` if MorphemeList is not empty.
+    boundaries: Vec<usize>,
+}
+
+impl Deref for PyMorphemeList {
+    type Target = MorphemeList<Arc<JapaneseDictionary>>;
+    fn deref(&self) -> &Self::Target {
+        &self.list
+    }
+}
 
 /// A list of morphemes
 #[pyclass(module = "sudachi.morpheme", name = "MorphemeList")]
@@ -43,9 +60,10 @@ impl PyMorphemeListWrapper {
     #[pyo3(text_signature = "(dict)")]
     fn empty(_cls: &PyType, dict: &PyDictionary) -> Self {
         Self {
-            inner: Arc::new(PyMorphemeList::empty(
-                dict.dictionary.as_ref().unwrap().clone(),
-            )),
+            inner: Arc::new(PyMorphemeList {
+                list: MorphemeList::empty(dict.dictionary.as_ref().unwrap().clone()),
+                boundaries: Vec::new(),
+            }),
         }
     }
 
@@ -63,10 +81,35 @@ impl PyMorphemeListWrapper {
 
 impl From<MorphemeList<Arc<JapaneseDictionary>>> for PyMorphemeListWrapper {
     fn from(morpheme_list: MorphemeList<Arc<JapaneseDictionary>>) -> Self {
+        let boundaries = build_python_string_boundaries(&morpheme_list);
+
         Self {
-            inner: Arc::new(morpheme_list),
+            inner: Arc::new(PyMorphemeList {
+                list: morpheme_list,
+                boundaries,
+            }),
         }
     }
+}
+
+fn build_python_string_boundaries(
+    morpheme_list: &MorphemeList<Arc<JapaneseDictionary>>,
+) -> Vec<usize> {
+    if morpheme_list.len() == 0 {
+        return Vec::with_capacity(0);
+    }
+
+    let prefix = &morpheme_list.get_full_input_text()[..morpheme_list.get_begin(0)];
+    let mut offset = prefix.chars().count();
+
+    let mut boundaries = Vec::with_capacity(morpheme_list.len() + 1);
+    boundaries.push(offset);
+    for m in morpheme_list.iter() {
+        offset += m.surface().chars().count();
+        boundaries.push(offset);
+    }
+
+    boundaries
 }
 
 #[pyproto]
@@ -158,13 +201,13 @@ impl PyMorpheme {
     /// Returns the begin index of this in the input text
     #[pyo3(text_signature = "($self)")]
     fn begin(&self) -> usize {
-        self.list.get_begin(self.index)
+        self.list.boundaries[self.index]
     }
 
     /// Returns the end index of this in the input text
     #[pyo3(text_signature = "($self)")]
     fn end(&self) -> usize {
-        self.list.get_end(self.index)
+        self.list.boundaries[self.index + 1]
     }
 
     /// Returns the surface

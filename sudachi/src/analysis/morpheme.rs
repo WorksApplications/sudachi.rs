@@ -24,6 +24,8 @@ use crate::prelude::*;
 /// A list of morphemes
 pub struct MorphemeList<T> {
     dict: T,
+    /// Stores the full original input text.
+    /// This may not match the concatenated surface of the path.
     input_text: String,
     path: Vec<Node>,
 }
@@ -60,6 +62,10 @@ impl<T: DictionaryAccess> MorphemeList<T> {
         self.dict.grammar()
     }
 
+    pub fn get_full_input_text(&self) -> &str {
+        &self.input_text
+    }
+
     fn fill_word_info(&mut self) -> SudachiResult<()> {
         let lexicon = self.dict.lexicon();
         for node in self.path.iter_mut() {
@@ -72,6 +78,8 @@ impl<T: DictionaryAccess> MorphemeList<T> {
 
 impl<T: DictionaryAccess + Clone> MorphemeList<T> {
     /// Returns a new morpheme list splitting the morpheme with a given mode.
+    ///
+    /// Input text remains full and morphemes hold index on that.
     pub fn split(&self, mode: Mode, index: usize) -> SudachiResult<MorphemeList<T>> {
         let input_text = self.input_text.clone();
 
@@ -122,6 +130,7 @@ impl<T> MorphemeList<T> {
         }
     }
 
+    /// Returns a substring of the original text which corresponds to the morphemes in the path
     pub fn surface(&self) -> &str {
         if self.len() == 0 {
             return &self.input_text;

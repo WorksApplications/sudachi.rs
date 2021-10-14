@@ -27,6 +27,10 @@ class TestTokenizer(unittest.TestCase):
             resource_dir, 'sudachi.json'), resource_dir)
         self.tokenizer_obj = self.dict_.create()
 
+    def test_empty_list(self):
+        ms = self.tokenizer_obj.tokenize('', SplitMode.C)
+        self.assertEqual(0, ms.size())
+
     def test_morpheme_split(self):
         ms = self.tokenizer_obj.tokenize('東京都', SplitMode.C)
         self.assertEqual(1, ms.size())
@@ -36,6 +40,22 @@ class TestTokenizer(unittest.TestCase):
         self.assertEqual(2, ms_a.size())
         self.assertEqual(ms_a[0].surface(), '東京')
         self.assertEqual(ms_a[1].surface(), '都')
+
+    def test_morpheme_split_middle(self):
+        ms_c = self.tokenizer_obj.tokenize('京都東京都京都', SplitMode.C)
+        self.assertEqual(3, ms_c.size())
+        self.assertEqual(ms_c[1].surface(), '東京都')
+        self.assertEqual(ms_c[1].begin(), 2)
+        self.assertEqual(ms_c[1].end(), 5)
+
+        ms_a = ms_c[1].split(SplitMode.A)
+        self.assertEqual(2, ms_a.size())
+        self.assertEqual(ms_a[0].surface(), '東京')
+        self.assertEqual(ms_a[0].begin(), 2)
+        self.assertEqual(ms_a[0].end(), 4)
+        self.assertEqual(ms_a[1].surface(), '都')
+        self.assertEqual(ms_a[1].begin(), 4)
+        self.assertEqual(ms_a[1].end(), 5)
 
     def test_morpheme_index(self):
         m = self.tokenizer_obj.tokenize('東京都', SplitMode.C)[0]

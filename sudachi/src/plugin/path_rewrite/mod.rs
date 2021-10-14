@@ -89,6 +89,7 @@ pub trait PathRewritePlugin: Sync + Send {
             pos_id,
             normalized_form,
             reading_form,
+            dictionary_form_word_id: -1,
             dictionary_form,
             ..Default::default()
         });
@@ -128,6 +129,7 @@ pub trait PathRewritePlugin: Sync + Send {
         node.set_range(b, e);
         node.set_word_info(WordInfo {
             normalized_form: surface.clone(),
+            dictionary_form_word_id: -1,
             dictionary_form: surface.clone(),
             surface,
             head_word_length,
