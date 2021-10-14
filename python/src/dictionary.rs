@@ -90,7 +90,7 @@ impl PyDictionary {
 }
 
 fn find_dict_path(py: Python, dict_type: &str) -> PyResult<PathBuf> {
-    let pyfunc = PyModule::import(py, "sudachi.dictionary_path")?.getattr("_find_dict_path")?;
+    let pyfunc = PyModule::import(py, "sudachi")?.getattr("_find_dict_path")?;
     let path = pyfunc
         .call1((dict_type,))?
         .cast_as::<PyString>()?
