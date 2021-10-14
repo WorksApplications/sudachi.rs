@@ -15,47 +15,17 @@
  */
 
 use std::path::PathBuf;
-use std::str::FromStr;
 use std::sync::Arc;
 
-use pyo3::exceptions::{self, PyException};
+use pyo3::exceptions::PyException;
 use pyo3::prelude::*;
+use pyo3::types::PyString;
 
 use sudachi::analysis::stateless_tokenizer::StatelessTokenizer;
 use sudachi::config::Config;
 use sudachi::dic::dictionary::JapaneseDictionary;
 
 use crate::tokenizer::{PySplitMode, PyTokenizer};
-
-pub enum DictionaryType {
-    Small,
-    Core,
-    Full,
-}
-
-impl DictionaryType {
-    fn to_str(&self) -> &str {
-        match self {
-            Self::Small => "small",
-            Self::Core => "core",
-            Self::Full => "full",
-        }
-    }
-}
-
-impl FromStr for DictionaryType {
-    type Err = PyErr;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "small" => Ok(Self::Small),
-            "core" => Ok(Self::Core),
-            "full" => Ok(Self::Full),
-            _ => Err(PyErr::new::<exceptions::PyValueError, _>(
-                "dict_type must be \"small\", \"core\", or \"full\"",
-            )),
-        }
-    }
-}
 
 #[pyclass(module = "sudachi.dictionary", name = "Dictionary")]
 #[pyo3(text_signature = "(config_path, resource_dir)")]
@@ -78,11 +48,7 @@ impl PyDictionary {
     ) -> PyResult<Self> {
         let dict_path = match dict_type {
             None => None,
-            Some(dt) => {
-                // let dict_type = DictionaryType::from_str(dt)?;
-                // Some(find_dict_path(py, dict_type)?)
-                Some(find_dict_path_py(py, dt)?)
-            }
+            Some(dt) => Some(find_dict_path(py, dt)?),
         };
 
         let mut config = Config::new(config_path, resource_dir, dict_path).map_err(|e| {
@@ -91,8 +57,7 @@ impl PyDictionary {
 
         // sudachi.json does not have systemDict key or its value is ""
         if config.system_dict.is_none() || config.system_dict.as_ref().unwrap().is_dir() {
-            // config.system_dict = Some(find_dict_path(py, DictionaryType::Core)?);
-            config.system_dict = Some(find_dict_path_py(py, "core")?);
+            config.system_dict = Some(find_dict_path(py, "core")?);
         }
 
         let dictionary = Arc::new(JapaneseDictionary::from_cfg(&config).map_err(|e| {
@@ -124,51 +89,11 @@ impl PyDictionary {
     }
 }
 
-fn find_dict_path(py: Python, dict_type: DictionaryType) -> PyResult<PathBuf> {
-    let pkg_name = String::from("sudachidict_") + dict_type.to_str();
-    let module_spec = PyModule::import(py, "importlib.util")?
-        .getattr("find_spec")?
-        .call1((&pkg_name,))?;
-
-    if module_spec.is_none() {
-        return Err(PyErr::new::<exceptions::PyModuleNotFoundError, _>(format!(
-            "Package `{}` does not exist.\nYou may install it with a command `$ pip install {}`",
-            &pkg_name, &pkg_name
-        )));
-    }
-
-    get_absolute_dict_path(py, dict_type)
-}
-
-fn get_absolute_dict_path(py: Python, dict_type: DictionaryType) -> PyResult<PathBuf> {
-    let pkg_name = String::from("sudachidict_") + dict_type.to_str();
-    let pkg_path = PyModule::import(py, &pkg_name)?
-        .getattr("__file__")?
-        .cast_as::<pyo3::types::PyString>()?
+fn find_dict_path(py: Python, dict_type: &str) -> PyResult<PathBuf> {
+    let pyfunc = PyModule::import(py, "sudachi.dictionary_path")?.getattr("_find_dict_path")?;
+    let path = pyfunc
+        .call1((dict_type,))?
+        .cast_as::<PyString>()?
         .to_str()?;
-    let dict_path = PathBuf::from(pkg_path)
-        .parent()
-        .unwrap()
-        .join("resources")
-        .join("system.dic");
-
-    Ok(dict_path)
-}
-
-fn find_dict_path_py(py: Python, dict_type: &str) -> PyResult<PathBuf> {
-    let source_file = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("py_src")
-        .join("sudachi")
-        .join("dictionary_path.py");
-    let code = std::fs::read_to_string(source_file)?;
-    let module = PyModule::from_code(py, &code, "file", "module")?;
-    let path = PathBuf::from(
-        module
-            .getattr("find_dict_path")?
-            .call1((dict_type,))?
-            .cast_as::<pyo3::types::PyString>()?
-            .to_str()?,
-    );
-
-    Ok(path)
+    Ok(PathBuf::from(path))
 }
