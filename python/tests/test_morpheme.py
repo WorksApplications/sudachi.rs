@@ -15,8 +15,7 @@
 import os
 import unittest
 
-from sudachi.dictionary import Dictionary
-from sudachi.tokenizer import Tokenizer
+from sudachi import Dictionary, SplitMode
 
 
 class TestTokenizer(unittest.TestCase):
@@ -33,23 +32,23 @@ class TestTokenizer(unittest.TestCase):
         self.assertEqual(0, ms.size())
 
     def test_morpheme_split(self):
-        ms = self.tokenizer_obj.tokenize('東京都', Tokenizer.SplitMode.C)
+        ms = self.tokenizer_obj.tokenize('東京都', SplitMode.C)
         self.assertEqual(1, ms.size())
         self.assertEqual(ms[0].surface(), '東京都')
 
-        ms_a = ms[0].split(Tokenizer.SplitMode.A)
+        ms_a = ms[0].split(SplitMode.A)
         self.assertEqual(2, ms_a.size())
         self.assertEqual(ms_a[0].surface(), '東京')
         self.assertEqual(ms_a[1].surface(), '都')
 
     def test_morpheme_split_middle(self):
-        ms_c = self.tokenizer_obj.tokenize('京都東京都京都', Tokenizer.SplitMode.C)
+        ms_c = self.tokenizer_obj.tokenize('京都東京都京都', SplitMode.C)
         self.assertEqual(3, ms_c.size())
         self.assertEqual(ms_c[1].surface(), '東京都')
         self.assertEqual(ms_c[1].begin(), 2)
         self.assertEqual(ms_c[1].end(), 5)
 
-        ms_a = ms_c[1].split(Tokenizer.SplitMode.A)
+        ms_a = ms_c[1].split(SplitMode.A)
         self.assertEqual(2, ms_a.size())
         self.assertEqual(ms_a[0].surface(), '東京')
         self.assertEqual(ms_a[0].begin(), 2)
