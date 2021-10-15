@@ -1,0 +1,1 @@
+from ..sudachi import Dictionary

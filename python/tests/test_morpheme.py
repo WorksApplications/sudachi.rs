@@ -28,7 +28,7 @@ class TestTokenizer(unittest.TestCase):
         self.tokenizer_obj = self.dict_.create()
 
     def test_empty_list(self):
-        ms = self.tokenizer_obj.tokenize('', SplitMode.C)
+        ms = self.tokenizer_obj.tokenize('')
         self.assertEqual(0, ms.size())
 
     def test_morpheme_split(self):
@@ -58,61 +58,61 @@ class TestTokenizer(unittest.TestCase):
         self.assertEqual(ms_a[1].end(), 5)
 
     def test_morpheme_index(self):
-        m = self.tokenizer_obj.tokenize('東京都', SplitMode.C)[0]
+        m = self.tokenizer_obj.tokenize('東京都')[0]
         self.assertEqual(m.begin(), 0)
         self.assertEqual(m.end(), 3)
 
     def test_morpheme_pos(self):
-        m = self.tokenizer_obj.tokenize('京都', SplitMode.C)[0]
+        m = self.tokenizer_obj.tokenize('京都')[0]
         self.assertEqual(m.part_of_speech_id(), 3)
         self.assertEqual(m.part_of_speech(), [
                          '名詞', '固有名詞', '地名', '一般', '*', '*'])
 
     def test_morpheme_forms(self):
-        m = self.tokenizer_obj.tokenize('東京', SplitMode.C)[0]
+        m = self.tokenizer_obj.tokenize('東京')[0]
         self.assertEqual(m.surface(), '東京')
         self.assertEqual(m.dictionary_form(), '東京')
         self.assertEqual(m.normalized_form(), '東京')
         self.assertEqual(m.reading_form(), 'トウキョウ')
 
-        m = self.tokenizer_obj.tokenize('ぴらる', SplitMode.C)[0]
+        m = self.tokenizer_obj.tokenize('ぴらる')[0]
         self.assertEqual(m.surface(), 'ぴらる')
         self.assertEqual(m.dictionary_form(), 'ぴらる')
         self.assertEqual(m.normalized_form(), 'ぴらる')
         self.assertEqual(m.reading_form(), 'ピラル')
 
     def test_morpheme_dictionary_id(self):
-        m = self.tokenizer_obj.tokenize('京都', SplitMode.C)[0]
+        m = self.tokenizer_obj.tokenize('京都')[0]
         self.assertEqual(m.dictionary_id(), 0)
 
-        m = self.tokenizer_obj.tokenize('ぴらる', SplitMode.C)[0]
+        m = self.tokenizer_obj.tokenize('ぴらる')[0]
         self.assertEqual(m.dictionary_id(), 1)
 
-        m = self.tokenizer_obj.tokenize('京', SplitMode.C)[0]
+        m = self.tokenizer_obj.tokenize('京')[0]
         self.assertTrue(m.dictionary_id() < 0)
 
     def test_morpheme_word_id(self):
-        m = self.tokenizer_obj.tokenize('京都', SplitMode.C)[0]
+        m = self.tokenizer_obj.tokenize('京都')[0]
         self.assertEqual(m.word_id(), 3)
 
-        m = self.tokenizer_obj.tokenize('ぴらる', SplitMode.C)[0]
+        m = self.tokenizer_obj.tokenize('ぴらる')[0]
         self.assertEqual(m.word_id(), 2**28 + 0)
 
     def test_morpheme_oov(self):
-        m = self.tokenizer_obj.tokenize('京都', SplitMode.C)[0]
+        m = self.tokenizer_obj.tokenize('京都')[0]
         self.assertEqual(m.is_oov(), False)
 
-        m = self.tokenizer_obj.tokenize('京', SplitMode.C)[0]
+        m = self.tokenizer_obj.tokenize('京')[0]
         self.assertEqual(m.is_oov(), True)
 
     def test_morpheme_synonym_group_ids(self):
-        m = self.tokenizer_obj.tokenize('京都', SplitMode.C)[0]
+        m = self.tokenizer_obj.tokenize('京都')[0]
         self.assertEqual(m.synonym_group_ids(), [1, 5])
 
-        m = self.tokenizer_obj.tokenize('ぴらる', SplitMode.C)[0]
+        m = self.tokenizer_obj.tokenize('ぴらる')[0]
         self.assertEqual(m.synonym_group_ids(), [])
 
-        m = self.tokenizer_obj.tokenize('東京府', SplitMode.C)[0]
+        m = self.tokenizer_obj.tokenize('東京府')[0]
         self.assertEqual(m.synonym_group_ids(), [1, 3])
 
 

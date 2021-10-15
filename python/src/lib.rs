@@ -16,10 +16,10 @@
 
 use pyo3::prelude::*;
 
-pub mod dictionary;
-pub mod morpheme;
-pub mod tokenizer;
-pub mod word_info;
+mod dictionary;
+mod morpheme;
+mod tokenizer;
+mod word_info;
 
 /// module root
 #[pymodule]
