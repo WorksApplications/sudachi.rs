@@ -1,3 +1,1 @@
-from .. import tokenizer
-
-Tokenizer = tokenizer.Tokenizer
+from ..sudachi import Tokenizer

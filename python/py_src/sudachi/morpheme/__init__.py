@@ -1,3 +1,1 @@
-from .. import morpheme
-
-Morpheme = morpheme.Morpheme
+from ..sudachi import Morpheme

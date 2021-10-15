@@ -1,3 +1,1 @@
-from .. import dictionary
-
-Dictionary = dictionary.Dictionary
+from ..sudachi import Dictionary

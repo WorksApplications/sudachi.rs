@@ -15,46 +15,15 @@
  */
 
 use pyo3::prelude::*;
-use pyo3::wrap_pymodule;
 
 mod dictionary;
 mod morpheme;
 mod tokenizer;
 mod word_info;
 
-#[pymodule]
-fn dictionary(_py: Python, m: &PyModule) -> PyResult<()> {
-    m.add_class::<dictionary::PyDictionary>()?;
-    Ok(())
-}
-
-#[pymodule]
-fn tokenizer(_py: Python, m: &PyModule) -> PyResult<()> {
-    m.add_class::<tokenizer::PySplitMode>()?;
-    m.add_class::<tokenizer::PyTokenizer>()?;
-    Ok(())
-}
-
-#[pymodule]
-fn morpheme(_py: Python, m: &PyModule) -> PyResult<()> {
-    m.add_class::<morpheme::PyMorpheme>()?;
-    Ok(())
-}
-
-#[pymodule]
-fn morphemelist(_py: Python, m: &PyModule) -> PyResult<()> {
-    m.add_class::<morpheme::PyMorphemeListWrapper>()?;
-    Ok(())
-}
-
 /// module root
 #[pymodule]
 fn sudachi(_py: Python, m: &PyModule) -> PyResult<()> {
-    m.add_wrapped(wrap_pymodule!(dictionary))?;
-    m.add_wrapped(wrap_pymodule!(tokenizer))?;
-    m.add_wrapped(wrap_pymodule!(morpheme))?;
-    m.add_wrapped(wrap_pymodule!(morphemelist))?;
-
     m.add_class::<dictionary::PyDictionary>()?;
     m.add_class::<tokenizer::PySplitMode>()?;
     m.add_class::<tokenizer::PyTokenizer>()?;

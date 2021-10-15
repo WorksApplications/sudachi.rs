@@ -1,3 +1,1 @@
-from .. import morphemelist
-
-MorphemeList = morphemelist.MorphemeList
+from ..sudachi import MorphemeList
