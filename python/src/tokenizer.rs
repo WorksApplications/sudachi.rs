@@ -28,7 +28,9 @@ use crate::morpheme::PyMorphemeListWrapper;
 /// Unit to split text
 ///
 /// A == short mode
+///
 /// B == middle mode
+///
 /// C == long mode
 //
 // This implementation is a workaround. Waiting for the pyo3 enum feature.
@@ -62,6 +64,7 @@ impl From<PySplitMode> for Mode {
     }
 }
 
+/// Tokenizer of morphelogical analysis
 #[pyclass(module = "sudachi.tokenizer", name = "Tokenizer")]
 pub struct PyTokenizer {
     tokenizer: StatelessTokenizer<Arc<JapaneseDictionary>>,
@@ -84,8 +87,9 @@ impl PyTokenizer {
 
     /// Break text into morphemes
     ///
-    /// This ignores the logger provided
-    #[pyo3(text_signature = "($self, text, /, mode, logger)")]
+    /// In default tokenize text with SplitMode.C.
+    /// The logger provided is ignored.
+    #[pyo3(text_signature = "($self, text, /, mode=None, logger=None) -> sudachi.MorphemeList")]
     #[args(text, mode = "None", logger = "None")]
     #[allow(unused_variables)]
     fn tokenize(
