@@ -53,8 +53,7 @@ fn morpheme_attributes() {
 
     assert_eq!(false, ms[0].is_oov());
 
-    let word_id = ms[0].word_id().expect("failed to get word_id");
-    assert_eq!(3, word_id);
+    assert_eq!(3, ms[0].word_id().word());
     assert_eq!(0, ms[0].dictionary_id());
     assert_eq!([1, 5], ms[0].synonym_group_ids());
 }

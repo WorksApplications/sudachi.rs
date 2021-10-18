@@ -19,10 +19,10 @@ pub mod join_numeric;
 
 use serde_json::Value;
 
-use crate::analysis::{lattice::Lattice, node::Node};
+use crate::analysis::lattice::Lattice;
+use crate::analysis::node::ResultNode;
 use crate::config::Config;
 use crate::dic::grammar::Grammar;
-use crate::dic::lexicon::word_infos::WordInfo;
 use crate::input_text::InputBuffer;
 use crate::plugin::path_rewrite::join_katakana_oov::JoinKatakanaOovPlugin;
 use crate::plugin::path_rewrite::join_numeric::JoinNumericPlugin;
@@ -39,108 +39,9 @@ pub trait PathRewritePlugin: Sync + Send {
     fn rewrite(
         &self,
         text: &InputBuffer,
-        path: Vec<Node>,
+        path: Vec<ResultNode>,
         lattice: &Lattice,
-    ) -> SudachiResult<Vec<Node>>;
-
-    /// Concatenate the nodes in the range and replace normalized_form if given.
-    fn concatenate(
-        &self,
-        mut path: Vec<Node>,
-        begin: usize,
-        end: usize,
-        normalized_form: Option<String>,
-    ) -> SudachiResult<Vec<Node>> {
-        if begin >= end {
-            return Err(SudachiError::InvalidRange(begin, end));
-        }
-
-        let b = path[begin].begin;
-        let e = path[end - 1].end;
-        let word_infos: Vec<_> = path[begin..end]
-            .iter()
-            .map(|node| node.word_info.as_ref())
-            .collect::<Option<_>>()
-            .ok_or(SudachiError::MissingWordInfo)?;
-        let pos_id = word_infos[0].pos_id;
-        let surface = word_infos
-            .iter()
-            .fold(String::new(), |acc, wi| acc + &wi.surface);
-        let head_word_length = word_infos
-            .iter()
-            .fold(0, |acc, wi| acc + wi.head_word_length);
-        let normalized_form = normalized_form.unwrap_or_else(|| {
-            word_infos
-                .iter()
-                .fold(String::new(), |acc, wi| acc + &wi.normalized_form)
-        });
-        let reading_form = word_infos
-            .iter()
-            .fold(String::new(), |acc, wi| acc + &wi.reading_form);
-        let dictionary_form = word_infos
-            .iter()
-            .fold(String::new(), |acc, wi| acc + &wi.dictionary_form);
-
-        let mut node = Node::default();
-        node.set_range(b, e);
-        node.set_word_info(WordInfo {
-            surface,
-            head_word_length,
-            pos_id,
-            normalized_form,
-            reading_form,
-            dictionary_form_word_id: -1,
-            dictionary_form,
-            ..Default::default()
-        });
-
-        path[begin] = node;
-        path.drain(begin + 1..end);
-        Ok(path)
-    }
-
-    /// Concatenate the nodes in the range and set pos_id.
-    fn concatenate_oov(
-        &self,
-        mut path: Vec<Node>,
-        begin: usize,
-        end: usize,
-        pos_id: u16,
-    ) -> SudachiResult<Vec<Node>> {
-        if begin >= end {
-            return Err(SudachiError::InvalidRange(begin, end));
-        }
-
-        let b = path[begin].begin;
-        let e = path[end - 1].end;
-        let word_infos: Vec<_> = path[begin..end]
-            .iter()
-            .map(|node| node.word_info.as_ref())
-            .collect::<Option<_>>()
-            .ok_or(SudachiError::MissingWordInfo)?;
-        let surface = word_infos
-            .iter()
-            .fold(String::new(), |acc, wi| acc + &wi.surface);
-        let head_word_length = word_infos
-            .iter()
-            .fold(0, |acc, wi| acc + wi.head_word_length);
-
-        let mut node = Node::default();
-        node.set_range(b, e);
-        node.set_word_info(WordInfo {
-            normalized_form: surface.clone(),
-            dictionary_form_word_id: -1,
-            dictionary_form: surface.clone(),
-            surface,
-            head_word_length,
-            pos_id,
-            ..Default::default()
-        });
-
-        path[begin] = node;
-        path.drain(begin + 1..end);
-        Ok(path)
-    }
+    ) -> SudachiResult<Vec<ResultNode>>;
 }
 
 impl PluginCategory for dyn PathRewritePlugin {

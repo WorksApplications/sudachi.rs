@@ -17,20 +17,19 @@
 use serde::Deserialize;
 use serde_json::Value;
 
-use crate::analysis::node::Node;
+use crate::analysis::Node;
 use crate::config::Config;
 use crate::dic::grammar::Grammar;
-use crate::dic::lexicon::word_infos::WordInfo;
+use crate::dic::word_id::WordId;
 use crate::input_text::InputBuffer;
-use crate::input_text::InputTextIndex;
 use crate::plugin::oov::OovProviderPlugin;
 use crate::prelude::*;
 
 /// Provides a OOV node with single character if no words found in the dictionary
 #[derive(Default)]
 pub struct SimpleOovPlugin {
-    left_id: i16,
-    right_id: i16,
+    left_id: u16,
+    right_id: u16,
     cost: i16,
     oov_pos_id: u16,
 }
@@ -58,13 +57,11 @@ impl OovProviderPlugin for SimpleOovPlugin {
         let oov_pos_id = grammar.get_part_of_speech_id(&oov_pos_string).ok_or(
             SudachiError::InvalidPartOfSpeech(format!("{:?}", oov_pos_string)),
         )?;
-        let left_id = settings.leftId;
-        let right_id = settings.rightId;
         let cost = settings.cost;
 
         self.oov_pos_id = oov_pos_id;
-        self.left_id = left_id;
-        self.right_id = right_id;
+        self.left_id = settings.leftId as u16;
+        self.right_id = settings.rightId as u16;
         self.cost = cost;
 
         Ok(())
@@ -82,21 +79,14 @@ impl OovProviderPlugin for SimpleOovPlugin {
         }
 
         let length = input_text.get_word_candidate_length(offset);
-        let surface = input_text.curr_slice(offset..offset + length);
 
-        result.push(Node::new_oov(
+        result.push(Node::new(
+            offset as u16,
+            (offset + length) as u16,
             self.left_id,
             self.right_id,
             self.cost,
-            WordInfo {
-                normalized_form: surface.to_owned(),
-                dictionary_form: surface.to_owned(),
-                surface: surface.to_owned(),
-                head_word_length: length as u16,
-                pos_id: self.oov_pos_id,
-                dictionary_form_word_id: -1,
-                ..Default::default()
-            },
+            WordId::oov(self.oov_pos_id as u32),
         ));
         Ok(())
     }

@@ -1,26 +1,27 @@
 /*
- * Copyright (c) 2021 Works Applications Co., Ltd.
+ *  Copyright (c) 2021 Works Applications Co., Ltd.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ *   Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
  */
 
 use std::fmt;
+use std::iter::FusedIterator;
+use std::ops::Range;
 
-use crate::dic::grammar::Grammar;
+use crate::analysis::inner::Node;
 use crate::dic::lexicon::word_infos::WordInfo;
 use crate::dic::lexicon_set::LexiconSet;
 use crate::dic::word_id::WordId;
-use crate::input_text::InputTextIndex;
 use crate::prelude::*;
 
 pub trait RightId {
@@ -32,7 +33,7 @@ pub trait PathCost {
 
     #[inline]
     fn is_connected_to_bos(&self) -> bool {
-        self.total_cost() == i32::MAX
+        self.total_cost() != i32::MAX
     }
 }
 
@@ -49,172 +50,333 @@ pub trait LatticeNode: RightId {
     }
 
     #[inline]
-    fn is_system_node(&self) -> bool {
-        self.word_id().is_system()
+    /// If a node is a special system node like BOS or EOS.
+    /// Java name isSystem (which is similar to a regular node coming from the system dictionary)
+    fn is_special_node(&self) -> bool {
+        self.word_id().is_special()
+    }
+
+    #[inline]
+    /// Returns number of codepoints in the current node
+    fn num_codepts(&self) -> usize {
+        self.end() - self.begin()
+    }
+
+    #[inline]
+    /// Utility method for extracting [begin, end) codepoint range.
+    fn char_range(&self) -> Range<usize> {
+        self.begin()..self.end()
     }
 }
 
-/// Lattice node
-#[derive(Clone, Debug, Default)]
-pub struct Node {
-    /// The byte_idx begin of node
-    pub begin: usize,
-    /// The byte_idx end of node
-    pub end: usize,
-
-    /// The left_id to calculate connection cost
-    pub left_id: i16,
-    /// The right_id to calculate connection cost
-    pub right_id: i16,
-    /// The cost of this node
-    pub cost: i16,
-
-    /// The word_id in the dictionary of this node
-    /// None if this node comes from outside of dictionary (e.g. oov, bos, eos)
-    pub word_id: Option<u32>,
-    /// The word_info in the dictionary of this node
-    /// None until it is set manually
-    pub word_info: Option<WordInfo>,
-    /// Wherther if this node is oov
-    pub is_oov: bool,
-    /// Wherther if this node is BOS/EOS
-    pub is_system_node: bool,
-
-    /// The total cost from bos to this node
-    pub total_cost: i32,
-    /// The node idx in the lattice of the best previous node
-    pub best_previous_node_index: Option<(usize, usize)>,
-    /// Whether if this node is connecting to bos node
-    pub is_connected_to_bos: bool,
+#[derive(Clone)]
+/// Full lattice node, as the result of analysis.
+/// All indices (including inner) are in the original sentence space.
+pub struct ResultNode {
+    inner: Node,
+    total_cost: i32,
+    begin_bytes: u16,
+    end_bytes: u16,
+    word_info: WordInfo,
 }
 
-impl Node {
-    /// Creates a node with word params and word_id
-    pub fn new(left_id: i16, right_id: i16, cost: i16, word_id: u32) -> Node {
-        Node {
-            left_id,
-            right_id,
-            cost,
-            word_id: Some(word_id),
-            ..Default::default()
-        }
-    }
-
-    /// Sets begin and end
-    pub fn set_range(&mut self, begin: usize, end: usize) {
-        self.begin = begin;
-        self.end = end;
-    }
-
-    /// Sets word_info
-    pub fn set_word_info(&mut self, word_info: WordInfo) {
-        self.word_info = Some(word_info);
-    }
-
-    /// Consult dictionary and sets word_info
-    pub fn fill_word_info(&mut self, lexicon: &LexiconSet) -> SudachiResult<()> {
-        if let None = &self.word_info {
-            let word_id = self.word_id.ok_or(SudachiError::MissingWordId)?;
-            self.set_word_info(lexicon.get_word_info(word_id)?);
-        }
-        Ok(())
-    }
-
-    /// Returns if the node has word_info (possibly in the dictionary)
-    pub fn is_defined(&self) -> bool {
-        match (&self.word_id, &self.word_info) {
-            (None, None) => false,
-            _ => true,
-        }
-    }
-
-    /// Return dictionary id where the word is defined
-    ///
-    /// Return -1 if the word is not in any of dictionaries
-    pub fn get_dictionary_id(&self) -> i32 {
-        if let Some(wi) = &self.word_id {
-            return LexiconSet::get_dictionary_id(*wi) as i32;
-        }
-        -1
-    }
-
-    /// Create a BOS node
-    pub fn new_bos() -> Node {
-        let (left_id, right_id, cost) = Grammar::BOS_PARAMETER;
-        Node {
-            left_id,
-            right_id,
-            cost,
-            is_connected_to_bos: true,
-            is_system_node: true,
-            ..Default::default()
-        }
-    }
-
-    /// Create a EOS node
-    pub fn new_eos(size: usize) -> Node {
-        let (left_id, right_id, cost) = Grammar::EOS_PARAMETER;
-        Node {
-            begin: size,
-            end: size,
-            left_id,
-            right_id,
-            cost,
-            is_system_node: true,
-            ..Default::default()
-        }
-    }
-
-    /// Create a out_of_vocabulary node
-    pub fn new_oov(left_id: i16, right_id: i16, cost: i16, word_info: WordInfo) -> Node {
-        Node {
-            left_id,
-            right_id,
-            cost,
-            word_id: None,
-            word_info: Some(word_info),
-            is_oov: true,
-            ..Default::default()
+impl ResultNode {
+    pub fn new(
+        inner: Node,
+        total_cost: i32,
+        begin_bytes: u16,
+        end_bytes: u16,
+        word_info: WordInfo,
+    ) -> ResultNode {
+        ResultNode {
+            inner,
+            total_cost,
+            begin_bytes,
+            end_bytes,
+            word_info,
         }
     }
 }
 
-impl fmt::Display for Node {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        // assume word_info is filled
-        let pos_id = match &self.word_info {
-            None => -1,
-            Some(wi) => wi.pos_id as i32,
+impl RightId for ResultNode {
+    fn right_id(&self) -> u16 {
+        self.inner.right_id()
+    }
+}
+
+impl PathCost for ResultNode {
+    fn total_cost(&self) -> i32 {
+        self.total_cost
+    }
+}
+
+impl LatticeNode for ResultNode {
+    fn begin(&self) -> usize {
+        self.inner.begin()
+    }
+
+    fn end(&self) -> usize {
+        self.inner.end()
+    }
+
+    fn cost(&self) -> i16 {
+        self.inner.cost()
+    }
+
+    fn word_id(&self) -> WordId {
+        self.inner.word_id()
+    }
+
+    fn left_id(&self) -> u16 {
+        self.inner.left_id()
+    }
+}
+
+impl ResultNode {
+    pub fn word_info(&self) -> &WordInfo {
+        &self.word_info
+    }
+
+    /// Returns begin offset in bytes of node surface in a sentence
+    pub fn begin_bytes(&self) -> usize {
+        self.begin_bytes as usize
+    }
+
+    /// Returns end offset in bytes of node surface in a sentence
+    pub fn end_bytes(&self) -> usize {
+        self.end_bytes as usize
+    }
+
+    /// Returns range in bytes (for easy string slicing)
+    pub fn bytes_range(&self) -> Range<usize> {
+        self.begin_bytes()..self.end_bytes()
+    }
+
+    /// Returns number of splits in a specified mode
+    pub fn num_splits(&self, mode: Mode) -> usize {
+        match mode {
+            Mode::A => self.word_info.a_unit_split.len(),
+            Mode::B => self.word_info.b_unit_split.len(),
+            Mode::C => 0,
+        }
+    }
+
+    /// Split the node with a specified mode using the dictionary data
+    pub fn split<'a>(&'a self, mode: Mode, lexicon: &'a LexiconSet<'a>) -> NodeSplitIterator<'a> {
+        let splits: &[WordId] = match mode {
+            Mode::A => &self.word_info.a_unit_split,
+            Mode::B => &self.word_info.b_unit_split,
+            Mode::C => panic!("splitting Node with Mode::C is not supported"),
         };
 
+        NodeSplitIterator {
+            splits,
+            index: 0,
+            lexicon,
+            byte_offset: self.begin_bytes,
+            byte_end: self.end_bytes,
+            char_offset: self.begin() as u16,
+            char_end: self.end() as u16,
+        }
+    }
+}
+
+impl fmt::Display for ResultNode {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "{} {} {}({}) {} {} {} {}",
-            self.begin,
-            self.end,
-            match self.word_info.as_ref() {
-                Some(wi) => wi.surface.as_ref(),
-                None => "",
-            },
-            match self.word_id.as_ref() {
-                Some(word_id) => word_id,
-                None => &0,
-            },
-            pos_id,
-            self.left_id,
-            self.right_id,
-            self.cost
+            "{} {} {}{} {} {} {} {}",
+            self.begin(),
+            self.end(),
+            self.word_info.surface,
+            self.word_id(),
+            self.word_info().pos_id,
+            self.left_id(),
+            self.right_id(),
+            self.cost()
         )
     }
 }
 
-/// Converts node ranges from modified to originals
-///
-/// Tokenizers are expected to provide output in the original indices
-pub fn translate_node_ranges<T: InputTextIndex>(nodes: &mut [Node], buffer: &T) {
-    for n in nodes {
-        let range = buffer.to_orig(n.begin..n.end);
-        n.begin = range.start;
-        n.end = range.end;
+pub struct NodeSplitIterator<'a> {
+    splits: &'a [WordId],
+    lexicon: &'a LexiconSet<'a>,
+    index: usize,
+    char_offset: u16,
+    byte_offset: u16,
+    char_end: u16,
+    byte_end: u16,
+}
+
+impl Iterator for NodeSplitIterator<'_> {
+    type Item = ResultNode;
+
+    #[inline]
+    fn next(&mut self) -> Option<Self::Item> {
+        let idx = self.index;
+        if idx >= self.splits.len() {
+            return None;
+        }
+
+        let char_start = self.char_offset;
+        let byte_start = self.byte_offset;
+
+        let word_id = self.splits[idx];
+        // data comes from dictionary, panicking here is OK
+        let word_info = self.lexicon.get_word_info(word_id).unwrap();
+
+        let (char_end, byte_end) = if idx + 1 == self.splits.len() {
+            (self.char_end, self.byte_end)
+        } else {
+            (
+                self.char_offset + word_info.head_word_length,
+                self.byte_offset + word_info.surface.len() as u16,
+            )
+        };
+
+        self.char_offset = char_end;
+        self.byte_offset = byte_end;
+
+        let inner = Node::new(char_start, char_end, u16::MAX, u16::MAX, i16::MAX, word_id);
+
+        let node = ResultNode::new(inner, i32::MAX, byte_start, byte_end, word_info);
+
+        self.index += 1;
+        Some(node)
     }
+
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (self.splits.len(), Some(self.splits.len()))
+    }
+}
+
+impl FusedIterator for NodeSplitIterator<'_> {}
+
+/// Concatenate the nodes in the range and replace normalized_form if given.
+pub fn concat_nodes(
+    mut path: Vec<ResultNode>,
+    begin: usize,
+    end: usize,
+    normalized_form: Option<String>,
+) -> SudachiResult<Vec<ResultNode>> {
+    if begin >= end {
+        return Err(SudachiError::InvalidRange(begin, end));
+    }
+
+    let end_bytes = path[end - 1].end_bytes();
+    let beg_bytes = path[begin].begin_bytes();
+
+    let mut surface = String::with_capacity(end_bytes - beg_bytes);
+    let mut reading_form = String::with_capacity(end_bytes - beg_bytes);
+    let mut dictionary_form = String::with_capacity(end_bytes - beg_bytes);
+    let mut head_word_length: u16 = 0;
+
+    for node in path[begin..end].iter() {
+        surface.push_str(&node.word_info().surface);
+        reading_form.push_str(&node.word_info().reading_form);
+        dictionary_form.push_str(&node.word_info().dictionary_form);
+        head_word_length += node.word_info().head_word_length;
+    }
+
+    let normalized_form = if normalized_form.is_none() {
+        let mut normalized_form = String::with_capacity(end_bytes - beg_bytes);
+        for node in path[begin..end].iter() {
+            normalized_form.push_str(&node.word_info().normalized_form);
+        }
+        normalized_form
+    } else {
+        normalized_form.unwrap()
+    };
+
+    let pos_id = path[begin].word_info().pos_id;
+
+    let new_wi = WordInfo {
+        surface,
+        head_word_length,
+        pos_id,
+        normalized_form,
+        reading_form,
+        dictionary_form,
+        ..Default::default()
+    };
+
+    let inner = Node::new(
+        path[begin].begin() as u16,
+        path[end - 1].end() as u16,
+        u16::MAX,
+        u16::MAX,
+        i16::MAX,
+        WordId::INVALID,
+    );
+
+    let node = ResultNode::new(
+        inner,
+        path[end - 1].total_cost,
+        path[begin].begin_bytes,
+        path[end - 1].end_bytes,
+        new_wi,
+    );
+
+    path[begin] = node;
+    path.drain(begin + 1..end);
+    Ok(path)
+}
+
+/// Concatenate the nodes in the range and set pos_id.
+pub fn concat_oov_nodes(
+    mut path: Vec<ResultNode>,
+    begin: usize,
+    end: usize,
+    pos_id: u16,
+) -> SudachiResult<Vec<ResultNode>> {
+    if begin >= end {
+        return Err(SudachiError::InvalidRange(begin, end));
+    }
+
+    let capa = path[end - 1].end_bytes() - path[begin].begin_bytes();
+
+    let mut surface = String::with_capacity(capa);
+    let mut head_word_length: u16 = 0;
+    let mut wid = WordId::from_raw(0);
+
+    for node in path[begin..end].iter() {
+        surface.push_str(&node.word_info().surface);
+        head_word_length += node.word_info().head_word_length;
+        wid = wid.max(node.word_id());
+    }
+
+    if !wid.is_oov() {
+        wid = WordId::new(wid.dic(), WordId::MAX_WORD);
+    }
+
+    let new_wi = WordInfo {
+        normalized_form: surface.clone(),
+        dictionary_form: surface.clone(),
+        surface,
+        head_word_length,
+        pos_id,
+        ..Default::default()
+    };
+
+    let inner = Node::new(
+        path[begin].begin() as u16,
+        path[end - 1].end() as u16,
+        u16::MAX,
+        u16::MAX,
+        i16::MAX,
+        wid,
+    );
+
+    let node = ResultNode::new(
+        inner,
+        path[end - 1].total_cost,
+        path[begin].begin_bytes,
+        path[end - 1].end_bytes,
+        new_wi,
+    );
+
+    path[begin] = node;
+    path.drain(begin + 1..end);
+    Ok(path)
 }

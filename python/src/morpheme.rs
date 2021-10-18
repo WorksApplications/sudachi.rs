@@ -14,7 +14,6 @@
  *  limitations under the License.
  */
 
-use std::ops::Deref;
 use std::sync::Arc;
 
 use pyo3::exceptions::{self, PyException};
@@ -22,32 +21,17 @@ use pyo3::prelude::*;
 use pyo3::types::{PyList, PyType};
 
 use sudachi::analysis::morpheme::MorphemeList;
+use sudachi::analysis::node::LatticeNode;
 use sudachi::dic::dictionary::JapaneseDictionary;
 
 use crate::dictionary::PyDictionary;
 use crate::tokenizer::PySplitMode;
 use crate::word_info::PyWordInfo;
 
-struct PyMorphemeList {
-    list: MorphemeList<Arc<JapaneseDictionary>>,
-
-    /// Stores character based index boundaries of morphemes to bridge
-    /// Rust's byte-based string index and Python's codepoint-based one.
-    ///
-    /// `morphemes[i].surface` equals to `morphemes.surface[boundaries[i]:boundaries[i+1]]`.
-    /// `boundaries.len()` equals to `morphemes.len() + 1` if MorphemeList is not empty.
-    boundaries: Vec<usize>,
-}
-
-impl Deref for PyMorphemeList {
-    type Target = MorphemeList<Arc<JapaneseDictionary>>;
-    fn deref(&self) -> &Self::Target {
-        &self.list
-    }
-}
+type PyMorphemeList = MorphemeList<Arc<JapaneseDictionary>>;
 
 /// A list of morphemes
-#[pyclass(module = "sudachi.morphemelist", name = "MorphemeList")]
+#[pyclass(module = "sudachi.morpheme", name = "MorphemeList")]
 #[repr(transparent)]
 pub struct PyMorphemeListWrapper {
     inner: Arc<PyMorphemeList>,
@@ -58,16 +42,15 @@ impl PyMorphemeListWrapper {
     /// Returns an empty morpheme list with dictionary
     #[classmethod]
     #[pyo3(text_signature = "(dict) -> sudachi.MorphemeList")]
-    fn empty(_cls: &PyType, py: Python, dict: &PyDictionary) -> PyResult<Self> {
+    fn empty(_cls: &PyType, dict: &PyDictionary) -> Self {
         let cat = PyModule::import(py, "builtins")?.getattr("DeprecationWarning")?;
         PyErr::warn(py, cat, "Users should not generate MorphemeList by themselves. Use Tokenizer.tokenize(\"\") if you need.", 1)?;
 
-        Ok(Self {
-            inner: Arc::new(PyMorphemeList {
-                list: MorphemeList::empty(dict.dictionary.as_ref().unwrap().clone()),
-                boundaries: Vec::new(),
-            }),
-        })
+        Self {
+            inner: Arc::new(PyMorphemeList::empty(
+                dict.dictionary.as_ref().unwrap().clone(),
+            )),
+        }
     }
 
     /// Returns the total cost of the path
@@ -85,35 +68,10 @@ impl PyMorphemeListWrapper {
 
 impl From<MorphemeList<Arc<JapaneseDictionary>>> for PyMorphemeListWrapper {
     fn from(morpheme_list: MorphemeList<Arc<JapaneseDictionary>>) -> Self {
-        let boundaries = build_python_string_boundaries(&morpheme_list);
-
         Self {
-            inner: Arc::new(PyMorphemeList {
-                list: morpheme_list,
-                boundaries,
-            }),
+            inner: Arc::new(morpheme_list),
         }
     }
-}
-
-fn build_python_string_boundaries(
-    morpheme_list: &MorphemeList<Arc<JapaneseDictionary>>,
-) -> Vec<usize> {
-    if morpheme_list.len() == 0 {
-        return Vec::with_capacity(0);
-    }
-
-    let prefix = &morpheme_list.get_full_input_text()[..morpheme_list.get_begin(0)];
-    let mut offset = prefix.chars().count();
-
-    let mut boundaries = Vec::with_capacity(morpheme_list.len() + 1);
-    boundaries.push(offset);
-    for m in morpheme_list.iter() {
-        offset += m.surface().chars().count();
-        boundaries.push(offset);
-    }
-
-    boundaries
 }
 
 #[pyproto]
@@ -206,13 +164,15 @@ impl PyMorpheme {
     /// Returns the begin index of this in the input text
     #[pyo3(text_signature = "($self)")]
     fn begin(&self) -> usize {
-        self.list.boundaries[self.index]
+        // call codepoint version
+        self.list.get_node(self.index).begin()
     }
 
     /// Returns the end index of this in the input text
     #[pyo3(text_signature = "($self)")]
     fn end(&self) -> usize {
-        self.list.boundaries[self.index + 1]
+        // call codepoint version
+        self.list.get_node(self.index).end()
     }
 
     /// Returns the surface
@@ -287,7 +247,7 @@ impl PyMorpheme {
     /// Returns word id of this word in the dictionary
     #[pyo3(text_signature = "($self)")]
     fn word_id(&self) -> u32 {
-        self.list.get_node(self.index).word_id.unwrap()
+        self.list.get_node(self.index).word_id().as_raw()
     }
 
     /// Returns the dictionary id which this word belongs

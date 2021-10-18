@@ -84,6 +84,11 @@ impl<'a> Grammar<'a> {
         self.connection.cost(left_id as u16, right_id as u16)
     }
 
+    #[inline]
+    pub fn conn_matrix(&self) -> &ConnectionMatrix {
+        &self.connection
+    }
+
     /// Sets character category
     ///
     /// This is the only way to set character category.

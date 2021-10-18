@@ -15,8 +15,10 @@
  */
 
 use nom::number::complete::{le_u16, le_u32, le_u8};
+use nom::Parser;
 use std::path::PathBuf;
 
+use crate::dic::word_id::WordId;
 use crate::error::{SudachiNomError, SudachiNomResult};
 use crate::prelude::*;
 use character_category::CharacterCategory;
@@ -122,6 +124,11 @@ impl<'a> DictionaryLoader<'a> {
 fn u32_array_parser(input: &[u8]) -> SudachiNomResult<&[u8], Vec<u32>> {
     let (rest, length) = le_u8(input)?;
     nom::multi::count(le_u32, length as usize)(rest)
+}
+
+fn u32_wid_array_parser(input: &[u8]) -> SudachiNomResult<&[u8], Vec<WordId>> {
+    let (rest, length) = le_u8(input)?;
+    nom::multi::count(le_u32.map(|id| WordId::from_raw(id)), length as usize)(rest)
 }
 
 fn utf16_string_parser(input: &[u8]) -> SudachiNomResult<&[u8], String> {

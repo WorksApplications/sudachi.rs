@@ -20,19 +20,20 @@ extern crate lazy_static;
 mod common;
 use common::LEXICON;
 use sudachi::dic::lexicon::LexiconEntry;
+use sudachi::dic::word_id::WordId;
 
 #[test]
 fn lookup() {
     let res: Vec<LexiconEntry> = LEXICON.lookup("東京都".as_bytes(), 0).collect();
     assert_eq!(3, res.len());
-    assert_eq!(LexiconEntry::new(4, 3), res[0]); // 東
-    assert_eq!(LexiconEntry::new(5, 6), res[1]); // 東京
-    assert_eq!(LexiconEntry::new(6, 9), res[2]); // 東京都
+    assert_eq!(LexiconEntry::new(WordId::from_raw(4), 3), res[0]); // 東
+    assert_eq!(LexiconEntry::new(WordId::from_raw(5), 6), res[1]); // 東京
+    assert_eq!(LexiconEntry::new(WordId::from_raw(6), 9), res[2]); // 東京都
 
     let res: Vec<LexiconEntry> = LEXICON.lookup("東京都に".as_bytes(), 9).collect();
     assert_eq!(2, res.len());
-    assert_eq!(LexiconEntry::new(1, 12), res[0]); // に(接続助詞)
-    assert_eq!(LexiconEntry::new(2, 12), res[1]); // に(格助詞)
+    assert_eq!(LexiconEntry::new(WordId::from_raw(1), 12), res[0]); // に(接続助詞)
+    assert_eq!(LexiconEntry::new(WordId::from_raw(2), 12), res[1]); // に(格助詞)
 
     let res: Vec<LexiconEntry> = LEXICON.lookup("あれ".as_bytes(), 0).collect();
     assert_eq!(0, res.len());
@@ -77,9 +78,15 @@ fn word_info() {
     // 東京都
     let wi = LEXICON.get_word_info(6).expect("failed to get word_info");
     assert_eq!("東京都", wi.surface);
-    assert_eq!([5, 9], &wi.a_unit_split[..]);
+    assert_eq!(
+        [WordId::from_raw(5), WordId::from_raw(9)],
+        &wi.a_unit_split[..]
+    );
     assert!(wi.b_unit_split.is_empty());
-    assert_eq!([5, 9], &wi.word_structure[..]);
+    assert_eq!(
+        [WordId::from_raw(5), WordId::from_raw(9)],
+        &wi.word_structure[..]
+    );
     assert!(wi.synonym_group_ids.is_empty());
 
     // 行っ

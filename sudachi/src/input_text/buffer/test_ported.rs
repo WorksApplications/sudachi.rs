@@ -60,38 +60,23 @@ fn get_char_category_continuous_length() {
     let grammar = cat_grammar();
     let mut input = InputBuffer::from("âｂC1あ234漢字𡈽アｺﾞ");
     input.build(&grammar).expect("works");
-    assert_eq!(6, input.cat_continuous_len(0));
-    assert_eq!(5, input.cat_continuous_len(1));
-    assert_eq!(4, input.cat_continuous_len(2));
-    assert_eq!(1, input.cat_continuous_len(5));
-    assert_eq!(1, input.cat_continuous_len(6));
-    assert_eq!(3, input.cat_continuous_len(7));
-    assert_eq!(3, input.cat_continuous_len(10));
-    assert_eq!(2, input.cat_continuous_len(11));
-    assert_eq!(1, input.cat_continuous_len(12));
-    assert_eq!(4, input.cat_continuous_len(19));
-    assert_eq!(1, input.cat_continuous_len(22));
-    assert_eq!(9, input.cat_continuous_len(23));
-    assert_eq!(6, input.cat_continuous_len(26));
-    assert_eq!(1, input.cat_continuous_len(31));
+    assert_eq!(3, input.cat_continuous_len(0)); // â
+    assert_eq!(2, input.cat_continuous_len(1)); // ｂ
+    assert_eq!(1, input.cat_continuous_len(2)); // C
+    assert_eq!(1, input.cat_continuous_len(3)); // 1
+    assert_eq!(1, input.cat_continuous_len(4)); // あ
+    assert_eq!(3, input.cat_continuous_len(5)); // 2
+    assert_eq!(2, input.cat_continuous_len(6)); // 3
+    assert_eq!(1, input.cat_continuous_len(7)); // 4
+    assert_eq!(2, input.cat_continuous_len(8)); // 漢
+    assert_eq!(1, input.cat_continuous_len(9)); // 字
+    assert_eq!(1, input.cat_continuous_len(10)); // 𡈽
+    assert_eq!(3, input.cat_continuous_len(11)); // ア
+    assert_eq!(2, input.cat_continuous_len(12)); // ｺ
+    assert_eq!(1, input.cat_continuous_len(13)); // ﾞ
 }
 
 // replace_* tests -> new edit tests are better and easier to figure about
-
-#[test]
-fn get_byte_length_by_code_points() {
-    let grammar = cat_grammar();
-    let mut input = InputBuffer::from("âｂC1あ234漢字𡈽アｺﾞ");
-    input.build(&grammar).expect("works");
-    assert_eq!(2, input.byte_distance(0, 1));
-    assert_eq!(7, input.byte_distance(0, 4));
-    assert_eq!(1, input.byte_distance(10, 1));
-    assert_eq!(1, input.byte_distance(11, 1));
-    assert_eq!(1, input.byte_distance(12, 1));
-    assert_eq!(6, input.byte_distance(13, 2));
-    assert_eq!(4, input.byte_distance(19, 1));
-    assert_eq!(9, input.byte_distance(23, 3));
-}
 
 #[test]
 fn code_point_count() {
@@ -129,8 +114,8 @@ fn get_word_candidate_length() {
     let grammar = cat_grammar();
     let mut input = InputBuffer::from("âｂC1あ234漢字𡈽アｺﾞ");
     input.build(&grammar).expect("works");
-    assert_eq!(6, input.get_word_candidate_length(0));
-    assert_eq!(1, input.get_word_candidate_length(6));
-    assert_eq!(4, input.get_word_candidate_length(19));
-    assert_eq!(3, input.get_word_candidate_length(29));
+    assert_eq!(3, input.get_word_candidate_length(0)); // â
+    assert_eq!(1, input.get_word_candidate_length(4)); // 1
+    assert_eq!(1, input.get_word_candidate_length(10)); // 𡈽
+    assert_eq!(1, input.get_word_candidate_length(13)); // ﾞ
 }

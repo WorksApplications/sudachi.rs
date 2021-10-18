@@ -17,7 +17,8 @@
 use serde::Deserialize;
 use serde_json::Value;
 
-use crate::analysis::{lattice::Lattice, node::Node};
+use crate::analysis::lattice::Lattice;
+use crate::analysis::node::{concat_oov_nodes, LatticeNode, ResultNode};
 use crate::config::Config;
 use crate::dic::category_type::CategoryType;
 use crate::dic::grammar::Grammar;
@@ -47,8 +48,8 @@ struct PluginSettings {
 }
 
 impl JoinKatakanaOovPlugin {
-    fn is_katakana_node<T: InputTextIndex>(&self, text: &T, node: &Node) -> bool {
-        text.cat_of_range(node.begin..node.end)
+    fn is_katakana_node<T: InputTextIndex>(&self, text: &T, node: &ResultNode) -> bool {
+        text.cat_of_range(node.begin()..node.end())
             .contains(CategoryType::KATAKANA)
     }
 
@@ -57,22 +58,22 @@ impl JoinKatakanaOovPlugin {
     //     b + text.get_code_points_offset_length(b, 1) == node.end
     // }
 
-    fn can_oov_bow_node<T: InputTextIndex>(&self, text: &T, node: &Node) -> bool {
+    fn can_oov_bow_node<T: InputTextIndex>(&self, text: &T, node: &ResultNode) -> bool {
         !text
-            .cat_at_byte(node.begin)
+            .cat_at_char(node.begin())
             .contains(CategoryType::NOOOVBOW)
     }
 
-    fn is_shorter<T: InputTextIndex>(&self, text: &T, node: &Node) -> bool {
-        text.num_codepts(node.begin..node.end) < self.min_length
+    fn is_shorter(&self, node: &ResultNode) -> bool {
+        node.num_codepts() < self.min_length
     }
 
     fn rewrite_gen<T: InputTextIndex>(
         &self,
         text: &T,
-        mut path: Vec<Node>,
+        mut path: Vec<ResultNode>,
         _lattice: &Lattice,
-    ) -> SudachiResult<Vec<Node>> {
+    ) -> SudachiResult<Vec<ResultNode>> {
         let mut i = 0;
         loop {
             if i >= path.len() {
@@ -80,7 +81,7 @@ impl JoinKatakanaOovPlugin {
             }
 
             let node = &path[i];
-            if !(node.is_oov || self.is_shorter(text, node)) || !self.is_katakana_node(text, node) {
+            if !(node.is_oov() || self.is_shorter(node)) || !self.is_katakana_node(text, node) {
                 i += 1;
                 continue;
             }
@@ -111,7 +112,7 @@ impl JoinKatakanaOovPlugin {
             }
 
             if (end - begin) > 1 {
-                path = self.concatenate_oov(path, begin, end, self.oov_pos_id)?;
+                path = concat_oov_nodes(path, begin, end, self.oov_pos_id)?;
                 // skip next node, as we already know it is not a joinable katakana
                 i = begin + 1;
             }
@@ -146,9 +147,9 @@ impl PathRewritePlugin for JoinKatakanaOovPlugin {
     fn rewrite(
         &self,
         text: &InputBuffer,
-        path: Vec<Node>,
+        path: Vec<ResultNode>,
         lattice: &Lattice,
-    ) -> SudachiResult<Vec<Node>> {
+    ) -> SudachiResult<Vec<ResultNode>> {
         self.rewrite_gen(text, path, lattice)
     }
 }

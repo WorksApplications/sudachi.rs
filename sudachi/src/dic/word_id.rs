@@ -14,8 +14,15 @@
  *  limitations under the License.
  */
 
+use crate::dic::lexicon_set::LexiconSetError;
+use crate::error::{SudachiError, SudachiResult};
 use std::fmt::{Debug, Display, Formatter};
 
+/// Dictionary word ID
+///
+/// Encode dictionary ID and word internal ID as 4 bits and 28 bits respectively
+/// DicId 0 - system dictionary
+/// DicId 15 - OOV and other special nodes
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 #[repr(transparent)]
 pub struct WordId {
@@ -35,13 +42,15 @@ impl Display for WordId {
     }
 }
 
-const WORD_MASK: u32 = 0x0fffffff;
+const WORD_MASK: u32 = 0x0fff_ffff;
 
 impl WordId {
-    pub fn from_raw(raw: u32) -> WordId {
+    /// Create WordId from the compressed representation
+    pub const fn from_raw(raw: u32) -> WordId {
         WordId { raw }
     }
 
+    /// Create WordId from parts
     pub fn new(dic: u8, word: u32) -> WordId {
         debug_assert_eq!(word & (!WORD_MASK), 0);
         debug_assert_eq!(dic & (!0xf), 0);
@@ -51,18 +60,44 @@ impl WordId {
         return Self::from_raw(raw);
     }
 
+    /// Creates the WordId with correctness checking
+    pub fn checked(dic: u8, word: u32) -> SudachiResult<WordId> {
+        if dic & !0xf != 0 {
+            return Err(SudachiError::LexiconSetError(
+                LexiconSetError::TooLargeDictionaryId(dic as usize),
+            ));
+        }
+
+        if word & !WORD_MASK != 0 {
+            return Err(SudachiError::LexiconSetError(
+                LexiconSetError::TooLargeWordId(word, WORD_MASK as usize),
+            ));
+        }
+
+        Ok(Self::new(dic, word))
+    }
+
+    /// Creates an OOV node for pos_id
+    pub fn oov(pos_id: u32) -> WordId {
+        Self::new(0xf, pos_id)
+    }
+
+    /// Extract Dictionary ID
     pub fn dic(&self) -> u8 {
         return (self.raw >> 28) as u8;
     }
 
+    /// Extract Word ID
     pub fn word(&self) -> u32 {
         return self.raw & WORD_MASK;
     }
 
+    /// Check if the word comes from the system dictionary
     pub fn is_system(&self) -> bool {
         self.dic() == 0
     }
 
+    /// Check if the word comes from the user dictionary
     pub fn is_user(&self) -> bool {
         match self.dic() {
             0 | 0xf => false,
@@ -70,9 +105,25 @@ impl WordId {
         }
     }
 
+    pub fn as_raw(&self) -> u32 {
+        self.raw
+    }
+
+    /// Check if the word is OOV
+    /// An OOV node can come of OOV handlers or be a special system node like BOS or EOS
     pub fn is_oov(&self) -> bool {
         self.dic() == 0xf
     }
+
+    /// Checks if the WordId corresponds to a special node
+    pub fn is_special(&self) -> bool {
+        self >= &Self::EOS && self < &Self::INVALID
+    }
+
+    pub const INVALID: WordId = WordId::from_raw(0xffff_ffff);
+    pub const BOS: WordId = WordId::from_raw(0xffff_fffe);
+    pub const EOS: WordId = WordId::from_raw(0xffff_fffd);
+    pub const MAX_WORD: u32 = 0x0fff_ffff;
 }
 
 #[cfg(test)]
@@ -132,5 +183,13 @@ mod test {
         assert!(!WordId::new(1, 0).is_oov());
         assert!(!WordId::new(14, 0).is_oov());
         assert!(WordId::new(15, 0).is_oov());
+    }
+
+    #[test]
+    fn is_special() {
+        assert!(WordId::EOS.is_special());
+        assert!(WordId::BOS.is_special());
+        assert!(!WordId::INVALID.is_special());
+        assert!(!WordId::new(0, 0).is_special());
     }
 }

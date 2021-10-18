@@ -14,18 +14,18 @@
  *  limitations under the License.
  */
 
+use crate::analysis::node::ResultNode;
 use crate::analysis::stateful_tokenizer::StatefulTokenizer;
 use std::ops::Deref;
 
 use crate::dic::grammar::Grammar;
 use crate::dic::lexicon_set::LexiconSet;
-use crate::error::{SudachiError, SudachiResult};
+use crate::error::SudachiResult;
 use crate::plugin::input_text::InputTextPlugin;
 use crate::plugin::oov::OovProviderPlugin;
 use crate::plugin::path_rewrite::PathRewritePlugin;
 
 use super::morpheme::MorphemeList;
-use super::node::Node;
 use super::{Mode, Tokenize};
 
 /// Provides access to dictionary data
@@ -108,50 +108,27 @@ where
 
 pub(super) fn split_path<T: DictionaryAccess + ?Sized>(
     dict: &T,
-    path: Vec<Node>,
+    path: Vec<ResultNode>,
     mode: Mode,
-) -> SudachiResult<Vec<Node>> {
+) -> SudachiResult<Vec<ResultNode>> {
     if mode == Mode::C {
         return Ok(path);
     }
 
-    let mut new_path = Vec::with_capacity(path.len());
+    let mut new_path = Vec::with_capacity(path.len() * 3 / 2);
     for node in path {
-        let word_info = node
-            .word_info
-            .as_ref()
-            .ok_or(SudachiError::MissingWordInfo)?;
-        let word_ids = match mode {
-            Mode::A => &word_info.a_unit_split,
-            Mode::B => &word_info.b_unit_split,
-            _ => unreachable!(),
-        };
-
-        if word_ids.len() <= 1 {
+        let split_len = node.num_splits(mode);
+        if split_len <= 1 {
             new_path.push(node);
         } else {
-            let mut offset = node.begin;
-            for wid in word_ids {
-                let mut n = Node::new(0, 0, 0, *wid);
-                n.fill_word_info(dict.lexicon())?;
-                let length = n
-                    .word_info
-                    .as_ref()
-                    .ok_or(SudachiError::MissingWordInfo)?
-                    .head_word_length as usize;
-                n.set_range(offset, offset + length);
-                new_path.push(n);
-
-                offset += length;
-            }
+            new_path.extend(node.split(mode, dict.lexicon()));
         }
     }
 
-    new_path.shrink_to_fit();
     Ok(new_path)
 }
 
-pub(super) fn dump_path(path: &Vec<Node>) {
+pub(super) fn dump_path(path: &Vec<ResultNode>) {
     for (i, node) in (&path).iter().enumerate() {
         println!("{}: {}", i, node);
     }

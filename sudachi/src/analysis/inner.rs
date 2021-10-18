@@ -14,10 +14,10 @@
  *  limitations under the License.
  */
 
-use crate::analysis::node::{LatticeNode, PathCost, RightId};
+use crate::analysis::node::{LatticeNode, RightId};
 use crate::dic::word_id::WordId;
 
-#[derive(Clone, Eq, PartialEq, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Debug)]
 pub struct NodeIdx {
     end: u16,
     index: u16,
@@ -35,19 +35,17 @@ impl NodeIdx {
         NodeIdx { end, index }
     }
 
-    fn end(&self) -> u16 {
+    pub fn end(&self) -> u16 {
         self.end
     }
-    fn index(&self) -> u16 {
+
+    pub fn index(&self) -> u16 {
         self.index
-    }
-    fn is_empty(&self) -> bool {
-        self.index() == u16::MAX
     }
 }
 
 #[derive(Clone, Debug)]
-pub struct InnerNode {
+pub struct Node {
     begin: u16,
     end: u16,
     left_id: u16,
@@ -56,14 +54,39 @@ pub struct InnerNode {
     word_id: WordId,
 }
 
-impl RightId for InnerNode {
+impl Node {
+    pub fn new(
+        begin: u16,
+        end: u16,
+        left_id: u16,
+        right_id: u16,
+        cost: i16,
+        word_id: WordId,
+    ) -> Node {
+        Node {
+            begin,
+            end,
+            left_id,
+            right_id,
+            cost,
+            word_id,
+        }
+    }
+
+    pub fn set_range(&mut self, begin: u16, end: u16) {
+        self.begin = begin;
+        self.end = end;
+    }
+}
+
+impl RightId for Node {
     #[inline(always)]
     fn right_id(&self) -> u16 {
         self.right_id
     }
 }
 
-impl LatticeNode for InnerNode {
+impl LatticeNode for Node {
     fn begin(&self) -> usize {
         self.begin as usize
     }
@@ -87,11 +110,11 @@ impl LatticeNode for InnerNode {
 
 #[cfg(test)]
 mod test {
-    use crate::analysis::inner::InnerNode;
+    use super::*;
     use claim::*;
 
     #[test]
     fn lesser_than_32b() {
-        assert_le!(core::mem::size_of::<InnerNode>(), 32);
+        assert_le!(core::mem::size_of::<Node>(), 32);
     }
 }

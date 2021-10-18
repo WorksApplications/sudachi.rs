@@ -16,6 +16,7 @@
 
 use std::io::{Seek, SeekFrom, Write};
 
+use crate::analysis::node::LatticeNode;
 use claim::assert_matches;
 use lazy_static::lazy_static;
 use tempfile::tempfile;
@@ -97,10 +98,8 @@ fn provide_oov010() {
         .provide_oov(&text, 0, false, &mut nodes)
         .expect("Failed to generate oovs");
     assert_eq!(1, nodes.len());
-    let wi = nodes[0].word_info.as_ref().unwrap();
-    assert_eq!("あいう", wi.surface);
-    assert_eq!(9, wi.head_word_length);
-    assert_eq!(1, wi.pos_id);
+    assert_eq!("あいう", text.curr_slice_c(nodes[0].char_range()));
+    assert_eq!(WordId::oov(1), nodes[0].word_id());
 
     nodes.clear();
     plugin
@@ -128,10 +127,8 @@ fn provide_oov110() {
         .provide_oov(&text, 0, false, &mut nodes)
         .expect("Failed to generate oovs");
     assert_eq!(1, nodes.len());
-    let wi = nodes[0].word_info.as_ref().unwrap();
-    assert_eq!("あいう", wi.surface);
-    assert_eq!(9, wi.head_word_length);
-    assert_eq!(1, wi.pos_id);
+    assert_eq!("あいう", text.curr_slice_c(nodes[0].char_range()));
+    assert_eq!(WordId::oov(1), nodes[0].word_id());
 
     nodes.clear();
     plugin
@@ -160,15 +157,11 @@ fn provide_oov002() {
         .expect("Failed to generate oovs");
     assert_eq!(2, nodes.len());
 
-    let wi = nodes[0].word_info.as_ref().unwrap();
-    assert_eq!("あ", wi.surface);
-    assert_eq!(3, wi.head_word_length);
-    assert_eq!(1, wi.pos_id);
+    assert_eq!("あ", text.curr_slice_c(nodes[0].char_range()));
+    assert_eq!(WordId::oov(1), nodes[0].word_id());
 
-    let wi = nodes[1].word_info.as_ref().unwrap();
-    assert_eq!("あい", wi.surface);
-    assert_eq!(6, wi.head_word_length);
-    assert_eq!(1, wi.pos_id);
+    assert_eq!("あい", text.curr_slice_c(nodes[1].char_range()));
+    assert_eq!(WordId::oov(1), nodes[1].word_id());
 
     nodes.clear();
     plugin
@@ -197,20 +190,14 @@ fn provide_oov012() {
         .expect("Failed to generate oovs");
     assert_eq!(3, nodes.len());
 
-    let wi = nodes[0].word_info.as_ref().unwrap();
-    assert_eq!("あいう", wi.surface);
-    assert_eq!(9, wi.head_word_length);
-    assert_eq!(1, wi.pos_id);
+    assert_eq!("あいう", text.curr_slice_c(nodes[0].char_range()));
+    assert_eq!(WordId::oov(1), nodes[0].word_id());
 
-    let wi = nodes[1].word_info.as_ref().unwrap();
-    assert_eq!("あ", wi.surface);
-    assert_eq!(3, wi.head_word_length);
-    assert_eq!(1, wi.pos_id);
+    assert_eq!("あ", text.curr_slice_c(nodes[1].char_range()));
+    assert_eq!(WordId::oov(1), nodes[1].word_id());
 
-    let wi = nodes[2].word_info.as_ref().unwrap();
-    assert_eq!("あい", wi.surface);
-    assert_eq!(6, wi.head_word_length);
-    assert_eq!(1, wi.pos_id);
+    assert_eq!("あい", text.curr_slice_c(nodes[2].char_range()));
+    assert_eq!(WordId::oov(1), nodes[0].word_id());
 
     nodes.clear();
     plugin
@@ -239,20 +226,14 @@ fn provide_oov112() {
         .expect("Failed to generate oovs");
     assert_eq!(3, nodes.len());
 
-    let wi = nodes[0].word_info.as_ref().unwrap();
-    assert_eq!("あいう", wi.surface);
-    assert_eq!(9, wi.head_word_length);
-    assert_eq!(1, wi.pos_id);
+    assert_eq!("あいう", text.curr_slice_c(nodes[0].char_range()));
+    assert_eq!(WordId::oov(1), nodes[0].word_id());
 
-    let wi = nodes[1].word_info.as_ref().unwrap();
-    assert_eq!("あ", wi.surface);
-    assert_eq!(3, wi.head_word_length);
-    assert_eq!(1, wi.pos_id);
+    assert_eq!("あ", text.curr_slice_c(nodes[1].char_range()));
+    assert_eq!(WordId::oov(1), nodes[1].word_id());
 
-    let wi = nodes[2].word_info.as_ref().unwrap();
-    assert_eq!("あい", wi.surface);
-    assert_eq!(6, wi.head_word_length);
-    assert_eq!(1, wi.pos_id);
+    assert_eq!("あい", text.curr_slice_c(nodes[2].char_range()));
+    assert_eq!(WordId::oov(1), nodes[2].word_id());
 
     nodes.clear();
     plugin
@@ -281,20 +262,14 @@ fn provide_oov006() {
         .expect("Failed to generate oovs");
     assert_eq!(3, nodes.len());
 
-    let wi = nodes[0].word_info.as_ref().unwrap();
-    assert_eq!("あ", wi.surface);
-    assert_eq!(3, wi.head_word_length);
-    assert_eq!(1, wi.pos_id);
+    assert_eq!("あ", text.curr_slice_c(nodes[0].char_range()));
+    assert_eq!(WordId::oov(1), nodes[0].word_id());
 
-    let wi = nodes[1].word_info.as_ref().unwrap();
-    assert_eq!("あい", wi.surface);
-    assert_eq!(6, wi.head_word_length);
-    assert_eq!(1, wi.pos_id);
+    assert_eq!("あい", text.curr_slice_c(nodes[1].char_range()));
+    assert_eq!(WordId::oov(1), nodes[1].word_id());
 
-    let wi = nodes[2].word_info.as_ref().unwrap();
-    assert_eq!("あいう", wi.surface);
-    assert_eq!(9, wi.head_word_length);
-    assert_eq!(1, wi.pos_id);
+    assert_eq!("あいう", text.curr_slice_c(nodes[2].char_range()));
+    assert_eq!(WordId::oov(1), nodes[2].word_id());
 
     nodes.clear();
     plugin
@@ -323,15 +298,11 @@ fn provide_oov_multi_oov() {
         .expect("Failed to generate oovs");
     assert_eq!(2, nodes.len());
 
-    let wi = nodes[0].word_info.as_ref().unwrap();
-    assert_eq!("アイウ", wi.surface);
-    assert_eq!(9, wi.head_word_length);
-    assert_eq!(1, wi.pos_id);
+    assert_eq!("アイウ", text.curr_slice_c(nodes[0].char_range()));
+    assert_eq!(WordId::oov(1), nodes[0].word_id());
 
-    let wi = nodes[1].word_info.as_ref().unwrap();
-    assert_eq!("アイウ", wi.surface);
-    assert_eq!(9, wi.head_word_length);
-    assert_eq!(2, wi.pos_id);
+    assert_eq!("アイウ", text.curr_slice_c(nodes[1].char_range()));
+    assert_eq!(WordId::oov(2), nodes[1].word_id());
 }
 
 #[test]

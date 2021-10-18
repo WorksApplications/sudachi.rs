@@ -14,12 +14,14 @@
  *  limitations under the License.
  */
 
+use crate::analysis::inner::{Node, NodeIdx};
 use crate::analysis::lattice::Lattice;
-use crate::analysis::node::{translate_node_ranges, Node};
+use crate::analysis::node::{LatticeNode, ResultNode};
 use crate::analysis::stateless_tokenizer::{dump_path, split_path, DictionaryAccess};
 use crate::analysis::Mode;
 use crate::dic::category_type::CategoryType;
-use crate::error::SudachiResult;
+use crate::dic::lexicon::word_infos::WordInfo;
+use crate::error::{SudachiError, SudachiResult};
 use crate::input_text::InputBuffer;
 use crate::input_text::InputTextIndex;
 use crate::prelude::MorphemeList;
@@ -29,8 +31,10 @@ pub struct StatefulTokenizer<D> {
     input: InputBuffer,
     debug: bool,
     mode: Mode,
-    top_path: Vec<Node>,
     oov: Vec<Node>,
+    lattice: Lattice,
+    top_path_ids: Vec<NodeIdx>,
+    top_path: Option<Vec<ResultNode>>,
 }
 
 impl<D: DictionaryAccess + Clone> StatefulTokenizer<D> {
@@ -53,8 +57,10 @@ impl<D: DictionaryAccess> StatefulTokenizer<D> {
             input: InputBuffer::default(),
             debug,
             mode,
-            top_path: Vec::new(),
             oov: Vec::with_capacity(10),
+            lattice: Lattice::default(),
+            top_path_ids: Vec::new(),
+            top_path: Some(Vec::new()),
         }
     }
 
@@ -67,7 +73,7 @@ impl<D: DictionaryAccess> StatefulTokenizer<D> {
     }
 
     pub fn reset(&mut self) -> &mut String {
-        self.top_path.clear();
+        self.top_path.as_mut().map(|p| p.clear());
         self.oov.clear();
         self.input.reset()
     }
@@ -87,46 +93,80 @@ impl<D: DictionaryAccess> StatefulTokenizer<D> {
             println!("=== Input dump:\n{}", self.input.current());
         }
 
-        //HACK: fix lattice later, borrow checker can't be satisfied easily now
-        let lattice: Lattice = unsafe { std::mem::transmute(self.build_lattice()?) };
+        self.build_lattice()?;
 
         if debug {
             println!("=== Lattice dump:");
             let dict = &self.dictionary;
-            lattice.dump(dict.grammar(), dict.lexicon())?;
+            let mut writer = std::io::stdout();
+            self.lattice
+                .dump(&self.input, dict.grammar(), dict.lexicon(), &mut writer)?;
         };
 
-        let mut top_path = lattice.get_best_path()?;
-
-        let lexicon = self.dictionary.lexicon();
-        for node in &mut top_path {
-            node.fill_word_info(lexicon)?;
-        }
+        let mut path = self.resolve_best_path()?;
 
         if debug {
             println!("=== Before Rewriting:");
-            dump_path(&top_path);
+            dump_path(self.top_path.as_ref().unwrap());
         };
 
         for plugin in self.dictionary.path_rewrite_plugins() {
-            top_path = plugin.rewrite(&self.input, top_path, &lattice)?;
+            path = plugin.rewrite(&self.input, path, &self.lattice)?;
         }
 
-        self.top_path = split_path(&self.dictionary, top_path, self.mode)?;
+        path = split_path(&self.dictionary, path, self.mode)?;
+
+        self.top_path = Some(path);
 
         if debug {
             println!("=== After Rewriting:");
-            dump_path(&self.top_path);
+            dump_path(self.top_path.as_ref().unwrap());
             println!("===");
         };
 
         Ok(())
     }
 
-    pub fn swap_result(&mut self, input: &mut String, result: &mut Vec<Node>) {
-        translate_node_ranges(&mut self.top_path, &self.input);
+    pub fn resolve_best_path(&mut self) -> SudachiResult<Vec<ResultNode>> {
+        let lex = self.dictionary.lexicon();
+        let mut path = std::mem::replace(&mut self.top_path, None).unwrap_or_else(|| Vec::new());
+        self.lattice.fill_top_path(&mut self.top_path_ids);
+        self.top_path_ids.reverse();
+        for pid in self.top_path_ids.drain(..) {
+            let (inner, cost) = self.lattice.node(pid);
+            let wi = if inner.word_id().is_oov() {
+                let curr_slice = self.input.curr_slice_c(inner.char_range()).to_owned();
+                WordInfo {
+                    pos_id: inner.word_id().word() as u16,
+                    dictionary_form: curr_slice.clone(),
+                    normalized_form: curr_slice,
+                    ..Default::default()
+                }
+            } else {
+                lex.get_word_info(inner.word_id())?
+            };
+
+            let mut inner = inner.clone();
+            let orig_begin = self.input.to_orig_char_idx(inner.begin());
+            let orig_end = self.input.to_orig_char_idx(inner.end());
+            let orig_byte_begin = self.input.to_orig_byte_idx(inner.begin());
+            let orig_byte_end = self.input.to_orig_byte_idx(inner.end());
+            inner.set_range(orig_begin as u16, orig_end as u16);
+
+            path.push(ResultNode::new(
+                inner.clone(),
+                cost,
+                orig_byte_begin as u16,
+                orig_byte_end as u16,
+                wi,
+            ));
+        }
+        Ok(path)
+    }
+
+    pub fn swap_result(&mut self, input: &mut String, result: &mut Vec<ResultNode>) {
         self.input.swap_original(input);
-        std::mem::swap(&mut self.top_path, result);
+        std::mem::swap(self.top_path.as_mut().unwrap(), result);
     }
 
     fn rewrite_input(&mut self) -> SudachiResult<()> {
@@ -136,62 +176,81 @@ impl<D: DictionaryAccess> StatefulTokenizer<D> {
         Ok(())
     }
 
-    fn build_lattice(&mut self) -> SudachiResult<Lattice> {
+    fn build_lattice(&mut self) -> SudachiResult<()> {
         let input = &self.input;
         let dict = &self.dictionary;
         let input_bytes = input.current().as_bytes();
         let oovs = &mut self.oov;
-        let mut lattice = Lattice::new(self.dictionary.grammar(), input_bytes.len());
+        let lattice = &mut self.lattice;
 
-        for i in 0..input_bytes.len() {
-            if !input.can_bow(i) || !lattice.has_previous_node(i) {
+        lattice.reset(input.current_chars().len());
+
+        for (ch_off, &byte_off) in input.curr_byte_offsets().iter().enumerate() {
+            if !input.can_bow(byte_off) {
+                continue;
+            }
+
+            if !lattice.has_previous_node(ch_off) {
                 continue;
             }
 
             let mut has_word = false;
-            for e in dict.lexicon().lookup(input_bytes, i) {
+            for e in dict.lexicon().lookup(input_bytes, byte_off) {
                 if (e.end < input_bytes.len()) && !input.can_bow(e.end) {
                     continue;
                 }
                 has_word = true;
                 let (left_id, right_id, cost) = dict.lexicon().get_word_param(e.word_id)?;
-                let node = Node::new(left_id, right_id, cost, e.word_id);
-                lattice.insert(i, e.end, node)?;
+                let end_c = input.ch_idx(e.end);
+                let node = Node::new(
+                    ch_off as u16,
+                    end_c as u16,
+                    left_id as u16,
+                    right_id as u16,
+                    cost,
+                    e.word_id,
+                );
+                lattice.insert(node, dict.grammar().conn_matrix());
             }
 
             // OOV
-            if !input.cat_at_byte(i).contains(CategoryType::NOOOVBOW) {
+            if !input.cat_at_char(ch_off).contains(CategoryType::NOOOVBOW) {
                 for oov_provider in dict.oov_provider_plugins() {
-                    oov_provider.get_oov(&input, i, has_word, oovs)?;
+                    oov_provider.get_oov(&input, ch_off, has_word, oovs)?;
                 }
                 for node in oovs.drain(..) {
                     has_word = true;
-                    lattice.insert(node.begin, node.end, node)?;
+                    lattice.insert(node, dict.grammar().conn_matrix());
                 }
             }
+
             if !has_word {
                 dict.oov_provider_plugins()
                     .last()
                     .unwrap()
-                    .get_oov(&input, i, has_word, oovs)?;
+                    .get_oov(&input, ch_off, has_word, oovs)?;
                 // use last oov_provider as default
                 for node in oovs.drain(..) {
                     has_word = true;
-                    lattice.insert(node.begin, node.end, node)?;
+                    lattice.insert(node, dict.grammar().conn_matrix());
                 }
             }
 
             if !has_word {
-                panic!("no morpheme found at {}", i);
+                panic!("no morpheme found at {}", byte_off);
             }
         }
-        lattice.connect_eos_node()?;
+        lattice.connect_eos(dict.grammar().conn_matrix())?;
 
-        Ok(lattice)
+        Ok(())
     }
 
-    pub fn into_morpheme_list(mut self) -> SudachiResult<MorphemeList<D>> {
-        translate_node_ranges(&mut self.top_path, &self.input);
-        MorphemeList::from_components(self.dictionary, self.input.into_original(), self.top_path)
+    pub fn into_morpheme_list(self) -> SudachiResult<MorphemeList<D>> {
+        match self.top_path {
+            None => Err(SudachiError::EosBosDisconnect),
+            Some(path) => {
+                MorphemeList::from_components(self.dictionary, self.input.into_original(), path)
+            }
+        }
     }
 }
