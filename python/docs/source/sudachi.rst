@@ -1,32 +1,50 @@
 sudachi package
 ===============
 
-Subpackages
------------
 
-.. toctree::
-   :maxdepth: 4
-
-   sudachi.dictionary
-   sudachi.morpheme
-   sudachi.morphemelist
-   sudachi.tokenizer
-
-Submodules
-----------
-
-sudachi.sudachi module
+Dictionary
 ----------------------
 
-.. automodule:: sudachi.sudachi
+* Dictionary does not provide an access to the grammar and lexicon.
+
+.. autoclass:: sudachi.Dictionary
+   :members:
+
+
+SplitMode
+----------------------
+
+.. autoclass:: sudachi.SplitMode
+
+
+Tokenizer
+----------------------
+
+.. autoclass:: sudachi.Tokenizer
    :members:
    :undoc-members:
-   :show-inheritance:
 
-Module contents
----------------
 
-.. automodule:: sudachi
+Morpheme
+----------------------
+
+* Class method ``MorphemeList.empty() -> MorphemeList`` is deprecated.
+   * Use ``Tokenizer.tokenize("")`` if you need.
+
+.. autoclass:: sudachi.MorphemeList
+   :members:
+
+
+* Method ``Morpheme.get_word_info(self) -> WordInfo`` is deprecated.
+
+.. autoclass:: sudachi.Morpheme
+   :members:
+
+
+WordInfo
+----------------------
+
+.. autoclass:: sudachi.WordInfo
    :members:
    :undoc-members:
-   :show-inheritance:
+
