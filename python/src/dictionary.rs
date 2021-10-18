@@ -46,6 +46,14 @@ impl PyDictionary {
         resource_dir: Option<PathBuf>,
         dict_type: Option<&str>,
     ) -> PyResult<Self> {
+        let config_path = match config_path {
+            None => Some(get_default_setting_path(py)?),
+            Some(v) => Some(v),
+        };
+        let resource_dir = match resource_dir {
+            None => Some(get_default_resource_dir(py)?),
+            Some(v) => Some(v),
+        };
         let dict_path = match dict_type {
             None => None,
             Some(dt) => Some(find_dict_path(py, dt)?),
@@ -87,6 +95,18 @@ impl PyDictionary {
     fn close(&mut self) {
         self.dictionary = None;
     }
+}
+
+fn get_default_setting_path(py: Python) -> PyResult<PathBuf> {
+    let path = PyModule::import(py, "sudachi")?.getattr("_DEFAULT_SETTINGFILE")?;
+    let path = path.cast_as::<PyString>()?.to_str()?;
+    Ok(PathBuf::from(path))
+}
+
+fn get_default_resource_dir(py: Python) -> PyResult<PathBuf> {
+    let path = PyModule::import(py, "sudachi")?.getattr("_DEFAULT_RESOURCEDIR")?;
+    let path = path.cast_as::<PyString>()?.to_str()?;
+    Ok(PathBuf::from(path))
 }
 
 fn find_dict_path(py: Python, dict_type: &str) -> PyResult<PathBuf> {
