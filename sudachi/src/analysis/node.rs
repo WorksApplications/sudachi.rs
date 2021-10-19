@@ -152,6 +152,15 @@ impl ResultNode {
         self.begin_bytes()..self.end_bytes()
     }
 
+    pub fn set_bytes_range(&mut self, begin: u16, end: u16) {
+        self.begin_bytes = begin;
+        self.end_bytes = end;
+    }
+
+    pub fn set_char_range(&mut self, begin: u16, end: u16) {
+        self.inner.set_range(begin, end)
+    }
+
     /// Returns number of splits in a specified mode
     pub fn num_splits(&self, mode: Mode) -> usize {
         match mode {

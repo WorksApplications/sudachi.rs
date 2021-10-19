@@ -121,6 +121,8 @@ impl<D: DictionaryAccess> StatefulTokenizer<D> {
 
         path = split_path(&self.dictionary, path, self.mode)?;
 
+        self.translate_indices(&mut path);
+
         self.top_path = Some(path);
 
         if debug {
@@ -151,22 +153,30 @@ impl<D: DictionaryAccess> StatefulTokenizer<D> {
                 lex.get_word_info(inner.word_id())?
             };
 
-            let mut inner = inner.clone();
-            let orig_begin = self.input.to_orig_char_idx(inner.begin());
-            let orig_end = self.input.to_orig_char_idx(inner.end());
-            let orig_byte_begin = self.input.to_orig_byte_idx(inner.begin());
-            let orig_byte_end = self.input.to_orig_byte_idx(inner.end());
-            inner.set_range(orig_begin as u16, orig_end as u16);
+            let byte_begin = self.input.to_curr_byte_idx(inner.begin());
+            let byte_end = self.input.to_curr_byte_idx(inner.end());
 
             path.push(ResultNode::new(
                 inner.clone(),
                 cost,
-                orig_byte_begin as u16,
-                orig_byte_end as u16,
+                byte_begin as u16,
+                byte_end as u16,
                 wi,
             ));
         }
         Ok(path)
+    }
+
+    fn translate_indices(&self, path: &mut Vec<ResultNode>) {
+        let input = &self.input;
+        for elem in path {
+            let char_begin = input.to_orig_char_idx(elem.begin());
+            let char_end = input.to_orig_char_idx(elem.end());
+            let byte_begin = input.to_orig_byte_idx(elem.begin());
+            let byte_end = input.to_orig_byte_idx(elem.end());
+            elem.set_char_range(char_begin as u16, char_end as u16);
+            elem.set_bytes_range(byte_begin as u16, byte_end as u16);
+        }
     }
 
     pub fn swap_result(&mut self, input: &mut String, result: &mut Vec<ResultNode>) {

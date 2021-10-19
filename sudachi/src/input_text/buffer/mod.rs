@@ -326,6 +326,13 @@ impl InputBuffer {
         res
     }
 
+    /// Mod Char Idx -> Mod Byte Idx
+    pub fn to_curr_byte_idx(&self, index: usize) -> usize {
+        debug_assert_eq!(self.state, BufferState::RO);
+        self.mod_c2b[index]
+    }
+
+    /// Input: Mod Char Idx
     pub fn curr_slice_c(&self, data: Range<usize>) -> &str {
         debug_assert_eq!(self.state, BufferState::RO);
         let start = self.mod_c2b[data.start];
@@ -333,6 +340,7 @@ impl InputBuffer {
         &self.modified[start..end]
     }
 
+    /// Input: Mod Char Idx
     pub fn orig_slice_c(&self, data: Range<usize>) -> &str {
         debug_assert_eq!(self.state, BufferState::RO);
         let start = self.to_orig_byte_idx(data.start);
