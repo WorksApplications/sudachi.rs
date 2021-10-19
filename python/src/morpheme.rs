@@ -42,15 +42,15 @@ impl PyMorphemeListWrapper {
     /// Returns an empty morpheme list with dictionary
     #[classmethod]
     #[pyo3(text_signature = "(dict) -> sudachi.MorphemeList")]
-    fn empty(_cls: &PyType, dict: &PyDictionary) -> Self {
+    fn empty(_cls: &PyType, py: Python, dict: &PyDictionary) -> PyResult<Self> {
         let cat = PyModule::import(py, "builtins")?.getattr("DeprecationWarning")?;
         PyErr::warn(py, cat, "Users should not generate MorphemeList by themselves. Use Tokenizer.tokenize(\"\") if you need.", 1)?;
 
-        Self {
+        Ok(Self {
             inner: Arc::new(PyMorphemeList::empty(
                 dict.dictionary.as_ref().unwrap().clone(),
             )),
-        }
+        })
     }
 
     /// Returns the total cost of the path

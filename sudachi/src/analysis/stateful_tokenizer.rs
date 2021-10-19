@@ -64,14 +64,18 @@ impl<D: DictionaryAccess> StatefulTokenizer<D> {
         }
     }
 
+    /// Set debug flag and returns the current one
     pub fn set_debug(&mut self, debug: bool) -> bool {
         std::mem::replace(&mut self.debug, debug)
     }
 
+    /// Set the analysis mode and returns the current one
     pub fn set_mode(&mut self, mode: Mode) -> Mode {
         std::mem::replace(&mut self.mode, mode)
     }
 
+    /// Prepare StatefulTokenizer for the next data.
+    /// Data must be written in the returned reference.
     pub fn reset(&mut self) -> &mut String {
         self.top_path.as_mut().map(|p| p.clear());
         self.oov.clear();
@@ -83,6 +87,8 @@ impl<D: DictionaryAccess> StatefulTokenizer<D> {
         &self.dictionary
     }
 
+    /// Perform the actual tokenization so the analysis result will be available
+    /// for consumption
     pub fn do_tokenize(&mut self) -> SudachiResult<()> {
         self.input.start_build()?;
         self.rewrite_input()?;
@@ -134,7 +140,8 @@ impl<D: DictionaryAccess> StatefulTokenizer<D> {
         Ok(())
     }
 
-    pub fn resolve_best_path(&mut self) -> SudachiResult<Vec<ResultNode>> {
+    /// Resolve the path (as ResultNodes) with the smallest cost
+    fn resolve_best_path(&mut self) -> SudachiResult<Vec<ResultNode>> {
         let lex = self.dictionary.lexicon();
         let mut path = std::mem::replace(&mut self.top_path, None).unwrap_or_else(|| Vec::new());
         self.lattice.fill_top_path(&mut self.top_path_ids);
@@ -167,6 +174,7 @@ impl<D: DictionaryAccess> StatefulTokenizer<D> {
         Ok(path)
     }
 
+    /// Translate ResultNode indices from normalized data to original data
     fn translate_indices(&self, path: &mut Vec<ResultNode>) {
         let input = &self.input;
         for elem in path {
@@ -179,6 +187,7 @@ impl<D: DictionaryAccess> StatefulTokenizer<D> {
         }
     }
 
+    /// Swap result data with the current analyzer
     pub fn swap_result(&mut self, input: &mut String, result: &mut Vec<ResultNode>) {
         self.input.swap_original(input);
         std::mem::swap(self.top_path.as_mut().unwrap(), result);
@@ -260,6 +269,7 @@ impl<D: DictionaryAccess> StatefulTokenizer<D> {
         Ok(())
     }
 
+    /// Consume the Tokenizer and produce MorphemeList
     pub fn into_morpheme_list(self) -> SudachiResult<MorphemeList<D>> {
         match self.top_path {
             None => Err(SudachiError::EosBosDisconnect),

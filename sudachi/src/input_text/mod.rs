@@ -27,14 +27,8 @@ pub trait InputTextIndex {
     /// Common character category inside the range. Indexed by chars.
     fn cat_of_range(&self, range: Range<usize>) -> CategoryType;
 
-    /// Character category at byte offset
-    fn cat_at_byte(&self, offset: usize) -> CategoryType;
-
     /// Character category at char offset
     fn cat_at_char(&self, offset: usize) -> CategoryType;
-
-    /// Number of codepoints in the range indexed by byte indices
-    fn num_codepts(&self, range: Range<usize>) -> usize;
 
     /// Number of chars to the right of the offset with the same character category
     ///
@@ -52,6 +46,6 @@ pub trait InputTextIndex {
     /// Returns substring of the current (modified) text by indices from the current text
     fn curr_slice(&self, range: Range<usize>) -> &str;
 
-    /// Translate range from current state to original
+    /// Translate range from current state to original. Byte-indexed.
     fn to_orig(&self, range: Range<usize>) -> Range<usize>;
 }

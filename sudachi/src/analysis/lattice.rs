@@ -60,6 +60,15 @@ impl VNode {
     }
 }
 
+/// Lattice which is constructed for performing the Viterbi search.
+/// Contain several parallel arrays.
+/// First level of parallel arrays is indexed by end word boundary.
+/// Word boundaries are always aligned to codepoint boundaries, not to byte boundaries.
+///
+/// During the successive analysis, we do not drop inner vectors, so
+/// the size of vectors never shrink.
+/// You must use the size parameter to check the current size and never
+/// access vectors after the end.
 pub struct Lattice {
     ends: Vec<Vec<VNode>>,
     ends_full: Vec<Vec<Node>>,
@@ -94,6 +103,8 @@ impl Lattice {
         }
     }
 
+    /// Prepare lattice for the next analysis of a sentence with the
+    /// specified length (in codepoints)
     pub fn reset(&mut self, length: usize) {
         Self::reset_vec(&mut self.ends, length + 1);
         Self::reset_vec(&mut self.ends_full, length + 1);
@@ -107,6 +118,7 @@ impl Lattice {
         self.ends[0].push(VNode::new(0, 0));
     }
 
+    /// Find EOS node -- finish the lattice construction
     pub fn connect_eos(&mut self, conn: &ConnectionMatrix) -> SudachiResult<()> {
         let len = self.size;
         let eos_start = (len - 1) as u16;
@@ -121,6 +133,8 @@ impl Lattice {
         }
     }
 
+    /// Insert a single node in the lattice, founding the path to the previous node
+    /// Assumption: lattice for all previous boundaries is already constructed
     pub fn insert(&mut self, node: Node, conn: &ConnectionMatrix) -> i32 {
         let (idx, cost) = self.connect_node(&node, conn);
         let end_idx = node.end();
@@ -130,6 +144,8 @@ impl Lattice {
         cost
     }
 
+    /// Find the path with the minimal cost through the lattice to the attached node
+    /// Assumption: lattice for all previous boundaries is already constructed
     #[inline]
     pub fn connect_node(&self, r_node: &Node, conn: &ConnectionMatrix) -> (NodeIdx, i32) {
         let begin = r_node.begin();
@@ -154,16 +170,21 @@ impl Lattice {
         (prev_idx, min_cost)
     }
 
+    /// Checks if there exist at least one at the word end boundary
     pub fn has_previous_node(&self, i: usize) -> bool {
         self.ends.get(i).map(|d| !d.is_empty()).unwrap_or(false)
     }
 
+    /// Lookup a node for the index
     pub fn node(&self, id: NodeIdx) -> (&Node, i32) {
         let node = &self.ends_full[id.end() as usize][id.index() as usize];
         let cost = self.ends[id.end() as usize][id.index() as usize].total_cost;
         (node, cost)
     }
 
+    /// Fill the path with the minimum cost (indices only).
+    /// **Attention**: the path will be reversed (end to beginning) and will need to be traversed
+    /// in the reverse order.
     pub fn fill_top_path(&self, result: &mut Vec<NodeIdx>) {
         if self.eos.is_none() {
             return;

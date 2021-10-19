@@ -24,10 +24,12 @@ use crate::dic::lexicon_set::LexiconSet;
 use crate::dic::word_id::WordId;
 use crate::prelude::*;
 
+/// Accessor trait for right connection id
 pub trait RightId {
     fn right_id(&self) -> u16;
 }
 
+/// Accessor trait for the full path cost
 pub trait PathCost {
     fn total_cost(&self) -> i32;
 
@@ -44,26 +46,28 @@ pub trait LatticeNode: RightId {
     fn word_id(&self) -> WordId;
     fn left_id(&self) -> u16;
 
+    /// Is true when the word does not come from the dictionary.
+    /// BOS and EOS are also treated as OOV.
     #[inline]
     fn is_oov(&self) -> bool {
         self.word_id().is_oov()
     }
 
-    #[inline]
     /// If a node is a special system node like BOS or EOS.
     /// Java name isSystem (which is similar to a regular node coming from the system dictionary)
+    #[inline]
     fn is_special_node(&self) -> bool {
         self.word_id().is_special()
     }
 
-    #[inline]
     /// Returns number of codepoints in the current node
+    #[inline]
     fn num_codepts(&self) -> usize {
         self.end() - self.begin()
     }
 
-    #[inline]
     /// Utility method for extracting [begin, end) codepoint range.
+    #[inline]
     fn char_range(&self) -> Range<usize> {
         self.begin()..self.end()
     }
@@ -238,7 +242,7 @@ impl Iterator for NodeSplitIterator<'_> {
             (self.char_end, self.byte_end)
         } else {
             (
-                // head_word_length is in bytes?!?!?
+                // word_info.head_word_length is in bytes?!?!?
                 char_start + word_info.surface.chars().count() as u16,
                 byte_start + word_info.surface.len() as u16,
             )
@@ -289,15 +293,13 @@ pub fn concat_nodes(
         head_word_length += node.word_info().head_word_length;
     }
 
-    let normalized_form = if normalized_form.is_none() {
-        let mut normalized_form = String::with_capacity(end_bytes - beg_bytes);
+    let normalized_form = normalized_form.unwrap_or_else(|| {
+        let mut norm = String::with_capacity(end_bytes - beg_bytes);
         for node in path[begin..end].iter() {
-            normalized_form.push_str(&node.word_info().normalized_form);
+            norm.push_str(&node.word_info().normalized_form);
         }
-        normalized_form
-    } else {
-        normalized_form.unwrap()
-    };
+        norm
+    });
 
     let pos_id = path[begin].word_info().pos_id;
 

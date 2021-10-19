@@ -39,20 +39,20 @@ fn get_char_category_types() {
     let mut builder = InputBuffer::from("âｂC1あ234漢字𡈽アｺﾞ");
     builder.build(&grammar).expect("succeeds");
     let input = &builder;
-    assert!(input.cat_at_byte(0).contains(CategoryType::ALPHA));
-    assert!(input.cat_at_byte(2).contains(CategoryType::ALPHA));
-    assert!(input.cat_at_byte(5).contains(CategoryType::ALPHA));
-    assert!(input.cat_at_byte(6).contains(CategoryType::NUMERIC));
-    assert!(input.cat_at_byte(7).contains(CategoryType::HIRAGANA));
-    assert!(input.cat_at_byte(9).contains(CategoryType::HIRAGANA));
-    assert!(input.cat_at_byte(10).contains(CategoryType::NUMERIC));
-    assert!(input.cat_at_byte(13).contains(CategoryType::KANJI));
-    assert!(input.cat_at_byte(18).contains(CategoryType::KANJI));
-    assert!(input.cat_at_byte(19).contains(CategoryType::DEFAULT));
-    assert!(input.cat_at_byte(22).contains(CategoryType::DEFAULT));
-    assert!(input.cat_at_byte(23).contains(CategoryType::KATAKANA));
-    assert!(input.cat_at_byte(26).contains(CategoryType::KATAKANA));
-    assert!(input.cat_at_byte(31).contains(CategoryType::KATAKANA));
+    assert!(input.cat_at_char(0).contains(CategoryType::ALPHA)); // â
+    assert!(input.cat_at_char(1).contains(CategoryType::ALPHA)); // ｂ
+    assert!(input.cat_at_char(2).contains(CategoryType::ALPHA)); // C
+    assert!(input.cat_at_char(3).contains(CategoryType::NUMERIC)); // 1
+    assert!(input.cat_at_char(4).contains(CategoryType::HIRAGANA)); // あ
+    assert!(input.cat_at_char(5).contains(CategoryType::NUMERIC)); // 2
+    assert!(input.cat_at_char(6).contains(CategoryType::NUMERIC)); // 3
+    assert!(input.cat_at_char(7).contains(CategoryType::NUMERIC)); // 4
+    assert!(input.cat_at_char(8).contains(CategoryType::KANJI)); // 漢
+    assert!(input.cat_at_char(9).contains(CategoryType::KANJI)); // 字
+    assert!(input.cat_at_char(10).contains(CategoryType::DEFAULT)); // 𡈽
+    assert!(input.cat_at_char(11).contains(CategoryType::KATAKANA)); // ア
+    assert!(input.cat_at_char(12).contains(CategoryType::KATAKANA)); // ｺ
+    assert!(input.cat_at_char(13).contains(CategoryType::KATAKANA)); // ﾞ
 }
 
 #[test]
@@ -76,17 +76,17 @@ fn get_char_category_continuous_length() {
     assert_eq!(1, input.cat_continuous_len(13)); // ﾞ
 }
 
-// replace_* tests -> new edit tests are better and easier to figure about
-
 #[test]
-fn code_point_count() {
+fn range_cat() {
     let grammar = cat_grammar();
     let mut input = InputBuffer::from("âｂC1あ234漢字𡈽アｺﾞ");
     input.build(&grammar).expect("works");
-    assert_eq!(1, input.num_codepts(0..2));
-    assert_eq!(4, input.num_codepts(0..7));
-    assert_eq!(2, input.num_codepts(13..19));
+    assert_eq!(input.cat_of_range(0..3), CategoryType::ALPHA); // âｂC
+    assert_eq!(input.cat_of_range(3..5), CategoryType::empty()); // 1あ
+    assert_eq!(input.cat_of_range(8..10), CategoryType::KANJI); // 漢字
 }
+
+// replace_* tests -> new edit tests are better and easier to figure about
 
 #[test]
 fn can_bow() {

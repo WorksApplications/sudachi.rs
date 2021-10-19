@@ -403,24 +403,9 @@ impl InputTextIndex for InputBuffer {
     }
 
     #[inline]
-    fn cat_at_byte(&self, offset: usize) -> CategoryType {
-        debug_assert_eq!(self.state, BufferState::RO);
-        let cpidx = self.mod_b2c[offset];
-        self.mod_cat[cpidx]
-    }
-
-    #[inline]
     fn cat_at_char(&self, offset: usize) -> CategoryType {
         debug_assert_eq!(self.state, BufferState::RO);
         self.mod_cat[offset]
-    }
-
-    #[inline]
-    fn num_codepts(&self, range: Range<usize>) -> usize {
-        debug_assert_eq!(self.state, BufferState::RO);
-        let start = self.mod_b2c[range.start];
-        let end = self.mod_b2c[range.end];
-        end - start
     }
 
     #[inline]
