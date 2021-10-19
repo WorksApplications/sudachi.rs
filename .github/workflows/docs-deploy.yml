@@ -1,0 +1,33 @@
+name: Deploy Documentation
+# deploy python doc only for now
+
+on:
+  push:
+    branches: [ develop ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.8'
+      - name: Install dependencies
+        run: python3 -m pip install -U setuptools setuptools-rust sphinx sphinx-rtd-theme
+
+      - name: Build python binding
+        working-directory: ./python
+        run: python3 setup.py develop
+
+      - name: Build document
+        working-directory: ./python/docs
+        run: make html
+
+      - name: Deploy
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./python/docs/build/html
