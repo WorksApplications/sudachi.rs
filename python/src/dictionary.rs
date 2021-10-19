@@ -27,8 +27,9 @@ use sudachi::dic::dictionary::JapaneseDictionary;
 
 use crate::tokenizer::{PySplitMode, PyTokenizer};
 
+/// A sudachi dictionary
 #[pyclass(module = "sudachi.dictionary", name = "Dictionary")]
-#[pyo3(text_signature = "(config_path, resource_dir)")]
+#[pyo3(text_signature = "(config_path=None, resource_dir=None, dict_type=None)")]
 #[derive(Clone)]
 #[repr(transparent)]
 pub struct PyDictionary {
@@ -73,7 +74,7 @@ impl PyDictionary {
     }
 
     /// Creates a sudachi tokenizer
-    #[pyo3(text_signature = "($self, mode)")]
+    #[pyo3(text_signature = "($self, /, mode=None) -> sudachi.Tokenizer")]
     #[args(mode = "None")]
     fn create(&self, mode: Option<PySplitMode>) -> PyTokenizer {
         let tokenizer = StatelessTokenizer::new(self.dictionary.as_ref().unwrap().clone());

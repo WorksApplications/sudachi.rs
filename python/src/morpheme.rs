@@ -57,7 +57,7 @@ pub struct PyMorphemeListWrapper {
 impl PyMorphemeListWrapper {
     /// Returns an empty morpheme list with dictionary
     #[classmethod]
-    #[pyo3(text_signature = "(dict)")]
+    #[pyo3(text_signature = "(dict) -> sudachi.MorphemeList")]
     fn empty(_cls: &PyType, py: Python, dict: &PyDictionary) -> PyResult<Self> {
         let cat = PyModule::import(py, "builtins")?.getattr("DeprecationWarning")?;
         PyErr::warn(py, cat, "Users should not generate MorphemeList by themselves. Use Tokenizer.tokenize(\"\") if you need.", 1)?;
@@ -76,6 +76,7 @@ impl PyMorphemeListWrapper {
         self.inner.get_internal_cost()
     }
 
+    /// Returns the number of morpheme in this list.
     #[pyo3(text_signature = "($self)")]
     fn size(&self) -> usize {
         self.inner.len()
@@ -159,6 +160,7 @@ impl pyo3::iter::PyIterProtocol for PyMorphemeListWrapper {
     }
 }
 
+/// A morpheme (basic semantic unit of language).
 #[pyclass(module = "sudachi.morphemelist", name = "MorphemeIter")]
 pub struct PyMorphemeIter {
     list: Arc<PyMorphemeList>,
@@ -257,7 +259,7 @@ impl PyMorpheme {
     }
 
     /// Returns a list of morphemes splitting itself with given split mode
-    #[pyo3(text_signature = "($self, mode, /)")]
+    #[pyo3(text_signature = "($self, mode, /) -> sudachi.MorphemeList")]
     fn split(&self, py: Python, mode: PySplitMode) -> PyResult<PyMorphemeListWrapper> {
         let cat = PyModule::import(py, "builtins")?.getattr("DeprecationWarning")?;
         PyErr::warn(
@@ -302,7 +304,7 @@ impl PyMorpheme {
     }
 
     /// Returns the word info
-    #[pyo3(text_signature = "($self)")]
+    #[pyo3(text_signature = "($self) -> sudachi.WordInfo")]
     fn get_word_info(&self, py: Python) -> PyResult<PyWordInfo> {
         let cat = PyModule::import(py, "builtins")?.getattr("DeprecationWarning")?;
         PyErr::warn(py, cat, "Users should not touch the raw WordInfo.", 1)?;
