@@ -28,7 +28,7 @@ use std::ops::Range;
 use crate::error::{SudachiError, SudachiResult};
 use crate::input_text::InputTextIndex;
 
-/// limit on the maximum length of the input types, in bytes, 4/3 of u16::MAX
+/// limit on the maximum length of the input types, in bytes, 3/4 of u16::MAX
 const MAX_LENGTH: usize = u16::MAX as usize / 4 * 3;
 
 /// if the limit of the rewritten sentence is more than this number, then all bets are off
@@ -63,7 +63,7 @@ pub struct InputBuffer {
     /// Only values lying on codepoint boundaries are correct. Byte-based indexing.
     m2o: Vec<usize>,
     /// Buffer for normalization.
-    /// After building it is used as c2b for original data.
+    /// After building it is used as byte-to-char mapping for original data.
     m2o_2: Vec<usize>,
     /// Characters of the modified string. Char-based indexing.
     mod_chars: Vec<char>,

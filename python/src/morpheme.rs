@@ -31,7 +31,7 @@ use crate::word_info::PyWordInfo;
 type PyMorphemeList = MorphemeList<Arc<JapaneseDictionary>>;
 
 /// A list of morphemes
-#[pyclass(module = "sudachi.morpheme", name = "MorphemeList")]
+#[pyclass(module = "sudachi.morphemelist", name = "MorphemeList")]
 #[repr(transparent)]
 pub struct PyMorphemeListWrapper {
     inner: Arc<PyMorphemeList>,
