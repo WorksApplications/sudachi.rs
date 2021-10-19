@@ -229,8 +229,9 @@ impl Iterator for NodeSplitIterator<'_> {
             (self.char_end, self.byte_end)
         } else {
             (
-                self.char_offset + word_info.head_word_length,
-                self.byte_offset + word_info.surface.len() as u16,
+                // head_word_length is in bytes?!?!?
+                char_start + word_info.surface.chars().count() as u16,
+                byte_start + word_info.surface.len() as u16,
             )
         };
 
@@ -298,6 +299,7 @@ pub fn concat_nodes(
         normalized_form,
         reading_form,
         dictionary_form,
+        dictionary_form_word_id: -1,
         ..Default::default()
     };
 
@@ -356,6 +358,7 @@ pub fn concat_oov_nodes(
         surface,
         head_word_length,
         pos_id,
+        dictionary_form_word_id: -1,
         ..Default::default()
     };
 

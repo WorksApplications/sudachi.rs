@@ -54,9 +54,10 @@ impl From<WordInfo> for PyWordInfo {
             dictionary_form_word_id: word_info.dictionary_form_word_id,
             dictionary_form: word_info.dictionary_form,
             reading_form: word_info.reading_form,
-            a_unit_split: word_info.a_unit_split,
-            b_unit_split: word_info.b_unit_split,
-            word_structure: word_info.word_structure,
+            // WordId is repr(transparent) with a single u32 field so transmute is safe
+            a_unit_split: unsafe { std::mem::transmute(word_info.a_unit_split) },
+            b_unit_split: unsafe { std::mem::transmute(word_info.b_unit_split) },
+            word_structure: unsafe { std::mem::transmute(word_info.word_structure) },
             synonym_group_ids: word_info.synonym_group_ids,
         }
     }

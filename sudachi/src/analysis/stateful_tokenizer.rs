@@ -87,6 +87,11 @@ impl<D: DictionaryAccess> StatefulTokenizer<D> {
         self.input.start_build()?;
         self.rewrite_input()?;
         self.input.build(self.dictionary.grammar())?;
+
+        if self.input.current().is_empty() {
+            return Ok(());
+        }
+
         let debug = self.debug;
 
         if debug {

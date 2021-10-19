@@ -253,7 +253,12 @@ impl PyMorpheme {
     /// Returns the dictionary id which this word belongs
     #[pyo3(text_signature = "($self)")]
     fn dictionary_id(&self) -> i32 {
-        self.list.get_node(self.index).get_dictionary_id()
+        let word_id = self.list.get_node(self.index).word_id();
+        if word_id.is_oov() {
+            -1
+        } else {
+            word_id.dic() as i32
+        }
     }
 
     /// Returns the list of synonym group ids
