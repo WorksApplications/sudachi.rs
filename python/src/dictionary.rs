@@ -63,7 +63,9 @@ impl PyDictionary {
             PyException::new_err(format!("Error loading config: {}", e.to_string()))
         })?;
 
-        // sudachi.json does not have systemDict key or its value is ""
+        // Load a dictionary from `sudachidict_core` as the default one.
+        // For this behavior, the value of `systemDict` key in the default setting file must be
+        // empty (or no `systemDict` key), different from rust's one.
         if config.system_dict.is_none() || config.system_dict.as_ref().unwrap().is_dir() {
             config.system_dict = Some(find_dict_path(py, "core")?);
         }
