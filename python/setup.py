@@ -31,6 +31,9 @@ setup(
               "sudachi.morpheme", "sudachi.morpheme"],
     package_data={"": ["resources/*.json", "resources/*.def"]},
     package_dir={"": "py_src"},
+    entry_points={
+        "console_scripts": ["sudachipy=sudachi.command_line:main"],
+    },
     # rust extensions are not zip safe, just like C-extensions.
     zip_safe=False,
 )
