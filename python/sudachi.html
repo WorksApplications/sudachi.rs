@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>sudachi package &mdash; sudachi 0.1 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="sudachi.dictionary package" href="sudachi.dictionary.html" />
+    <link rel="prev" title="Welcome to sudachi’s documentation!" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> sudachi
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">API Reference:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">sudachi package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#dictionary">Dictionary</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#splitmode">SplitMode</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#tokenizer">Tokenizer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#morpheme">Morpheme</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#wordinfo">WordInfo</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="sudachi.dictionary.html">sudachi.dictionary package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sudachi.tokenizer.html">sudachi.tokenizer package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sudachi.morphemelist.html">sudachi.morphemelist package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sudachi.morpheme.html">sudachi.morpheme package</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">sudachi</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>sudachi package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/sudachi.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="sudachi-package">
+<h1>sudachi package<a class="headerlink" href="#sudachi-package" title="Permalink to this headline"></a></h1>
+<section id="dictionary">
+<h2>Dictionary<a class="headerlink" href="#dictionary" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>Dictionary does not provide an access to the grammar and lexicon.</p></li>
+</ul>
+<dl class="py class">
+<dt class="sig sig-object py" id="sudachi.Dictionary">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">sudachi.</span></span><span class="sig-name descname"><span class="pre">Dictionary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">resource_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dict_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#sudachi.Dictionary" title="Permalink to this definition"></a></dt>
+<dd><p>A sudachi dictionary</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="sudachi.Dictionary.close">
+<span class="sig-name descname"><span class="pre">close</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#sudachi.Dictionary.close" title="Permalink to this definition"></a></dt>
+<dd><p>Close this dictionary</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sudachi.Dictionary.create">
+<span class="sig-name descname"><span class="pre">create</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">$self</span></em>, <em class="sig-param"><span class="pre">/</span></em>, <em class="sig-param"><span class="pre">mode=None</span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#sudachi.Tokenizer" title="sudachi.Tokenizer"><span class="pre">sudachi.Tokenizer</span></a></span></span><a class="headerlink" href="#sudachi.Dictionary.create" title="Permalink to this definition"></a></dt>
+<dd><p>–</p>
+<p>Creates a sudachi tokenizer</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="splitmode">
+<h2>SplitMode<a class="headerlink" href="#splitmode" title="Permalink to this headline"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="sudachi.SplitMode">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">sudachi.</span></span><span class="sig-name descname"><span class="pre">SplitMode</span></span><a class="headerlink" href="#sudachi.SplitMode" title="Permalink to this definition"></a></dt>
+<dd><p>Unit to split text</p>
+<p>A == short mode</p>
+<p>B == middle mode</p>
+<p>C == long mode</p>
+</dd></dl>
+
+</section>
+<section id="tokenizer">
+<h2>Tokenizer<a class="headerlink" href="#tokenizer" title="Permalink to this headline"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="sudachi.Tokenizer">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">sudachi.</span></span><span class="sig-name descname"><span class="pre">Tokenizer</span></span><a class="headerlink" href="#sudachi.Tokenizer" title="Permalink to this definition"></a></dt>
+<dd><p>Tokenizer of morphelogical analysis</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="sudachi.Tokenizer.SplitMode">
+<span class="sig-name descname"><span class="pre">SplitMode</span></span><em class="property"> <span class="pre">=</span> <span class="pre">&lt;sudachi.tokenizer.SplitMode</span> <span class="pre">object&gt;</span></em><a class="headerlink" href="#sudachi.Tokenizer.SplitMode" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sudachi.Tokenizer.tokenize">
+<span class="sig-name descname"><span class="pre">tokenize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">$self</span></em>, <em class="sig-param"><span class="pre">text</span></em>, <em class="sig-param"><span class="pre">/</span></em>, <em class="sig-param"><span class="pre">mode=None</span></em>, <em class="sig-param"><span class="pre">logger=None</span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#sudachi.MorphemeList" title="sudachi.MorphemeList"><span class="pre">sudachi.MorphemeList</span></a></span></span><a class="headerlink" href="#sudachi.Tokenizer.tokenize" title="Permalink to this definition"></a></dt>
+<dd><p>–</p>
+<p>Break text into morphemes</p>
+<p>In default tokenize text with SplitMode.C.
+The logger provided is ignored.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="morpheme">
+<h2>Morpheme<a class="headerlink" href="#morpheme" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><dl class="simple">
+<dt>Class method <code class="docutils literal notranslate"><span class="pre">MorphemeList.empty()</span> <span class="pre">-&gt;</span> <span class="pre">MorphemeList</span></code> is deprecated.</dt><dd><ul>
+<li><p>Use <code class="docutils literal notranslate"><span class="pre">Tokenizer.tokenize(&quot;&quot;)</span></code> if you need.</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+<dl class="py class">
+<dt class="sig sig-object py" id="sudachi.MorphemeList">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">sudachi.</span></span><span class="sig-name descname"><span class="pre">MorphemeList</span></span><a class="headerlink" href="#sudachi.MorphemeList" title="Permalink to this definition"></a></dt>
+<dd><p>A list of morphemes</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="sudachi.MorphemeList.empty">
+<span class="sig-name descname"><span class="pre">empty</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#sudachi.MorphemeList" title="sudachi.MorphemeList"><span class="pre">sudachi.MorphemeList</span></a></span></span><a class="headerlink" href="#sudachi.MorphemeList.empty" title="Permalink to this definition"></a></dt>
+<dd><p>–</p>
+<p>Returns an empty morpheme list with dictionary</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sudachi.MorphemeList.get_internal_cost">
+<span class="sig-name descname"><span class="pre">get_internal_cost</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#sudachi.MorphemeList.get_internal_cost" title="Permalink to this definition"></a></dt>
+<dd><p>Returns the total cost of the path</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sudachi.MorphemeList.size">
+<span class="sig-name descname"><span class="pre">size</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#sudachi.MorphemeList.size" title="Permalink to this definition"></a></dt>
+<dd><p>Returns the number of morpheme in this list.</p>
+</dd></dl>
+
+</dd></dl>
+
+<ul class="simple">
+<li><p>Method <code class="docutils literal notranslate"><span class="pre">Morpheme.get_word_info(self)</span> <span class="pre">-&gt;</span> <span class="pre">WordInfo</span></code> is deprecated.</p></li>
+</ul>
+<dl class="py class">
+<dt class="sig sig-object py" id="sudachi.Morpheme">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">sudachi.</span></span><span class="sig-name descname"><span class="pre">Morpheme</span></span><a class="headerlink" href="#sudachi.Morpheme" title="Permalink to this definition"></a></dt>
+<dd><dl class="py method">
+<dt class="sig sig-object py" id="sudachi.Morpheme.begin">
+<span class="sig-name descname"><span class="pre">begin</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#sudachi.Morpheme.begin" title="Permalink to this definition"></a></dt>
+<dd><p>Returns the begin index of this in the input text</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sudachi.Morpheme.dictionary_form">
+<span class="sig-name descname"><span class="pre">dictionary_form</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#sudachi.Morpheme.dictionary_form" title="Permalink to this definition"></a></dt>
+<dd><p>Returns the dictionary form</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sudachi.Morpheme.dictionary_id">
+<span class="sig-name descname"><span class="pre">dictionary_id</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#sudachi.Morpheme.dictionary_id" title="Permalink to this definition"></a></dt>
+<dd><p>Returns the dictionary id which this word belongs</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sudachi.Morpheme.end">
+<span class="sig-name descname"><span class="pre">end</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#sudachi.Morpheme.end" title="Permalink to this definition"></a></dt>
+<dd><p>Returns the end index of this in the input text</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sudachi.Morpheme.get_word_info">
+<span class="sig-name descname"><span class="pre">get_word_info</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">$self</span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#sudachi.WordInfo" title="sudachi.WordInfo"><span class="pre">sudachi.WordInfo</span></a></span></span><a class="headerlink" href="#sudachi.Morpheme.get_word_info" title="Permalink to this definition"></a></dt>
+<dd><p>–</p>
+<p>Returns the word info</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sudachi.Morpheme.is_oov">
+<span class="sig-name descname"><span class="pre">is_oov</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#sudachi.Morpheme.is_oov" title="Permalink to this definition"></a></dt>
+<dd><p>Returns whether if this is out of vocabulary word</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sudachi.Morpheme.normalized_form">
+<span class="sig-name descname"><span class="pre">normalized_form</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#sudachi.Morpheme.normalized_form" title="Permalink to this definition"></a></dt>
+<dd><p>Returns the normalized form</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sudachi.Morpheme.part_of_speech">
+<span class="sig-name descname"><span class="pre">part_of_speech</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#sudachi.Morpheme.part_of_speech" title="Permalink to this definition"></a></dt>
+<dd><p>Returns the part of speech</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sudachi.Morpheme.part_of_speech_id">
+<span class="sig-name descname"><span class="pre">part_of_speech_id</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#sudachi.Morpheme.part_of_speech_id" title="Permalink to this definition"></a></dt>
+<dd><p>Returns the id of the part of speech in the dictionary</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sudachi.Morpheme.reading_form">
+<span class="sig-name descname"><span class="pre">reading_form</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#sudachi.Morpheme.reading_form" title="Permalink to this definition"></a></dt>
+<dd><p>Returns the reading form</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sudachi.Morpheme.split">
+<span class="sig-name descname"><span class="pre">split</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">$self</span></em>, <em class="sig-param"><span class="pre">mode</span></em>, <em class="sig-param"><span class="pre">/</span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#sudachi.MorphemeList" title="sudachi.MorphemeList"><span class="pre">sudachi.MorphemeList</span></a></span></span><a class="headerlink" href="#sudachi.Morpheme.split" title="Permalink to this definition"></a></dt>
+<dd><p>–</p>
+<p>Returns a list of morphemes splitting itself with given split mode</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sudachi.Morpheme.surface">
+<span class="sig-name descname"><span class="pre">surface</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#sudachi.Morpheme.surface" title="Permalink to this definition"></a></dt>
+<dd><p>Returns the surface</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sudachi.Morpheme.synonym_group_ids">
+<span class="sig-name descname"><span class="pre">synonym_group_ids</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#sudachi.Morpheme.synonym_group_ids" title="Permalink to this definition"></a></dt>
+<dd><p>Returns the list of synonym group ids</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sudachi.Morpheme.word_id">
+<span class="sig-name descname"><span class="pre">word_id</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#sudachi.Morpheme.word_id" title="Permalink to this definition"></a></dt>
+<dd><p>Returns word id of this word in the dictionary</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="wordinfo">
+<h2>WordInfo<a class="headerlink" href="#wordinfo" title="Permalink to this headline"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="sudachi.WordInfo">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">sudachi.</span></span><span class="sig-name descname"><span class="pre">WordInfo</span></span><a class="headerlink" href="#sudachi.WordInfo" title="Permalink to this definition"></a></dt>
+<dd><dl class="py attribute">
+<dt class="sig sig-object py" id="sudachi.WordInfo.a_unit_split">
+<span class="sig-name descname"><span class="pre">a_unit_split</span></span><a class="headerlink" href="#sudachi.WordInfo.a_unit_split" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="sudachi.WordInfo.b_unit_split">
+<span class="sig-name descname"><span class="pre">b_unit_split</span></span><a class="headerlink" href="#sudachi.WordInfo.b_unit_split" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="sudachi.WordInfo.dictionary_form">
+<span class="sig-name descname"><span class="pre">dictionary_form</span></span><a class="headerlink" href="#sudachi.WordInfo.dictionary_form" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="sudachi.WordInfo.dictionary_form_word_id">
+<span class="sig-name descname"><span class="pre">dictionary_form_word_id</span></span><a class="headerlink" href="#sudachi.WordInfo.dictionary_form_word_id" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="sudachi.WordInfo.head_word_length">
+<span class="sig-name descname"><span class="pre">head_word_length</span></span><a class="headerlink" href="#sudachi.WordInfo.head_word_length" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sudachi.WordInfo.length">
+<span class="sig-name descname"><span class="pre">length</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#sudachi.WordInfo.length" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="sudachi.WordInfo.normalized_form">
+<span class="sig-name descname"><span class="pre">normalized_form</span></span><a class="headerlink" href="#sudachi.WordInfo.normalized_form" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="sudachi.WordInfo.pos_id">
+<span class="sig-name descname"><span class="pre">pos_id</span></span><a class="headerlink" href="#sudachi.WordInfo.pos_id" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="sudachi.WordInfo.reading_form">
+<span class="sig-name descname"><span class="pre">reading_form</span></span><a class="headerlink" href="#sudachi.WordInfo.reading_form" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="sudachi.WordInfo.surface">
+<span class="sig-name descname"><span class="pre">surface</span></span><a class="headerlink" href="#sudachi.WordInfo.surface" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="sudachi.WordInfo.synonym_group_ids">
+<span class="sig-name descname"><span class="pre">synonym_group_ids</span></span><a class="headerlink" href="#sudachi.WordInfo.synonym_group_ids" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="sudachi.WordInfo.word_structure">
+<span class="sig-name descname"><span class="pre">word_structure</span></span><a class="headerlink" href="#sudachi.WordInfo.word_structure" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="index.html" class="btn btn-neutral float-left" title="Welcome to sudachi’s documentation!" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="sudachi.dictionary.html" class="btn btn-neutral float-right" title="sudachi.dictionary package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2021, Works Applications.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

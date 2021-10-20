@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["WordId","Dictionary word ID"]]});

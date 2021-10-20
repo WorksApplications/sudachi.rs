@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["StatelessTokenizer","Implementation of a Tokenizer which does not have tokenization state."]],"trait":[["DictionaryAccess","Provides access to dictionary data"]]});

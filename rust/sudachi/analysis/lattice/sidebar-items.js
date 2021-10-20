@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["Lattice","Lattice which is constructed for performing the Viterbi search. Contain several parallel arrays. First level of parallel arrays is indexed by end word boundary. Word boundaries are always aligned to codepoint boundaries, not to byte boundaries."]]});

@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["CategoryType","A set of categories for a character"]]});

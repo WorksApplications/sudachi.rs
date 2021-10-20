@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["SudachiError","Sudachi error"],["SudachiNomError","Custum nom error"]],"type":[["SudachiNomResult",""],["SudachiResult",""]]});

@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["LexiconSetError","Sudachi error"]],"struct":[["LexiconSet","Set of Lexicons"]]});

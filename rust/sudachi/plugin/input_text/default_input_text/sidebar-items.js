@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["DefaultInputTextPlugin","Provides basic normalization of the input text"]]});

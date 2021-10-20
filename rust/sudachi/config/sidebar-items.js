@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["ConfigError","Sudachi Error"]],"struct":[["Config","Setting data loaded from config file"],["RawConfig","Struct corresponds with raw config json file. You must use filed names defined here as json object key. For plugins, refer to each plugin."]]});

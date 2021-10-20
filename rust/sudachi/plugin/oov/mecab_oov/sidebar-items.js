@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["MeCabOovPlugin","provides MeCab oov nodes"]]});

@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["Mode","Unit to split text"]],"mod":[["lattice",""],["morpheme",""],["node",""],["stateful_tokenizer",""],["stateless_tokenizer",""]],"struct":[["Node",""]],"trait":[["Tokenize","Able to tokenize Japanese text"]]});

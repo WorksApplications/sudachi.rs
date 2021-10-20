@@ -1,0 +1,1 @@
+initSidebarItems({"mod":[["default_input_text",""]],"trait":[["InputTextPlugin","Trait of plugin to modify the input text before tokenization"]]});

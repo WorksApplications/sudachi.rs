@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["SimpleOovPlugin","Provides a OOV node with single character if no words found in the dictionary"]]});

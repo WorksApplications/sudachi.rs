@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["JoinNumericPlugin","Concatenates numeric nodes as one"]]});

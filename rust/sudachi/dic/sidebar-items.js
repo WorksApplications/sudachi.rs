@@ -1,0 +1,1 @@
+initSidebarItems({"mod":[["category_type",""],["character_category",""],["connect",""],["dictionary",""],["grammar",""],["header",""],["lexicon",""],["lexicon_set",""],["word_id",""]],"struct":[["DictionaryLoader","A single system or user dictionary"],["LoadedDictionary","A dictionary consists of one system_dict and zero or more user_dicts"]]});

@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["InputBuffer","InputBuffer - prepares the input data for the analysis"],["InputEditor",""]],"trait":[["InputTextIndex","Provides fast indexed access into the input text"]]});
