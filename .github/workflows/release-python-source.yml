@@ -1,13 +1,13 @@
-name: Python Release
+name: Python Source Package (Common)
 
 on:
   push:
     tags:
-      - python-v*
+      - v*
 
 jobs:
-  build-sdist:
-    name: Build source distribution
+  upload-sdist:
+    name: Build and upload source distribution
     runs-on: Ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -17,26 +17,13 @@ jobs:
         with:
           python-version: '3.8'
       - name: Install dependencies
-        run: python3 -m pip install -U setuptools setuptools-rust
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --upgrade setuptools setuptools-rust twine
 
       - name: Build
         working-directory: ./python
         run: bash build-sdist.sh
-
-
-  upload-package:
-    name: Upload package to PyPi
-    runs-on: Ubuntu-latest
-    needs: [build-sdist]
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Setup python
-        uses: actions/setup-python@v2
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install twine
 
       - name: Upload to PyPi
         working-directory: ./python
@@ -44,6 +31,4 @@ jobs:
           TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
           TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
         run:
-          twine upload dist/* 
-
-
+          twine upload dist/*
