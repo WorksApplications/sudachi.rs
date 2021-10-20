@@ -10,9 +10,10 @@ README*.html
 .vscode/
 
 # python binding
-python/dist
+python/dist/
 __pycache__/
 .env
 *.egg-info
 *.so
 python/py_src/sudachi/*.pyd
+python/build/
