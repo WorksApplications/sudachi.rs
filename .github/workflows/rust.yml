@@ -42,10 +42,10 @@ jobs:
 
     - name: Check that binary works (C mode)
       run: |
-        $PWD/target/debug/sudachi $PWD/.github/data/input.txt -o result-c.txt
-        git diff --color=always --no-index -- result-c.txt $PWD/.github/data/expected-c.txt
+        target/debug/sudachi .github/data/input.txt -o result-c.txt
+        git diff --color=always --no-index -- result-c.txt .github/data/expected-c.txt
 
     - name: Check that binary works (A mode)
       run: |
-        $PWD/target/debug/sudachi $PWD/.github/data/input.txt -m A -o result-a.txt
-        git diff --color=always --no-index -- result-a.txt $PWD/.github/data/expected-a.txt
+        target/debug/sudachi .github/data/input.txt -m A -o result-a.txt
+        git diff --color=always --no-index -- result-a.txt .github/data/expected-a.txt
