@@ -41,23 +41,20 @@ impl Wakachi {
 }
 
 impl<T: DictionaryAccess> SudachiOutput<T> for Wakachi {
-    // this implementation uses raw writes which can truncate output
-    // if the thing to write is larger than
-    // the buffer of BufWrite (8k), our inputs are 100% lesser than that
     fn write(&self, writer: &mut Writer, morphemes: &MorphemeList<T>) -> SudachiResult<()> {
         if morphemes.len() == 0 {
-            writer.write(b"\n")?;
+            writer.write_all(b"\n")?;
             return Ok(());
         }
         let last_idx = morphemes.len() - 1;
         for m in morphemes.iter() {
-            writer.write(m.surface().as_bytes())?;
+            writer.write_all(m.surface().as_bytes())?;
             let trailer = if m.index() != last_idx {
                 &self.word_separator
             } else {
                 &self.sentence_separator
             };
-            writer.write(trailer.as_bytes())?;
+            writer.write_all(trailer.as_bytes())?;
         }
         Ok(())
     }
@@ -74,47 +71,38 @@ impl Simple {
 }
 
 impl<T: DictionaryAccess> SudachiOutput<T> for Simple {
-    // this implementation uses raw writes which can truncate output
-    // if the thing to write is larger than
-    // the buffer of BufWrite (8k), our inputs are 100% lesser than that
     fn write(&self, writer: &mut Writer, morphemes: &MorphemeList<T>) -> SudachiResult<()> {
         for m in morphemes.iter() {
             write_morpheme_basic(writer, &m)?;
             if self.print_all {
                 write_morpheme_extended(writer, &m)?
             }
-            writer.write(b"\n")?;
+            writer.write_all(b"\n")?;
         }
-        writer.write(b"EOS\n")?;
+        writer.write_all(b"EOS\n")?;
         Ok(())
     }
 }
 
-// this implementation uses raw writes which can truncate output
-// if the thing to write is larger than
-// the buffer of BufWrite (8k), our inputs are 100% lesser than that
 #[inline]
 fn write_morpheme_basic<T: DictionaryAccess>(
     writer: &mut Writer,
     morpheme: &Morpheme<T>,
 ) -> SudachiResult<()> {
-    writer.write(morpheme.surface().as_bytes())?;
-    writer.write(b"\t")?;
+    writer.write_all(morpheme.surface().as_bytes())?;
+    writer.write_all(b"\t")?;
     let all_pos = morpheme.part_of_speech()?;
     for (idx, pos) in all_pos.iter().enumerate() {
-        writer.write(pos.as_bytes())?;
+        writer.write_all(pos.as_bytes())?;
         if idx + 1 != all_pos.len() {
-            writer.write(b",")?;
+            writer.write_all(b",")?;
         }
     }
-    writer.write(b"\t")?;
-    writer.write(morpheme.normalized_form().as_bytes())?;
+    writer.write_all(b"\t")?;
+    writer.write_all(morpheme.normalized_form().as_bytes())?;
     Ok(())
 }
 
-// this implementation uses raw writes which can truncate output
-// if the thing to write is larger than
-// the buffer of BufWrite (8k), our inputs are 100% lesser than that
 #[inline]
 fn write_morpheme_extended<T: DictionaryAccess>(
     writer: &mut Writer,
@@ -129,7 +117,7 @@ fn write_morpheme_extended<T: DictionaryAccess>(
         morpheme.synonym_group_ids(),
     )?;
     if morpheme.is_oov() {
-        writer.write(b"\t(OOV)")?;
+        writer.write_all(b"\t(OOV)")?;
     }
     Ok(())
 }
