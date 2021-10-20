@@ -13,9 +13,10 @@ jobs:
       - name: Build document
         # build document of lib only for now to avoid name collision.
         working-directory: ./sudachi
-        run: cargo doc --no-deps
+        run:
+          cargo doc --no-deps
 
-     - name: Move docs
+      - name: Move docs
         run: mv ./target/doc ./docs/rust
 
 
