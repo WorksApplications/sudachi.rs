@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
+use crate::analysis::Node;
 use serde_json::Value;
 
-use crate::analysis::node::Node;
 use crate::config::Config;
 use crate::dic::grammar::Grammar;
 use crate::input_text::InputBuffer;
@@ -34,6 +34,7 @@ pub trait OovProviderPlugin: Sync + Send {
     fn set_up(&mut self, settings: &Value, config: &Config, grammar: &Grammar)
         -> SudachiResult<()>;
 
+    /// offset - char idx
     fn get_oov(
         &self,
         input_text: &InputBuffer,
@@ -41,17 +42,12 @@ pub trait OovProviderPlugin: Sync + Send {
         has_other_words: bool,
         result: &mut Vec<Node>,
     ) -> SudachiResult<()> {
-        let size = result.len();
         self.provide_oov(input_text, offset, has_other_words, result)?;
-        for i in size..result.len() {
-            let node = &mut result[i];
-            let length = node.word_info.as_ref().unwrap().head_word_length as usize;
-            node.set_range(offset, offset + length);
-        }
         Ok(())
     }
 
     /// Generate a list of oov nodes
+    /// offset - char idx
     fn provide_oov(
         &self,
         input_text: &InputBuffer,

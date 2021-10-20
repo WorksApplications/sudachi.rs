@@ -24,24 +24,21 @@ pub use self::buffer::InputEditor;
 
 /// Provides fast indexed access into the input text
 pub trait InputTextIndex {
-    /// Common character category inside the range
+    /// Common character category inside the range. Indexed by chars.
     fn cat_of_range(&self, range: Range<usize>) -> CategoryType;
 
-    /// Character category at byte offset
-    fn cat_at_byte(&self, offset: usize) -> CategoryType;
+    /// Character category at char offset
+    fn cat_at_char(&self, offset: usize) -> CategoryType;
 
-    /// Number of codepoints in the range indexed by byte indices
-    fn num_codepts(&self, range: Range<usize>) -> usize;
-
-    /// Number of bytes to the right of the offset with the same character category
+    /// Number of chars to the right of the offset with the same character category
     ///
     /// Java name: getCharCategoryContinuousLength
     fn cat_continuous_len(&self, offset: usize) -> usize;
 
-    /// Distance in bytes between the char indexed by `byte`
-    /// and the char, relative to it by `codepts`.
+    /// Distance in chars between the char indexed by `index`
+    /// and the char, relative to it by `offset`.
     /// Java name: getCodePointsOffsetLength
-    fn byte_distance(&self, byte: usize, codepts: usize) -> usize;
+    fn char_distance(&self, index: usize, offset: usize) -> usize;
 
     /// Returns substring of original text by indices from the current text
     fn orig_slice(&self, range: Range<usize>) -> &str;
@@ -49,6 +46,6 @@ pub trait InputTextIndex {
     /// Returns substring of the current (modified) text by indices from the current text
     fn curr_slice(&self, range: Range<usize>) -> &str;
 
-    /// Translate range from current state to original
+    /// Translate range from current state to original. Byte-indexed.
     fn to_orig(&self, range: Range<usize>) -> Range<usize>;
 }

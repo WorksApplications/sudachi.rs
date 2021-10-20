@@ -28,7 +28,7 @@ use std::ops::Range;
 use crate::error::{SudachiError, SudachiResult};
 use crate::input_text::InputTextIndex;
 
-/// limit on the maximum length of the input types, in bytes, 4/3 of u16::MAX
+/// limit on the maximum length of the input types, in bytes, 3/4 of u16::MAX
 const MAX_LENGTH: usize = u16::MAX as usize / 4 * 3;
 
 /// if the limit of the rewritten sentence is more than this number, then all bets are off
@@ -62,7 +62,8 @@ pub struct InputBuffer {
     /// Byte mapping from normalized data to originals.
     /// Only values lying on codepoint boundaries are correct. Byte-based indexing.
     m2o: Vec<usize>,
-    /// Buffer for normalization
+    /// Buffer for normalization.
+    /// After building it is used as byte-to-char mapping for original data.
     m2o_2: Vec<usize>,
     /// Characters of the modified string. Char-based indexing.
     mod_chars: Vec<char>,
@@ -170,6 +171,7 @@ impl InputBuffer {
         self.mod_b2c.push(last_chidx + 1);
 
         self.fill_cat_continuity();
+        self.fill_orig_b2c();
 
         Ok(())
     }
@@ -193,6 +195,17 @@ impl InputBuffer {
                 cat = cur;
             }
         }
+    }
+
+    fn fill_orig_b2c(&mut self) {
+        self.m2o_2.clear();
+        self.m2o_2.resize(self.original.len() + 1, usize::MAX);
+        let mut max = 0;
+        for (ch_idx, (b_idx, _)) in self.original.char_indices().enumerate() {
+            self.m2o_2[b_idx] = ch_idx;
+            max = ch_idx
+        }
+        self.m2o_2[self.original.len()] = max + 1;
     }
 
     fn commit(&mut self) -> SudachiResult<()> {
@@ -284,11 +297,60 @@ impl InputBuffer {
         &self.mod_chars
     }
 
+    /// Returns byte offsets of current chars
+    pub fn curr_byte_offsets(&self) -> &[usize] {
+        debug_assert_eq!(self.state, BufferState::RO);
+        let len = self.mod_c2b.len();
+        &self.mod_c2b[0..len - 1]
+    }
+
     /// Get index of the current byte in original sentence
     /// Bytes not on character boundaries are not supported
     pub fn get_original_index(&self, index: usize) -> usize {
         debug_assert!(self.modified.is_char_boundary(index));
         self.m2o[index]
+    }
+
+    /// Mod Char Idx -> Orig Byte Idx
+    pub fn to_orig_byte_idx(&self, index: usize) -> usize {
+        debug_assert_ne!(self.state, BufferState::Clean);
+        let byte_idx = self.mod_c2b[index];
+        self.m2o[byte_idx]
+    }
+
+    /// Mod Char Idx -> Orig Char Idx
+    pub fn to_orig_char_idx(&self, index: usize) -> usize {
+        let b_idx = self.to_orig_byte_idx(index);
+        let res = self.m2o_2[b_idx];
+        debug_assert_ne!(res, usize::MAX);
+        res
+    }
+
+    /// Mod Char Idx -> Mod Byte Idx
+    pub fn to_curr_byte_idx(&self, index: usize) -> usize {
+        debug_assert_eq!(self.state, BufferState::RO);
+        self.mod_c2b[index]
+    }
+
+    /// Input: Mod Char Idx
+    pub fn curr_slice_c(&self, data: Range<usize>) -> &str {
+        debug_assert_eq!(self.state, BufferState::RO);
+        let start = self.mod_c2b[data.start];
+        let end = self.mod_c2b[data.end];
+        &self.modified[start..end]
+    }
+
+    /// Input: Mod Char Idx
+    pub fn orig_slice_c(&self, data: Range<usize>) -> &str {
+        debug_assert_eq!(self.state, BufferState::RO);
+        let start = self.to_orig_byte_idx(data.start);
+        let end = self.to_orig_byte_idx(data.end);
+        &self.original[start..end]
+    }
+
+    pub fn ch_idx(&self, idx: usize) -> usize {
+        debug_assert_eq!(self.state, BufferState::RO);
+        self.mod_b2c[idx]
     }
 
     /// Swaps original data with the passed location
@@ -297,71 +359,68 @@ impl InputBuffer {
         self.state = BufferState::Clean;
     }
 
-    /// Return original data as owned, consuming itself
+    /// Return original data as owned, consuming itself    
     pub fn into_original(self) -> String {
         self.original
     }
 
     /// Whether the byte can start a new word.
     /// Supports bytes not on character boundaries.
+    #[inline]
     pub fn can_bow(&self, offset: usize) -> bool {
         debug_assert_eq!(self.state, BufferState::RO);
         self.mod_bow[offset]
     }
 
-    /// Returns a byte_length to the next can_bow point
+    /// Returns char length to the next can_bow point
     ///
     /// Used by SimpleOOV plugin
-    pub fn get_word_candidate_length(&self, byte_idx: usize) -> usize {
+    pub fn get_word_candidate_length(&self, char_idx: usize) -> usize {
         debug_assert_eq!(self.state, BufferState::RO);
-        let byte_length = self.modified.len();
+        let char_len = self.mod_chars.len();
 
-        for i in (byte_idx + 1)..byte_length {
-            if self.can_bow(i) {
-                return i - byte_idx;
+        for i in (char_idx + 1)..char_len {
+            let byte_idx = self.mod_c2b[i];
+            if self.can_bow(byte_idx) {
+                return i - char_idx;
             }
         }
-        byte_length - byte_idx
+        char_len - char_idx
     }
 }
 
 impl InputTextIndex for InputBuffer {
+    #[inline]
     fn cat_of_range(&self, range: Range<usize>) -> CategoryType {
         debug_assert_eq!(self.state, BufferState::RO);
-        let range_c = self.mod_b2c[range.start]..self.mod_b2c[range.end];
-        self.mod_cat[range_c]
+        if range.is_empty() {
+            return CategoryType::empty();
+        }
+
+        self.mod_cat[range]
             .iter()
             .fold(CategoryType::all(), |a, b| a & *b)
     }
 
-    fn cat_at_byte(&self, offset: usize) -> CategoryType {
+    #[inline]
+    fn cat_at_char(&self, offset: usize) -> CategoryType {
         debug_assert_eq!(self.state, BufferState::RO);
-        let cpidx = self.mod_b2c[offset];
-        self.mod_cat[cpidx]
+        self.mod_cat[offset]
     }
 
-    fn num_codepts(&self, range: Range<usize>) -> usize {
-        debug_assert_eq!(self.state, BufferState::RO);
-        let start = self.mod_b2c[range.start];
-        let end = self.mod_b2c[range.end];
-        end - start
-    }
-
+    #[inline]
     fn cat_continuous_len(&self, offset: usize) -> usize {
         debug_assert_eq!(self.state, BufferState::RO);
-        let start_c = self.mod_b2c[offset];
-        let length = self.mod_cat_continuity[start_c];
-        let end_c = start_c + length;
-        self.mod_c2b[end_c] - offset
+        self.mod_cat_continuity[offset]
     }
 
-    fn byte_distance(&self, byte: usize, codepts: usize) -> usize {
+    fn char_distance(&self, cpt: usize, offset: usize) -> usize {
         debug_assert_eq!(self.state, BufferState::RO);
-        let start_c = self.mod_b2c[byte];
-        let tgt_c = (start_c + codepts).min(self.mod_chars.len());
-        self.mod_c2b[tgt_c] - byte
+        let end = (cpt + offset).min(self.mod_chars.len());
+        end - cpt
     }
 
+    #[inline]
     fn orig_slice(&self, range: Range<usize>) -> &str {
         debug_assert_ne!(self.state, BufferState::Clean);
         debug_assert!(
@@ -375,11 +434,13 @@ impl InputTextIndex for InputBuffer {
         &self.original[self.to_orig(range)]
     }
 
+    #[inline]
     fn curr_slice(&self, range: Range<usize>) -> &str {
         debug_assert_ne!(self.state, BufferState::Clean);
         &self.modified[range]
     }
 
+    #[inline]
     fn to_orig(&self, range: Range<usize>) -> Range<usize> {
         debug_assert_ne!(self.state, BufferState::Clean);
         self.m2o[range.start]..self.m2o[range.end]

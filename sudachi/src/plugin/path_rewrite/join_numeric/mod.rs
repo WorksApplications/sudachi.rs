@@ -18,7 +18,8 @@ use serde::Deserialize;
 use serde_json::Value;
 
 use self::numeric_parser::NumericParser;
-use crate::analysis::{lattice::Lattice, node::Node};
+use crate::analysis::lattice::Lattice;
+use crate::analysis::node::{concat_nodes, LatticeNode, ResultNode};
 use crate::config::Config;
 use crate::dic::category_type::CategoryType;
 use crate::dic::grammar::Grammar;
@@ -50,15 +51,12 @@ struct PluginSettings {
 impl JoinNumericPlugin {
     fn concat(
         &self,
-        mut path: Vec<Node>,
+        mut path: Vec<ResultNode>,
         begin: usize,
         end: usize,
         parser: &mut NumericParser,
-    ) -> SudachiResult<Vec<Node>> {
-        let word_info = path[begin]
-            .word_info
-            .as_ref()
-            .ok_or(SudachiError::MissingWordInfo)?;
+    ) -> SudachiResult<Vec<ResultNode>> {
+        let word_info = path[begin].word_info();
 
         if word_info.pos_id != self.numeric_pos_id {
             return Ok(path);
@@ -67,13 +65,13 @@ impl JoinNumericPlugin {
         if self.enable_normalize {
             let normalized_form = parser.get_normalized();
             if end - begin > 1 || normalized_form != word_info.normalized_form {
-                path = self.concatenate(path, begin, end, Some(normalized_form))?;
+                path = concat_nodes(path, begin, end, Some(normalized_form))?;
             }
             return Ok(path);
         }
 
         if end - begin > 1 {
-            path = self.concatenate(path, begin, end, None)?;
+            path = concat_nodes(path, begin, end, None)?;
         }
         Ok(path)
     }
@@ -81,8 +79,8 @@ impl JoinNumericPlugin {
     fn rewrite_gen<T: InputTextIndex>(
         &self,
         text: &T,
-        mut path: Vec<Node>,
-    ) -> SudachiResult<Vec<Node>> {
+        mut path: Vec<ResultNode>,
+    ) -> SudachiResult<Vec<ResultNode>> {
         let mut begin_idx = -1;
         let mut comma_as_digit = true;
         let mut period_as_digit = true;
@@ -91,13 +89,8 @@ impl JoinNumericPlugin {
         while i < path.len() as i32 - 1 {
             i += 1;
             let node = &path[i as usize];
-            let ctypes = text.cat_of_range(node.begin..node.end);
-            let s = node
-                .word_info
-                .as_ref()
-                .ok_or(SudachiError::MissingWordInfo)?
-                .normalized_form
-                .clone();
+            let ctypes = text.cat_of_range(node.char_range());
+            let s = &node.word_info().normalized_form;
             if ctypes.intersects(CategoryType::NUMERIC | CategoryType::KANJINUMERIC)
                 || (comma_as_digit && s == ",")
                 || (period_as_digit && s == ".")
@@ -124,16 +117,21 @@ impl JoinNumericPlugin {
                 continue;
             }
 
+            let c = if s.len() == 1 {
+                // must be 1 byte utf-8: ASCII
+                s.as_bytes()[0] as char
+            } else {
+                char::MAX
+            };
+
+            // can't use s below this line
+
             if begin_idx >= 0 {
                 if parser.done() {
                     path = self.concat(path, begin_idx as usize, i as usize, &mut parser)?;
                     i = begin_idx + 1;
                 } else {
-                    let ss = &path[i as usize - 1]
-                        .word_info
-                        .as_ref()
-                        .ok_or(SudachiError::MissingWordInfo)?
-                        .normalized_form;
+                    let ss = &path[i as usize - 1].word_info().normalized_form;
                     if (parser.error_state == numeric_parser::Error::COMMA && ss == ",")
                         || (parser.error_state == numeric_parser::Error::POINT && ss == ".")
                     {
@@ -144,10 +142,10 @@ impl JoinNumericPlugin {
                 }
             }
             begin_idx = -1;
-            if !comma_as_digit && s != "," {
+            if !comma_as_digit && c != ',' {
                 comma_as_digit = true;
             }
-            if !period_as_digit && s != "." {
+            if !period_as_digit && c != '.' {
                 period_as_digit = true;
             }
         }
@@ -158,11 +156,7 @@ impl JoinNumericPlugin {
             if parser.done() {
                 path = self.concat(path, begin_idx as usize, len, &mut parser)?;
             } else {
-                let ss = &path[len - 1]
-                    .word_info
-                    .as_ref()
-                    .ok_or(SudachiError::MissingWordInfo)?
-                    .normalized_form;
+                let ss = &path[len - 1].word_info().normalized_form;
                 if (parser.error_state == numeric_parser::Error::COMMA && ss == ",")
                     || (parser.error_state == numeric_parser::Error::POINT && ss == ".")
                 {
@@ -200,9 +194,9 @@ impl PathRewritePlugin for JoinNumericPlugin {
     fn rewrite(
         &self,
         text: &InputBuffer,
-        path: Vec<Node>,
+        path: Vec<ResultNode>,
         _lattice: &Lattice,
-    ) -> SudachiResult<Vec<Node>> {
+    ) -> SudachiResult<Vec<ResultNode>> {
         self.rewrite_gen(text, path)
     }
 }

@@ -21,12 +21,12 @@ use std::fs;
 use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
 
-use crate::analysis::node::Node;
+use crate::analysis::Node;
 use crate::config::Config;
 use crate::dic::category_type::CategoryType;
 use crate::dic::character_category::Error as CharacterCategoryError;
 use crate::dic::grammar::Grammar;
-use crate::dic::lexicon::word_infos::WordInfo;
+use crate::dic::word_id::WordId;
 use crate::hash::RoMu;
 use crate::input_text::InputBuffer;
 use crate::input_text::InputTextIndex;
@@ -156,18 +156,15 @@ impl MeCabOovPlugin {
     }
 
     /// Creates a new oov node
-    fn get_oov_node(&self, text: &str, oov: &OOV, length: u16) -> Node {
-        let surface = String::from(text);
-        let word_info = WordInfo {
-            normalized_form: surface.clone(),
-            dictionary_form: surface.clone(),
-            surface,
-            head_word_length: length,
-            pos_id: oov.pos_id,
-            dictionary_form_word_id: -1,
-            ..Default::default()
-        };
-        Node::new_oov(oov.left_id, oov.right_id, oov.cost, word_info)
+    fn get_oov_node(&self, oov: &OOV, start: usize, end: usize) -> Node {
+        Node::new(
+            start as u16,
+            end as u16,
+            oov.left_id as u16,
+            oov.right_id as u16,
+            oov.cost,
+            WordId::oov(oov.pos_id as u32),
+        )
     }
 
     fn provide_oov_gen<T: InputTextIndex>(
@@ -177,12 +174,12 @@ impl MeCabOovPlugin {
         has_other_words: bool,
         nodes: &mut Vec<Node>,
     ) -> SudachiResult<()> {
-        let byte_len = input.cat_continuous_len(offset);
-        if byte_len == 0 {
+        let char_len = input.cat_continuous_len(offset);
+        if char_len == 0 {
             return Ok(());
         }
 
-        for ctype in input.cat_at_byte(offset).iter() {
+        for ctype in input.cat_at_char(offset).iter() {
             let cinfo = match self.categories.get(&ctype) {
                 Some(ci) => ci,
                 None => continue,
@@ -191,27 +188,25 @@ impl MeCabOovPlugin {
                 continue;
             }
 
-            let mut llength = byte_len;
+            let mut llength = char_len;
             let oovs = match self.oov_list.get(&cinfo.category_type) {
                 Some(v) => v,
                 None => continue,
             };
 
             if cinfo.is_group {
-                let s = input.curr_slice(offset..offset + byte_len);
                 for oov in oovs {
-                    nodes.push(self.get_oov_node(&s, oov, byte_len as u16));
+                    nodes.push(self.get_oov_node(oov, offset, offset + char_len));
                 }
                 llength -= 1;
             }
-            for i in 1..cinfo.length + 1 {
-                let sublength = input.byte_distance(offset, i as usize);
+            for i in 1..=cinfo.length {
+                let sublength = input.char_distance(offset, i as usize);
                 if sublength > llength {
                     break;
                 }
-                let s = input.curr_slice(offset..offset + sublength);
                 for oov in oovs {
-                    nodes.push(self.get_oov_node(&s, oov, sublength as u16));
+                    nodes.push(self.get_oov_node(oov, offset, offset + sublength));
                 }
             }
         }

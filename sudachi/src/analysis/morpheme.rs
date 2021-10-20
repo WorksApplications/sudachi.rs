@@ -14,30 +14,32 @@
  *  limitations under the License.
  */
 
-use crate::analysis::node::Node;
+use crate::analysis::node::{LatticeNode, PathCost, ResultNode};
 use crate::analysis::stateful_tokenizer::StatefulTokenizer;
 use crate::analysis::stateless_tokenizer::DictionaryAccess;
 use crate::dic::grammar::Grammar;
 use crate::dic::lexicon::word_infos::WordInfo;
+use crate::dic::word_id::WordId;
 use crate::prelude::*;
 
 /// A list of morphemes
 pub struct MorphemeList<T> {
     dict: T,
-    /// Stores the full original input text.
-    /// This may not match the concatenated surface of the path.
     input_text: String,
-    path: Vec<Node>,
+    path: Vec<ResultNode>,
 }
 
 impl<T: DictionaryAccess> MorphemeList<T> {
-    pub fn from_components(dict: T, original: String, path: Vec<Node>) -> SudachiResult<Self> {
-        let mut list = Self {
+    pub fn from_components(
+        dict: T,
+        original: String,
+        path: Vec<ResultNode>,
+    ) -> SudachiResult<Self> {
+        let list = Self {
             dict,
             input_text: original,
             path,
         };
-        list.fill_word_info()?;
         Ok(list)
     }
 
@@ -55,68 +57,29 @@ impl<T: DictionaryAccess> MorphemeList<T> {
         analyzer: &mut StatefulTokenizer<U>,
     ) -> SudachiResult<()> {
         analyzer.swap_result(&mut self.input_text, &mut self.path);
-        self.fill_word_info()
+        Ok(())
     }
 
     pub fn get_grammar(&self) -> &Grammar {
         self.dict.grammar()
     }
-
-    pub fn get_full_input_text(&self) -> &str {
-        &self.input_text
-    }
-
-    fn fill_word_info(&mut self) -> SudachiResult<()> {
-        let lexicon = self.dict.lexicon();
-        for node in self.path.iter_mut() {
-            // fill word_info of all nodes
-            node.fill_word_info(lexicon)?;
-        }
-        Ok(())
-    }
 }
 
 impl<T: DictionaryAccess + Clone> MorphemeList<T> {
     /// Returns a new morpheme list splitting the morpheme with a given mode.
-    ///
-    /// Input text remains full and morphemes hold index on that.
     pub fn split(&self, mode: Mode, index: usize) -> SudachiResult<MorphemeList<T>> {
-        let input_text = self.input_text.clone();
+        let node = &self.path[index];
+        let num_splits = node.num_splits(mode);
 
-        let word_ids = match mode {
-            Mode::A => &self.get_word_info(index).a_unit_split,
-            Mode::B => &self.get_word_info(index).b_unit_split,
-            Mode::C => {
-                return Ok(MorphemeList {
-                    dict: self.dict.clone(),
-                    input_text,
-                    path: vec![self.path[index].clone()],
-                })
-            }
+        let path = if num_splits <= 1 {
+            vec![node.clone()]
+        } else {
+            node.split(mode, self.dict.lexicon()).collect()
         };
-
-        if word_ids.len() < 2 {
-            return Ok(MorphemeList {
-                dict: self.dict.clone(),
-                input_text,
-                path: vec![self.path[index].clone()],
-            });
-        }
-
-        let mut offset = self.path[index].begin;
-        let mut path = Vec::with_capacity(word_ids.len());
-        for &wid in word_ids {
-            let mut node = Node::new(0, 0, 0, wid);
-            let word_info = self.dict.lexicon().get_word_info(wid)?;
-            node.set_range(offset, offset + word_info.head_word_length as usize);
-            offset += word_info.head_word_length as usize;
-            node.set_word_info(word_info);
-            path.push(node);
-        }
 
         Ok(MorphemeList {
             dict: self.dict.clone(),
-            input_text,
+            input_text: self.input_text.clone(),
             path,
         })
     }
@@ -130,42 +93,41 @@ impl<T> MorphemeList<T> {
         }
     }
 
-    /// Returns a substring of the original text which corresponds to the morphemes in the path
     pub fn surface(&self) -> &str {
         if self.len() == 0 {
             return &self.input_text;
         }
 
-        // input_text and path may not match after MorphemeList.split
-        let begin = self.path[0].begin;
-        let end = self.path[self.len() - 1].end;
+        // can be a slice of another list
+        let begin = self.path.first().unwrap().begin_bytes();
+        let end = self.path.last().unwrap().end_bytes();
         &self.input_text[begin..end]
     }
 
-    pub fn get_node(&self, index: usize) -> &Node {
+    pub fn get_node(&self, index: usize) -> &ResultNode {
         &self.path[index]
     }
 
     pub fn get_begin(&self, index: usize) -> usize {
-        self.path[index].begin
+        self.path[index].begin_bytes()
     }
 
     pub fn get_end(&self, index: usize) -> usize {
-        self.path[index].end
+        self.path[index].end_bytes()
     }
 
     /// Returns a substring of the original text which corresponds to the morpheme
     pub fn get_surface(&self, index: usize) -> &str {
         let node = &self.path[index];
-        &self.input_text[node.begin..node.end]
+        &self.input_text[node.begin_bytes()..node.end_bytes()]
     }
 
     pub fn get_word_info(&self, index: usize) -> &WordInfo {
-        self.path[index].word_info.as_ref().unwrap()
+        self.path[index].word_info()
     }
 
     pub fn is_oov(&self, index: usize) -> bool {
-        self.path[index].is_oov
+        self.path[index].word_id().is_oov()
     }
 
     /// Returns the total cost of the path
@@ -175,8 +137,8 @@ impl<T> MorphemeList<T> {
         }
 
         let first = &self.path[0];
-        let last = &self.path.last().unwrap();
-        last.total_cost - first.total_cost
+        let last = self.path.last().unwrap();
+        last.total_cost() - first.total_cost()
     }
 
     pub fn len(&self) -> usize {
@@ -287,15 +249,20 @@ impl<T> Morpheme<'_, T> {
     }
 
     /// Returns the word id of morpheme
-    pub fn word_id(&self) -> Option<u32> {
-        self.list.get_node(self.index).word_id
+    pub fn word_id(&self) -> WordId {
+        self.list.get_node(self.index).word_id()
     }
 
     /// Returns the dictionary id where the morpheme belongs
     ///
-    /// Return -1 if the morpheme is oov
+    /// Returns -1 if the morpheme is oov
     pub fn dictionary_id(&self) -> i32 {
-        self.list.get_node(self.index).get_dictionary_id()
+        let wid = self.word_id();
+        if wid.is_oov() {
+            -1
+        } else {
+            wid.dic() as i32
+        }
     }
 
     pub fn synonym_group_ids(&self) -> &[u32] {

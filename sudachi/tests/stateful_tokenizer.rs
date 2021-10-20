@@ -18,10 +18,18 @@
 extern crate lazy_static;
 extern crate sudachi;
 
+use sudachi::analysis::node::LatticeNode;
 use sudachi::prelude::Mode;
 
 mod common;
 use crate::common::TestStatefulTokenizer as TestTokenizer;
+
+#[test]
+fn empty() {
+    let mut tok = TestTokenizer::new(Mode::C);
+    let ms = tok.tokenize("");
+    assert_eq!(0, ms.len());
+}
 
 #[test]
 fn tokenize_small_katakana_only() {
@@ -115,4 +123,26 @@ fn tokenizer_morpheme_split() {
     assert_eq!(2, ms.len());
     assert_eq!("東京", ms.get(0).surface());
     assert_eq!("都", ms.get(1).surface());
+}
+
+#[test]
+fn split_middle() {
+    let mut tok = TestTokenizer::new(Mode::C);
+    let ms = tok.tokenize("京都東京都京都");
+    assert_eq!(ms.len(), 3);
+    let m = ms.get(1);
+    assert_eq!(m.surface(), "東京都");
+
+    let ms_a = m.split(Mode::A).expect("works");
+    assert_eq!(ms_a.len(), 2);
+    assert_eq!(ms_a.get(0).surface(), "東京");
+    assert_eq!(ms_a.get_node(0).begin(), 2);
+    assert_eq!(ms_a.get_node(0).end(), 4);
+    assert_eq!(ms_a.get(0).begin(), 6);
+    assert_eq!(ms_a.get(0).end(), 12);
+    assert_eq!(ms_a.get(1).surface(), "都");
+    assert_eq!(ms_a.get_node(1).begin(), 4);
+    assert_eq!(ms_a.get_node(1).end(), 5);
+    assert_eq!(ms_a.get(1).begin(), 12);
+    assert_eq!(ms_a.get(1).end(), 15);
 }

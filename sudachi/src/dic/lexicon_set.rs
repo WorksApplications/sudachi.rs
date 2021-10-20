@@ -18,6 +18,7 @@ use thiserror::Error;
 
 use crate::dic::lexicon::word_infos::WordInfo;
 use crate::dic::lexicon::{Lexicon, LexiconEntry, MAX_DICTIONARIES};
+use crate::dic::word_id::WordId;
 use crate::prelude::*;
 
 /// Sudachi error
@@ -95,58 +96,35 @@ impl LexiconSet<'_> {
     }
 
     /// Returns word_info for given word_id
-    pub fn get_word_info(&self, dictword_id: u32) -> SudachiResult<WordInfo> {
-        let (dict_id, word_id) = LexiconSet::decode_dictword_id(dictword_id);
-        let mut word_info = self.lexicons[dict_id].get_word_info(word_id)?;
+    pub fn get_word_info(&self, id: WordId) -> SudachiResult<WordInfo> {
+        let dict_id = id.dic();
+        let mut word_info = self.lexicons[dict_id as usize].get_word_info(id.word())?;
         let pos_id = word_info.pos_id;
         if dict_id > 0 && pos_id as usize >= self.pos_offsets[1] {
             // user defined part-of-speech
             word_info.pos_id =
-                (pos_id as usize - self.pos_offsets[1] + self.pos_offsets[dict_id]) as u16;
+                (pos_id as usize - self.pos_offsets[1] + self.pos_offsets[dict_id as usize]) as u16;
         }
-        self.update_dict_id(&mut word_info.a_unit_split, dict_id)?;
-        self.update_dict_id(&mut word_info.b_unit_split, dict_id)?;
-        self.update_dict_id(&mut word_info.word_structure, dict_id)?;
+
+        Self::update_dict_id(&mut word_info.a_unit_split, dict_id)?;
+        Self::update_dict_id(&mut word_info.b_unit_split, dict_id)?;
+        Self::update_dict_id(&mut word_info.word_structure, dict_id)?;
 
         Ok(word_info)
     }
 
     /// Returns word_param for given word_id
-    pub fn get_word_param(&self, dictword_id: u32) -> SudachiResult<(i16, i16, i16)> {
-        let (dict_id, word_id) = LexiconSet::decode_dictword_id(dictword_id);
-        self.lexicons[dict_id].get_word_param(word_id)
+    pub fn get_word_param(&self, id: WordId) -> SudachiResult<(i16, i16, i16)> {
+        let dic_id = id.dic() as usize;
+        self.lexicons[dic_id].get_word_param(id.word())
     }
 
-    /// Merge dict_id and word_id into one u32
-    ///
-    /// We use top 4 bits for dict_id
-    fn build_dictword_id(&self, dict_id: usize, word_id: u32) -> Result<u32, LexiconSetError> {
-        if word_id > 0x0FFFFFFF {
-            return Err(LexiconSetError::TooLargeWordId(word_id, dict_id));
-        }
-        if dict_id > self.lexicons.len() {
-            return Err(LexiconSetError::TooLargeDictionaryId(dict_id));
-        }
-        Ok((dict_id as u32) << 28 | word_id)
-    }
-    pub fn get_dictionary_id(dictword_id: u32) -> usize {
-        (dictword_id >> 28) as usize
-    }
-    fn get_word_id(dictword_id: u32) -> u32 {
-        dictword_id & 0x0FFFFFFF
-    }
-    fn decode_dictword_id(dictword_id: u32) -> (usize, u32) {
-        let dict_id = LexiconSet::get_dictionary_id(dictword_id);
-        let word_id = LexiconSet::get_word_id(dictword_id);
-        (dict_id, word_id)
-    }
-
-    fn update_dict_id(&self, split: &mut Vec<u32>, dict_id: usize) -> SudachiResult<()> {
-        for i in 0..split.len() {
-            let (crr_dict_id, word_id) = LexiconSet::decode_dictword_id(split[i]);
-            if crr_dict_id > 0 {
+    fn update_dict_id(split: &mut Vec<WordId>, dict_id: u8) -> SudachiResult<()> {
+        for id in split.iter_mut() {
+            let cur_dict_id = id.dic();
+            if cur_dict_id > 0 {
                 // update if target word is not in system_dict
-                split[i] = self.build_dictword_id(dict_id, word_id)?;
+                *id = WordId::checked(dict_id, id.word())?;
             }
         }
         Ok(())

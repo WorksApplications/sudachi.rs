@@ -26,11 +26,12 @@ fn new_build() {
 }
 
 #[test]
-fn curr_slice() {
-    let buffer = InputBuffer::from("宇宙人");
-    assert_eq!(buffer.curr_slice(0..3), "宇");
-    assert_eq!(buffer.curr_slice(3..6), "宙");
-    assert_eq!(buffer.curr_slice(6..9), "人");
+fn curr_slice_c() {
+    let mut buffer = InputBuffer::from("宇宙人");
+    buffer.build(&zero_grammar()).expect("built");
+    assert_eq!(buffer.curr_slice_c(0..1), "宇");
+    assert_eq!(buffer.curr_slice_c(1..2), "宙");
+    assert_eq!(buffer.curr_slice_c(2..3), "人");
 }
 
 #[test]
@@ -42,13 +43,13 @@ fn orig_slice() {
 }
 
 #[test]
-fn byte_distance() {
+fn char_distance() {
     let mut buffer = InputBuffer::from("宇宙人");
     let g = zero_grammar();
     buffer.build(&g).expect("failed");
-    assert_eq!(3, buffer.byte_distance(0, 1));
-    assert_eq!(6, buffer.byte_distance(0, 2));
-    assert_eq!(9, buffer.byte_distance(0, 3));
+    assert_eq!(1, buffer.char_distance(0, 1));
+    assert_eq!(2, buffer.char_distance(0, 2));
+    assert_eq!(3, buffer.char_distance(0, 3));
     // this returns result to last character if out of bounds
-    assert_eq!(9, buffer.byte_distance(0, 4));
+    assert_eq!(3, buffer.char_distance(0, 4));
 }

@@ -18,8 +18,13 @@ use nom::{
     bytes::complete::take,
     number::complete::{le_i32, le_u16, le_u32},
 };
+use std::iter::FusedIterator;
 
-use crate::dic::{string_length_parser, u32_array_parser, utf16_string_parser};
+use crate::dic::lexicon_set::LexiconSet;
+use crate::dic::word_id::WordId;
+use crate::dic::{
+    string_length_parser, u32_array_parser, u32_wid_array_parser, utf16_string_parser,
+};
 use crate::error::SudachiNomResult;
 use crate::prelude::*;
 
@@ -95,9 +100,9 @@ fn word_info_parser(
             utf16_string_parser,
             le_i32,
             utf16_string_parser,
-            u32_array_parser,
-            u32_array_parser,
-            u32_array_parser,
+            u32_wid_array_parser,
+            u32_wid_array_parser,
+            u32_wid_array_parser,
             nom::combinator::cond(has_synonym_group_ids, u32_array_parser),
         )),
     )(input)?;
@@ -107,8 +112,8 @@ fn word_info_parser(
         WordInfo {
             head_word_length,
             pos_id,
-            normalized_form: match normalized_form.as_str() {
-                "" => surface.clone(),
+            normalized_form: match normalized_form.len() {
+                0 => surface.clone(),
                 _ => normalized_form,
             },
             dictionary_form_word_id,
@@ -132,8 +137,30 @@ pub struct WordInfo {
     pub dictionary_form_word_id: i32,
     pub dictionary_form: String,
     pub reading_form: String,
-    pub a_unit_split: Vec<u32>,
-    pub b_unit_split: Vec<u32>,
-    pub word_structure: Vec<u32>,
+    pub a_unit_split: Vec<WordId>,
+    pub b_unit_split: Vec<WordId>,
+    pub word_structure: Vec<WordId>,
     pub synonym_group_ids: Vec<u32>,
 }
+
+struct SplitIter<'a> {
+    index: usize,
+    split: &'a [WordId],
+    lexicon: &'a LexiconSet<'a>,
+}
+
+impl Iterator for SplitIter<'_> {
+    type Item = SudachiResult<WordInfo>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let idx = self.index;
+        if idx >= self.split.len() {
+            None
+        } else {
+            self.index += 1;
+            Some(self.lexicon.get_word_info(self.split[idx]))
+        }
+    }
+}
+
+impl FusedIterator for SplitIter<'_> {}

@@ -18,13 +18,13 @@ use std::cmp;
 
 use crate::analysis::stateful_tokenizer::StatefulTokenizer;
 use crate::analysis::stateless_tokenizer::DictionaryAccess;
+use crate::dic::word_id::WordId;
 use nom::{bytes::complete::take, number::complete::le_u32};
 
 use crate::error::SudachiNomResult;
 use crate::prelude::*;
 
 use self::trie::Trie;
-use self::trie::TrieEntry;
 use self::word_id_table::WordIdTable;
 use self::word_infos::{WordInfo, WordInfos};
 use self::word_params::WordParams;
@@ -50,7 +50,20 @@ pub struct Lexicon<'a> {
     lex_id: u8,
 }
 
-pub type LexiconEntry = TrieEntry;
+/// Result of the Lexicon lookup
+#[derive(Eq, PartialEq, Debug)]
+pub struct LexiconEntry {
+    /// Id of the returned word
+    pub word_id: WordId,
+    /// Byte index of the word end
+    pub end: usize,
+}
+
+impl LexiconEntry {
+    pub fn new(word_id: WordId, end: usize) -> LexiconEntry {
+        LexiconEntry { word_id, end }
+    }
+}
 
 impl<'a> Lexicon<'a> {
     const USER_DICT_COST_PER_MORPH: i32 = -20;
@@ -94,11 +107,8 @@ impl<'a> Lexicon<'a> {
     }
 
     #[inline]
-    fn word_id(&self, raw_id: u32) -> u32 {
-        let lex_part: u32 = (self.lex_id as u32) << 28;
-        debug_assert!(raw_id & 0xF000_0000 == 0);
-        let word_part = raw_id & 0x0FFF_FFFF;
-        return lex_part | word_part;
+    fn word_id(&self, raw_id: u32) -> WordId {
+        return WordId::new(self.lex_id, raw_id);
     }
 
     /// Returns an iterator of word_id and end of words that matches given input
