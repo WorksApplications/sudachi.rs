@@ -37,9 +37,15 @@ jobs:
     - name: Run tests (Debug)
       run: cargo test --verbose
 
+    - name: Build CLI binary
+      run: cargo build -p sudachi-cli
+
     - name: Check that binary works (C mode)
       run: |
-        cargo build -p sudachi-cli
-        echo $PWD
         $PWD/target/debug/sudachi $PWD/.github/data/input.txt -o result-c.txt
         git diff --color=always --no-index -- result-c.txt $PWD/.github/data/expected-c.txt
+
+    - name: Check that binary works (A mode)
+      run: |
+        $PWD/target/debug/sudachi $PWD/.github/data/input.txt -m A -o result-a.txt
+        git diff --color=always --no-index -- result-a.txt $PWD/.github/data/expected-a.txt
