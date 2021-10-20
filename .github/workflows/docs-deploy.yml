@@ -5,25 +5,18 @@ on:
     branches: [ develop ]
 
 jobs:
-  build-rust:
+  deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
 
-      - name: Build document
+      - name: Build rust document
         # build document of lib only for now to avoid name collision.
         working-directory: ./sudachi
         run:
           cargo doc --no-deps
-
       - name: Move docs
         run: mv ./target/doc ./docs/rust
-
-
-  build-python:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
 
       - name: Setup python
         uses: actions/setup-python@v2
@@ -36,19 +29,11 @@ jobs:
         working-directory: ./python
         run: python3 setup.py develop
 
-      - name: Build document
+      - name: Build pyhton document
         working-directory: ./python/docs
         run: make html
-
       - name: Move docs
         run: mv ./python/docs/build/html ./docs/python
-
-
-  deploy:
-    runs-on: ubuntu-latest
-    needs: [build-rust, build-python]
-    steps:
-      - uses: actions/checkout@v2
 
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
