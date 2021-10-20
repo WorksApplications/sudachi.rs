@@ -18,8 +18,8 @@ use std::sync::Arc;
 
 use pyo3::exceptions::PyException;
 use pyo3::prelude::*;
+use sudachi::analysis::stateful_tokenizer::StatefulTokenizer;
 
-use sudachi::analysis::stateless_tokenizer::StatelessTokenizer;
 use sudachi::dic::dictionary::JapaneseDictionary;
 use sudachi::prelude::*;
 
@@ -67,13 +67,14 @@ impl From<PySplitMode> for Mode {
 /// Tokenizer of morphelogical analysis
 #[pyclass(module = "sudachi.tokenizer", name = "Tokenizer")]
 pub struct PyTokenizer {
-    tokenizer: StatelessTokenizer<Arc<JapaneseDictionary>>,
-    mode: Mode,
+    tokenizer: StatefulTokenizer<Arc<JapaneseDictionary>>,
 }
 
 impl PyTokenizer {
-    pub fn new(tokenizer: StatelessTokenizer<Arc<JapaneseDictionary>>, mode: Mode) -> Self {
-        Self { tokenizer, mode }
+    pub fn new(dict: Arc<JapaneseDictionary>, mode: Mode) -> Self {
+        Self {
+            tokenizer: StatefulTokenizer::new(dict, mode),
+        }
     }
 }
 
@@ -89,29 +90,33 @@ impl PyTokenizer {
     ///
     /// In default tokenize text with SplitMode.C.
     /// The logger provided is ignored.
+    /// If out is provided, its contents will be rewritten with
     #[pyo3(text_signature = "($self, text, /, mode=None, logger=None) -> sudachi.MorphemeList")]
     #[args(text, mode = "None", logger = "None")]
     #[allow(unused_variables)]
     fn tokenize(
-        &self,
+        &mut self,
         text: &str,
         mode: Option<PySplitMode>,
         logger: Option<PyObject>,
     ) -> PyResult<PyMorphemeListWrapper> {
-        let mode: Mode = match mode {
-            Some(m) => m.into(),
-            None => self.mode,
-        };
-        let enable_debug = false;
+        mode.map(|m| self.tokenizer.set_mode(m.into()));
 
-        let morphemes = self
-            .tokenizer
-            .tokenize(text, mode, enable_debug)
+        self.tokenizer.reset().push_str(text);
+        self.tokenizer.do_tokenize().map_err(|e| {
+            PyException::new_err(format!("Error while tokenization: {}", e.to_string()))
+        })?;
+
+        let mut morphemes = MorphemeList::empty(self.tokenizer.dict_clone());
+
+        morphemes
+            .collect_results(&mut self.tokenizer)
             .map_err(|e| {
                 PyException::new_err(format!("Error while tokenization: {}", e.to_string()))
-            })?
-            .into();
+            })?;
 
-        Ok(morphemes)
+        let wrapper = PyMorphemeListWrapper::from(morphemes);
+
+        Ok(wrapper)
     }
 }
