@@ -39,5 +39,6 @@ jobs:
 
     - name: Check that binary works (C mode)
       run: |
-        ./target/debug/sudachi ./.github/data/input.txt -o result-c.txt
-        git diff --color=always --no-index -- result-c.txt ./.github/data/expected-c.txt
+        echo $PWD
+        $PWD/target/debug/sudachi $PWD/.github/data/input.txt -o result-c.txt
+        git diff --color=always --no-index -- result-c.txt $PWD/.github/data/expected-c.txt
