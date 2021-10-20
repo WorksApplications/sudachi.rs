@@ -17,9 +17,11 @@
 //! Clone of [Sudachi](https://github.com/WorksApplications/Sudachi),
 //! a Japanese morphological analyzer
 //!
-//! The main entry point of the library is the
-//! [`Tokenizer`](tokenizer/struct.Tokenizer.html) struct, which
-//! implements [`Tokenize`](tokenizer/trait.Tokenize.html).
+//! There is no public API for the initial release.
+//! Issue: https://github.com/WorksApplications/sudachi.rs/issues/28
+//!
+//! Also, there are to mostly
+//! [SudachiPy-compatible Python bindings](https://worksapplications.github.io/sudachi.rs/python/).
 
 pub mod analysis;
 pub mod config;
