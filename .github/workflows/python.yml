@@ -1,0 +1,52 @@
+name: Python
+
+on:
+  push:
+    branches: [ develop ]
+  pull_request:
+    branches: [ develop ]
+
+jobs:
+  build:
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest, windows-latest, macOS-latest ]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Download dictionary
+        run: bash fetch_dictionary.sh
+
+      - name: Setup python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.8'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --upgrade setuptools setuptools-rust
+          python -m pip install --upgrade sudachidict_core
+
+      - name: Build and test
+        working-directory: ./python
+        run: bash build_and_test.sh
+
+      - name: Build sdist and install
+        working-directory: ./python
+        run: |
+          bash build-sdist.sh
+          pip install ./dist/sudachi*
+
+      - name: Check that cli tool works (C mode)
+        run: |
+          sudachipy .github/data/input.txt -o result-c.txt
+          git diff --color=always --no-index -- result-c.txt .github/data/expected-c.txt
+
+      - name: Check that cli tool works (A mode)
+        run: |
+          sudachipy .github/data/input.txt -m A -o result-a.txt
+          git diff --color=always --no-index -- result-a.txt .github/data/expected-a.txt
