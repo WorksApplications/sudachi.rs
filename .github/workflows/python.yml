@@ -29,24 +29,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install --upgrade setuptools setuptools-rust
-          python -m pip install --upgrade sudachidict_core
 
       - name: Build and test
         working-directory: ./python
         run: bash build_and_test.sh
-
-      - name: Build sdist and install
-        working-directory: ./python
-        run: |
-          bash build-sdist.sh
-          pip install ./dist/sudachi*
-
-      - name: Check that cli tool works (C mode)
-        run: |
-          sudachipy .github/data/input.txt -o result-c.txt
-          git diff --color=always --no-index -- result-c.txt .github/data/expected-c.txt
-
-      - name: Check that cli tool works (A mode)
-        run: |
-          sudachipy .github/data/input.txt -m A -o result-a.txt
-          git diff --color=always --no-index -- result-a.txt .github/data/expected-a.txt
