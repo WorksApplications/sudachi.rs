@@ -33,5 +33,11 @@ jobs:
           ~/.cargo/git/db/
           target/
         key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
     - name: Run tests (Debug)
       run: cargo test --verbose
+
+    - name: Check that binary works (C mode)
+      run: |
+        ./target/debug/sudachi ./.github/data/input.txt -o result-c.txt
+        git diff --color=always --no-index -- result-c.txt ./.github/data/expected-c.txt
