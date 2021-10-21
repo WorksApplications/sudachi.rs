@@ -16,6 +16,7 @@
 
 use fancy_regex::Regex;
 use lazy_static::lazy_static;
+use std::cmp::Ordering;
 
 use crate::dic::lexicon_set::LexiconSet;
 use crate::prelude::*;
@@ -30,10 +31,11 @@ impl<'a> NonBreakChecker<'a> {
         NonBreakChecker { lexicon, bos: 0 }
     }
 }
+
 impl NonBreakChecker<'_> {
     /// Returns whether there is a word that crosses the boundary
 
-    fn has_non_break_word(&self, input: &str, length: usize) -> SudachiResult<bool> {
+    fn has_non_break_word(&self, input: &str, length: usize) -> bool {
         // assume that SentenceDetector::get_eos called with self.input[self.bos..]
         let eos_byte = self.bos + length;
         let input_bytes = input.as_bytes();
@@ -42,12 +44,18 @@ impl NonBreakChecker<'_> {
         for i in lookup_start..eos_byte {
             for entry in self.lexicon.lookup(input_bytes, i) {
                 let end_byte = entry.end;
-                if end_byte >= eos_byte {
-                    return Ok(true);
+                // handling cases like モーニング娘。
+                match end_byte.cmp(&eos_byte) {
+                    // end is after than boundary candidate, this boundary is bad
+                    Ordering::Greater => return true,
+                    // end is on boundary candidate,
+                    // check that there are more than one character in the matched word
+                    Ordering::Equal => return input[i..].chars().take(2).count() > 1,
+                    _ => {}
                 }
             }
         }
-        Ok(false)
+        false
     }
 }
 
@@ -136,8 +144,8 @@ impl SentenceDetector {
             if eos < s.len() && is_continuous_phrase(&s, eos)? {
                 continue;
             }
-            if let Some(ck) = &checker {
-                if ck.has_non_break_word(input, eos)? {
+            if let Some(ck) = checker {
+                if ck.has_non_break_word(input, eos) {
                     continue;
                 }
             }
