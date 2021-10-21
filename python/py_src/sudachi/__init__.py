@@ -9,12 +9,12 @@ from .sudachi import (
 
 from importlib import import_module
 from importlib.util import find_spec
+from importlib.metadata import version, PackageNotFoundError
 from pathlib import Path
 
-from pkg_resources import get_distribution, DistributionNotFound
 try:
-    __version__ = get_distribution(__name__).version
-except DistributionNotFound:
+    __version__ = version(__name__)
+except PackageNotFoundError:
     # package is not installed
     pass
 
