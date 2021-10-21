@@ -49,11 +49,11 @@ def _set_default_subparser(self, name, args=None):
 argparse.ArgumentParser.set_default_subparser = _set_default_subparser
 
 
-def run(tokenizer, mode, input_, print_all, stdot_logger, enable_dump):
+def run(tokenizer, mode, input_, output, logger, print_all, enable_dump):
     for line in input_:
         line = line.rstrip('\n')
         # Note: Current version of the tokenizer ignores logger
-        for m in tokenizer.tokenize(line, mode, stdot_logger if enable_dump else None):
+        for m in tokenizer.tokenize(line, mode, logger if enable_dump else None):
             list_info = [
                 m.surface(),
                 ",".join(m.part_of_speech()),
@@ -66,8 +66,8 @@ def run(tokenizer, mode, input_, print_all, stdot_logger, enable_dump):
                     '[{}]'.format(','.join([str(synonym_group_id) for synonym_group_id in m.synonym_group_ids()]))]
                 if m.is_oov():
                     list_info.append("(OOV)")
-            stdot_logger.info("\t".join(list_info))
-        stdot_logger.info("EOS")
+            output.write("\t".join(list_info))
+        output.write("EOS")
 
 
 def _input_files_checker(args, print_usage):
@@ -93,11 +93,12 @@ def _command_tokenize(args, print_usage):
     else:
         mode = SplitMode.C
 
-    stdout_logger = logging.getLogger(__name__)
     output = sys.stdout
     if args.fpath_out:
         output = open(args.fpath_out, "w", encoding="utf-8")
-    handler = logging.StreamHandler(output)
+
+    stdout_logger = logging.getLogger(__name__)
+    handler = logging.StreamHandler(sys.stdout)
     handler.setLevel(logging.DEBUG)
     stdout_logger.addHandler(handler)
     stdout_logger.setLevel(logging.DEBUG)
@@ -112,7 +113,8 @@ def _command_tokenize(args, print_usage):
         tokenizer_obj = dict_.create()
         input_ = fileinput.input(
             args.in_files, openhook=fileinput.hook_encoded("utf-8"))
-        run(tokenizer_obj, mode, input_, print_all, stdout_logger, enable_dump)
+        run(tokenizer_obj, mode, input_, output,
+            stdout_logger, print_all, enable_dump)
     finally:
         if args.fpath_out:
             output.close()
