@@ -29,7 +29,7 @@ setup(
     rust_extensions=[RustExtension(
         "sudachipy.sudachipy", binding=Binding.PyO3)],
     packages=["sudachipy", "sudachipy.dictionary", "sudachipy.tokenizer",
-              "sudachipy.morpheme", "sudachipy.morpheme"],
+              "sudachipy.morphemelist", "sudachipy.morpheme"],
     package_data={"": ["resources/*.json", "resources/*.def"]},
     package_dir={"": "py_src"},
     entry_points={
