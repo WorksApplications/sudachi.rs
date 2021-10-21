@@ -1,0 +1,35 @@
+name: Python Source Package (Common)
+
+on:
+  push:
+    branches: [ develop ]
+
+jobs:
+  build-linux-wheel:
+    name: Build Python Wheels (dev)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Download dictionary
+        run: bash fetch_dictionary.sh
+
+      - uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - uses: eiennohito/gha-manylinux-build@master
+        with:
+          script: python/build-wheels-manylinux-pgo.sh
+
+      - uses: actions/upload-artifact@v2
+        with:
+          name: linux-releases
+          path: python/dist/*manylinux*
+
