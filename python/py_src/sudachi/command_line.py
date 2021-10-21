@@ -67,7 +67,8 @@ def run(tokenizer, mode, input_, output, logger, print_all, enable_dump):
                 if m.is_oov():
                     list_info.append("(OOV)")
             output.write("\t".join(list_info))
-        output.write("EOS")
+            output.write("\n")
+        output.write("EOS\n")
 
 
 def _input_files_checker(args, print_usage):
