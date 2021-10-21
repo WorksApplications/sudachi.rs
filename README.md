@@ -144,7 +144,7 @@ $ which sudachi
 /Users/<USER>/.cargo/bin/sudachi
 
 $ sudachi -h
-sudachi 0.1.0
+sudachi 0.6.0
 A Japanese tokenizer
 ...
 ```
@@ -154,7 +154,7 @@ A Japanese tokenizer
 
 ```bash
 $ sudachi -h
-sudachi 0.1.0
+sudachi 0.6.0
 A Japanese tokenizer
 
 USAGE:
