@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-use crate::sentence_detector::SentenceDetector;
+use crate::sentence_detector::{NonBreakChecker, SentenceDetector};
 use std::ops::Range;
 
 pub trait SplitSentences {
@@ -23,6 +23,7 @@ pub trait SplitSentences {
 
 pub struct SentenceIter<'s, 'x> {
     splitter: &'x SentenceDetector,
+    checker: Option<&'x NonBreakChecker<'x>>,
     data: &'s str,
     position: usize,
 }
@@ -35,7 +36,7 @@ impl<'s, 'x> Iterator for SentenceIter<'s, 'x> {
             return None;
         }
         let slice = &self.data[self.position..];
-        let rv = self.splitter.get_eos(slice, None).unwrap();
+        let rv = self.splitter.get_eos(slice, self.checker).unwrap();
         let end = if rv < 0 {
             self.data.len()
         } else {
@@ -49,30 +50,41 @@ impl<'s, 'x> Iterator for SentenceIter<'s, 'x> {
     }
 }
 
-pub struct SentenceSplitter {
+pub struct SentenceSplitter<'a> {
     detector: SentenceDetector,
+    checker: Option<&'a NonBreakChecker<'a>>,
 }
 
-impl SentenceSplitter {
-    pub fn new() -> SentenceSplitter {
+impl SentenceSplitter<'_> {
+    pub fn new() -> Self {
         SentenceSplitter {
             detector: SentenceDetector::new(),
+            checker: None,
         }
     }
 
-    pub fn with_limit(limit: usize) -> SentenceSplitter {
+    pub fn with_limit(limit: usize) -> Self {
         SentenceSplitter {
             detector: SentenceDetector::with_limit(limit),
+            checker: None,
+        }
+    }
+
+    pub fn with_checker<'a>(self, checker: &'a NonBreakChecker<'a>) -> SentenceSplitter<'a> {
+        SentenceSplitter {
+            detector: self.detector,
+            checker: Some(checker),
         }
     }
 }
 
-impl SplitSentences for SentenceSplitter {
+impl SplitSentences for SentenceSplitter<'_> {
     fn split<'a, 'b>(&'b self, data: &'a str) -> SentenceIter<'a, 'b> {
         SentenceIter {
-            data: data,
+            data,
             position: 0,
             splitter: &self.detector,
+            checker: self.checker,
         }
     }
 }

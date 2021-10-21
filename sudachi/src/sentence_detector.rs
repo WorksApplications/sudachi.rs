@@ -32,22 +32,17 @@ impl<'a> NonBreakChecker<'a> {
 }
 impl NonBreakChecker<'_> {
     /// Returns whether there is a word that crosses the boundary
-    /// TODO: this implementation is broken now
+
     fn has_non_break_word(&self, input: &str, length: usize) -> SudachiResult<bool> {
         // assume that SentenceDetector::get_eos called with self.input[self.bos..]
         let eos_byte = self.bos + length;
         let input_bytes = input.as_bytes();
-        const LOOKUP_BYTE_LENGTH: usize = 64;
+        const LOOKUP_BYTE_LENGTH: usize = 10 * 3; // 10 Japanese characters in UTF-8
         let lookup_start = std::cmp::max(LOOKUP_BYTE_LENGTH, eos_byte) - LOOKUP_BYTE_LENGTH;
         for i in lookup_start..eos_byte {
-            // TODO: fixme
-            // if !input.can_bow(i) {
-            //     continue;
-            // }
             for entry in self.lexicon.lookup(input_bytes, i) {
                 let end_byte = entry.end;
-                let char_count = input[i..end_byte].chars().count();
-                if end_byte > eos_byte || (end_byte == eos_byte && char_count > 1) {
+                if end_byte >= eos_byte {
                     return Ok(true);
                 }
             }
@@ -67,7 +62,7 @@ const CLOSE_PARENTHESIS: &str = "\\)\\}\\]）」｝】』］〕≫”";
 
 const DEFAULT_LIMIT: usize = 4096;
 
-/// A sentence boundary detecter
+/// A sentence boundary detector
 pub struct SentenceDetector {
     // The maximum number of characters processed at once
     limit: usize,
