@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["NonBreakChecker","A checker for words that cross boundaries"],["SentenceDetector","A sentence boundary detecter"]]});
+initSidebarItems({"struct":[["NonBreakChecker","A checker for words that cross boundaries"],["SentenceDetector","A sentence boundary detector"]]});
