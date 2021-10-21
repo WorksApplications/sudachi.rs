@@ -27,7 +27,7 @@ use sudachi::dic::dictionary::JapaneseDictionary;
 use crate::tokenizer::{PySplitMode, PyTokenizer};
 
 /// A sudachi dictionary
-#[pyclass(module = "sudachi.dictionary", name = "Dictionary")]
+#[pyclass(module = "sudachipy.dictionary", name = "Dictionary")]
 #[pyo3(text_signature = "(config_path=None, resource_dir=None, dict_type=None)")]
 #[derive(Clone)]
 #[repr(transparent)]
@@ -83,7 +83,7 @@ impl PyDictionary {
     }
 
     /// Creates a sudachi tokenizer
-    #[pyo3(text_signature = "($self, /, mode=None) -> sudachi.Tokenizer")]
+    #[pyo3(text_signature = "($self, /, mode=None) -> sudachipy.Tokenizer")]
     #[args(mode = "None")]
     fn create(&self, mode: Option<PySplitMode>) -> PyTokenizer {
         let mode = mode.unwrap_or(PySplitMode::C).into();
@@ -98,19 +98,19 @@ impl PyDictionary {
 }
 
 fn get_default_setting_path(py: Python) -> PyResult<PathBuf> {
-    let path = PyModule::import(py, "sudachi")?.getattr("_DEFAULT_SETTINGFILE")?;
+    let path = PyModule::import(py, "sudachipy")?.getattr("_DEFAULT_SETTINGFILE")?;
     let path = path.cast_as::<PyString>()?.to_str()?;
     Ok(PathBuf::from(path))
 }
 
 fn get_default_resource_dir(py: Python) -> PyResult<PathBuf> {
-    let path = PyModule::import(py, "sudachi")?.getattr("_DEFAULT_RESOURCEDIR")?;
+    let path = PyModule::import(py, "sudachipy")?.getattr("_DEFAULT_RESOURCEDIR")?;
     let path = path.cast_as::<PyString>()?.to_str()?;
     Ok(PathBuf::from(path))
 }
 
 fn find_dict_path(py: Python, dict_type: &str) -> PyResult<PathBuf> {
-    let pyfunc = PyModule::import(py, "sudachi")?.getattr("_find_dict_path")?;
+    let pyfunc = PyModule::import(py, "sudachipy")?.getattr("_find_dict_path")?;
     let path = pyfunc
         .call1((dict_type,))?
         .cast_as::<PyString>()?

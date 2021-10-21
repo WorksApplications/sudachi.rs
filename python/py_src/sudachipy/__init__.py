@@ -1,4 +1,4 @@
-from .sudachi import (
+from .sudachipy import (
     Dictionary,
     Tokenizer,
     SplitMode,

@@ -16,23 +16,24 @@ from setuptools import setup
 from setuptools_rust import Binding, RustExtension
 
 setup(
-    name="sudachi",
+    name="SudachiPy",
     version="0.6.0",
     description="Python version of Sudachi, the Japanese Morphological Analyzer",
     long_description=open('README.md', encoding='utf-8').read(),
     long_description_content_type="text/markdown",
-    url="https://github.com/WorksApplications/sudachi.rs",
+    url="https://github.com/WorksApplications/sudachi.rs/tree/develop/python",
     license="Apache-2.0",
     author="Works Applications",
     author_email="sudachi@worksap.co.jp",
 
-    rust_extensions=[RustExtension("sudachi.sudachi", binding=Binding.PyO3)],
-    packages=["sudachi", "sudachi.dictionary", "sudachi.tokenizer",
-              "sudachi.morpheme", "sudachi.morpheme"],
+    rust_extensions=[RustExtension(
+        "sudachipy.sudachipy", binding=Binding.PyO3)],
+    packages=["sudachipy", "sudachipy.dictionary", "sudachipy.tokenizer",
+              "sudachipy.morpheme", "sudachipy.morpheme"],
     package_data={"": ["resources/*.json", "resources/*.def"]},
     package_dir={"": "py_src"},
     entry_points={
-        "console_scripts": ["sudachipy=sudachi.command_line:main"],
+        "console_scripts": ["sudachipy=sudachipy.command_line:main"],
     },
     # rust extensions are not zip safe, just like C-extensions.
     zip_safe=False,

@@ -18,7 +18,7 @@ use pyo3::prelude::*;
 
 use sudachi::dic::lexicon::word_infos::WordInfo;
 
-#[pyclass(module = "sudachi.wordinfo", name = "WordInfo")]
+#[pyclass(module = "sudachipy.wordinfo", name = "WordInfo")]
 pub struct PyWordInfo {
     #[pyo3(get)]
     surface: String,

@@ -35,7 +35,7 @@ use crate::morpheme::PyMorphemeListWrapper;
 //
 // This implementation is a workaround. Waiting for the pyo3 enum feature.
 // ref: [PyO3 issue #834](https://github.com/PyO3/pyo3/issues/834).
-#[pyclass(module = "sudachi.tokenizer", name = "SplitMode")]
+#[pyclass(module = "sudachipy.tokenizer", name = "SplitMode")]
 #[derive(Clone, PartialEq, Eq)]
 #[repr(transparent)]
 pub struct PySplitMode {
@@ -65,7 +65,7 @@ impl From<PySplitMode> for Mode {
 }
 
 /// Tokenizer of morphelogical analysis
-#[pyclass(module = "sudachi.tokenizer", name = "Tokenizer")]
+#[pyclass(module = "sudachipy.tokenizer", name = "Tokenizer")]
 pub struct PyTokenizer {
     tokenizer: StatefulTokenizer<Arc<JapaneseDictionary>>,
 }
@@ -91,7 +91,7 @@ impl PyTokenizer {
     /// In default tokenize text with SplitMode.C.
     /// The logger provided is ignored.
     /// If out is provided, its contents will be rewritten with
-    #[pyo3(text_signature = "($self, text, /, mode=None, logger=None) -> sudachi.MorphemeList")]
+    #[pyo3(text_signature = "($self, text, /, mode=None, logger=None) -> sudachipy.MorphemeList")]
     #[args(text, mode = "None", logger = "None")]
     #[allow(unused_variables)]
     fn tokenize(
