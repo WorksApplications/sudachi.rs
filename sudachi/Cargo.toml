@@ -1,6 +1,6 @@
 [package]
 name = "sudachi"
-version = "0.1.0"
+version = "0.6.0"
 authors = ["Works Applications <sudachi@worksap.co.jp>"]
 edition = "2018"
 description = "Rust version of Sudachi, the Japanese Morphological Analyzer"

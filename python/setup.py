@@ -17,7 +17,7 @@ from setuptools_rust import Binding, RustExtension
 
 setup(
     name="sudachi",
-    version="0.1",
+    version="0.6.0",
     description="Python version of Sudachi, the Japanese Morphological Analyzer",
     long_description=open('README.md', encoding='utf-8').read(),
     long_description_content_type="text/markdown",
