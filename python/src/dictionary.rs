@@ -21,7 +21,6 @@ use pyo3::exceptions::PyException;
 use pyo3::prelude::*;
 use pyo3::types::PyString;
 
-use sudachi::analysis::stateless_tokenizer::StatelessTokenizer;
 use sudachi::config::Config;
 use sudachi::dic::dictionary::JapaneseDictionary;
 
@@ -87,10 +86,8 @@ impl PyDictionary {
     #[pyo3(text_signature = "($self, /, mode=None) -> sudachi.Tokenizer")]
     #[args(mode = "None")]
     fn create(&self, mode: Option<PySplitMode>) -> PyTokenizer {
-        let tokenizer = StatelessTokenizer::new(self.dictionary.as_ref().unwrap().clone());
         let mode = mode.unwrap_or(PySplitMode::C).into();
-
-        PyTokenizer::new(tokenizer, mode)
+        PyTokenizer::new(self.dictionary.as_ref().unwrap().clone(), mode)
     }
 
     /// Close this dictionary
