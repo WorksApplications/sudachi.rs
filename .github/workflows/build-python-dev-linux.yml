@@ -52,7 +52,7 @@ jobs:
       - name: Install cibuildwheel
         run: |
           python -m pip install -U pip
-          python -m pip install cibuildwheel==2.2.0b1
+          python -m pip install cibuildwheel
 
       - name: Build wheels
         run: python -m cibuildwheel --output-dir wheelhouse python
