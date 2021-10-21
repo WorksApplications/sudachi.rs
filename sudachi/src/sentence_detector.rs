@@ -16,6 +16,7 @@
 
 use fancy_regex::Regex;
 use lazy_static::lazy_static;
+use std::cmp::Ordering;
 
 use crate::dic::lexicon_set::LexiconSet;
 use crate::prelude::*;
@@ -30,29 +31,31 @@ impl<'a> NonBreakChecker<'a> {
         NonBreakChecker { lexicon, bos: 0 }
     }
 }
+
 impl NonBreakChecker<'_> {
     /// Returns whether there is a word that crosses the boundary
-    /// TODO: this implementation is broken now
-    fn has_non_break_word(&self, input: &str, length: usize) -> SudachiResult<bool> {
+
+    fn has_non_break_word(&self, input: &str, length: usize) -> bool {
         // assume that SentenceDetector::get_eos called with self.input[self.bos..]
         let eos_byte = self.bos + length;
         let input_bytes = input.as_bytes();
-        const LOOKUP_BYTE_LENGTH: usize = 64;
+        const LOOKUP_BYTE_LENGTH: usize = 10 * 3; // 10 Japanese characters in UTF-8
         let lookup_start = std::cmp::max(LOOKUP_BYTE_LENGTH, eos_byte) - LOOKUP_BYTE_LENGTH;
         for i in lookup_start..eos_byte {
-            // TODO: fixme
-            // if !input.can_bow(i) {
-            //     continue;
-            // }
             for entry in self.lexicon.lookup(input_bytes, i) {
                 let end_byte = entry.end;
-                let char_count = input[i..end_byte].chars().count();
-                if end_byte > eos_byte || (end_byte == eos_byte && char_count > 1) {
-                    return Ok(true);
+                // handling cases like モーニング娘。
+                match end_byte.cmp(&eos_byte) {
+                    // end is after than boundary candidate, this boundary is bad
+                    Ordering::Greater => return true,
+                    // end is on boundary candidate,
+                    // check that there are more than one character in the matched word
+                    Ordering::Equal => return input[i..].chars().take(2).count() > 1,
+                    _ => {}
                 }
             }
         }
-        Ok(false)
+        false
     }
 }
 
@@ -67,7 +70,7 @@ const CLOSE_PARENTHESIS: &str = "\\)\\}\\]）」｝】』］〕≫”";
 
 const DEFAULT_LIMIT: usize = 4096;
 
-/// A sentence boundary detecter
+/// A sentence boundary detector
 pub struct SentenceDetector {
     // The maximum number of characters processed at once
     limit: usize,
@@ -141,8 +144,8 @@ impl SentenceDetector {
             if eos < s.len() && is_continuous_phrase(&s, eos)? {
                 continue;
             }
-            if let Some(ck) = &checker {
-                if ck.has_non_break_word(input, eos)? {
+            if let Some(ck) = checker {
+                if ck.has_non_break_word(input, eos) {
                     continue;
                 }
             }

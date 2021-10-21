@@ -29,6 +29,7 @@ use sudachi::analysis::stateless_tokenizer::DictionaryAccess;
 use sudachi::config::Config;
 use sudachi::dic::dictionary::JapaneseDictionary;
 use sudachi::prelude::*;
+use sudachi::sentence_detector::NonBreakChecker;
 use sudachi::sentence_splitter::{SentenceSplitter, SplitSentences};
 
 #[cfg(feature = "bake_dictionary")]
@@ -123,7 +124,8 @@ fn main() {
     let dict = JapaneseDictionary::from_cfg(&config)
         .unwrap_or_else(|e| panic!("Failed to create dictionary: {:?}", e));
     let mut tokenizer = StatefulTokenizer::create(&dict, enable_debug, mode);
-    let splitter = SentenceSplitter::with_limit(32 * 1024);
+    let checker = NonBreakChecker::new(dict.lexicon());
+    let splitter = SentenceSplitter::with_limit(32 * 1024).with_checker(&checker);
     let mut morphemes = MorphemeList::empty(&dict);
 
     let is_stdout = args.output_file.is_none();
