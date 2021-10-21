@@ -3,8 +3,8 @@ name: Python Binary Packages
 on:
   push:
     branches: [ develop ]
-  pull_request:
-    branches: [ develop ]
+#  pull_request:
+#    branches: [ develop ]
 
 jobs:
   build-linux-wheels:
