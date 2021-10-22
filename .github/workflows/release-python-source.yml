@@ -8,7 +8,7 @@ on:
 jobs:
   upload-sdist:
     name: Build and upload source distribution
-    runs-on: Ubuntu-latest
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
 
