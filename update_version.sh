@@ -48,8 +48,4 @@ echo "grep with previous version number:"
 
 set +e # allow grep to exit with 1 (no line match)
 
-FILES="$CARGO_FILES $PY_SETUP_FILE $PYDOC_CONF_FILE"
-for FILE in $FILES ; do
-    echo $FILE
-    grep $VERSION_FROM $FILE
-done
+git grep $VERSION_FROM
