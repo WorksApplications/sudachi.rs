@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e
+set -eu
 
 if [ $# -lt 2 ] && [ "$1" != "show" ] ; then
     echo "Provide 2 arguments [from] and [to] to update version, or 'show' to print current one."
@@ -17,22 +17,26 @@ fi
 VERSION_FROM=$1
 VERSION_TO=$2
 
-echo "Update version from ${VERSION_FROM} to ${VERSION_TO}"
-
 if [ $VERSION_FROM != $VERSION_CRR ] ; then
     echo "Specified base version ${VERSION_FROM} does not match the current version ${VERSION_CRR}."
     exit 1
 fi
 
-function replace() {
-    # replace the first occurrence of `$1 = "<version>"` in the file $2
-    echo $2
-    sed -i -r "1,/$1 ?= / s/^(.*)"${VERSION_FROM}"(.*)$/\1"${VERSION_TO}"\2/" $2
-}
+# update
+echo "Update version from ${VERSION_FROM} to ${VERSION_TO}"
 
-for FILE in $(find . -name Cargo.toml) ; do
-    replace "version" $FILE
+CARGO_FILES="$(find . -name Cargo.toml)"
+
+for FILE in $CARGO_FILES ; do
+    echo $FILE
+    # replace the first occurrence of `^version = "<version>"$`
+    sed -i -r "1,/^version = / s/^version = \"${VERSION_FROM}\"$/version = \"${VERSION_TO}\"/" $FILE
 done
 
-replace "version" "./python/setup.py"
-replace "release" "./python/docs/source/conf.py"
+PY_SETUP_FILE="./python/setup.py"
+echo $PY_SETUP_FILE
+sed -i -r "1,/^ *version=/ s/^ *version=\"${VERSION_FROM}\",$/    version=\"${VERSION_TO}\",/" $PY_SETUP_FILE
+
+PYDOC_CONF_FILE="./python/docs/source/conf.py"
+echo $PYDOC_CONF_FILE
+sed -i -r "1,/^release = '/ s/^release = '${VERSION_FROM}'$/release = '${VERSION_TO}'/" $PYDOC_CONF_FILE
