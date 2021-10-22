@@ -6,8 +6,8 @@ on:
     tags: [ "v*" ]
 # following two lines must be commented out before merging, we don't want to run this on PRs
 # but for testing this we run this on PRs
-  pull_request:
-    branches: [ develop ]
+#  pull_request:
+#    branches: [ develop ]
 
 jobs:
   build-sdist:
