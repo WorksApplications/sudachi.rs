@@ -40,3 +40,16 @@ sed -i -r "1,/^ *version=/ s/^ *version=\"${VERSION_FROM}\",$/    version=\"${VE
 PYDOC_CONF_FILE="./python/docs/source/conf.py"
 echo $PYDOC_CONF_FILE
 sed -i -r "1,/^release = '/ s/^release = '${VERSION_FROM}'$/release = '${VERSION_TO}'/" $PYDOC_CONF_FILE
+
+
+# check
+echo ""
+echo "grep with previous version number:"
+
+set +e # allow grep to exit with 1 (no line match)
+
+FILES="$CARGO_FILES $PY_SETUP_FILE $PYDOC_CONF_FILE"
+for FILE in $FILES ; do
+    echo $FILE
+    grep $VERSION_FROM $FILE
+done
