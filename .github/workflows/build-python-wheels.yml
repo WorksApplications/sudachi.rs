@@ -1,12 +1,39 @@
-name: Python Binary Packages
+name: Python Packages
 
 on:
   push:
     branches: [ develop ]
+    tags: [ "v*" ]
+# following two lines must be commented out before merging, we don't want to run this on PRs
+# but for testing this we run this on PRs
 #  pull_request:
 #    branches: [ develop ]
 
 jobs:
+  build-sdist:
+    name: Build source distribution
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --upgrade setuptools setuptools-rust
+
+      - name: Build
+        working-directory: ./python
+        run: bash build-sdist.sh
+
+      - uses: actions/upload-artifact@v2
+        with:
+          path: python/dist/*
+
   build-linux-wheels:
     name: Build Linux Python Wheels (+PGO)
     runs-on: ubuntu-latest
@@ -39,7 +66,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [windows-latest, macOS-11]
+        os: [windows-latest, macOS-latest]
         python-version: [ "3.6", "3.7", "3.8", "3.9" , "3.10" ]
 
     steps:
@@ -68,9 +95,35 @@ jobs:
         run: |
           cd python && python setup.py bdist_wheel
         env:
-          MACOSX_DEPLOYMENT_TARGET: 11
-
+          MACOSX_DEPLOYMENT_TARGET: 10.12
 
       - uses: actions/upload-artifact@v2
         with:
           path: python/dist/*.whl
+
+  upload-to-pypi: # run only if all have succeeded
+    needs: [ build-sdist, build-non-linux-wheels, build-linux-wheels ]
+    # https://stackoverflow.com/questions/58475748/github-actions-how-to-check-if-current-push-has-new-tag-is-new-release
+    if: startsWith(github.ref, 'refs/tags/v') # only for tags
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.9'
+
+      - name: Install twine
+        run: |
+          python -m pip install --upgrade twine
+
+      - uses: actions/download-artifact@v2
+        with:
+          path: dist/
+
+      - name: Upload to PyPi
+        working-directory: ./python
+        env:
+          TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
+          TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+        run:
+          twine upload dist/*
