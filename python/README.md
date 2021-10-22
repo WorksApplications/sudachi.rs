@@ -7,6 +7,15 @@ SudachiPy is a Python version of [Sudachi](https://github.com/WorksApplications/
 Buindings over the [Rust implementation](https://github.com/WorksApplications/sudachi.rs).
 
 
+## Note about installing version 0.6.0rc1
+
+- You need to explicitly specify the version to install: `pip install sudachipy==0.6.0rc1`.
+- You can safely ignore the error about version incompatibility from `sudachidict_*`.
+- Installing `sudachidict_*` will overwrites this version.
+  - Install a dictionary first, or re-install this module.
+- Please also check [CHANGELOG.md](./CHANGELOG.md).
+
+
 ## TL;DR
 
 ```bash
