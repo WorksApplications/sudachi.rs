@@ -15,7 +15,7 @@
 import os
 import unittest
 
-from sudachi import Dictionary, Tokenizer
+from sudachipy import Dictionary, Tokenizer
 
 
 class TestDictionary(unittest.TestCase):

@@ -17,7 +17,7 @@
 
 # -- Project information -----------------------------------------------------
 
-project = 'sudachi'
+project = 'SudachiPy'
 copyright = '2021, Works Applications'
 author = 'Works Applications'
 

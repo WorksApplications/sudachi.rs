@@ -31,7 +31,7 @@ use crate::word_info::PyWordInfo;
 type PyMorphemeList = MorphemeList<Arc<JapaneseDictionary>>;
 
 /// A list of morphemes
-#[pyclass(module = "sudachi.morphemelist", name = "MorphemeList")]
+#[pyclass(module = "sudachipy.morphemelist", name = "MorphemeList")]
 #[repr(transparent)]
 pub struct PyMorphemeListWrapper {
     inner: Arc<PyMorphemeList>,
@@ -41,7 +41,7 @@ pub struct PyMorphemeListWrapper {
 impl PyMorphemeListWrapper {
     /// Returns an empty morpheme list with dictionary
     #[classmethod]
-    #[pyo3(text_signature = "(dict) -> sudachi.MorphemeList")]
+    #[pyo3(text_signature = "(dict) -> sudachipy.MorphemeList")]
     fn empty(_cls: &PyType, py: Python, dict: &PyDictionary) -> PyResult<Self> {
         let cat = PyModule::import(py, "builtins")?.getattr("DeprecationWarning")?;
         PyErr::warn(py, cat, "Users should not generate MorphemeList by themselves. Use Tokenizer.tokenize(\"\") if you need.", 1)?;
@@ -119,7 +119,7 @@ impl pyo3::iter::PyIterProtocol for PyMorphemeListWrapper {
 }
 
 /// A morpheme (basic semantic unit of language).
-#[pyclass(module = "sudachi.morphemelist", name = "MorphemeIter")]
+#[pyclass(module = "sudachipy.morphemelist", name = "MorphemeIter")]
 pub struct PyMorphemeIter {
     list: Arc<PyMorphemeList>,
     index: usize,
@@ -146,7 +146,7 @@ impl pyo3::iter::PyIterProtocol for PyMorphemeIter {
     }
 }
 
-#[pyclass(module = "sudachi.morpheme", name = "Morpheme")]
+#[pyclass(module = "sudachipy.morpheme", name = "Morpheme")]
 pub struct PyMorpheme {
     list: Arc<PyMorphemeList>,
     index: usize,
@@ -219,7 +219,7 @@ impl PyMorpheme {
     }
 
     /// Returns a list of morphemes splitting itself with given split mode
-    #[pyo3(text_signature = "($self, mode, /) -> sudachi.MorphemeList")]
+    #[pyo3(text_signature = "($self, mode, /) -> sudachipy.MorphemeList")]
     fn split(&self, py: Python, mode: PySplitMode) -> PyResult<PyMorphemeListWrapper> {
         let cat = PyModule::import(py, "builtins")?.getattr("DeprecationWarning")?;
         PyErr::warn(
@@ -269,7 +269,7 @@ impl PyMorpheme {
     }
 
     /// Returns the word info
-    #[pyo3(text_signature = "($self) -> sudachi.WordInfo")]
+    #[pyo3(text_signature = "($self) -> sudachipy.WordInfo")]
     fn get_word_info(&self, py: Python) -> PyResult<PyWordInfo> {
         let cat = PyModule::import(py, "builtins")?.getattr("DeprecationWarning")?;
         PyErr::warn(py, cat, "Users should not touch the raw WordInfo.", 1)?;

@@ -17,13 +17,13 @@ import unittest
 
 class TestImport(unittest.TestCase):
     def test_import_dictionary(self):
-        from sudachi.dictionary import Dictionary
+        from sudachipy.dictionary import Dictionary
         self.assertIsNotNone(Dictionary)
 
     def test_import_morpheme(self):
-        from sudachi.morpheme import Morpheme
+        from sudachipy.morpheme import Morpheme
         self.assertIsNotNone(Morpheme)
 
     def test_import_morphemelist(self):
-        from sudachi.morphemelist import MorphemeList
+        from sudachipy.morphemelist import MorphemeList
         self.assertIsNotNone(MorphemeList)

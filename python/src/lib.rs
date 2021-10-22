@@ -23,7 +23,7 @@ mod word_info;
 
 /// module root
 #[pymodule]
-fn sudachi(_py: Python, m: &PyModule) -> PyResult<()> {
+fn sudachipy(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<dictionary::PyDictionary>()?;
     m.add_class::<tokenizer::PySplitMode>()?;
     m.add_class::<tokenizer::PyTokenizer>()?;
