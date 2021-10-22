@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Python Module Index &mdash; SudachiPy 0.6.0 documentation</title>
+  <title>Wheel Status &mdash; SudachiPy 0.6.0 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -17,9 +18,7 @@
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
- 
-
-
+    <link rel="prev" title="sudachipy.morpheme package" href="sudachipy.morpheme.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -38,13 +37,18 @@
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <p class="caption" role="heading"><span class="caption-text">API Reference:</span></p>
-<ul>
+<ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="sudachipy.html">sudachipy package</a></li>
 <li class="toctree-l1"><a class="reference internal" href="sudachipy.dictionary.html">sudachipy.dictionary package</a></li>
 <li class="toctree-l1"><a class="reference internal" href="sudachipy.tokenizer.html">sudachipy.tokenizer package</a></li>
 <li class="toctree-l1"><a class="reference internal" href="sudachipy.morphemelist.html">sudachipy.morphemelist package</a></li>
 <li class="toctree-l1"><a class="reference internal" href="sudachipy.morpheme.html">sudachipy.morpheme package</a></li>
-<li class="toctree-l1"><a class="reference internal" href="wheels.html">Wheel Status</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Wheel Status</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#linux">Linux</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#windows">Windows</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#macos">macOS</a></li>
+</ul>
+</li>
 </ul>
 
         </div>
@@ -61,8 +65,9 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
-      <li>Python Module Index</li>
+      <li>Wheel Status</li>
       <li class="wy-breadcrumbs-aside">
+            <a href="_sources/wheels.rst.txt" rel="nofollow"> View page source</a>
       </li>
   </ul>
   <hr/>
@@ -70,49 +75,43 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-
-   <h1>Python Module Index</h1>
-
-   <div class="modindex-jumpbox">
-   <a href="#cap-s"><strong>s</strong></a>
-   </div>
-
-   <table class="indextable modindextable">
-     <tr class="pcap"><td></td><td>&#160;</td><td></td></tr>
-     <tr class="cap" id="cap-s"><td></td><td>
-       <strong>s</strong></td><td></td></tr>
-     <tr>
-       <td><img src="_static/minus.png" class="toggler"
-              id="toggle-1" style="display: none" alt="-" /></td>
-       <td>
-       <code class="xref">sudachipy</code></td><td>
-       <em></em></td></tr>
-     <tr class="cg-1">
-       <td></td>
-       <td>&#160;&#160;&#160;
-       <a href="sudachipy.dictionary.html#module-sudachipy.dictionary"><code class="xref">sudachipy.dictionary</code></a></td><td>
-       <em></em></td></tr>
-     <tr class="cg-1">
-       <td></td>
-       <td>&#160;&#160;&#160;
-       <a href="sudachipy.morpheme.html#module-sudachipy.morpheme"><code class="xref">sudachipy.morpheme</code></a></td><td>
-       <em></em></td></tr>
-     <tr class="cg-1">
-       <td></td>
-       <td>&#160;&#160;&#160;
-       <a href="sudachipy.morphemelist.html#module-sudachipy.morphemelist"><code class="xref">sudachipy.morphemelist</code></a></td><td>
-       <em></em></td></tr>
-     <tr class="cg-1">
-       <td></td>
-       <td>&#160;&#160;&#160;
-       <a href="sudachipy.tokenizer.html#module-sudachipy.tokenizer"><code class="xref">sudachipy.tokenizer</code></a></td><td>
-       <em></em></td></tr>
-   </table>
+  <section id="wheel-status">
+<h1>Wheel Status<a class="headerlink" href="#wheel-status" title="Permalink to this headline"></a></h1>
+<p>We provide wheel builds for following platforms:</p>
+<ul class="simple">
+<li><p>Linux-amd64</p></li>
+<li><p>Windows-x86_64</p></li>
+<li><p>macOS-x86_64</p></li>
+</ul>
+<p>Wheels for Linux are supported (we will fix bugs and problems when reported).
+Wheels for Windows are supported in best-effort manner (we will try to fix bugs when reported, but that can take unspecified amount of time).
+Wheels for macOS are <strong>not</strong> supported and we welcome contributions for them.</p>
+<section id="linux">
+<h2>Linux<a class="headerlink" href="#linux" title="Permalink to this headline"></a></h2>
+<p>We build wheels only for amd64 (x86_64) architecture at the moment.
+Wheels for Linux are built with <a class="reference external" href="https://doc.rust-lang.org/rustc/profile-guided-optimization.html">Profiled-Guided Optimizations</a>
+and will probably be faster than installations which are manaully-built from the source package.
+Wheels are built using manylinux container and should be compatible with most of distributions.</p>
+</section>
+<section id="windows">
+<h2>Windows<a class="headerlink" href="#windows" title="Permalink to this headline"></a></h2>
+<p>Builds for Windows are built witout PGO, but should work as if you have built the wheels yourself.
+We don’t provide builds for x86 architecture.</p>
+</section>
+<section id="macos">
+<h2>macOS<a class="headerlink" href="#macos" title="Permalink to this headline"></a></h2>
+<p>The situation is similar to Windows, but these builds are tested even less.
+We don’t provide aarch64 builds for Apple Silicon-based Macs, but would welcome a contribution which will add those builds.
+Builds from source should work on M1-based Macs.</p>
+</section>
+</section>
 
 
            </div>
           </div>
-          <footer>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="sudachipy.morpheme.html" class="btn btn-neutral float-left" title="sudachipy.morpheme package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
 
   <hr/>
 

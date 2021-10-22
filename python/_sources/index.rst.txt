@@ -15,6 +15,7 @@ Welcome to SudachiPy's documentation!
    sudachipy.tokenizer
    sudachipy.morphemelist
    sudachipy.morpheme
+   wheels
 
 
 Indices and tables
