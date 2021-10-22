@@ -11,12 +11,7 @@ from importlib import import_module
 from importlib.util import find_spec
 from pathlib import Path
 
-from pkg_resources import get_distribution, DistributionNotFound
-try:
-    __version__ = get_distribution(__name__).version
-except DistributionNotFound:
-    # package is not installed
-    pass
+__version__ = "0.6.0-rc1"
 
 _DEFAULT_RESOURCEDIR = Path(__file__).resolve().parent / 'resources'
 _DEFAULT_SETTINGFILE = _DEFAULT_RESOURCEDIR / 'sudachi.json'

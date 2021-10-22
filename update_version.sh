@@ -37,6 +37,10 @@ PY_SETUP_FILE="./python/setup.py"
 echo $PY_SETUP_FILE
 sed -i -r "1,/^ *version=/ s/^ *version=\"${VERSION_FROM}\",$/    version=\"${VERSION_TO}\",/" $PY_SETUP_FILE
 
+PY_INIT_FILE="./python/py_src/sudachipy/__init__.py"
+echo $PY_INIT_FILE
+sed -i -r "s/^__version__ = \"${VERSION_FROM}\"$/__version__ = \"${VERSION_TO}\"/" $PY_INIT_FILE
+
 PYDOC_CONF_FILE="./python/docs/source/conf.py"
 echo $PYDOC_CONF_FILE
 sed -i -r "1,/^release = '/ s/^release = '${VERSION_FROM}'$/release = '${VERSION_TO}'/" $PYDOC_CONF_FILE
