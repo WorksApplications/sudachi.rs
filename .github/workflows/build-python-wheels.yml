@@ -4,6 +4,8 @@ on:
   push:
     branches: [ develop ]
     tags: [ "v*" ]
+# following two lines must be commented out before merging, we don't want to run this on PRs
+# but for testing this we run this on PRs
   pull_request:
     branches: [ develop ]
 
@@ -101,6 +103,7 @@ jobs:
 
   upload-to-pypi: # run only if all have succeeded
     needs: [ build-sdist, build-non-linux-wheels, build-linux-wheels ]
+    # https://stackoverflow.com/questions/58475748/github-actions-how-to-check-if-current-push-has-new-tag-is-new-release
     if: startsWith(github.ref, 'refs/tags/v') # only for tags
     runs-on: ubuntu-latest
     steps:
