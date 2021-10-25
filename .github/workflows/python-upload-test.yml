@@ -1,0 +1,37 @@
+name: Python Packages Test
+
+on:
+  workflow_dispatch:
+
+# following two lines must be commented out before merging, we don't want to run this on PRs
+# but for testing this we run this on PRs
+  pull_request:
+    branches: [ develop ]
+
+jobs:
+  upload-to-pypi: # run only if all have succeeded
+    # https://stackoverflow.com/questions/58475748/github-actions-how-to-check-if-current-push-has-new-tag-is-new-release
+#     if: startsWith(github.ref, 'refs/tags/v') # only for tags
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.9'
+      - name: Install twine
+        run: |
+          python -m pip install --upgrade twine
+
+      - uses: actions/download-artifact@v2
+        with:
+          path: dist/    
+      - name: List files to upload
+        run: ls -R dist/
+
+#       - name: Upload to TestPyPi
+#         working-directory: ./python
+#         env:
+#           TWINE_USERNAME: ${{ secrets.TESTPYPI_USERNAME }}
+#           TWINE_PASSWORD: ${{ secrets.TESTPYPI_PASSWORD }}
+#         run:
+#           twine upload --repository testpypi dist/*
