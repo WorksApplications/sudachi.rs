@@ -14,7 +14,6 @@
  *  limitations under the License.
  */
 
-use std::intrinsics::offset;
 use std::iter::FusedIterator;
 
 /// Read UTF-16 code units from non-aligned storage
