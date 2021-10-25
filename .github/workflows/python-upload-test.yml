@@ -108,7 +108,8 @@ jobs:
 
       - uses: actions/download-artifact@v2
         with:
-          path: dist/    
+          name: artifact # default artifact name
+          path: dist/
       - name: List files to upload
         run: ls -R dist/
 
