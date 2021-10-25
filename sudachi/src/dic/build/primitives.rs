@@ -60,12 +60,12 @@ impl Utf16Writer {
         let length = length as u16;
 
         let prefix = if length < 127 {
-            w.write_all(&[length as u8; 1])?;
+            w.write_all(&[length as u8])?;
             1
         } else {
             let b0 = (length as u8) & 0xff;
             let b1 = ((length >> 8) as u8) | 0x80;
-            w.write_all(&[b1, b0]);
+            w.write_all(&[b1, b0])?;
             2
         };
 
