@@ -78,7 +78,7 @@ impl Utf16Writer {
 mod test {
     use crate::dic::build::error::DicWriteResult;
     use crate::dic::build::primitives::Utf16Writer;
-    use crate::dic::utf16_string_parser;
+    use crate::dic::read::utf16_string_parser;
 
     #[test]
     fn write_utf16() {

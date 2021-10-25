@@ -16,7 +16,7 @@
 
 use crate::dic::character_category::CharacterCategory;
 use crate::dic::connect::ConnectionMatrix;
-use crate::dic::utf16_string_parser;
+use crate::dic::read::utf16_string_parser;
 use crate::error::SudachiNomResult;
 use crate::prelude::*;
 use nom::{
