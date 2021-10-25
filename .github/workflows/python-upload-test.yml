@@ -129,6 +129,7 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
+      - uses: actions/checkout@v2
       - uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
@@ -149,5 +150,5 @@ jobs:
 
       - name: Check that binary works (A mode)
         run: |
-          sudachipy .github/data/input.txt -m A -o result-c.txt
-          git diff --color=always --no-index -- result-a.txt .github/data/expected-c.txt
+          sudachipy .github/data/input.txt -m A -o result-a.txt
+          git diff --color=always --no-index -- result-a.txt .github/data/expected-a.txt
