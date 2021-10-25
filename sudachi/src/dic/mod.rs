@@ -27,6 +27,7 @@ use header::Header;
 use lexicon::Lexicon;
 use lexicon_set::LexiconSet;
 
+pub mod build;
 pub mod category_type;
 pub mod character_category;
 pub mod connect;
@@ -74,7 +75,7 @@ pub struct DictionaryLoader<'a> {
 impl<'a> DictionaryLoader<'a> {
     /// Creates a binary dictionary from bytes
     fn read_dictionary(dictionary_bytes: &[u8]) -> SudachiResult<DictionaryLoader> {
-        let header = Header::new(&dictionary_bytes[..Header::STORAGE_SIZE])?;
+        let header = Header::parse(&dictionary_bytes[..Header::STORAGE_SIZE])?;
         let mut offset = Header::STORAGE_SIZE;
 
         let grammar = if header.has_grammar() {

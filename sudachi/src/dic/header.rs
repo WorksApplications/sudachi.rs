@@ -97,7 +97,7 @@ impl Header {
     pub const STORAGE_SIZE: usize = 8 + 8 + Header::DESCRIPTION_SIZE;
 
     /// Creates a new header from a dictionary bytes
-    pub fn new(bytes: &[u8]) -> Result<Header, HeaderError> {
+    pub fn parse(bytes: &[u8]) -> Result<Header, HeaderError> {
         let (_rest, (version, create_time, description)) =
             header_parser(bytes).map_err(|_| HeaderError::CannotParse)?;
 
@@ -163,13 +163,13 @@ mod tests {
         bytes.extend(&create_time.to_le_bytes());
         bytes.extend(description.as_ref());
 
-        Header::new(&bytes)
+        Header::parse(&bytes)
     }
 
     #[test]
     fn graceful_failure() {
         // Too small
-        assert_eq!(Header::new(&[]), Err(HeaderError::CannotParse));
+        assert_eq!(Header::parse(&[]), Err(HeaderError::CannotParse));
 
         assert_eq!(
             header_from_parts(42, 0, vec![0; Header::DESCRIPTION_SIZE]),

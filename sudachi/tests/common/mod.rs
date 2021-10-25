@@ -66,7 +66,7 @@ lazy_static! {
         bytes
     };
     pub static ref HEADER: Header =
-        Header::new(&DICTIONARY_BYTES).expect("Failed to create Header for tests");
+        Header::parse(&DICTIONARY_BYTES).expect("Failed to create Header for tests");
     pub static ref GRAMMAR: Grammar<'static> =
         Grammar::new(&DICTIONARY_BYTES, Header::STORAGE_SIZE)
             .expect("Failed to read grammar for tests");
