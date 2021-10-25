@@ -17,7 +17,7 @@
 use std::intrinsics::offset;
 use std::iter::FusedIterator;
 
-/// Read UTF-16 codepoints from non-aligned storage
+/// Read UTF-16 code units from non-aligned storage
 pub struct U16CodeUnits<'a> {
     data: &'a [u8],
     offset: usize,
