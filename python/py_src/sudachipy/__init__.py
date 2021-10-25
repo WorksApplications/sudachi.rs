@@ -9,14 +9,9 @@ from .sudachipy import (
 
 from importlib import import_module
 from importlib.util import find_spec
-from importlib.metadata import version, PackageNotFoundError
 from pathlib import Path
 
-try:
-    __version__ = version(__name__)
-except PackageNotFoundError:
-    # package is not installed
-    pass
+__version__ = "0.6.0-rc1"
 
 _DEFAULT_RESOURCEDIR = Path(__file__).resolve().parent / 'resources'
 _DEFAULT_SETTINGFILE = _DEFAULT_RESOURCEDIR / 'sudachi.json'
