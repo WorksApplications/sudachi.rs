@@ -107,23 +107,17 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/v') # only for tags
     runs-on: ubuntu-latest
     steps:
-      - name: Setup python
-        uses: actions/setup-python@v2
-        with:
-          python-version: '3.9'
-
-      - name: Install twine
-        run: |
-          python -m pip install --upgrade twine
-
       - uses: actions/download-artifact@v2
         with:
+          name: artifact # default artifact name
           path: dist/
 
-      - name: Upload to PyPi
-        working-directory: ./python
-        env:
-          TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
-          TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
-        run:
-          twine upload dist/*
+      - name: List files to upload
+        run: ls -R dist/
+
+      - name: Publish distribution to PyPI
+        uses: pypa/gh-action-pypi-publish@master
+        with:
+          user: ${{ secrets.PYPI_USERNAME }}
+          password: ${{ secrets.PYPI_PASSWORD }}
+          verbose: true
