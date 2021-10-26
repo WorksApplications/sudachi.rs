@@ -41,7 +41,7 @@ pub struct PyMorphemeListWrapper {
 impl PyMorphemeListWrapper {
     /// Returns an empty morpheme list with dictionary
     #[classmethod]
-    #[pyo3(text_signature = "(dict) -> sudachipy.MorphemeList")]
+    #[pyo3(text_signature = "(dict: sudachipy.Dictionary) -> sudachipy.MorphemeList")]
     fn empty(_cls: &PyType, py: Python, dict: &PyDictionary) -> PyResult<Self> {
         let cat = PyModule::import(py, "builtins")?.getattr("DeprecationWarning")?;
         PyErr::warn(py, cat, "Users should not generate MorphemeList by themselves. Use Tokenizer.tokenize(\"\") if you need.", 1)?;
@@ -219,7 +219,7 @@ impl PyMorpheme {
     }
 
     /// Returns a list of morphemes splitting itself with given split mode
-    #[pyo3(text_signature = "($self, mode, /) -> sudachipy.MorphemeList")]
+    #[pyo3(text_signature = "($self, mode: sudachipy.SplitMode) -> sudachipy.MorphemeList")]
     fn split(&self, py: Python, mode: PySplitMode) -> PyResult<PyMorphemeListWrapper> {
         let cat = PyModule::import(py, "builtins")?.getattr("DeprecationWarning")?;
         PyErr::warn(

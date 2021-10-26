@@ -88,10 +88,11 @@ impl PyTokenizer {
 
     /// Break text into morphemes
     ///
-    /// In default tokenize text with SplitMode.C.
+    /// By default tokenizer's split mode is used.
     /// The logger provided is ignored.
-    /// If out is provided, its contents will be rewritten with
-    #[pyo3(text_signature = "($self, text, /, mode=None, logger=None) -> sudachipy.MorphemeList")]
+    #[pyo3(
+        text_signature = "($self, text: str, mode: SplitMode = None, logger = None) -> sudachipy.MorphemeList"
+    )]
     #[args(text, mode = "None", logger = "None")]
     #[allow(unused_variables)]
     fn tokenize(

@@ -28,7 +28,7 @@ use crate::tokenizer::{PySplitMode, PyTokenizer};
 
 /// A sudachi dictionary
 #[pyclass(module = "sudachipy.dictionary", name = "Dictionary")]
-#[pyo3(text_signature = "(config_path=None, resource_dir=None, dict_type=None)")]
+#[pyo3(text_signature = "(config_path: str = ..., resource_dir: str = ..., dict_type: str = ...)")]
 #[derive(Clone)]
 #[repr(transparent)]
 pub struct PyDictionary {
@@ -37,7 +37,10 @@ pub struct PyDictionary {
 
 #[pymethods]
 impl PyDictionary {
-    /// Creates a sudachi dictionary
+    /// Creates a sudachi dictionary.
+    ///
+    /// If both config.systemDict and dict_type are not given, `sudachidict_core` is used.
+    /// If both config.systemDict and dict_type are given, dict_type is used.
     #[new]
     #[args(config_path = "None", resource_dir = "None", dict_type = "None")]
     fn new(
@@ -82,8 +85,12 @@ impl PyDictionary {
         })
     }
 
-    /// Creates a sudachi tokenizer
-    #[pyo3(text_signature = "($self, /, mode=None) -> sudachipy.Tokenizer")]
+    /// Creates a sudachi tokenizer.
+    ///
+    /// Provide mode to set tokenizer's default split mode (C by default).
+    #[pyo3(
+        text_signature = "($self, mode: sudachipy.SplitMode = sudachipy.SplitMode.C) -> sudachipy.Tokenizer"
+    )]
     #[args(mode = "None")]
     fn create(&self, mode: Option<PySplitMode>) -> PyTokenizer {
         let mode = mode.unwrap_or(PySplitMode::C).into();
