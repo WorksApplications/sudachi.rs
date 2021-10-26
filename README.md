@@ -9,6 +9,8 @@ Try it:
 pip install sudachidict_core
 pip install sudachipy==0.6.0rc1
 ```
+Because of dictionary version incompatibilities, you first need to install the dictionary, then install the pre-release version of SudachiPy.
+
 
 <p align="center"><img width="100" src="logo.png" alt="sudachi.rs logo"></p>
 
