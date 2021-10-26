@@ -36,7 +36,7 @@ pub enum DicWriteReason {
     Io(#[from] std::io::Error),
 }
 
-struct DicWriteContext {
+pub struct DicWriteContext {
     name: String,
     line: usize,
 }
@@ -49,12 +49,12 @@ impl DicWriteContext {
         }
     }
 
-    pub fn err<T, E: Into<DicWriteReason>>(self, reason: E) -> SudachiResult<T> {
+    pub fn err<T, E: Into<DicWriteReason>>(&self, reason: E) -> SudachiResult<T> {
         match reason.into() {
             DicWriteReason::Io(e) => Err(e.into()),
             reason => {
                 let err = DicWriteError {
-                    file: self.name,
+                    file: self.name.clone(),
                     line: self.line,
                     cause: reason,
                 };

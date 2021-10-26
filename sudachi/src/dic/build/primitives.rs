@@ -15,12 +15,13 @@
  */
 
 use crate::dic::build::error::DicWriteReason::InvalidSize;
-use crate::dic::build::error::DicWriteResult;
+use crate::dic::build::error::{DicWriteError, DicWriteResult};
+use crate::dic::word_id::WordId;
 use std::io::Write;
 
 use crate::error::SudachiResult;
 
-struct Utf16Writer {
+pub struct Utf16Writer {
     buffer: Vec<u8>,
 }
 
@@ -74,11 +75,54 @@ impl Utf16Writer {
     }
 }
 
+pub trait ToU32 {
+    fn to_u32(&self) -> u32;
+}
+
+impl ToU32 for u32 {
+    fn to_u32(&self) -> u32 {
+        *self
+    }
+}
+
+impl ToU32 for i32 {
+    fn to_u32(&self) -> u32 {
+        *self as u32
+    }
+}
+
+impl ToU32 for WordId {
+    fn to_u32(&self) -> u32 {
+        self.as_raw()
+    }
+}
+
+pub fn write_u32_array<W: Write, I: ToU32>(w: &mut W, data: &[I]) -> DicWriteResult<usize> {
+    let len = data.len();
+    if len > 127 {
+        return Err(InvalidSize {
+            expected: 127,
+            actual: len,
+        });
+    }
+    w.write_all(&[len as u8])?;
+    let mut written = 1;
+
+    for o in data {
+        let i = o.to_u32();
+        w.write_all(&i.to_le_bytes());
+        written += 4;
+    }
+
+    Ok(written)
+}
+
 #[cfg(test)]
 mod test {
     use crate::dic::build::error::DicWriteResult;
-    use crate::dic::build::primitives::Utf16Writer;
-    use crate::dic::read::utf16_string_parser;
+    use crate::dic::build::primitives::{write_u32_array, Utf16Writer};
+    use crate::dic::read::{u32_array_parser, utf16_string_parser};
+    use claim::assert_matches;
 
     #[test]
     fn write_utf16() {
@@ -98,11 +142,11 @@ mod test {
         let mut data: Vec<u8> = Vec::new();
 
         let xstr = "";
-        let l1 = writer.write(&mut data, xstr)?;
+        writer.write(&mut data, xstr)?;
         let ystr = "あ𠮟";
-        let l2 = writer.write(&mut data, ystr)?;
+        writer.write(&mut data, ystr)?;
         let zstr = "0123456789".repeat(15); // > 127 symbols
-        let l3 = writer.write(&mut data, &zstr)?;
+        writer.write(&mut data, &zstr)?;
         let (rem, parsed) = utf16_string_parser(&data).expect("ok");
         assert_eq!(parsed, xstr);
         let (rem, parsed) = utf16_string_parser(rem).expect("ok");
@@ -112,5 +156,31 @@ mod test {
         assert_eq!(rem.len(), 0);
 
         Ok(())
+    }
+
+    #[test]
+    fn write_ints_empty() {
+        let mut data: Vec<u8> = Vec::new();
+        let written = write_u32_array(&mut data, &[0u32; 0]).expect("ok");
+        assert_eq!(written, 1);
+        assert_eq!(data, b"\0");
+    }
+
+    #[test]
+    fn write_ints_full() {
+        let mut data: Vec<u8> = Vec::new();
+        let array = [0, 5, u32::MAX, u32::MIN];
+        let written = write_u32_array(&mut data, &array).expect("ok");
+        let (rem, parsed) = u32_array_parser(&data).expect("ok");
+        assert_eq!(rem, b"");
+        assert_eq!(parsed, array);
+    }
+
+    #[test]
+    fn write_ints_over_length() {
+        let mut data: Vec<u8> = Vec::new();
+        let array = [0u32; 130];
+        let status = write_u32_array(&mut data, &array);
+        assert_matches!(status, Err(_));
     }
 }

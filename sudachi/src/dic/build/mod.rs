@@ -14,6 +14,8 @@
  *  limitations under the License.
  */
 
+use crate::dic::build::error::DicWriteContext;
+use crate::dic::build::primitives::Utf16Writer;
 use std::io::{Seek, Write};
 
 use crate::error::SudachiResult;
@@ -21,10 +23,34 @@ use crate::error::SudachiResult;
 pub mod error;
 pub(crate) mod primitives;
 
-struct DictBuilder {}
+struct DictBuilder {
+    u16w: Utf16Writer,
+    ctx: DicWriteContext,
+}
 
-fn write_pos_list<W: Write>(data: Vec<Vec<String>>, w: &mut W) -> SudachiResult<()> {
-    w.write_all(&u64::to_le_bytes(data.len() as u64))?;
+impl DictBuilder {
+    pub fn new() -> Self {
+        DictBuilder {
+            u16w: Utf16Writer::new(),
+            ctx: DicWriteContext::memory(),
+        }
+    }
 
-    Ok(())
+    pub fn write_pos_list<W: Write>(
+        &mut self,
+        data: &Vec<Vec<String>>,
+        w: &mut W,
+    ) -> SudachiResult<usize> {
+        w.write_all(&u64::to_le_bytes(data.len() as u64))?;
+        let mut count = 4;
+        for row in data {
+            for field in row {
+                match self.u16w.write(w, field) {
+                    Ok(written) => count += written,
+                    Err(e) => return self.ctx.err(e),
+                }
+            }
+        }
+        Ok(count)
+    }
 }
