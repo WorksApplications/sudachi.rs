@@ -30,7 +30,7 @@ setup(
         "sudachipy.sudachipy", binding=Binding.PyO3)],
     packages=["sudachipy", "sudachipy.dictionary", "sudachipy.tokenizer",
               "sudachipy.morphemelist", "sudachipy.morpheme"],
-    package_data={"": ["resources/*.json", "resources/*.def"]},
+    package_data={"": ["resources/*.json", "resources/*.def", "*.pyi"]},
     package_dir={"": "py_src"},
     entry_points={
         "console_scripts": ["sudachipy=sudachipy.command_line:main"],
