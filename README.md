@@ -2,7 +2,13 @@
 
 [![Rust](https://github.com/WorksApplications/sudachi.rs/actions/workflows/rust.yml/badge.svg)](https://github.com/WorksApplications/sudachi.rs/actions/workflows/rust.yml)
 
-**2021-07-07 UPDATE: The official Sudachi team will take over this project** (cf. [日本語形態素解析器 SudachiPy の 現状と今後について - Speaker Deck](https://speakerdeck.com/waptech/ri-ben-yu-xing-tai-su-jie-xi-qi-sudachipy-false-xian-zhuang-tojin-hou-nituite?slide=28))
+**2021-10-26 UPDATE**: [First pre-release of SudachiPy-compatible bindings](https://github.com/WorksApplications/sudachi.rs/releases/tag/v0.6.0-rc1)
+
+Try it:
+```shell
+pip install sudachidict_core
+pip install sudachipy==0.6.0rc1
+```
 
 <p align="center"><img width="100" src="logo.png" alt="sudachi.rs logo"></p>
 
