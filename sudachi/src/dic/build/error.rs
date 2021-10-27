@@ -14,6 +14,7 @@
  *  limitations under the License.
  */
 
+use crate::error::SudachiError;
 use crate::prelude::SudachiResult;
 use std::error::Error;
 use thiserror::Error;
@@ -34,33 +35,93 @@ pub enum DicWriteReason {
 
     #[error(transparent)]
     Io(#[from] std::io::Error),
+
+    #[error("Field {0} did not exist in CSV lexicon")]
+    NoRawField(&'static str),
+
+    #[error(transparent)]
+    CsvError(csv::Error),
+
+    #[error("Invalid character literal {0}")]
+    InvalidCharLiteral(String),
+
+    #[error("Invalid i16 literal {0}")]
+    InvalidI16Literal(String),
+
+    #[error("Invalid word id {0}")]
+    InvalidWordId(String),
+
+    #[error("Invalid word split {0}")]
+    InvalidSplit(String),
+
+    #[error("Invalid word split format - field {field} did not exist in {original}")]
+    SplitFormatError {
+        field: &'static str,
+        original: String,
+    },
 }
 
-pub struct DicWriteContext {
+pub struct DicCompilationCtx {
     name: String,
     line: usize,
 }
 
-impl DicWriteContext {
+impl Default for DicCompilationCtx {
+    fn default() -> Self {
+        DicCompilationCtx {
+            name: Default::default(),
+            line: Default::default(),
+        }
+    }
+}
+
+impl DicCompilationCtx {
     pub fn memory() -> Self {
-        DicWriteContext {
+        DicCompilationCtx {
             name: "<memory>".to_owned(),
             line: 0,
         }
     }
 
     pub fn err<T, E: Into<DicWriteReason>>(&self, reason: E) -> SudachiResult<T> {
+        Err(self.to_sudachi_err(reason))
+    }
+
+    pub fn to_sudachi_err<E: Into<DicWriteReason>>(&self, reason: E) -> SudachiError {
         match reason.into() {
-            DicWriteReason::Io(e) => Err(e.into()),
+            DicWriteReason::Io(e) => e.into(),
             reason => {
                 let err = DicWriteError {
                     file: self.name.clone(),
                     line: self.line,
                     cause: reason,
                 };
+                err.into()
+            }
+        }
+    }
+
+    #[inline]
+    pub fn transform<T>(&self, result: DicWriteResult<T>) -> SudachiResult<T> {
+        match result {
+            Ok(v) => Ok(v),
+            Err(e) => {
+                let err = DicWriteError {
+                    file: self.name.clone(),
+                    line: self.line,
+                    cause: e,
+                };
                 Err(err.into())
             }
         }
+    }
+
+    pub fn set_filename(&mut self, new_name: String) -> String {
+        std::mem::replace(&mut self.name, new_name)
+    }
+
+    pub fn set_line(&mut self, line: usize) -> usize {
+        std::mem::replace(&mut self.line, line)
     }
 }
 

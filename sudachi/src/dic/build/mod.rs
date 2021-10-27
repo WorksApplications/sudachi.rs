@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-use crate::dic::build::error::DicWriteContext;
+use crate::dic::build::error::DicCompilationCtx;
 use crate::dic::build::primitives::Utf16Writer;
 use std::io::{Seek, Write};
 
@@ -22,17 +22,21 @@ use crate::error::SudachiResult;
 
 pub mod error;
 pub(crate) mod primitives;
+mod read_raw;
+
+const MAX_POS_IDS: usize = i16::MAX as usize;
+const MAX_DIC_STRING_LEN: usize = MAX_POS_IDS;
 
 struct DictBuilder {
     u16w: Utf16Writer,
-    ctx: DicWriteContext,
+    ctx: DicCompilationCtx,
 }
 
 impl DictBuilder {
     pub fn new() -> Self {
         DictBuilder {
             u16w: Utf16Writer::new(),
-            ctx: DicWriteContext::memory(),
+            ctx: DicCompilationCtx::memory(),
         }
     }
 

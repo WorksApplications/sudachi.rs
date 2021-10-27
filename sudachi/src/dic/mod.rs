@@ -41,6 +41,8 @@ pub mod lexicon_set;
 pub mod read;
 pub mod word_id;
 
+const POS_DEPTH: usize = 6;
+
 /// A dictionary consists of one system_dict and zero or more user_dicts
 pub struct LoadedDictionary<'a> {
     pub grammar: Grammar<'a>,

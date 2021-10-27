@@ -75,7 +75,7 @@ impl Utf16Writer {
     }
 }
 
-pub trait ToU32 {
+pub(crate) trait ToU32 {
     fn to_u32(&self) -> u32;
 }
 
@@ -97,7 +97,7 @@ impl ToU32 for WordId {
     }
 }
 
-pub fn write_u32_array<W: Write, I: ToU32>(w: &mut W, data: &[I]) -> DicWriteResult<usize> {
+pub(crate) fn write_u32_array<W: Write, I: ToU32>(w: &mut W, data: &[I]) -> DicWriteResult<usize> {
     let len = data.len();
     if len > 127 {
         return Err(InvalidSize {
@@ -110,7 +110,7 @@ pub fn write_u32_array<W: Write, I: ToU32>(w: &mut W, data: &[I]) -> DicWriteRes
 
     for o in data {
         let i = o.to_u32();
-        w.write_all(&i.to_le_bytes());
+        w.write_all(&i.to_le_bytes())?;
         written += 4;
     }
 

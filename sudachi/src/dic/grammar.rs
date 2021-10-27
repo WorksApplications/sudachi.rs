@@ -17,6 +17,7 @@
 use crate::dic::character_category::CharacterCategory;
 use crate::dic::connect::ConnectionMatrix;
 use crate::dic::read::utf16_string_parser;
+use crate::dic::POS_DEPTH;
 use crate::error::SudachiNomResult;
 use crate::prelude::*;
 use nom::{
@@ -42,7 +43,6 @@ pub struct Grammar<'a> {
 
 impl<'a> Grammar<'a> {
     pub const INHIBITED_CONNECTION: i16 = i16::MAX;
-    const POS_DEPTH: usize = 6;
 
     pub const BOS_PARAMETER: (i16, i16, i16) = (0, 0, 0); // left_id, right_id, cost
     pub const EOS_PARAMETER: (i16, i16, i16) = (0, 0, 0); // left_id, right_id, cost
@@ -128,7 +128,7 @@ impl<'a> Grammar<'a> {
 fn pos_list_parser(input: &[u8]) -> SudachiNomResult<&[u8], Vec<Vec<String>>> {
     let (rest, pos_size) = le_u16(input)?;
     nom::multi::count(
-        nom::multi::count(utf16_string_parser, Grammar::POS_DEPTH),
+        nom::multi::count(utf16_string_parser, POS_DEPTH),
         pos_size as usize,
     )(rest)
 }
