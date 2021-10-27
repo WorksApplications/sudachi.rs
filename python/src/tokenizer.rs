@@ -100,7 +100,8 @@ impl PyTokenizer {
         mode: Option<PySplitMode>,
         logger: Option<PyObject>,
     ) -> PyResult<PyMorphemeListWrapper> {
-        mode.map(|m| self.tokenizer.set_mode(m.into()));
+        // keep default mode to restore later
+        let default_mode = mode.map(|m| self.tokenizer.set_mode(m.into()));
 
         self.tokenizer.reset().push_str(text);
         self.tokenizer.do_tokenize().map_err(|e| {
@@ -114,6 +115,9 @@ impl PyTokenizer {
             .map_err(|e| {
                 PyException::new_err(format!("Error while tokenization: {}", e.to_string()))
             })?;
+
+        // restore default mode
+        default_mode.map(|m| self.tokenizer.set_mode(m));
 
         let wrapper = PyMorphemeListWrapper::from(morphemes);
 
