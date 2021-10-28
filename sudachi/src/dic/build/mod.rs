@@ -20,9 +20,10 @@ use std::io::{Seek, Write};
 
 use crate::error::SudachiResult;
 
+pub(crate) mod cost;
 pub mod error;
 pub(crate) mod primitives;
-mod read_raw;
+pub mod read_raw;
 
 const MAX_POS_IDS: usize = i16::MAX as usize;
 const MAX_DIC_STRING_LEN: usize = MAX_POS_IDS;

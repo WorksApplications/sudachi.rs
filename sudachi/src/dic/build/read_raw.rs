@@ -14,20 +14,6 @@
  *  limitations under the License.
  */
 
-use crate::analysis::Mode;
-use crate::dic::build::error::DicWriteReason::{InvalidCharLiteral, NoRawField};
-use crate::dic::build::error::{DicCompilationCtx, DicWriteReason, DicWriteResult};
-use crate::dic::build::{MAX_ARRAY_LEN, MAX_DIC_STRING_LEN, MAX_POS_IDS};
-use crate::dic::word_id::WordId;
-use crate::dic::POS_DEPTH;
-use crate::error::SudachiResult;
-use csv::{StringRecord, Trim};
-use indexmap::map::IndexMap;
-use indexmap::Equivalent;
-use lazy_static::lazy_static;
-use memmap2::Mmap;
-use nom::error::ErrorKind::HexDigit;
-use regex::{Match, Regex};
 use std::borrow::{Borrow, Cow};
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
@@ -35,7 +21,25 @@ use std::fs::File;
 use std::num::ParseIntError;
 use std::path::Path;
 use std::str::FromStr;
-use unicode_normalization::__test_api::quick_check::IsNormalized::No;
+
+use csv::{StringRecord, Trim};
+use indexmap::map::IndexMap;
+use indexmap::Equivalent;
+use lazy_static::lazy_static;
+use memmap2::Mmap;
+use nom::error::ErrorKind::HexDigit;
+use regex::{Match, Regex};
+
+use crate::analysis::Mode;
+use crate::dic::build::error::DicWriteReason::{InvalidCharLiteral, NoRawField};
+use crate::dic::build::error::{DicCompilationCtx, DicWriteReason, DicWriteResult};
+use crate::dic::build::{MAX_ARRAY_LEN, MAX_DIC_STRING_LEN, MAX_POS_IDS};
+use crate::dic::word_id::WordId;
+use crate::dic::POS_DEPTH;
+use crate::error::SudachiResult;
+
+#[cfg(test)]
+mod test;
 
 #[derive(Hash, Eq, PartialEq)]
 pub struct StrPosEntry {
@@ -104,7 +108,6 @@ pub(crate) enum SplitUnit {
 }
 
 pub(crate) struct RawLexiconEntry {
-    pub register: bool,
     pub left_id: i16,
     pub right_id: i16,
     pub cost: i16,
@@ -136,6 +139,10 @@ impl RawLexiconEntry {
 
     pub fn reading(&self) -> &str {
         self.reading.as_deref().unwrap_or_else(|| self.headword())
+    }
+
+    pub fn should_index(&self) -> bool {
+        self.left_id >= 0
     }
 }
 
@@ -229,17 +236,20 @@ impl LexiconReader {
             }
         }
 
+        if surface.is_empty() {
+            return rec.ctx.err(DicWriteReason::EmptySurface);
+        }
+
         self.ctx = rec.ctx;
 
-        Ok(RawLexiconEntry {
-            register: left_id >= 0,
+        let entry = RawLexiconEntry {
             left_id,
             right_id,
             cost,
-            headword: none_if_equal(&surface, headword),
             dic_form: dic_form_id,
-            norm_form: none_if_equal(&surface, normalized),
-            reading: none_if_equal(&surface, reading),
+            norm_form: none_if_equal(&headword, normalized),
+            reading: none_if_equal(&headword, reading),
+            headword: none_if_equal(&surface, headword),
             surface,
             pos,
             splitting,
@@ -247,7 +257,9 @@ impl LexiconReader {
             splits_b: split_b,
             word_structure: parts,
             synonyms,
-        })
+        };
+
+        Ok(entry)
     }
 
     fn pos_of(&mut self, data: [Cow<str>; POS_DEPTH]) -> DicWriteResult<u16> {
@@ -257,7 +269,7 @@ impl LexiconReader {
                 let key = StrPosEntry::new(data);
                 let pos_id = self.pos.len();
                 if pos_id > MAX_POS_IDS {
-                    Err(todo!())
+                    Err(DicWriteReason::PosLimitExceeded(format!("{:?}", key)))
                 } else {
                     let pos_id = pos_id as u16;
                     self.pos.insert(key, pos_id);
@@ -330,7 +342,7 @@ impl<'a> RecordWrapper<'a> {
 }
 
 #[inline(always)]
-fn get_next<'a, I, T, F>(
+pub fn get_next<'a, I, T, F>(
     orig: &'a str,
     data: &mut I,
     field: &'static str,
@@ -372,7 +384,7 @@ fn parse_mode(data: &str) -> DicWriteResult<Mode> {
 }
 
 #[inline]
-fn parse_i16(data: &str) -> DicWriteResult<i16> {
+pub fn parse_i16(data: &str) -> DicWriteResult<i16> {
     match i16::from_str(data) {
         Ok(v) => Ok(v),
         Err(_) => Err(DicWriteReason::InvalidI16Literal(data.to_owned())),
@@ -523,103 +535,4 @@ fn unescape_slow(original: &str) -> DicWriteResult<String> {
     }
     result.push_str(&original[start..]);
     Ok(result)
-}
-
-mod test {
-    use super::*;
-    use unicode_normalization::__test_api::quick_check::IsNormalized::No;
-
-    #[test]
-    fn decode_plain() {
-        assert_eq!(unescape("").unwrap(), "");
-        assert_eq!(unescape("a").unwrap(), "a");
-        assert_eq!(unescape("あ").unwrap(), "あ");
-    }
-
-    #[test]
-    fn decode_escape_1() {
-        assert_eq!(unescape("\\u0020").unwrap(), "\u{20}");
-        assert_eq!(unescape("\\u{20}").unwrap(), "\u{20}");
-        assert_eq!(unescape("\\u{1f49e}").unwrap(), "💞");
-    }
-
-    #[test]
-    fn decode_escape_2() {
-        assert_eq!(unescape("\\u020f").unwrap(), "\u{20f}");
-        assert_eq!(unescape("\\u{20}f").unwrap(), "\u{20}f");
-    }
-
-    #[test]
-    fn decode_escape_3() {
-        assert_eq!(unescape("f\\u0020").unwrap(), "f\u{20}");
-        assert_eq!(unescape("f\\u{20}").unwrap(), "f\u{20}");
-    }
-
-    #[test]
-    fn decode_escape_4() {
-        assert_eq!(unescape("\\u100056").unwrap(), "\u{1000}56");
-    }
-
-    #[test]
-    fn decode_escape_ported() {
-        assert_eq!(unescape("a\\u002cc").unwrap(), "a,c");
-        assert_eq!(unescape("a\\u{2c}c").unwrap(), "a,c");
-    }
-
-    #[test]
-    fn decode_escape_fail() {
-        assert_eq!(unescape("\\u{10FFFF}").unwrap(), "\u{10FFFF}"); // max character
-        claim::assert_matches!(unescape("\\u{110000}"), Err(_));
-        claim::assert_matches!(unescape("\\u{FFFFFF}"), Err(_));
-    }
-
-    #[test]
-    fn parse_split_empty() {
-        let mut rdr = LexiconReader::new();
-        assert_eq!(rdr.parse_splits("").unwrap().len(), 0);
-        assert_eq!(rdr.parse_splits("*").unwrap().len(), 0);
-    }
-
-    #[test]
-    fn parse_split_sys_ids() {
-        let mut rdr = LexiconReader::new();
-        let splits = rdr.parse_splits("0/1/2").unwrap();
-        assert_eq!(splits.len(), 3);
-        assert_eq!(splits[0], SplitUnit::Ref(WordId::new(0, 0)));
-        assert_eq!(splits[1], SplitUnit::Ref(WordId::new(0, 1)));
-        assert_eq!(splits[2], SplitUnit::Ref(WordId::new(0, 2)));
-    }
-
-    #[test]
-    fn parse_split_user_ids() {
-        let mut rdr = LexiconReader::new();
-        let splits = rdr.parse_splits("0/U1/2").unwrap();
-        assert_eq!(splits.len(), 3);
-        assert_eq!(splits[0], SplitUnit::Ref(WordId::new(0, 0)));
-        assert_eq!(splits[1], SplitUnit::Ref(WordId::new(1, 1)));
-        assert_eq!(splits[2], SplitUnit::Ref(WordId::new(0, 2)));
-    }
-
-    #[test]
-    fn parse_kyoto() {
-        let mut rdr = LexiconReader::new();
-        let data = "京都,6,6,5293,京都,名詞,固有名詞,地名,一般,*,*,キョウト,京都,*,A,*,*,*,*";
-        rdr.read_bytes(data.as_bytes()).unwrap();
-        let entries = rdr.entries();
-        assert_eq!(entries.len(), 1);
-        let kyoto = &entries[0];
-        assert_eq!("京都", kyoto.surface);
-        assert_eq!(0, kyoto.pos);
-        assert_eq!(
-            "名詞,固有名詞,地名,一般,*,*",
-            format!("{:?}", rdr.pos_obj(kyoto.pos).unwrap())
-        );
-        assert_eq!(6, kyoto.left_id);
-        assert_eq!(6, kyoto.right_id);
-        assert_eq!(5293, kyoto.cost);
-        assert_eq!("キョウト", kyoto.reading());
-        assert_eq!(Some("キョウト"), kyoto.reading.as_deref());
-        assert_eq!("京都", kyoto.norm_form());
-        assert_eq!(None, kyoto.norm_form);
-    }
 }

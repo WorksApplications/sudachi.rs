@@ -22,9 +22,9 @@ use thiserror::Error;
 #[derive(Error, Debug)]
 #[error("{file}:{line}\t{cause}")]
 pub struct DicWriteError {
-    file: String,
-    line: usize,
-    cause: DicWriteReason,
+    pub(super) file: String,
+    pub(super) line: usize,
+    pub(super) cause: DicWriteReason,
 }
 
 #[derive(Error, Debug)]
@@ -62,6 +62,12 @@ pub enum DicWriteReason {
         field: &'static str,
         original: String,
     },
+
+    #[error("Surface can't be empty")]
+    EmptySurface,
+
+    #[error("Maximum number of POS (2^15-1) exceeded with {0}")]
+    PosLimitExceeded(String),
 }
 
 pub struct DicCompilationCtx {
@@ -86,10 +92,12 @@ impl DicCompilationCtx {
         }
     }
 
+    #[inline]
     pub fn err<T, E: Into<DicWriteReason>>(&self, reason: E) -> SudachiResult<T> {
         Err(self.to_sudachi_err(reason))
     }
 
+    #[inline(always)]
     pub fn to_sudachi_err<E: Into<DicWriteReason>>(&self, reason: E) -> SudachiError {
         match reason.into() {
             DicWriteReason::Io(e) => e.into(),
@@ -104,23 +112,26 @@ impl DicCompilationCtx {
         }
     }
 
-    #[inline]
+    #[inline(never)]
+    #[cold]
+    pub fn to_sudachi_err_cold<E: Into<DicWriteReason>>(&self, reason: E) -> SudachiError {
+        self.to_sudachi_err(reason)
+    }
+
+    #[inline(always)]
     pub fn transform<T>(&self, result: DicWriteResult<T>) -> SudachiResult<T> {
         match result {
             Ok(v) => Ok(v),
-            Err(e) => {
-                let err = DicWriteError {
-                    file: self.name.clone(),
-                    line: self.line,
-                    cause: e,
-                };
-                Err(err.into())
-            }
+            Err(e) => Err(self.to_sudachi_err_cold(e)),
         }
     }
 
     pub fn set_filename(&mut self, new_name: String) -> String {
         std::mem::replace(&mut self.name, new_name)
+    }
+
+    pub fn add_line(&mut self, offset: usize) {
+        self.line += offset;
     }
 
     pub fn set_line(&mut self, line: usize) -> usize {
