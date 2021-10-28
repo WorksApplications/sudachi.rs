@@ -48,6 +48,9 @@ pub enum DicWriteReason {
     #[error("Invalid i16 literal {0}")]
     InvalidI16Literal(String),
 
+    #[error("Invalid u32 literal {0}")]
+    InvalidU32Literal(String),
+
     #[error("Invalid word id {0}")]
     InvalidWordId(String),
 

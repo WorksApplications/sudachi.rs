@@ -26,6 +26,7 @@ mod read_raw;
 
 const MAX_POS_IDS: usize = i16::MAX as usize;
 const MAX_DIC_STRING_LEN: usize = MAX_POS_IDS;
+const MAX_ARRAY_LEN: usize = i8::MAX as usize;
 
 struct DictBuilder {
     u16w: Utf16Writer,

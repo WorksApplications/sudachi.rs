@@ -17,7 +17,7 @@
 use crate::analysis::Mode;
 use crate::dic::build::error::DicWriteReason::{InvalidCharLiteral, NoRawField};
 use crate::dic::build::error::{DicCompilationCtx, DicWriteReason, DicWriteResult};
-use crate::dic::build::{MAX_DIC_STRING_LEN, MAX_POS_IDS};
+use crate::dic::build::{MAX_ARRAY_LEN, MAX_DIC_STRING_LEN, MAX_POS_IDS};
 use crate::dic::word_id::WordId;
 use crate::dic::POS_DEPTH;
 use crate::error::SudachiResult;
@@ -30,10 +30,12 @@ use nom::error::ErrorKind::HexDigit;
 use regex::{Match, Regex};
 use std::borrow::{Borrow, Cow};
 use std::collections::HashMap;
+use std::fmt::{Debug, Formatter};
 use std::fs::File;
 use std::num::ParseIntError;
 use std::path::Path;
 use std::str::FromStr;
+use unicode_normalization::__test_api::quick_check::IsNormalized::No;
 
 #[derive(Hash, Eq, PartialEq)]
 pub struct StrPosEntry {
@@ -75,12 +77,23 @@ impl StrPosEntry {
     }
 }
 
+impl Debug for StrPosEntry {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{},{},{},{},{},{}",
+            self.data[0], self.data[1], self.data[2], self.data[3], self.data[4], self.data[5]
+        )
+    }
+}
+
 pub struct LexiconReader {
     pos: IndexMap<StrPosEntry, u16>,
     ctx: DicCompilationCtx,
     entries: Vec<RawLexiconEntry>,
 }
 
+#[derive(PartialEq, Eq, Debug)]
 pub(crate) enum SplitUnit {
     Ref(WordId),
     Inline {
@@ -105,9 +118,47 @@ pub(crate) struct RawLexiconEntry {
     pub reading: Option<String>,
     pub splitting: Mode,
     pub word_structure: Vec<WordId>,
+    pub synonyms: Vec<u32>,
+}
+
+impl RawLexiconEntry {
+    pub fn surface(&self) -> &str {
+        &self.surface
+    }
+
+    pub fn headword(&self) -> &str {
+        self.headword.as_deref().unwrap_or_else(|| self.surface())
+    }
+
+    pub fn norm_form(&self) -> &str {
+        self.norm_form.as_deref().unwrap_or_else(|| self.headword())
+    }
+
+    pub fn reading(&self) -> &str {
+        self.reading.as_deref().unwrap_or_else(|| self.headword())
+    }
 }
 
 impl LexiconReader {
+    pub fn new() -> Self {
+        Self {
+            pos: IndexMap::new(),
+            ctx: DicCompilationCtx::default(),
+            entries: Vec::new(),
+        }
+    }
+
+    pub(crate) fn entries(&self) -> &[RawLexiconEntry] {
+        &self.entries
+    }
+
+    pub(crate) fn pos_obj(&self, pos_id: u16) -> Option<&StrPosEntry> {
+        self.pos.get_index(pos_id as usize).map(|(k, v)| {
+            assert_eq!(v, &pos_id);
+            k
+        })
+    }
+
     pub fn read_file(&mut self, path: &Path) -> SudachiResult<()> {
         let file = File::open(path)?;
         let map = unsafe { Mmap::map(&file) }?;
@@ -162,10 +213,11 @@ impl LexiconReader {
         let reading = rec.get(11, "(11) reading", unescape_cow)?;
         let normalized = rec.get(12, "(12) normalized", unescape_cow)?;
         let dic_form_id = rec.get(13, "(13) dic-form", parse_dic_form)?;
-        let splitting = rec.get(14, "(14) splitting", mode)?;
+        let splitting = rec.get(14, "(14) splitting", parse_mode)?;
         let split_a = rec.get(15, "(15) split-a", |s| self.parse_splits(s))?;
         let split_b = rec.get(16, "(16) split-b", |s| self.parse_splits(s))?;
         let parts = rec.get(17, "(17) word-structure", parse_wordid_list)?;
+        let synonyms = rec.get_or_default(18, "(18) synonym-group", parse_u32_list)?;
 
         let pos = rec.ctx.transform(self.pos_of([p1, p2, p3, p4, p5, p6]))?;
 
@@ -194,6 +246,7 @@ impl LexiconReader {
             splits_a: split_a,
             splits_b: split_b,
             word_structure: parts,
+            synonyms,
         })
     }
 
@@ -262,6 +315,18 @@ impl<'a> RecordWrapper<'a> {
             None => self.ctx.err(NoRawField(name)),
         }
     }
+
+    #[inline(always)]
+    fn get_or_default<T, F>(&self, idx: usize, _name: &'static str, f: F) -> SudachiResult<T>
+    where
+        F: FnOnce(&'a str) -> DicWriteResult<T>,
+        T: Default,
+    {
+        match self.record.get(idx) {
+            Some(s) => self.ctx.transform(f(s)),
+            None => Ok(<T as Default>::default()),
+        }
+    }
 }
 
 #[inline(always)]
@@ -297,7 +362,7 @@ fn none_if_equal(surface: &str, data: Cow<str>) -> Option<String> {
 }
 
 #[inline]
-fn mode(data: &str) -> DicWriteResult<Mode> {
+fn parse_mode(data: &str) -> DicWriteResult<Mode> {
     match data.trim() {
         "a" | "A" => Ok(Mode::A),
         "b" | "B" => Ok(Mode::B),
@@ -311,6 +376,14 @@ fn parse_i16(data: &str) -> DicWriteResult<i16> {
     match i16::from_str(data) {
         Ok(v) => Ok(v),
         Err(_) => Err(DicWriteReason::InvalidI16Literal(data.to_owned())),
+    }
+}
+
+#[inline]
+fn parse_u32(data: &str) -> DicWriteResult<u32> {
+    match u32::from_str(data) {
+        Ok(v) => Ok(v),
+        Err(_) => Err(DicWriteReason::InvalidU32Literal(data.to_owned())),
     }
 }
 
@@ -346,11 +419,20 @@ fn parse_wordid_raw(data: &str) -> DicWriteResult<WordId> {
 
 #[inline]
 fn parse_wordid_list(data: &str) -> DicWriteResult<Vec<WordId>> {
-    if data.len() == 0 || data == "*" {
+    if data.is_empty() || data == "*" {
         return Ok(Vec::new());
     }
 
     parse_slash_list(data, parse_wordid)
+}
+
+#[inline]
+fn parse_u32_list(data: &str) -> DicWriteResult<Vec<u32>> {
+    if data.is_empty() || data == "*" {
+        return Ok(Vec::new());
+    }
+
+    parse_slash_list(data, parse_u32)
 }
 
 lazy_static! {
@@ -371,6 +453,18 @@ where
         start = end;
         data = &data[(end + 1)..]; // skip slash
     }
+
+    if data.len() > 0 {
+        result.push(f(data)?);
+    }
+
+    if result.len() > MAX_ARRAY_LEN {
+        return Err(DicWriteReason::InvalidSize {
+            expected: MAX_ARRAY_LEN,
+            actual: result.len(),
+        });
+    }
+
     Ok(result)
 }
 
@@ -379,7 +473,7 @@ lazy_static! {
         Regex::new(r"\\u(?:\{([0-9a-fA-F]{1,6})\}|([0-9a-fA-F]{4}))").unwrap();
 }
 
-fn check_len(data: &str) -> DicWriteResult<()> {
+fn check_str_len(data: &str) -> DicWriteResult<()> {
     if data.len() > MAX_DIC_STRING_LEN {
         Err(DicWriteReason::InvalidSize {
             expected: MAX_DIC_STRING_LEN,
@@ -392,7 +486,7 @@ fn check_len(data: &str) -> DicWriteResult<()> {
 
 #[inline]
 fn unescape_cow(data: &str) -> DicWriteResult<Cow<str>> {
-    check_len(data)?;
+    check_str_len(data)?;
     if !UNICODE_LITERAL.is_match(data) {
         Ok(Cow::Borrowed(data))
     } else {
@@ -402,7 +496,7 @@ fn unescape_cow(data: &str) -> DicWriteResult<Cow<str>> {
 
 #[inline]
 fn unescape(data: &str) -> DicWriteResult<String> {
-    check_len(data)?;
+    check_str_len(data)?;
     if !UNICODE_LITERAL.is_match(data) {
         Ok(data.to_owned())
     } else {
@@ -433,6 +527,7 @@ fn unescape_slow(original: &str) -> DicWriteResult<String> {
 
 mod test {
     use super::*;
+    use unicode_normalization::__test_api::quick_check::IsNormalized::No;
 
     #[test]
     fn decode_plain() {
@@ -476,5 +571,55 @@ mod test {
         assert_eq!(unescape("\\u{10FFFF}").unwrap(), "\u{10FFFF}"); // max character
         claim::assert_matches!(unescape("\\u{110000}"), Err(_));
         claim::assert_matches!(unescape("\\u{FFFFFF}"), Err(_));
+    }
+
+    #[test]
+    fn parse_split_empty() {
+        let mut rdr = LexiconReader::new();
+        assert_eq!(rdr.parse_splits("").unwrap().len(), 0);
+        assert_eq!(rdr.parse_splits("*").unwrap().len(), 0);
+    }
+
+    #[test]
+    fn parse_split_sys_ids() {
+        let mut rdr = LexiconReader::new();
+        let splits = rdr.parse_splits("0/1/2").unwrap();
+        assert_eq!(splits.len(), 3);
+        assert_eq!(splits[0], SplitUnit::Ref(WordId::new(0, 0)));
+        assert_eq!(splits[1], SplitUnit::Ref(WordId::new(0, 1)));
+        assert_eq!(splits[2], SplitUnit::Ref(WordId::new(0, 2)));
+    }
+
+    #[test]
+    fn parse_split_user_ids() {
+        let mut rdr = LexiconReader::new();
+        let splits = rdr.parse_splits("0/U1/2").unwrap();
+        assert_eq!(splits.len(), 3);
+        assert_eq!(splits[0], SplitUnit::Ref(WordId::new(0, 0)));
+        assert_eq!(splits[1], SplitUnit::Ref(WordId::new(1, 1)));
+        assert_eq!(splits[2], SplitUnit::Ref(WordId::new(0, 2)));
+    }
+
+    #[test]
+    fn parse_kyoto() {
+        let mut rdr = LexiconReader::new();
+        let data = "京都,6,6,5293,京都,名詞,固有名詞,地名,一般,*,*,キョウト,京都,*,A,*,*,*,*";
+        rdr.read_bytes(data.as_bytes()).unwrap();
+        let entries = rdr.entries();
+        assert_eq!(entries.len(), 1);
+        let kyoto = &entries[0];
+        assert_eq!("京都", kyoto.surface);
+        assert_eq!(0, kyoto.pos);
+        assert_eq!(
+            "名詞,固有名詞,地名,一般,*,*",
+            format!("{:?}", rdr.pos_obj(kyoto.pos).unwrap())
+        );
+        assert_eq!(6, kyoto.left_id);
+        assert_eq!(6, kyoto.right_id);
+        assert_eq!(5293, kyoto.cost);
+        assert_eq!("キョウト", kyoto.reading());
+        assert_eq!(Some("キョウト"), kyoto.reading.as_deref());
+        assert_eq!("京都", kyoto.norm_form());
+        assert_eq!(None, kyoto.norm_form);
     }
 }
