@@ -35,6 +35,7 @@ use crate::dic::build::parse::{
 };
 use crate::dic::build::primitives::{write_u32_array, Utf16Writer};
 use crate::dic::build::{MAX_ARRAY_LEN, MAX_DIC_STRING_LEN, MAX_POS_IDS};
+use crate::dic::lexicon::LexiconEntry;
 use crate::dic::word_id::WordId;
 use crate::dic::POS_DEPTH;
 use crate::error::SudachiResult;
@@ -100,6 +101,7 @@ pub struct LexiconReader {
     pos: IndexMap<StrPosEntry, u16>,
     ctx: DicCompilationCtx,
     entries: Vec<RawLexiconEntry>,
+    needs_resolution: bool,
 }
 
 #[derive(PartialEq, Eq, Debug)]
@@ -191,6 +193,7 @@ impl LexiconReader {
             pos: IndexMap::new(),
             ctx: DicCompilationCtx::default(),
             entries: Vec::new(),
+            needs_resolution: false,
         }
     }
 
@@ -261,8 +264,8 @@ impl LexiconReader {
         let normalized = rec.get(12, "(12) normalized", unescape_cow)?;
         let dic_form_id = rec.get(13, "(13) dic-form", parse_dic_form)?;
         let splitting = rec.get(14, "(14) splitting", parse_mode)?;
-        let split_a = rec.get(15, "(15) split-a", |s| self.parse_splits(s))?;
-        let split_b = rec.get(16, "(16) split-b", |s| self.parse_splits(s))?;
+        let (split_a, resolve_a) = rec.get(15, "(15) split-a", |s| self.parse_splits(s))?;
+        let (split_b, resolve_b) = rec.get(16, "(16) split-b", |s| self.parse_splits(s))?;
         let parts = rec.get(17, "(17) word-structure", parse_wordid_list)?;
         let synonyms = rec.get_or_default(18, "(18) synonym-group", parse_u32_list)?;
 
@@ -275,6 +278,8 @@ impl LexiconReader {
                 ));
             }
         }
+
+        self.needs_resolution = self.needs_resolution | resolve_a | resolve_b;
 
         if surface.is_empty() {
             return rec.ctx.err(DicWriteReason::EmptySurface);
@@ -319,12 +324,18 @@ impl LexiconReader {
         }
     }
 
-    fn parse_splits(&mut self, data: &str) -> DicWriteResult<Vec<SplitUnit>> {
+    fn parse_splits(&mut self, data: &str) -> DicWriteResult<(Vec<SplitUnit>, bool)> {
         if data.is_empty() || data == "*" {
-            return Ok(Vec::new());
+            return Ok((Vec::new(), false));
         }
 
-        parse_slash_list(data, |s| self.parse_split(s))
+        parse_slash_list(data, |s| self.parse_split(s)).map(|splits| {
+            let needs_resolution = splits.iter().any(|s| match s {
+                SplitUnit::Inline { .. } => true,
+                _ => false,
+            });
+            (splits, needs_resolution)
+        })
     }
 
     fn parse_split(&mut self, data: &str) -> DicWriteResult<SplitUnit> {
@@ -394,4 +405,9 @@ impl<'a> RecordWrapper<'a> {
             None => Ok(<T as Default>::default()),
         }
     }
+}
+
+struct LexiconWriter<'a> {
+    entries: &'a [LexiconEntry],
+    resolver: Box<dyn SplitUnitResolver + 'a>,
 }

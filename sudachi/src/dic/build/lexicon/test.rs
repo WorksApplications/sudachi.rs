@@ -23,15 +23,16 @@ use std::fmt::Write;
 #[test]
 fn parse_split_empty() {
     let mut rdr = LexiconReader::new();
-    assert_eq!(rdr.parse_splits("").unwrap().len(), 0);
-    assert_eq!(rdr.parse_splits("*").unwrap().len(), 0);
+    assert_eq!(rdr.parse_splits("").unwrap().0.len(), 0);
+    assert_eq!(rdr.parse_splits("*").unwrap().0.len(), 0);
 }
 
 #[test]
 fn parse_split_sys_ids() {
     let mut rdr = LexiconReader::new();
-    let splits = rdr.parse_splits("0/1/2").unwrap();
+    let (splits, rel) = rdr.parse_splits("0/1/2").unwrap();
     assert_eq!(splits.len(), 3);
+    assert_eq!(rel, false);
     assert_eq!(splits[0], SplitUnit::Ref(WordId::new(0, 0)));
     assert_eq!(splits[1], SplitUnit::Ref(WordId::new(0, 1)));
     assert_eq!(splits[2], SplitUnit::Ref(WordId::new(0, 2)));
@@ -40,8 +41,9 @@ fn parse_split_sys_ids() {
 #[test]
 fn parse_split_user_ids() {
     let mut rdr = LexiconReader::new();
-    let splits = rdr.parse_splits("0/U1/2").unwrap();
+    let (splits, rel) = rdr.parse_splits("0/U1/2").unwrap();
     assert_eq!(splits.len(), 3);
+    assert_eq!(rel, false);
     assert_eq!(splits[0], SplitUnit::Ref(WordId::new(0, 0)));
     assert_eq!(splits[1], SplitUnit::Ref(WordId::new(1, 1)));
     assert_eq!(splits[2], SplitUnit::Ref(WordId::new(0, 2)));
