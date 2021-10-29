@@ -14,16 +14,18 @@
  *  limitations under the License.
  */
 
-use std::io::{BufRead, Write};
+use std::fs::File;
+use std::io::{BufRead, BufReader, Write};
+use std::path::Path;
 
 use lazy_static::lazy_static;
 use regex::Regex;
 
 use crate::dic::build::error::{DicCompilationCtx, DicWriteResult};
-use crate::dic::build::read_raw::{get_next, parse_i16};
+use crate::dic::build::parse::{it_next, parse_i16};
 use crate::error::{SudachiError, SudachiResult};
 
-pub struct CostBuffer {
+pub struct ConnBuffer {
     matrix: Vec<u8>,
     ctx: DicCompilationCtx,
     line: String,
@@ -36,7 +38,7 @@ lazy_static! {
     static ref LINE_REGEX: Regex = Regex::new(r"^\s*$").unwrap();
 }
 
-impl CostBuffer {
+impl ConnBuffer {
     pub fn new() -> Self {
         Self {
             matrix: Vec::new(),
@@ -59,9 +61,29 @@ impl CostBuffer {
         self.num_right
     }
 
-    pub fn write_to<W: Write>(&self, writer: &mut W) -> SudachiResult<()> {
+    pub fn write_to<W: Write>(&self, writer: &mut W) -> SudachiResult<usize> {
+        if self.num_left == -1 {
+            todo!()
+        }
+
+        if self.num_right == -1 {
+            todo!()
+        }
+
+        writer.write_all(&i16::to_le_bytes(self.num_left))?;
+        writer.write_all(&i16::to_le_bytes(self.num_right))?;
         writer.write_all(&self.matrix)?;
-        Ok(())
+        Ok(4 + self.matrix.len())
+    }
+
+    pub fn read_file(&mut self, path: &Path) -> SudachiResult<()> {
+        let file = File::open(path)?;
+        let bufrd = BufReader::with_capacity(32 * 1024, file);
+        let filename = path.to_str().unwrap_or("unknown").to_owned();
+        let old = self.ctx.set_filename(filename);
+        let status = self.read(bufrd);
+        self.ctx.set_filename(old);
+        status
     }
 
     pub fn read<R: std::io::BufRead>(&mut self, mut reader: R) -> SudachiResult<()> {
@@ -106,16 +128,16 @@ impl CostBuffer {
     fn parse_header(&mut self) -> DicWriteResult<(i16, i16)> {
         let mut items = SPLIT_REGEX.splitn(&self.line.trim(), 2);
         // TODO: fix get_next error message
-        let left = get_next(&self.line, &mut items, "left_num", parse_i16)?;
-        let right = get_next(&self.line, &mut items, "right_num", parse_i16)?;
+        let left = it_next(&self.line, &mut items, "left_num", parse_i16)?;
+        let right = it_next(&self.line, &mut items, "right_num", parse_i16)?;
         Ok((left, right))
     }
 
     fn parse_line(&mut self) -> DicWriteResult<()> {
         let mut items = SPLIT_REGEX.splitn(&self.line.trim(), 3);
-        let left = get_next(&self.line, &mut items, "left", parse_i16)?;
-        let right = get_next(&self.line, &mut items, "right", parse_i16)?;
-        let cost = get_next(&self.line, &mut items, "cost", parse_i16)?;
+        let left = it_next(&self.line, &mut items, "left", parse_i16)?;
+        let right = it_next(&self.line, &mut items, "right", parse_i16)?;
+        let cost = it_next(&self.line, &mut items, "cost", parse_i16)?;
         self.write_elem(left, right, cost)
     }
 
@@ -131,7 +153,7 @@ impl CostBuffer {
 
 #[cfg(test)]
 mod test {
-    use crate::dic::build::cost::CostBuffer;
+    use crate::dic::build::conn::ConnBuffer;
     use crate::dic::connect::ConnectionMatrix;
 
     #[test]
@@ -142,7 +164,7 @@ mod test {
         0 1 1
         1 0 2
         1 1 3";
-        let mut parser = CostBuffer::new();
+        let mut parser = ConnBuffer::new();
         parser.read(data.as_bytes()).unwrap();
         let cost = ConnectionMatrix::from_offset_size(
             parser.matrix(),

@@ -14,49 +14,151 @@
  *  limitations under the License.
  */
 
-use crate::dic::build::error::DicCompilationCtx;
-use crate::dic::build::primitives::Utf16Writer;
-use std::io::{Seek, Write};
+use std::io::Write;
+use std::path::Path;
 
+use crate::dic::build::error::{DicCompilationCtx, DicWriteResult};
+use crate::dic::build::index::IndexBuilder;
+use crate::dic::build::primitives::Utf16Writer;
+use crate::dic::header::{Header, HeaderVersion, SystemDictVersion, UserDictVersion};
+use crate::dic::word_id::WordId;
 use crate::error::SudachiResult;
 
-pub(crate) mod cost;
+pub(crate) mod conn;
 pub mod error;
+pub(crate) mod index;
+pub(crate) mod lexicon;
+pub(crate) mod parse;
 pub(crate) mod primitives;
-pub mod read_raw;
 
 const MAX_POS_IDS: usize = i16::MAX as usize;
 const MAX_DIC_STRING_LEN: usize = MAX_POS_IDS;
 const MAX_ARRAY_LEN: usize = i8::MAX as usize;
 
+enum DataSource<'a> {
+    File(&'a Path),
+    Data(&'a [u8]),
+}
+
+trait AsDataSource<'a> {
+    fn convert(self) -> DataSource<'a>;
+}
+
+impl<'a> AsDataSource<'a> for &'a Path {
+    fn convert(self) -> DataSource<'a> {
+        DataSource::File(self)
+    }
+}
+
+impl<'a> AsDataSource<'a> for &'a [u8] {
+    fn convert(self) -> DataSource<'a> {
+        DataSource::Data(self)
+    }
+}
+
+pub trait DicBuildProgress {
+    fn progress(&mut self, stage: &str, progress: f32);
+}
+
 struct DictBuilder {
     u16w: Utf16Writer,
+    user: bool,
+    lexicon: lexicon::LexiconReader,
+    conn: conn::ConnBuffer,
     ctx: DicCompilationCtx,
+    header: Header,
+    progress: Option<Box<dyn DicBuildProgress>>,
 }
 
 impl DictBuilder {
     pub fn new() -> Self {
         DictBuilder {
             u16w: Utf16Writer::new(),
-            ctx: DicCompilationCtx::memory(),
+            user: false,
+            lexicon: lexicon::LexiconReader::new(),
+            conn: conn::ConnBuffer::new(),
+            ctx: DicCompilationCtx::default(),
+            header: Header::new(),
+            progress: None,
         }
     }
 
-    pub fn write_pos_list<W: Write>(
-        &mut self,
-        data: &Vec<Vec<String>>,
-        w: &mut W,
-    ) -> SudachiResult<usize> {
-        w.write_all(&u64::to_le_bytes(data.len() as u64))?;
-        let mut count = 4;
-        for row in data {
-            for field in row {
-                match self.u16w.write(w, field) {
-                    Ok(written) => count += written,
-                    Err(e) => return self.ctx.err(e),
-                }
+    pub fn set_user(&mut self, user: bool) {
+        if user {
+            self.header.version = HeaderVersion::UserDict(UserDictVersion::Version3)
+        } else {
+            self.header.version = HeaderVersion::SystemDict(SystemDictVersion::Version2)
+        }
+        self.user = user;
+    }
+
+    pub fn set_description(&mut self, description: String) {
+        self.header.description = description
+    }
+
+    pub fn read_lexicon<'a, T: AsDataSource<'a> + 'a>(&mut self, data: T) -> SudachiResult<usize> {
+        match data.convert() {
+            DataSource::File(p) => self.lexicon.read_file(p),
+            DataSource::Data(d) => self.lexicon.read_bytes(d),
+        }
+    }
+
+    pub fn read_conn<'a, T: AsDataSource<'a> + 'a>(&mut self, data: T) -> SudachiResult<()> {
+        match data.convert() {
+            DataSource::File(p) => self.conn.read_file(p),
+            DataSource::Data(d) => self.conn.read(d),
+        }
+    }
+
+    pub fn compile<W: Write>(&mut self, w: &mut W) -> SudachiResult<()> {
+        self.write_grammar(w)?;
+        self.write_lexicon(w)?;
+        Ok(())
+    }
+
+    fn write_header<W: Write>(&mut self, w: &mut W) -> SudachiResult<()> {
+        self.header.write_to(w)?;
+        Ok(())
+    }
+
+    fn write_grammar<W: Write>(&mut self, w: &mut W) -> SudachiResult<usize> {
+        let mut size = 0;
+        size += self.lexicon.write_pos_table(w)?;
+        size += self.conn.write_to(w)?;
+        Ok(size)
+    }
+
+    fn write_index<W: Write>(&mut self, w: &mut W) -> SudachiResult<usize> {
+        let mut size = 0;
+        let mut index = IndexBuilder::new();
+        for (i, e) in self.lexicon.entries().iter().enumerate() {
+            if e.should_index() {
+                let wid = WordId::checked(0, i as u32)?;
+                index.add(e.surface(), wid);
             }
         }
-        Ok(count)
+
+        let word_id_table = index.build_word_id_table()?;
+        let trie = index.build_trie()?;
+
+        let trie_size = trie.len() / 4;
+        w.write_all(&(trie_size as u32).to_le_bytes())?;
+        size += 4;
+        w.write_all(&trie)?;
+        size += trie.len();
+        std::mem::drop(trie); //can be big, so drop explicitly
+
+        w.write_all(&(word_id_table.len() as u32).to_le_bytes())?;
+        size += 4;
+        w.write_all(&word_id_table)?;
+        size += word_id_table.len();
+
+        Ok(size)
+    }
+
+    fn write_lexicon<W: Write>(&mut self, w: &mut W) -> SudachiResult<usize> {
+        let mut size = self.write_index(w)?;
+
+        Ok(size)
     }
 }

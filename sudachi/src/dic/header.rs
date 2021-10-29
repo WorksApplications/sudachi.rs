@@ -15,9 +15,11 @@
  */
 
 use nom::{bytes::complete::take, number::complete::le_u64};
+use std::io::Write;
+use std::time::SystemTime;
 use thiserror::Error;
 
-use crate::error::SudachiNomResult;
+use crate::error::{SudachiError, SudachiNomResult, SudachiResult};
 
 /// Sudachi error
 #[derive(Error, Debug, Eq, PartialEq)]
@@ -48,6 +50,30 @@ pub enum SystemDictVersion {
     Version1,
     Version2,
 }
+
+impl HeaderVersion {
+    pub fn to_u64(&self) -> u64 {
+        match self {
+            HeaderVersion::SystemDict(SystemDictVersion::Version1) => {
+                HeaderVersion::SYSTEM_DICT_VERSION_1
+            }
+            HeaderVersion::SystemDict(SystemDictVersion::Version2) => {
+                HeaderVersion::SYSTEM_DICT_VERSION_2
+            }
+            HeaderVersion::UserDict(UserDictVersion::Version1) => {
+                HeaderVersion::USER_DICT_VERSION_1
+            }
+            HeaderVersion::UserDict(UserDictVersion::Version2) => {
+                HeaderVersion::USER_DICT_VERSION_2
+            }
+            HeaderVersion::UserDict(UserDictVersion::Version3) => {
+                HeaderVersion::USER_DICT_VERSION_3
+            }
+            _ => panic!("unknown version {:?}", self),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum UserDictVersion {
     Version1,
@@ -96,6 +122,19 @@ impl Header {
     const DESCRIPTION_SIZE: usize = 256;
     pub const STORAGE_SIZE: usize = 8 + 8 + Header::DESCRIPTION_SIZE;
 
+    /// Creates new System header
+    pub fn new() -> Self {
+        let unix_time = SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .expect("unix time error");
+
+        Self {
+            version: HeaderVersion::SystemDict(SystemDictVersion::Version2),
+            create_time: unix_time.as_secs(),
+            description: String::new(),
+        }
+    }
+
     /// Creates a new header from a dictionary bytes
     pub fn parse(bytes: &[u8]) -> Result<Header, HeaderError> {
         let (_rest, (version, create_time, description)) =
@@ -127,6 +166,23 @@ impl Header {
             HeaderVersion::UserDict(UserDictVersion::Version3) => true,
             _ => false,
         }
+    }
+
+    pub fn write_to<W: Write>(&self, w: &mut W) -> SudachiResult<usize> {
+        if self.description.len() > Header::DESCRIPTION_SIZE {
+            return Err(SudachiError::InvalidDataFormat(
+                Header::DESCRIPTION_SIZE,
+                self.description.clone(),
+            ));
+        }
+
+        w.write_all(&self.version.to_u64().to_le_bytes())?;
+        w.write_all(&self.create_time.to_le_bytes())?;
+        w.write_all(&self.description.as_bytes());
+        for _ in 0..Header::DESCRIPTION_SIZE - self.description.len() {
+            w.write_all(&[0])?;
+        }
+        Ok(Header::STORAGE_SIZE)
     }
 }
 
@@ -192,5 +248,25 @@ mod tests {
                 create_time: 1337,
             })
         );
+    }
+
+    #[test]
+    fn write_system() {
+        let header = Header::new();
+        let mut data: Vec<u8> = Vec::new();
+        assert_eq!(header.write_to(&mut data).unwrap(), Header::STORAGE_SIZE);
+        let header2 = Header::parse(&data).unwrap();
+        assert_eq!(header, header2);
+    }
+
+    #[test]
+    fn write_user() {
+        let mut header = Header::new();
+        header.version = HeaderVersion::UserDict(UserDictVersion::Version3);
+        header.description = String::from("some great header");
+        let mut data: Vec<u8> = Vec::new();
+        assert_eq!(header.write_to(&mut data).unwrap(), Header::STORAGE_SIZE);
+        let header2 = Header::parse(&data).unwrap();
+        assert_eq!(header, header2);
     }
 }

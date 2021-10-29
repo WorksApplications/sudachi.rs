@@ -16,6 +16,7 @@
 
 use crate::dic::build::error::DicWriteReason::InvalidSize;
 use crate::dic::build::error::{DicWriteError, DicWriteResult};
+use crate::dic::build::lexicon::{SplitUnit, SplitUnitResolver};
 use crate::dic::word_id::WordId;
 use std::io::Write;
 
@@ -32,25 +33,7 @@ impl Utf16Writer {
         }
     }
 
-    pub fn write<W: Write>(&mut self, w: &mut W, data: &str) -> DicWriteResult<usize> {
-        if data.len() > 4 * 64 * 1024 {
-            return Err(InvalidSize {
-                actual: data.len(),
-                expected: 4 * 64 * 1024,
-            });
-        }
-
-        let mut scratch: [u16; 2] = [0; 2];
-        let mut length: usize = 0;
-        self.buffer.clear();
-
-        for c in data.chars() {
-            for u16c in c.encode_utf16(&mut scratch) {
-                self.buffer.extend_from_slice(&u16c.to_le_bytes());
-                length += 1;
-            }
-        }
-
+    pub fn write_len<W: Write>(&self, w: &mut W, length: usize) -> DicWriteResult<usize> {
         if length > i16::MAX as _ {
             return Err(InvalidSize {
                 actual: length,
@@ -70,8 +53,49 @@ impl Utf16Writer {
             2
         };
 
+        Ok(prefix)
+    }
+
+    pub fn write<W: Write, T: AsRef<str>>(&mut self, w: &mut W, data: T) -> DicWriteResult<usize> {
+        let data = data.as_ref();
+        if data.len() > 4 * 64 * 1024 {
+            return Err(InvalidSize {
+                actual: data.len(),
+                expected: 4 * 64 * 1024,
+            });
+        }
+
+        let mut scratch: [u16; 2] = [0; 2];
+        let mut length: usize = 0;
+        self.buffer.clear();
+
+        for c in data.chars() {
+            for u16c in c.encode_utf16(&mut scratch) {
+                self.buffer.extend_from_slice(&u16c.to_le_bytes());
+                length += 1;
+            }
+        }
+
+        let prefix = self.write_len(w, length)?;
         w.write_all(&self.buffer)?;
         Ok(prefix + self.buffer.len())
+    }
+
+    pub fn write_empty_if_equal<W, T1, T2>(
+        &mut self,
+        w: &mut W,
+        data: T1,
+        other: T2,
+    ) -> DicWriteResult<usize>
+    where
+        W: Write,
+        T1: AsRef<str> + PartialEq<T2>,
+    {
+        if data == other {
+            self.write(w, "")
+        } else {
+            self.write(w, data)
+        }
     }
 }
 
@@ -97,7 +121,16 @@ impl ToU32 for WordId {
     }
 }
 
-pub(crate) fn write_u32_array<W: Write, I: ToU32>(w: &mut W, data: &[I]) -> DicWriteResult<usize> {
+impl ToU32 for SplitUnit {
+    fn to_u32(&self) -> u32 {
+        match self {
+            SplitUnit::Ref(w) => w.to_u32(),
+            SplitUnit::Inline { .. } => panic!("splits must be resolved before writing"),
+        }
+    }
+}
+
+pub(crate) fn write_u32_array<W: Write, T: ToU32>(w: &mut W, data: &[T]) -> DicWriteResult<usize> {
     let len = data.len();
     if len > 127 {
         return Err(InvalidSize {
@@ -115,6 +148,21 @@ pub(crate) fn write_u32_array<W: Write, I: ToU32>(w: &mut W, data: &[I]) -> DicW
     }
 
     Ok(written)
+}
+
+pub fn write_pos_list<W: Write, T: AsRef<str>, I: IntoIterator<Item = T> + Copy>(
+    u16w: &mut Utf16Writer,
+    data: &[I],
+    w: &mut W,
+) -> DicWriteResult<usize> {
+    w.write_all(&u64::to_le_bytes(data.len() as u64))?;
+    let mut count = 4;
+    for row in data {
+        for field in row.into_iter() {
+            u16w.write(w, field).map(|written| count += written)?
+        }
+    }
+    Ok(count)
 }
 
 #[cfg(test)]
@@ -174,6 +222,7 @@ mod test {
         let (rem, parsed) = u32_array_parser(&data).expect("ok");
         assert_eq!(rem, b"");
         assert_eq!(parsed, array);
+        assert_eq!(written, 4 * 4 + 1);
     }
 
     #[test]

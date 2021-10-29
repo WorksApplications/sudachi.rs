@@ -126,6 +126,14 @@ impl DicCompilationCtx {
         }
     }
 
+    #[inline(always)]
+    pub fn apply<T, F: FnOnce() -> DicWriteResult<T>>(&self, f: F) -> SudachiResult<T> {
+        match f() {
+            Ok(v) => Ok(v),
+            Err(e) => Err(self.to_sudachi_err_cold(e)),
+        }
+    }
+
     pub fn set_filename(&mut self, new_name: String) -> String {
         std::mem::replace(&mut self.name, new_name)
     }

@@ -21,50 +21,6 @@ use claim::assert_matches;
 use std::fmt::Write;
 
 #[test]
-fn decode_plain() {
-    assert_eq!(unescape("").unwrap(), "");
-    assert_eq!(unescape("a").unwrap(), "a");
-    assert_eq!(unescape("あ").unwrap(), "あ");
-}
-
-#[test]
-fn decode_escape_1() {
-    assert_eq!(unescape("\\u0020").unwrap(), "\u{20}");
-    assert_eq!(unescape("\\u{20}").unwrap(), "\u{20}");
-    assert_eq!(unescape("\\u{1f49e}").unwrap(), "💞");
-}
-
-#[test]
-fn decode_escape_2() {
-    assert_eq!(unescape("\\u020f").unwrap(), "\u{20f}");
-    assert_eq!(unescape("\\u{20}f").unwrap(), "\u{20}f");
-}
-
-#[test]
-fn decode_escape_3() {
-    assert_eq!(unescape("f\\u0020").unwrap(), "f\u{20}");
-    assert_eq!(unescape("f\\u{20}").unwrap(), "f\u{20}");
-}
-
-#[test]
-fn decode_escape_4() {
-    assert_eq!(unescape("\\u100056").unwrap(), "\u{1000}56");
-}
-
-#[test]
-fn decode_escape_ported() {
-    assert_eq!(unescape("a\\u002cc").unwrap(), "a,c");
-    assert_eq!(unescape("a\\u{2c}c").unwrap(), "a,c");
-}
-
-#[test]
-fn decode_escape_fail() {
-    assert_eq!(unescape("\\u{10FFFF}").unwrap(), "\u{10FFFF}"); // max character
-    claim::assert_matches!(unescape("\\u{110000}"), Err(_));
-    claim::assert_matches!(unescape("\\u{FFFFFF}"), Err(_));
-}
-
-#[test]
 fn parse_split_empty() {
     let mut rdr = LexiconReader::new();
     assert_eq!(rdr.parse_splits("").unwrap().len(), 0);
@@ -138,7 +94,7 @@ fn parse_kyoto_synonym_opt() {
     let entries = rdr.entries();
     assert_eq!(entries.len(), 1);
     let kyoto = &entries[0];
-    assert_eq!(0, kyoto.synonyms.len());
+    assert_eq!(0, kyoto.synonym_groups.len());
 }
 
 #[test]

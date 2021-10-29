@@ -15,24 +15,25 @@
  */
 
 use std::borrow::{Borrow, Cow};
-use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 use std::fs::File;
-use std::num::ParseIntError;
+use std::io::Write;
 use std::path::Path;
 use std::str::FromStr;
 
 use csv::{StringRecord, Trim};
 use indexmap::map::IndexMap;
 use indexmap::Equivalent;
-use lazy_static::lazy_static;
 use memmap2::Mmap;
-use nom::error::ErrorKind::HexDigit;
-use regex::{Match, Regex};
 
 use crate::analysis::Mode;
 use crate::dic::build::error::DicWriteReason::{InvalidCharLiteral, NoRawField};
 use crate::dic::build::error::{DicCompilationCtx, DicWriteReason, DicWriteResult};
+use crate::dic::build::parse::{
+    it_next, none_if_equal, parse_dic_form, parse_i16, parse_mode, parse_slash_list,
+    parse_u32_list, parse_wordid, parse_wordid_list, unescape, unescape_cow, WORD_ID_LITERAL,
+};
+use crate::dic::build::primitives::{write_u32_array, Utf16Writer};
 use crate::dic::build::{MAX_ARRAY_LEN, MAX_DIC_STRING_LEN, MAX_POS_IDS};
 use crate::dic::word_id::WordId;
 use crate::dic::POS_DEPTH;
@@ -79,6 +80,10 @@ impl StrPosEntry {
         ];
         Self { data: owned }
     }
+
+    pub fn fields(&self) -> &[Cow<'static, str>; 6] {
+        &self.data
+    }
 }
 
 impl Debug for StrPosEntry {
@@ -107,6 +112,10 @@ pub(crate) enum SplitUnit {
     },
 }
 
+pub(crate) trait SplitUnitResolver {
+    fn resolve(&self, unit: &SplitUnit) -> DicWriteResult<WordId>;
+}
+
 pub(crate) struct RawLexiconEntry {
     pub left_id: i16,
     pub right_id: i16,
@@ -121,7 +130,7 @@ pub(crate) struct RawLexiconEntry {
     pub reading: Option<String>,
     pub splitting: Mode,
     pub word_structure: Vec<WordId>,
-    pub synonyms: Vec<u32>,
+    pub synonym_groups: Vec<u32>,
 }
 
 impl RawLexiconEntry {
@@ -143,6 +152,36 @@ impl RawLexiconEntry {
 
     pub fn should_index(&self) -> bool {
         self.left_id >= 0
+    }
+
+    pub fn write_params<W: Write>(&self, w: &mut W) -> DicWriteResult<usize> {
+        w.write_all(&self.left_id.to_le_bytes())?;
+        w.write_all(&self.right_id.to_le_bytes())?;
+        w.write_all(&self.cost.to_le_bytes())?;
+        Ok(6)
+    }
+
+    pub fn write_word_info<W: Write, R: SplitUnitResolver>(
+        &self,
+        u16w: &mut Utf16Writer,
+        w: &mut W,
+    ) -> DicWriteResult<usize> {
+        let mut size = 0;
+
+        size += u16w.write(w, &self.headword())?; // surface of WordInfo
+        size += u16w.write_len(w, self.surface.len())?; // surface for trie
+        w.write_all(&self.pos.to_le_bytes())?;
+        size += 2;
+        size += u16w.write_empty_if_equal(w, self.norm_form(), self.headword())?;
+        w.write_all(&self.dic_form.as_raw().to_le_bytes())?;
+        size += 4;
+        size += u16w.write_empty_if_equal(w, self.reading(), self.headword())?;
+        size += write_u32_array(w, &self.splits_a)?;
+        size += write_u32_array(w, &self.splits_b)?;
+        size += write_u32_array(w, &self.word_structure)?;
+        size += write_u32_array(w, &self.synonym_groups)?;
+
+        Ok(size)
     }
 }
 
@@ -166,24 +205,24 @@ impl LexiconReader {
         })
     }
 
-    pub fn read_file(&mut self, path: &Path) -> SudachiResult<()> {
+    pub fn read_file(&mut self, path: &Path) -> SudachiResult<usize> {
         let file = File::open(path)?;
         let map = unsafe { Mmap::map(&file) }?;
-        let old_name = self
-            .ctx
-            .set_filename(path.to_str().unwrap_or("failed").to_owned());
+        let filename = path.to_str().unwrap_or("<invalid-utf8>").to_owned();
+        let old_name = self.ctx.set_filename(filename);
         let res = self.read_bytes(&map);
         self.ctx.set_filename(old_name);
         res
     }
 
-    pub fn read_bytes(&mut self, data: &[u8]) -> SudachiResult<()> {
+    pub fn read_bytes(&mut self, data: &[u8]) -> SudachiResult<usize> {
         let mut reader = csv::ReaderBuilder::new()
             .has_headers(false)
             .trim(Trim::None)
             .flexible(true)
             .from_reader(data);
         let mut record = StringRecord::new();
+        let mut nread = 0;
         while reader.read_record(&mut record).map_err(|e| {
             let line = e.position().map_or(0, |p| p.line());
             self.ctx.set_line(line as usize);
@@ -192,8 +231,9 @@ impl LexiconReader {
             let line = record.position().map_or(0, |p| p.line()) as usize;
             self.ctx.set_line(line);
             self.read_record(&record)?;
+            nread += 1;
         }
-        Ok(())
+        Ok(nread)
     }
 
     fn read_record(&mut self, data: &StringRecord) -> SudachiResult<()> {
@@ -256,7 +296,7 @@ impl LexiconReader {
             splits_a: split_a,
             splits_b: split_b,
             word_structure: parts,
-            synonyms,
+            synonym_groups: synonyms,
         };
 
         Ok(entry)
@@ -292,14 +332,14 @@ impl LexiconReader {
             Ok(SplitUnit::Ref(parse_wordid(data)?))
         } else {
             let mut iter = data.splitn(8, ",");
-            let surface = get_next(data, &mut iter, "(1) surface", unescape)?;
-            let p1 = get_next(data, &mut iter, "(2) pos-1", unescape_cow)?;
-            let p2 = get_next(data, &mut iter, "(3) pos-2", unescape_cow)?;
-            let p3 = get_next(data, &mut iter, "(4) pos-3", unescape_cow)?;
-            let p4 = get_next(data, &mut iter, "(5) pos-4", unescape_cow)?;
-            let p5 = get_next(data, &mut iter, "(6) pos-conj-1", unescape_cow)?;
-            let p6 = get_next(data, &mut iter, "(7) pos-conj-2", unescape_cow)?;
-            let reading = get_next(data, &mut iter, "(8) surface", unescape_cow)?;
+            let surface = it_next(data, &mut iter, "(1) surface", unescape)?;
+            let p1 = it_next(data, &mut iter, "(2) pos-1", unescape_cow)?;
+            let p2 = it_next(data, &mut iter, "(3) pos-2", unescape_cow)?;
+            let p3 = it_next(data, &mut iter, "(4) pos-3", unescape_cow)?;
+            let p4 = it_next(data, &mut iter, "(5) pos-4", unescape_cow)?;
+            let p5 = it_next(data, &mut iter, "(6) pos-conj-1", unescape_cow)?;
+            let p6 = it_next(data, &mut iter, "(7) pos-conj-2", unescape_cow)?;
+            let reading = it_next(data, &mut iter, "(8) surface", unescape_cow)?;
 
             let pos = self.pos_of([p1, p2, p3, p4, p5, p6])?;
             Ok(SplitUnit::Inline {
@@ -308,6 +348,21 @@ impl LexiconReader {
                 surface,
             })
         }
+    }
+
+    pub fn write_pos_table<W: Write>(&self, w: &mut W) -> SudachiResult<usize> {
+        let mut u16w = Utf16Writer::new();
+        w.write_all(&u64::to_le_bytes(self.pos.len() as u64))?;
+        let mut count = 4;
+        let mut ctx = DicCompilationCtx::default();
+        ctx.set_filename("<pos-table>".to_owned());
+        for row in self.pos.keys() {
+            for field in row.fields() {
+                ctx.apply(|| u16w.write(w, field).map(|written| count += written))?;
+            }
+            ctx.add_line(1);
+        }
+        Ok(count)
     }
 }
 
@@ -339,200 +394,4 @@ impl<'a> RecordWrapper<'a> {
             None => Ok(<T as Default>::default()),
         }
     }
-}
-
-#[inline(always)]
-pub fn get_next<'a, I, T, F>(
-    orig: &'a str,
-    data: &mut I,
-    field: &'static str,
-    f: F,
-) -> DicWriteResult<T>
-where
-    I: Iterator<Item = &'a str>,
-    F: FnOnce(&'a str) -> DicWriteResult<T>,
-    T: 'a,
-{
-    match data.next() {
-        Some(s) => f(s),
-        None => Err(DicWriteReason::SplitFormatError {
-            original: orig.to_owned(),
-            field,
-        }),
-    }
-}
-
-fn none_if_equal(surface: &str, data: Cow<str>) -> Option<String> {
-    if surface == data {
-        None
-    } else {
-        match data {
-            Cow::Borrowed(x) => Some(x.to_owned()),
-            Cow::Owned(x) => Some(x),
-        }
-    }
-}
-
-#[inline]
-fn parse_mode(data: &str) -> DicWriteResult<Mode> {
-    match data.trim() {
-        "a" | "A" => Ok(Mode::A),
-        "b" | "B" => Ok(Mode::B),
-        "c" | "C" | "*" => Ok(Mode::C),
-        _ => Err(DicWriteReason::InvalidSplit(data.to_owned())),
-    }
-}
-
-#[inline]
-pub fn parse_i16(data: &str) -> DicWriteResult<i16> {
-    match i16::from_str(data) {
-        Ok(v) => Ok(v),
-        Err(_) => Err(DicWriteReason::InvalidI16Literal(data.to_owned())),
-    }
-}
-
-#[inline]
-fn parse_u32(data: &str) -> DicWriteResult<u32> {
-    match u32::from_str(data) {
-        Ok(v) => Ok(v),
-        Err(_) => Err(DicWriteReason::InvalidU32Literal(data.to_owned())),
-    }
-}
-
-#[inline]
-fn parse_dic_form(data: &str) -> DicWriteResult<WordId> {
-    if data == "*" {
-        Ok(WordId::INVALID)
-    } else {
-        parse_wordid(data)
-    }
-}
-
-#[inline]
-fn parse_wordid(data: &str) -> DicWriteResult<WordId> {
-    if data.starts_with("U") {
-        let wid = parse_wordid_raw(&data[1..]);
-        wid.map(|w| WordId::new(1, w.word()))
-    } else {
-        parse_wordid_raw(data)
-    }
-}
-
-#[inline]
-fn parse_wordid_raw(data: &str) -> DicWriteResult<WordId> {
-    match u32::from_str(data) {
-        Ok(v) => match WordId::checked(0, v) {
-            Ok(id) => Ok(id),
-            Err(_) => Err(DicWriteReason::InvalidWordId(data.to_owned())),
-        },
-        Err(_) => Err(DicWriteReason::InvalidWordId(data.to_owned())),
-    }
-}
-
-#[inline]
-fn parse_wordid_list(data: &str) -> DicWriteResult<Vec<WordId>> {
-    if data.is_empty() || data == "*" {
-        return Ok(Vec::new());
-    }
-
-    parse_slash_list(data, parse_wordid)
-}
-
-#[inline]
-fn parse_u32_list(data: &str) -> DicWriteResult<Vec<u32>> {
-    if data.is_empty() || data == "*" {
-        return Ok(Vec::new());
-    }
-
-    parse_slash_list(data, parse_u32)
-}
-
-lazy_static! {
-    static ref WORD_ID_LITERAL: Regex = Regex::new(r"U?\d+").unwrap();
-}
-
-#[inline]
-fn parse_slash_list<T, F>(data: &str, mut f: F) -> DicWriteResult<Vec<T>>
-where
-    F: FnMut(&str) -> DicWriteResult<T>,
-{
-    let mut data = data;
-    let mut start = 0;
-    let mut result = Vec::with_capacity(4);
-    while start < data.len() {
-        let end = data.find("/").unwrap_or(data.len());
-        result.push(f(&data[..end])?);
-        start = end;
-        data = &data[(end + 1)..]; // skip slash
-    }
-
-    if data.len() > 0 {
-        result.push(f(data)?);
-    }
-
-    if result.len() > MAX_ARRAY_LEN {
-        return Err(DicWriteReason::InvalidSize {
-            expected: MAX_ARRAY_LEN,
-            actual: result.len(),
-        });
-    }
-
-    Ok(result)
-}
-
-lazy_static! {
-    static ref UNICODE_LITERAL: Regex =
-        Regex::new(r"\\u(?:\{([0-9a-fA-F]{1,6})\}|([0-9a-fA-F]{4}))").unwrap();
-}
-
-fn check_str_len(data: &str) -> DicWriteResult<()> {
-    if data.len() > MAX_DIC_STRING_LEN {
-        Err(DicWriteReason::InvalidSize {
-            expected: MAX_DIC_STRING_LEN,
-            actual: data.len(),
-        })
-    } else {
-        Ok(())
-    }
-}
-
-#[inline]
-fn unescape_cow(data: &str) -> DicWriteResult<Cow<str>> {
-    check_str_len(data)?;
-    if !UNICODE_LITERAL.is_match(data) {
-        Ok(Cow::Borrowed(data))
-    } else {
-        unescape_slow(data).map(|s| Cow::Owned(s))
-    }
-}
-
-#[inline]
-fn unescape(data: &str) -> DicWriteResult<String> {
-    check_str_len(data)?;
-    if !UNICODE_LITERAL.is_match(data) {
-        Ok(data.to_owned())
-    } else {
-        unescape_slow(data)
-    }
-}
-
-#[inline(never)]
-fn unescape_slow(original: &str) -> DicWriteResult<String> {
-    let mut result = String::with_capacity(original.len());
-    let mut start = 0;
-    for c in UNICODE_LITERAL.captures_iter(original) {
-        let whole = c.get(0).unwrap();
-        let braces = c.get(1).or_else(|| c.get(2)).unwrap();
-        result.push_str(&original[start..whole.start()]);
-        match u32::from_str_radix(braces.as_str(), 16) {
-            Ok(c) => match char::from_u32(c) {
-                Some(cx) => result.push(cx),
-                None => return Err(InvalidCharLiteral(braces.as_str().to_owned())),
-            },
-            Err(_) => return Err(InvalidCharLiteral(braces.as_str().to_owned())),
-        }
-        start = whole.end();
-    }
-    result.push_str(&original[start..]);
-    Ok(result)
 }
