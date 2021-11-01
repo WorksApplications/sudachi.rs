@@ -16,6 +16,7 @@
 
 use super::*;
 use crate::dic::build::error::DicWriteError;
+use crate::dic::build::DictBuilder;
 use crate::error::SudachiError;
 use claim::assert_matches;
 use std::fmt::Write;
@@ -46,6 +47,24 @@ fn parse_split_user_ids() {
     assert_eq!(rel, 0);
     assert_eq!(splits[0], SplitUnit::Ref(WordId::new(0, 0)));
     assert_eq!(splits[1], SplitUnit::Ref(WordId::new(1, 1)));
+    assert_eq!(splits[2], SplitUnit::Ref(WordId::new(0, 2)));
+}
+
+#[test]
+fn parse_split_inline() {
+    let mut rdr = LexiconReader::new();
+    let (splits, rel) = rdr.parse_splits("0/あ,0,1,2,3,4,5,あ/2").unwrap();
+    assert_eq!(splits.len(), 3);
+    assert_eq!(rel, 1);
+    assert_eq!(splits[0], SplitUnit::Ref(WordId::new(0, 0)));
+    assert_eq!(
+        splits[1],
+        SplitUnit::Inline {
+            surface: "あ".to_string(),
+            pos: 0,
+            reading: None
+        }
+    );
     assert_eq!(splits[2], SplitUnit::Ref(WordId::new(0, 2)));
 }
 
@@ -149,4 +168,18 @@ fn parse_pos_exhausted() {
             ..
         }))
     );
+}
+
+#[test]
+fn resolve_inline_same_dict() {
+    let mut rdr = DictBuilder::new();
+    let nread = rdr
+        .read_lexicon(include_bytes!("data_kyoto_inline.csv"))
+        .unwrap();
+    assert_eq!(nread, 3);
+    let nresolved = rdr.resolve().unwrap();
+    assert_eq!(nresolved, 2);
+    let e2 = &rdr.lexicon.entries()[2];
+    assert_eq!(e2.splits_a[0], SplitUnit::Ref(WordId::new(0, 1))); //　東
+    assert_eq!(e2.splits_a[1], SplitUnit::Ref(WordId::new(0, 0))); // 京都
 }

@@ -132,7 +132,7 @@ pub(crate) fn parse_u32_list(data: &str) -> DicWriteResult<Vec<u32>> {
 }
 
 lazy_static! {
-    pub(crate) static ref WORD_ID_LITERAL: Regex = Regex::new(r"U?\d+").unwrap();
+    pub(crate) static ref WORD_ID_LITERAL: Regex = Regex::new(r"^U?\d+$").unwrap();
 }
 
 #[inline]
@@ -140,18 +140,10 @@ pub(crate) fn parse_slash_list<T, F>(data: &str, mut f: F) -> DicWriteResult<Vec
 where
     F: FnMut(&str) -> DicWriteResult<T>,
 {
-    let mut data = data;
-    let mut start = 0;
     let mut result = Vec::with_capacity(4);
-    while start < data.len() {
-        let end = data.find("/").unwrap_or(data.len());
-        result.push(f(&data[..end])?);
-        start = end;
-        data = &data[(end + 1)..]; // skip slash
-    }
 
-    if data.len() > 0 {
-        result.push(f(data)?);
+    for part in data.split("/") {
+        result.push(f(part)?);
     }
 
     if result.len() > MAX_ARRAY_LEN {

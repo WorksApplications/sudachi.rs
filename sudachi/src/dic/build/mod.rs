@@ -14,15 +14,16 @@
  *  limitations under the License.
  */
 
-use crate::analysis::stateless_tokenizer::DictionaryAccess;
 use std::io::Write;
 use std::path::Path;
 
+use crate::analysis::stateless_tokenizer::DictionaryAccess;
 use crate::dic::build::error::{DicCompilationCtx, DicWriteError, DicWriteReason, DicWriteResult};
 use crate::dic::build::index::IndexBuilder;
 use crate::dic::build::lexicon::{SplitUnit, SplitUnitResolver};
 use crate::dic::build::primitives::Utf16Writer;
 use crate::dic::build::resolve::{BuiltDictResolver, ChainedResolver, RawDictResolver};
+use crate::dic::dictionary::JapaneseDictionary;
 use crate::dic::header::{Header, HeaderVersion, SystemDictVersion, UserDictVersion};
 use crate::dic::word_id::WordId;
 use crate::error::SudachiResult;
@@ -57,6 +58,12 @@ impl<'a> AsDataSource<'a> for &'a Path {
 impl<'a> AsDataSource<'a> for &'a [u8] {
     fn convert(self) -> DataSource<'a> {
         DataSource::Data(self)
+    }
+}
+
+impl<'a, const N: usize> AsDataSource<'a> for &'a [u8; N] {
+    fn convert(self) -> DataSource<'a> {
+        DataSource::Data(&self[..])
     }
 }
 
@@ -185,10 +192,11 @@ impl DictBuilder {
         unsafe { std::mem::transmute(resolver) }
     }
 
-    pub fn resolve_splits<D: DictionaryAccess>(
-        &mut self,
-        system: Option<D>,
-    ) -> SudachiResult<usize> {
+    pub fn resolve(&mut self) -> SudachiResult<usize> {
+        self.resolve_dict::<&JapaneseDictionary>(None)
+    }
+
+    pub fn resolve_dict<D: DictionaryAccess>(&mut self, system: Option<D>) -> SudachiResult<usize> {
         if !self.lexicon.needs_split_resolution() {
             self.resolved = true;
             return Ok(0);
