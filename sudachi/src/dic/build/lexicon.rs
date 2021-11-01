@@ -409,6 +409,7 @@ impl LexiconReader {
         Ok(count)
     }
 
+    //noinspection DuplicatedCode
     pub(crate) fn resolve_splits<R: SplitUnitResolver>(
         &mut self,
         resolver: &R,
@@ -422,6 +423,7 @@ impl LexiconReader {
                     None => {
                         // at this point s is a read only borrow,
                         // but borrow checker does not allow to do this cleanly
+                        // self conflicts with splits_a borrow
                         let s: &SplitUnit = unsafe { std::mem::transmute(&*s) };
                         let split_info = s.format(self);
                         return Err((split_info, line));
@@ -434,6 +436,7 @@ impl LexiconReader {
                     None => {
                         // at this point s is a read only borrow,
                         // but borrow checker does not allow to do this cleanly
+                        // self conflicts with splits_b borrow
                         let s: &SplitUnit = unsafe { std::mem::transmute(&*s) };
                         let split_info = s.format(self);
                         return Err((split_info, line));
@@ -523,7 +526,7 @@ impl<'a> LexiconWriter<'a> {
         let mut word_offset = 0;
         for e in self.entries {
             let u32_offset = (offset_base + word_offset) as u32;
-            w.write_all(&dbg!(u32_offset).to_le_bytes())?;
+            w.write_all(&u32_offset.to_le_bytes())?;
             let size = ctx.transform(e.write_word_info(&mut self.u16, &mut self.buffer))?;
             word_offset += size;
             total += 4;

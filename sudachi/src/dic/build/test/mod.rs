@@ -21,6 +21,7 @@ use crate::dic::header::{HeaderVersion, SystemDictVersion};
 use crate::dic::lexicon::{Lexicon, LexiconEntry};
 use crate::dic::word_id::WordId;
 use crate::dic::DictionaryLoader;
+use unicode_normalization::__test_api::quick_check::IsNormalized::No;
 
 #[test]
 fn build_grammar() {
@@ -95,4 +96,28 @@ fn build_system_1word() {
     let info = dic.lexicon().get_word_info(entry.word_id).unwrap();
     assert_eq!(info.surface, "京都");
     assert_eq!(info.reading_form, "キョウト");
+}
+
+#[test]
+fn build_system_3words() {
+    let mut bldr = DictBuilder::new();
+    bldr.read_conn(include_bytes!("matrix_10x10.def")).unwrap();
+    assert_eq!(
+        3,
+        bldr.read_lexicon(include_bytes!("data_3words.csv"))
+            .unwrap()
+    );
+    bldr.resolve().unwrap();
+    let mut built = Vec::new();
+    bldr.compile(&mut built).unwrap();
+    let dic = DictionaryLoader::read_dictionary(&built).unwrap();
+    let dic = dic.to_loaded().unwrap();
+    let mut iter = dic.lexicon().lookup("東京".as_bytes(), 0);
+    let entry = iter.next().unwrap();
+    assert_eq!(entry.word_id, WordId::new(0, 1));
+    let entry = iter.next().unwrap();
+    assert_eq!(entry.word_id, WordId::new(0, 2));
+    assert_eq!(iter.next(), None);
+    let info = dic.lexicon().get_word_info(entry.word_id).unwrap();
+    assert_eq!(info.a_unit_split, [WordId::new(0, 1), WordId::new(0, 0)]);
 }
