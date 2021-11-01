@@ -159,7 +159,7 @@ impl DictBuilder {
         Ok(size)
     }
 
-    fn write_lexicon<W: Write>(&mut self, w: &mut W, mut offset: usize) -> SudachiResult<usize> {
+    fn write_lexicon<W: Write>(&mut self, w: &mut W, offset: usize) -> SudachiResult<usize> {
         let mut size = self.write_index(w)?;
         let mut writer = LexiconWriter::new(self.lexicon.entries(), offset + size);
         size += writer.write(w)?;

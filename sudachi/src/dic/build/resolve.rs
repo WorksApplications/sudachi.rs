@@ -15,10 +15,8 @@
  */
 
 use crate::analysis::stateless_tokenizer::DictionaryAccess;
-use crate::dic::build::error::{DicWriteReason, DicWriteResult};
-use crate::dic::build::lexicon::{RawLexiconEntry, SplitUnit, SplitUnitResolver};
+use crate::dic::build::lexicon::{RawLexiconEntry, SplitUnitResolver};
 use crate::dic::word_id::WordId;
-use crate::error::SudachiResult;
 use std::collections::HashMap;
 
 pub struct BuiltDictResolver<D: DictionaryAccess> {

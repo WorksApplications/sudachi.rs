@@ -16,8 +16,6 @@
 
 use std::path::PathBuf;
 
-use nom::Parser;
-
 use crate::analysis::stateless_tokenizer::DictionaryAccess;
 use character_category::CharacterCategory;
 use grammar::Grammar;

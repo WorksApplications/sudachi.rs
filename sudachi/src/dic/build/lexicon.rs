@@ -19,7 +19,6 @@ use std::fmt::{Debug, Formatter};
 use std::fs::File;
 use std::io::Write;
 use std::path::Path;
-use std::str::FromStr;
 
 use csv::{StringRecord, Trim};
 use indexmap::map::IndexMap;
@@ -34,7 +33,6 @@ use crate::dic::build::parse::{
 };
 use crate::dic::build::primitives::{write_u32_array, Utf16Writer};
 use crate::dic::build::MAX_POS_IDS;
-use crate::dic::lexicon::LexiconEntry;
 use crate::dic::word_id::WordId;
 use crate::dic::POS_DEPTH;
 use crate::error::SudachiResult;

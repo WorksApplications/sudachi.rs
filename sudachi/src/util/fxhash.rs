@@ -28,10 +28,9 @@
 //! potentially cause quadratic behavior in `HashMap`s.  So it is not recommended to expose
 //! this hash in places where collissions or DDOS attacks may be a concern.
 
-use std::collections::{HashMap, HashSet};
 use std::convert::TryInto;
 use std::default::Default;
-use std::hash::{BuildHasherDefault, Hash, Hasher};
+use std::hash::{BuildHasherDefault, Hasher};
 use std::ops::BitXor;
 
 /// A builder for default Fx hashers.

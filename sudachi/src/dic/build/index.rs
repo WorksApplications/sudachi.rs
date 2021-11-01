@@ -20,8 +20,6 @@ use crate::dic::word_id::WordId;
 use crate::error::{SudachiError, SudachiResult};
 use crate::util::fxhash::FxBuildHasher;
 use indexmap::map::IndexMap;
-use std::collections::HashMap;
-use std::io::Write;
 
 pub struct IndexEntry {
     ids: Vec<WordId>,
@@ -114,7 +112,7 @@ mod test {
 
         let trie = make_trie(bldr.build_trie().unwrap());
         let mut iter = trie.common_prefix_iterator(b"test", 0);
-        assert_eq!(iter.next(), Some(TrieEntry { word_id: 0, end: 4 }));
+        assert_eq!(iter.next(), Some(TrieEntry { value: 0, end: 4 }));
         assert_eq!(iter.next(), None);
     }
 
@@ -127,8 +125,8 @@ mod test {
 
         let trie = make_trie(bldr.build_trie().unwrap());
         let mut iter = trie.common_prefix_iterator(b"test", 0);
-        assert_eq!(iter.next(), Some(TrieEntry { word_id: 5, end: 3 }));
-        assert_eq!(iter.next(), Some(TrieEntry { word_id: 0, end: 4 }));
+        assert_eq!(iter.next(), Some(TrieEntry { value: 5, end: 3 }));
+        assert_eq!(iter.next(), Some(TrieEntry { value: 0, end: 4 }));
         assert_eq!(iter.next(), None);
     }
 }

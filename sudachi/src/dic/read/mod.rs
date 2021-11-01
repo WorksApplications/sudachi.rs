@@ -16,7 +16,7 @@
 
 mod u16str;
 
-use nom::number::complete::{le_u16, le_u32, le_u8};
+use nom::number::complete::{le_u32, le_u8};
 use nom::Parser;
 
 use crate::dic::word_id::WordId;

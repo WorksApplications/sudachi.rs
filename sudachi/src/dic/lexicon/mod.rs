@@ -123,7 +123,7 @@ impl<'a> Lexicon<'a> {
             .common_prefix_iterator(input, offset)
             .flat_map(move |e| {
                 self.word_id_table
-                    .entries(e.word_id as usize)
+                    .entries(e.value as usize)
                     .map(move |wid| LexiconEntry::new(self.word_id(wid), e.end))
             })
     }

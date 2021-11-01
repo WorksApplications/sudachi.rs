@@ -53,6 +53,7 @@ pub enum SystemDictVersion {
 
 impl HeaderVersion {
     pub fn to_u64(&self) -> u64 {
+        #[allow(unreachable_patterns)]
         match self {
             HeaderVersion::SystemDict(SystemDictVersion::Version1) => {
                 HeaderVersion::SYSTEM_DICT_VERSION_1

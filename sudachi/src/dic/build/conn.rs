@@ -15,7 +15,7 @@
  */
 
 use std::fs::File;
-use std::io::{BufRead, BufReader, Write};
+use std::io::{BufReader, Write};
 use std::path::Path;
 
 use lazy_static::lazy_static;

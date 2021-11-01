@@ -18,17 +18,16 @@ use std::iter::FusedIterator;
 
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub struct TrieEntry {
-    pub word_id: u32,
+    /// Value of Trie, this is not the pointer to WordId, but the offset in WordId table
+    pub value: u32,
+    /// Offset of word end
     pub end: usize,
 }
 
 impl TrieEntry {
     #[inline]
-    pub fn new(id: u32, offset: usize) -> TrieEntry {
-        TrieEntry {
-            word_id: id,
-            end: offset,
-        }
+    pub fn new(value: u32, offset: usize) -> TrieEntry {
+        TrieEntry { value, end: offset }
     }
 }
 
