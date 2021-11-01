@@ -51,7 +51,7 @@ pub enum DicWriteReason {
     #[error("Invalid u32 literal {0}")]
     InvalidU32Literal(String),
 
-    #[error("Invalid word id {0}")]
+    #[error("Invalid word id: {0}")]
     InvalidWordId(String),
 
     #[error("Invalid word split {0}")]
@@ -68,6 +68,9 @@ pub enum DicWriteReason {
 
     #[error("Maximum number of POS (2^15-1) exceeded with {0}")]
     PosLimitExceeded(String),
+
+    #[error("Split reference {0} was incorrect")]
+    InvalidSplitWordReference(String),
 }
 
 pub struct DicCompilationCtx {

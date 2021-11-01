@@ -178,7 +178,7 @@ impl Header {
 
         w.write_all(&self.version.to_u64().to_le_bytes())?;
         w.write_all(&self.create_time.to_le_bytes())?;
-        w.write_all(&self.description.as_bytes());
+        w.write_all(&self.description.as_bytes())?;
         for _ in 0..Header::DESCRIPTION_SIZE - self.description.len() {
             w.write_all(&[0])?;
         }

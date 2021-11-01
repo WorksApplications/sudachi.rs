@@ -14,12 +14,15 @@
  *  limitations under the License.
  */
 
+use crate::analysis::stateless_tokenizer::DictionaryAccess;
 use std::io::Write;
 use std::path::Path;
 
-use crate::dic::build::error::{DicCompilationCtx, DicWriteResult};
+use crate::dic::build::error::{DicCompilationCtx, DicWriteError, DicWriteReason, DicWriteResult};
 use crate::dic::build::index::IndexBuilder;
+use crate::dic::build::lexicon::{SplitUnit, SplitUnitResolver};
 use crate::dic::build::primitives::Utf16Writer;
+use crate::dic::build::resolve::{BuiltDictResolver, ChainedResolver, RawDictResolver};
 use crate::dic::header::{Header, HeaderVersion, SystemDictVersion, UserDictVersion};
 use crate::dic::word_id::WordId;
 use crate::error::SudachiResult;
@@ -30,6 +33,7 @@ pub(crate) mod index;
 pub(crate) mod lexicon;
 pub(crate) mod parse;
 pub(crate) mod primitives;
+mod resolve;
 
 const MAX_POS_IDS: usize = i16::MAX as usize;
 const MAX_DIC_STRING_LEN: usize = MAX_POS_IDS;
@@ -68,6 +72,7 @@ struct DictBuilder {
     ctx: DicCompilationCtx,
     header: Header,
     progress: Option<Box<dyn DicBuildProgress>>,
+    resolved: bool,
 }
 
 impl DictBuilder {
@@ -80,6 +85,7 @@ impl DictBuilder {
             ctx: DicCompilationCtx::default(),
             header: Header::new(),
             progress: None,
+            resolved: false,
         }
     }
 
@@ -111,6 +117,7 @@ impl DictBuilder {
     }
 
     pub fn compile<W: Write>(&mut self, w: &mut W) -> SudachiResult<()> {
+        self.check_if_resolved()?;
         self.write_grammar(w)?;
         self.write_lexicon(w)?;
         Ok(())
@@ -160,5 +167,54 @@ impl DictBuilder {
         let mut size = self.write_index(w)?;
 
         Ok(size)
+    }
+
+    fn check_if_resolved(&self) -> SudachiResult<()> {
+        if self.lexicon.needs_split_resolution() && !self.resolved {
+            return Err(todo!());
+        }
+
+        Ok(())
+    }
+
+    /// this function must only be used in resolve_splits
+    fn unsafe_make_resolver<'a, 'b>(&'a self) -> RawDictResolver<'b> {
+        let resolver = RawDictResolver::new(self.lexicon.entries(), self.user);
+        // resolver borrows parts of entries, but it does not touch splits
+        // so splits can be modified while other parts of entries are used
+        unsafe { std::mem::transmute(resolver) }
+    }
+
+    pub fn resolve_splits<D: DictionaryAccess>(
+        &mut self,
+        system: Option<D>,
+    ) -> SudachiResult<usize> {
+        if !self.lexicon.needs_split_resolution() {
+            self.resolved = true;
+            return Ok(0);
+        }
+
+        let this_resolver = self.unsafe_make_resolver();
+
+        let cnt = match system {
+            Some(d) => {
+                let built_resolver = BuiltDictResolver::new(d);
+                let chained = ChainedResolver::new(this_resolver, built_resolver);
+                self.lexicon.resolve_splits(&chained)
+            }
+            None => self.lexicon.resolve_splits(&this_resolver),
+        };
+        match cnt {
+            Ok(cnt) => {
+                self.resolved = true;
+                Ok(cnt)
+            }
+            Err((split_info, line)) => Err(DicWriteError {
+                file: "<entries>".to_owned(),
+                line,
+                cause: DicWriteReason::InvalidSplitWordReference(split_info),
+            }
+            .into()),
+        }
     }
 }

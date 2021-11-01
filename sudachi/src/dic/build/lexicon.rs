@@ -101,7 +101,7 @@ pub struct LexiconReader {
     pos: IndexMap<StrPosEntry, u16>,
     ctx: DicCompilationCtx,
     entries: Vec<RawLexiconEntry>,
-    needs_resolution: bool,
+    unresolved: usize,
 }
 
 #[derive(PartialEq, Eq, Debug)]
@@ -114,8 +114,37 @@ pub(crate) enum SplitUnit {
     },
 }
 
+impl SplitUnit {
+    pub fn format(&self, lexicon: &LexiconReader) -> String {
+        match self {
+            SplitUnit::Ref(id) => id.as_raw().to_string(),
+            SplitUnit::Inline {
+                surface,
+                pos,
+                reading,
+            } => format!(
+                "{},{:?},{}",
+                surface,
+                lexicon.pos_obj(*pos).unwrap(),
+                reading.as_ref().unwrap_or(surface)
+            ),
+        }
+    }
+}
+
 pub(crate) trait SplitUnitResolver {
-    fn resolve(&self, unit: &SplitUnit) -> DicWriteResult<WordId>;
+    fn resolve(&self, unit: &SplitUnit) -> Option<WordId> {
+        match unit {
+            SplitUnit::Ref(wid) => Some(*wid),
+            SplitUnit::Inline {
+                surface,
+                pos,
+                reading,
+            } => self.resolve_inline(&surface, *pos, reading.as_deref()),
+        }
+    }
+
+    fn resolve_inline(&self, surface: &str, pos: u16, reading: Option<&str>) -> Option<WordId>;
 }
 
 pub(crate) struct RawLexiconEntry {
@@ -193,12 +222,16 @@ impl LexiconReader {
             pos: IndexMap::new(),
             ctx: DicCompilationCtx::default(),
             entries: Vec::new(),
-            needs_resolution: false,
+            unresolved: 0,
         }
     }
 
     pub(crate) fn entries(&self) -> &[RawLexiconEntry] {
         &self.entries
+    }
+
+    pub fn needs_split_resolution(&self) -> bool {
+        self.unresolved > 0
     }
 
     pub(crate) fn pos_obj(&self, pos_id: u16) -> Option<&StrPosEntry> {
@@ -279,7 +312,7 @@ impl LexiconReader {
             }
         }
 
-        self.needs_resolution = self.needs_resolution | resolve_a | resolve_b;
+        self.unresolved += resolve_a + resolve_b;
 
         if surface.is_empty() {
             return rec.ctx.err(DicWriteReason::EmptySurface);
@@ -324,17 +357,20 @@ impl LexiconReader {
         }
     }
 
-    fn parse_splits(&mut self, data: &str) -> DicWriteResult<(Vec<SplitUnit>, bool)> {
+    fn parse_splits(&mut self, data: &str) -> DicWriteResult<(Vec<SplitUnit>, usize)> {
         if data.is_empty() || data == "*" {
-            return Ok((Vec::new(), false));
+            return Ok((Vec::new(), 0));
         }
 
         parse_slash_list(data, |s| self.parse_split(s)).map(|splits| {
-            let needs_resolution = splits.iter().any(|s| match s {
-                SplitUnit::Inline { .. } => true,
-                _ => false,
-            });
-            (splits, needs_resolution)
+            let unresolved = splits
+                .iter()
+                .map(|s| match s {
+                    SplitUnit::Inline { .. } => 1,
+                    _ => 0,
+                })
+                .sum();
+            (splits, unresolved)
         })
     }
 
@@ -374,6 +410,53 @@ impl LexiconReader {
             ctx.add_line(1);
         }
         Ok(count)
+    }
+
+    pub(crate) fn resolve_splits<R: SplitUnitResolver>(
+        &mut self,
+        resolver: &R,
+    ) -> Result<usize, (String, usize)> {
+        let mut total = 0;
+        let mut line: usize = 0;
+        for e in self.entries.iter_mut() {
+            for s in e.splits_a.iter_mut() {
+                match Self::resolve_split(s, resolver) {
+                    Some(val) => total += val,
+                    None => {
+                        // at this point s is a read only borrow,
+                        // but borrow checker does not allow to do this cleanly
+                        let s: &SplitUnit = unsafe { std::mem::transmute(&*s) };
+                        let split_info = s.format(self);
+                        return Err((split_info, line));
+                    }
+                }
+            }
+            for s in e.splits_b.iter_mut() {
+                match Self::resolve_split(s, resolver) {
+                    Some(val) => total += val,
+                    None => {
+                        // at this point s is a read only borrow,
+                        // but borrow checker does not allow to do this cleanly
+                        let s: &SplitUnit = unsafe { std::mem::transmute(&*s) };
+                        let split_info = s.format(self);
+                        return Err((split_info, line));
+                    }
+                }
+            }
+            line += 1;
+        }
+        Ok(total)
+    }
+
+    fn resolve_split<R: SplitUnitResolver>(unit: &mut SplitUnit, resolver: &R) -> Option<usize> {
+        match unit {
+            SplitUnit::Ref(_) => Some(0),
+            _ => {
+                let wid = resolver.resolve(&*unit)?;
+                *unit = SplitUnit::Ref(wid);
+                Some(1)
+            }
+        }
     }
 }
 
