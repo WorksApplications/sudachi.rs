@@ -73,7 +73,7 @@ fn u32_parser(input: &[u8]) -> SudachiNomResult<&[u8], u32> {
     le_u32(input)
 }
 
-fn word_info_parser(
+pub(crate) fn word_info_parser(
     input: &[u8],
     offset: usize,
     has_synonym_group_ids: bool,

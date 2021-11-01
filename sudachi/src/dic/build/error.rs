@@ -16,7 +16,6 @@
 
 use crate::error::SudachiError;
 use crate::prelude::SudachiResult;
-use std::error::Error;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -71,6 +70,9 @@ pub enum DicWriteReason {
 
     #[error("Split reference {0} was incorrect")]
     InvalidSplitWordReference(String),
+
+    #[error("Lexicon contains unresolved splits, call resolve() function")]
+    UnresolvedSplits,
 }
 
 pub struct DicCompilationCtx {

@@ -34,6 +34,9 @@ pub fn u32_wid_array_parser(input: &[u8]) -> SudachiNomResult<&[u8], Vec<WordId>
 
 pub fn utf16_string_parser(input: &[u8]) -> SudachiNomResult<&[u8], String> {
     let (rest, length) = string_length_parser(input)?;
+    if length == 0 {
+        return Ok((rest, String::new()));
+    }
     let num_bytes = (length * 2) as usize;
     if rest.len() < num_bytes {
         return Err(nom::Err::Failure(SudachiNomError::Utf16String));

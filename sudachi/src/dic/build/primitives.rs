@@ -57,10 +57,10 @@ impl Utf16Writer {
     }
 
     pub fn write<W: Write, T: AsRef<str>>(&mut self, w: &mut W, data: T) -> DicWriteResult<usize> {
-        let data = data.as_ref();
-        if data.len() > 4 * 64 * 1024 {
+        let str_data: &str = data.as_ref();
+        if str_data.len() > 4 * 64 * 1024 {
             return Err(InvalidSize {
-                actual: data.len(),
+                actual: str_data.len(),
                 expected: 4 * 64 * 1024,
             });
         }
@@ -69,7 +69,7 @@ impl Utf16Writer {
         let mut length: usize = 0;
         self.buffer.clear();
 
-        for c in data.chars() {
+        for c in str_data.chars() {
             for u16c in c.encode_utf16(&mut scratch) {
                 self.buffer.extend_from_slice(&u16c.to_le_bytes());
                 length += 1;
@@ -150,21 +150,6 @@ pub(crate) fn write_u32_array<W: Write, T: ToU32>(w: &mut W, data: &[T]) -> DicW
     Ok(written)
 }
 
-pub fn write_pos_list<W: Write, T: AsRef<str>, I: IntoIterator<Item = T> + Copy>(
-    u16w: &mut Utf16Writer,
-    data: &[I],
-    w: &mut W,
-) -> DicWriteResult<usize> {
-    w.write_all(&u64::to_le_bytes(data.len() as u64))?;
-    let mut count = 4;
-    for row in data {
-        for field in row.into_iter() {
-            u16w.write(w, field).map(|written| count += written)?
-        }
-    }
-    Ok(count)
-}
-
 #[cfg(test)]
 mod test {
     use crate::dic::build::error::DicWriteResult;
@@ -190,11 +175,14 @@ mod test {
         let mut data: Vec<u8> = Vec::new();
 
         let xstr = "";
-        writer.write(&mut data, xstr)?;
+        let mut w = writer.write(&mut data, xstr)?;
+        assert_eq!(data.len(), w);
         let ystr = "あ𠮟";
-        writer.write(&mut data, ystr)?;
+        w += writer.write(&mut data, ystr)?;
+        assert_eq!(data.len(), w);
         let zstr = "0123456789".repeat(15); // > 127 symbols
-        writer.write(&mut data, &zstr)?;
+        w += writer.write(&mut data, &zstr)?;
+        assert_eq!(data.len(), w);
         let (rem, parsed) = utf16_string_parser(&data).expect("ok");
         assert_eq!(parsed, xstr);
         let (rem, parsed) = utf16_string_parser(rem).expect("ok");

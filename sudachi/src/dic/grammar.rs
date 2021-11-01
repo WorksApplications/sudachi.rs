@@ -51,7 +51,7 @@ impl<'a> Grammar<'a> {
     ///
     /// buf: reference to the dictionary bytes
     /// offset: offset to the grammar section in the buf
-    pub fn new(buf: &[u8], offset: usize) -> SudachiResult<Grammar> {
+    pub fn parse(buf: &[u8], offset: usize) -> SudachiResult<Grammar> {
         let (rest, (pos_list, left_id_size, right_id_size)) =
             grammar_parser(buf, offset).map_err(|_| SudachiError::InvalidDictionaryGrammar)?;
 
@@ -150,14 +150,14 @@ mod tests {
     #[test]
     fn storage_size() {
         let bytes = setup_bytes();
-        let grammar = Grammar::new(&bytes, 0).expect("failed to create grammar");
+        let grammar = Grammar::parse(&bytes, 0).expect("failed to create grammar");
         assert_eq!(bytes.len(), grammar.storage_size);
     }
 
     #[test]
     fn partofspeech_string() {
         let bytes = setup_bytes();
-        let grammar = Grammar::new(&bytes, 0).expect("failed to create grammar");
+        let grammar = Grammar::parse(&bytes, 0).expect("failed to create grammar");
         assert_eq!(6, grammar.pos_list[0].len());
         assert_eq!("BOS/EOS", grammar.pos_list[0][0]);
         assert_eq!("*", grammar.pos_list[0][5]);
@@ -172,7 +172,7 @@ mod tests {
     #[test]
     fn get_connect_cost() {
         let bytes = setup_bytes();
-        let grammar = Grammar::new(&bytes, 0).expect("failed to create grammar");
+        let grammar = Grammar::parse(&bytes, 0).expect("failed to create grammar");
         assert_eq!(0, grammar.connect_cost(0, 0));
         assert_eq!(-100, grammar.connect_cost(2, 1));
         assert_eq!(200, grammar.connect_cost(1, 2));
@@ -181,7 +181,7 @@ mod tests {
     #[test]
     fn set_connect_cost() {
         let bytes = setup_bytes();
-        let mut grammar = Grammar::new(&bytes, 0).expect("failed to create grammar");
+        let mut grammar = Grammar::parse(&bytes, 0).expect("failed to create grammar");
         grammar.set_connect_cost(0, 0, 300);
         assert_eq!(300, grammar.connect_cost(0, 0));
     }

@@ -17,6 +17,7 @@
 use super::*;
 use crate::dic::build::error::DicWriteError;
 use crate::dic::build::DictBuilder;
+use crate::dic::lexicon::word_infos::word_info_parser;
 use crate::error::SudachiError;
 use claim::assert_matches;
 use std::fmt::Write;
@@ -182,4 +183,28 @@ fn resolve_inline_same_dict() {
     let e2 = &rdr.lexicon.entries()[2];
     assert_eq!(e2.splits_a[0], SplitUnit::Ref(WordId::new(0, 1))); //　東
     assert_eq!(e2.splits_a[1], SplitUnit::Ref(WordId::new(0, 0))); // 京都
+}
+
+#[test]
+fn word_info_rw() {
+    let mut rdr = LexiconReader::new();
+    let data: &[u8] = include_bytes!("data_kyoto_inline.csv");
+    rdr.read_bytes(data).unwrap();
+    let mut u16w = Utf16Writer::new();
+    let mut data: Vec<u8> = Vec::new();
+    rdr.entries[0]
+        .write_word_info(&mut u16w, &mut data)
+        .unwrap();
+
+    let (rest, wi) = word_info_parser(&data, 0, true).unwrap();
+    assert_eq!(rest.len(), 0);
+    assert_eq!(wi.surface, "京都");
+    assert_eq!(wi.dictionary_form, "京都");
+    assert_eq!(wi.normalized_form, "京都");
+    assert_eq!(wi.reading_form, "キョウト");
+    assert_eq!(wi.a_unit_split.len(), 0);
+    assert_eq!(wi.b_unit_split.len(), 0);
+    assert_eq!(wi.word_structure.len(), 0);
+    assert_eq!(wi.synonym_group_ids.len(), 0);
+    assert_eq!(wi.dictionary_form_word_id, -1);
 }

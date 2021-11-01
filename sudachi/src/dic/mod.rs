@@ -16,17 +16,18 @@
 
 use std::path::PathBuf;
 
-use nom::number::complete::{le_u16, le_u32, le_u8};
 use nom::Parser;
 
+use crate::analysis::stateless_tokenizer::DictionaryAccess;
 use character_category::CharacterCategory;
 use grammar::Grammar;
 use header::Header;
 use lexicon::Lexicon;
 use lexicon_set::LexiconSet;
 
-use crate::dic::word_id::WordId;
-use crate::error::{SudachiNomError, SudachiNomResult};
+use crate::plugin::input_text::InputTextPlugin;
+use crate::plugin::oov::OovProviderPlugin;
+use crate::plugin::path_rewrite::PathRewritePlugin;
 use crate::prelude::*;
 
 pub mod build;
@@ -70,6 +71,28 @@ impl<'a> LoadedDictionary<'a> {
     }
 }
 
+impl<'a> DictionaryAccess for LoadedDictionary<'a> {
+    fn grammar(&self) -> &Grammar<'a> {
+        &self.grammar
+    }
+
+    fn lexicon(&self) -> &LexiconSet<'a> {
+        &self.lexicon_set
+    }
+
+    fn input_text_plugins(&self) -> &[Box<dyn InputTextPlugin + Sync + Send>] {
+        &[]
+    }
+
+    fn oov_provider_plugins(&self) -> &[Box<dyn OovProviderPlugin + Sync + Send>] {
+        &[]
+    }
+
+    fn path_rewrite_plugins(&self) -> &[Box<dyn PathRewritePlugin + Sync + Send>] {
+        &[]
+    }
+}
+
 /// A single system or user dictionary
 pub struct DictionaryLoader<'a> {
     pub header: Header,
@@ -84,14 +107,14 @@ impl<'a> DictionaryLoader<'a> {
         let mut offset = Header::STORAGE_SIZE;
 
         let grammar = if header.has_grammar() {
-            let tmp = Grammar::new(dictionary_bytes, offset)?;
+            let tmp = Grammar::parse(dictionary_bytes, offset)?;
             offset += tmp.storage_size;
             Some(tmp)
         } else {
             None
         };
 
-        let lexicon = Lexicon::new(dictionary_bytes, offset, header.has_synonym_group_ids())?;
+        let lexicon = Lexicon::parse(dictionary_bytes, offset, header.has_synonym_group_ids())?;
 
         Ok(DictionaryLoader {
             header,
@@ -123,6 +146,18 @@ impl<'a> DictionaryLoader<'a> {
             _ => Err(SudachiError::InvalidHeader(
                 header::HeaderError::InvalidSystemDictVersion,
             )),
+        }
+    }
+
+    pub fn to_loaded(self) -> Option<LoadedDictionary<'a>> {
+        let mut lexicon = self.lexicon;
+        lexicon.set_dic_id(0);
+        match self.grammar {
+            None => None,
+            Some(grammar) => Some(LoadedDictionary {
+                grammar,
+                lexicon_set: LexiconSet::new(lexicon),
+            }),
         }
     }
 }

@@ -27,14 +27,13 @@ use indexmap::Equivalent;
 use memmap2::Mmap;
 
 use crate::analysis::Mode;
-use crate::dic::build::error::DicWriteReason::{InvalidCharLiteral, NoRawField};
 use crate::dic::build::error::{DicCompilationCtx, DicWriteReason, DicWriteResult};
 use crate::dic::build::parse::{
     it_next, none_if_equal, parse_dic_form, parse_i16, parse_mode, parse_slash_list,
     parse_u32_list, parse_wordid, parse_wordid_list, unescape, unescape_cow, WORD_ID_LITERAL,
 };
 use crate::dic::build::primitives::{write_u32_array, Utf16Writer};
-use crate::dic::build::{MAX_ARRAY_LEN, MAX_DIC_STRING_LEN, MAX_POS_IDS};
+use crate::dic::build::MAX_POS_IDS;
 use crate::dic::lexicon::LexiconEntry;
 use crate::dic::word_id::WordId;
 use crate::dic::POS_DEPTH;
@@ -95,13 +94,6 @@ impl Debug for StrPosEntry {
             self.data[0], self.data[1], self.data[2], self.data[3], self.data[4], self.data[5]
         )
     }
-}
-
-pub struct LexiconReader {
-    pos: IndexMap<StrPosEntry, u16>,
-    ctx: DicCompilationCtx,
-    entries: Vec<RawLexiconEntry>,
-    unresolved: usize,
 }
 
 #[derive(PartialEq, Eq, Debug)]
@@ -192,7 +184,7 @@ impl RawLexiconEntry {
         Ok(6)
     }
 
-    pub fn write_word_info<W: Write, R: SplitUnitResolver>(
+    pub fn write_word_info<W: Write>(
         &self,
         u16w: &mut Utf16Writer,
         w: &mut W,
@@ -214,6 +206,13 @@ impl RawLexiconEntry {
 
         Ok(size)
     }
+}
+
+pub struct LexiconReader {
+    pos: IndexMap<StrPosEntry, u16>,
+    ctx: DicCompilationCtx,
+    entries: Vec<RawLexiconEntry>,
+    unresolved: usize,
 }
 
 impl LexiconReader {
@@ -399,8 +398,8 @@ impl LexiconReader {
 
     pub fn write_pos_table<W: Write>(&self, w: &mut W) -> SudachiResult<usize> {
         let mut u16w = Utf16Writer::new();
-        w.write_all(&u64::to_le_bytes(self.pos.len() as u64))?;
-        let mut count = 4;
+        w.write_all(&u16::to_le_bytes(self.pos.len() as u16))?;
+        let mut count = 2;
         let mut ctx = DicCompilationCtx::default();
         ctx.set_filename("<pos-table>".to_owned());
         for row in self.pos.keys() {
@@ -473,7 +472,7 @@ impl<'a> RecordWrapper<'a> {
     {
         match self.record.get(idx) {
             Some(s) => self.ctx.transform(f(s)),
-            None => self.ctx.err(NoRawField(name)),
+            None => self.ctx.err(DicWriteReason::NoRawField(name)),
         }
     }
 
@@ -490,7 +489,52 @@ impl<'a> RecordWrapper<'a> {
     }
 }
 
-struct LexiconWriter<'a> {
-    entries: &'a [LexiconEntry],
-    resolver: Box<dyn SplitUnitResolver + 'a>,
+pub struct LexiconWriter<'a> {
+    entries: &'a [RawLexiconEntry],
+    u16: Utf16Writer,
+    buffer: Vec<u8>,
+    offset: usize,
+}
+
+impl<'a> LexiconWriter<'a> {
+    pub(crate) fn new(entries: &'a [RawLexiconEntry], offset: usize) -> Self {
+        Self {
+            buffer: Vec::with_capacity(entries.len() * 32),
+            entries,
+            u16: Utf16Writer::new(),
+            offset,
+        }
+    }
+
+    pub fn write<W: Write>(&mut self, w: &mut W) -> SudachiResult<usize> {
+        let mut ctx = DicCompilationCtx::memory();
+        ctx.set_filename("<write entries>".to_owned());
+        let mut total = 4;
+
+        let num_entries = self.entries.len() as u32;
+        w.write_all(&num_entries.to_le_bytes())?;
+
+        ctx.set_line(0);
+        for e in self.entries {
+            total += ctx.transform(e.write_params(w))?;
+            ctx.add_line(1);
+        }
+
+        ctx.set_line(0);
+        let offset_base = self.offset + (6 + 4) * self.entries.len() + 4;
+        let mut word_offset = 0;
+        for e in self.entries {
+            let u32_offset = (offset_base + word_offset) as u32;
+            w.write_all(&dbg!(u32_offset).to_le_bytes())?;
+            let size = ctx.transform(e.write_word_info(&mut self.u16, &mut self.buffer))?;
+            word_offset += size;
+            total += 4;
+            ctx.add_line(1);
+        }
+
+        let info_size = self.buffer.len();
+        w.write_all(&self.buffer)?;
+
+        Ok(total + info_size)
+    }
 }

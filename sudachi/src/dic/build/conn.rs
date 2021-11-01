@@ -23,7 +23,7 @@ use regex::Regex;
 
 use crate::dic::build::error::{DicCompilationCtx, DicWriteResult};
 use crate::dic::build::parse::{it_next, parse_i16};
-use crate::error::{SudachiError, SudachiResult};
+use crate::error::SudachiResult;
 
 pub struct ConnBuffer {
     matrix: Vec<u8>,

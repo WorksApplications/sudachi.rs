@@ -18,10 +18,9 @@ use std::io::Write;
 use std::path::Path;
 
 use crate::analysis::stateless_tokenizer::DictionaryAccess;
-use crate::dic::build::error::{DicCompilationCtx, DicWriteError, DicWriteReason, DicWriteResult};
+use crate::dic::build::error::{DicCompilationCtx, DicWriteError, DicWriteReason};
 use crate::dic::build::index::IndexBuilder;
-use crate::dic::build::lexicon::{SplitUnit, SplitUnitResolver};
-use crate::dic::build::primitives::Utf16Writer;
+use crate::dic::build::lexicon::LexiconWriter;
 use crate::dic::build::resolve::{BuiltDictResolver, ChainedResolver, RawDictResolver};
 use crate::dic::dictionary::JapaneseDictionary;
 use crate::dic::header::{Header, HeaderVersion, SystemDictVersion, UserDictVersion};
@@ -35,17 +34,19 @@ pub(crate) mod lexicon;
 pub(crate) mod parse;
 pub(crate) mod primitives;
 mod resolve;
+#[cfg(test)]
+mod test;
 
 const MAX_POS_IDS: usize = i16::MAX as usize;
 const MAX_DIC_STRING_LEN: usize = MAX_POS_IDS;
 const MAX_ARRAY_LEN: usize = i8::MAX as usize;
 
-enum DataSource<'a> {
+pub enum DataSource<'a> {
     File(&'a Path),
     Data(&'a [u8]),
 }
 
-trait AsDataSource<'a> {
+pub trait AsDataSource<'a> {
     fn convert(self) -> DataSource<'a>;
 }
 
@@ -67,31 +68,23 @@ impl<'a, const N: usize> AsDataSource<'a> for &'a [u8; N] {
     }
 }
 
-pub trait DicBuildProgress {
-    fn progress(&mut self, stage: &str, progress: f32);
-}
-
 struct DictBuilder {
-    u16w: Utf16Writer,
     user: bool,
     lexicon: lexicon::LexiconReader,
     conn: conn::ConnBuffer,
     ctx: DicCompilationCtx,
     header: Header,
-    progress: Option<Box<dyn DicBuildProgress>>,
     resolved: bool,
 }
 
 impl DictBuilder {
     pub fn new() -> Self {
         DictBuilder {
-            u16w: Utf16Writer::new(),
             user: false,
             lexicon: lexicon::LexiconReader::new(),
             conn: conn::ConnBuffer::new(),
             ctx: DicCompilationCtx::default(),
             header: Header::new(),
-            progress: None,
             resolved: false,
         }
     }
@@ -125,13 +118,9 @@ impl DictBuilder {
 
     pub fn compile<W: Write>(&mut self, w: &mut W) -> SudachiResult<()> {
         self.check_if_resolved()?;
-        self.write_grammar(w)?;
-        self.write_lexicon(w)?;
-        Ok(())
-    }
-
-    fn write_header<W: Write>(&mut self, w: &mut W) -> SudachiResult<()> {
-        self.header.write_to(w)?;
+        let mut written = self.header.write_to(w)?;
+        written += self.write_grammar(w)?;
+        self.write_lexicon(w, written)?;
         Ok(())
     }
 
@@ -170,15 +159,16 @@ impl DictBuilder {
         Ok(size)
     }
 
-    fn write_lexicon<W: Write>(&mut self, w: &mut W) -> SudachiResult<usize> {
+    fn write_lexicon<W: Write>(&mut self, w: &mut W, mut offset: usize) -> SudachiResult<usize> {
         let mut size = self.write_index(w)?;
-
+        let mut writer = LexiconWriter::new(self.lexicon.entries(), offset + size);
+        size += writer.write(w)?;
         Ok(size)
     }
 
     fn check_if_resolved(&self) -> SudachiResult<()> {
         if self.lexicon.needs_split_resolution() && !self.resolved {
-            return Err(todo!());
+            return self.ctx.err(DicWriteReason::UnresolvedSplits);
         }
 
         Ok(())

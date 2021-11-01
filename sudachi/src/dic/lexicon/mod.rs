@@ -68,7 +68,7 @@ impl LexiconEntry {
 impl<'a> Lexicon<'a> {
     const USER_DICT_COST_PER_MORPH: i32 = -20;
 
-    pub fn new(
+    pub fn parse(
         buf: &[u8],
         original_offset: usize,
         has_synonym_group_ids: bool,

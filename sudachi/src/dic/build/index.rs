@@ -18,6 +18,8 @@ use crate::dic::build::error::DicWriteError;
 use crate::dic::build::primitives::write_u32_array;
 use crate::dic::word_id::WordId;
 use crate::error::{SudachiError, SudachiResult};
+use crate::util::fxhash::FxBuildHasher;
+use indexmap::map::IndexMap;
 use std::collections::HashMap;
 use std::io::Write;
 
@@ -36,13 +38,13 @@ impl Default for IndexEntry {
 }
 
 pub struct IndexBuilder<'a> {
-    data: HashMap<&'a str, IndexEntry>,
+    data: IndexMap<&'a str, IndexEntry, FxBuildHasher>,
 }
 
 impl<'a> IndexBuilder<'a> {
     pub fn new() -> Self {
         Self {
-            data: HashMap::new(),
+            data: IndexMap::default(),
         }
     }
 
@@ -70,7 +72,7 @@ impl<'a> IndexBuilder<'a> {
 
     pub fn build_trie(&mut self) -> SudachiResult<Vec<u8>> {
         let mut trie_entries: Vec<(&str, u32)> = Vec::new();
-        for (k, v) in self.data.drain() {
+        for (k, v) in self.data.drain(..) {
             if v.offset > u32::MAX as _ {
                 return Err(todo!());
             }
@@ -84,5 +86,49 @@ impl<'a> IndexBuilder<'a> {
             Some(t) => Ok(t),
             None => Err(SudachiError::MissingDictionaryTrie),
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::dic::lexicon::trie::{Trie, TrieEntry};
+    use crate::dic::lexicon::Lexicon;
+    use std::convert::TryInto;
+
+    fn make_trie(data: Vec<u8>) -> Trie {
+        let mut elems: Vec<u32> = Vec::with_capacity(data.len() / 4);
+        for i in (0..data.len()).step_by(4) {
+            let arr: [u8; 4] = data[i..i + 4].try_into().unwrap();
+            elems.push(u32::from_le_bytes(arr))
+        }
+        let size = elems.len() as u32;
+        Trie::new(elems, size)
+    }
+
+    #[test]
+    fn build_index_1() {
+        let mut bldr = IndexBuilder::new();
+        bldr.add("test", WordId::new(0, 0));
+        let _ = bldr.build_word_id_table().unwrap();
+
+        let trie = make_trie(bldr.build_trie().unwrap());
+        let mut iter = trie.common_prefix_iterator(b"test", 0);
+        assert_eq!(iter.next(), Some(TrieEntry { word_id: 0, end: 4 }));
+        assert_eq!(iter.next(), None);
+    }
+
+    #[test]
+    fn build_index_2() {
+        let mut bldr = IndexBuilder::new();
+        bldr.add("test", WordId::new(0, 0));
+        bldr.add("tes", WordId::new(0, 1));
+        let _ = bldr.build_word_id_table().unwrap();
+
+        let trie = make_trie(bldr.build_trie().unwrap());
+        let mut iter = trie.common_prefix_iterator(b"test", 0);
+        assert_eq!(iter.next(), Some(TrieEntry { word_id: 5, end: 3 }));
+        assert_eq!(iter.next(), Some(TrieEntry { word_id: 0, end: 4 }));
+        assert_eq!(iter.next(), None);
     }
 }

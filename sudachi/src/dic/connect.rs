@@ -122,4 +122,14 @@ impl<'a> ConnectionMatrix<'a> {
         data[index] = value;
         debug_assert_eq!(self.cost(left, right), value);
     }
+
+    /// Returns maximum number of left connection ID
+    pub fn num_left(&self) -> usize {
+        self.num_left
+    }
+
+    /// Returns maximum number of right connection ID
+    pub fn num_right(&self) -> usize {
+        self.num_right
+    }
 }

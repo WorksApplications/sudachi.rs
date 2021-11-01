@@ -22,7 +22,7 @@ const ZERO_GRAMMAR_BYTES: &[u8] = &[0u8; 6];
 
 /// Returns Grammar with empty data
 pub fn zero_grammar() -> Grammar<'static> {
-    Grammar::new(ZERO_GRAMMAR_BYTES, 0).expect("Failed to make grammar")
+    Grammar::parse(ZERO_GRAMMAR_BYTES, 0).expect("Failed to make grammar")
 }
 
 const TEST_CHAR_DEF: &[u8] = include_bytes!("../tests/resources/char.def");
