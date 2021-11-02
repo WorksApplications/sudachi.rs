@@ -225,6 +225,8 @@ pub struct LexiconReader {
     entries: Vec<RawLexiconEntry>,
     unresolved: usize,
     start_pos: usize,
+    max_left: i16,
+    max_right: i16,
 }
 
 impl LexiconReader {
@@ -235,6 +237,8 @@ impl LexiconReader {
             entries: Vec::new(),
             unresolved: 0,
             start_pos: 0,
+            max_left: i16::MAX,
+            max_right: i16::MAX,
         }
     }
 
@@ -244,6 +248,11 @@ impl LexiconReader {
 
     pub fn needs_split_resolution(&self) -> bool {
         self.unresolved > 0
+    }
+
+    pub fn set_max_conn_sizes(&mut self, left: i16, right: i16) {
+        self.max_left = left;
+        self.max_right = right;
     }
 
     pub fn preload_pos(&mut self, grammar: &Grammar) {
@@ -376,6 +385,29 @@ impl LexiconReader {
                 }
             }
         }
+    }
+
+    pub fn validate_entries(&self) -> SudachiResult<()> {
+        let mut ctx = DicCompilationCtx::default();
+        ctx.set_filename("<entry id>".to_owned());
+        ctx.set_line(0);
+        for e in self.entries.iter() {
+            if e.left_id >= self.max_left {
+                return ctx.err(BuildFailure::InvalidSize {
+                    actual: e.left_id as _,
+                    expected: self.max_left as _,
+                });
+            }
+
+            if e.right_id >= self.max_right {
+                return ctx.err(BuildFailure::InvalidSize {
+                    actual: e.right_id as _,
+                    expected: self.max_right as _,
+                });
+            }
+            ctx.add_line(1);
+        }
+        Ok(())
     }
 
     fn parse_splits(&mut self, data: &str) -> DicWriteResult<(Vec<SplitUnit>, usize)> {

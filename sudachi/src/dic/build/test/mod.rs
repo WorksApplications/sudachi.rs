@@ -21,11 +21,14 @@ use crate::dic::header::{HeaderVersion, SystemDictVersion};
 use crate::dic::lexicon::{Lexicon, LexiconEntry};
 use crate::dic::word_id::WordId;
 use crate::dic::DictionaryLoader;
+use std::io::sink;
+
+static MATRIX_10_10: &'static [u8] = include_bytes!("matrix_10x10.def");
 
 #[test]
 fn build_grammar() {
     let mut bldr = DictBuilder::new_system();
-    bldr.read_conn(include_bytes!("matrix_10x10.def")).unwrap();
+    bldr.read_conn(MATRIX_10_10).unwrap();
     assert_eq!(
         1,
         bldr.read_lexicon(include_bytes!("data_1word.csv")).unwrap()
@@ -75,7 +78,7 @@ fn build_lexicon_1word() {
 #[test]
 fn build_system_1word() {
     let mut bldr = DictBuilder::new_system();
-    bldr.read_conn(include_bytes!("matrix_10x10.def")).unwrap();
+    bldr.read_conn(MATRIX_10_10).unwrap();
     assert_eq!(
         1,
         bldr.read_lexicon(include_bytes!("data_1word.csv")).unwrap()
@@ -100,7 +103,7 @@ fn build_system_1word() {
 #[test]
 fn build_system_3words() {
     let mut bldr = DictBuilder::new_system();
-    bldr.read_conn(include_bytes!("matrix_10x10.def")).unwrap();
+    bldr.read_conn(MATRIX_10_10).unwrap();
     assert_eq!(
         3,
         bldr.read_lexicon(include_bytes!("data_3words.csv"))
@@ -171,4 +174,28 @@ fn build_user_dictionary_crossrefs() {
     assert_eq!(winfo.a_unit_split, [WordId::new(1, 0), WordId::new(0, 1)]);
     assert_eq!(winfo.b_unit_split, [WordId::new(1, 0), WordId::new(0, 1)]);
     assert_eq!(iter.next(), None);
+}
+
+#[test]
+fn conn_id_too_big_left() {
+    let mut bldr = DictBuilder::new_system();
+    bldr.read_conn(MATRIX_10_10).unwrap();
+    bldr.read_lexicon(
+        "京都,10,5,5293,京都,名詞,固有名詞,地名,一般,*,*,キョウト,京都,*,A,*,*,*,*".as_bytes(),
+    )
+    .unwrap();
+    let mut sink = sink();
+    claim::assert_matches!(bldr.compile(&mut sink), Err(_));
+}
+
+#[test]
+fn conn_id_too_big_right() {
+    let mut bldr = DictBuilder::new_system();
+    bldr.read_conn(MATRIX_10_10).unwrap();
+    bldr.read_lexicon(
+        "京都,5,10,5293,京都,名詞,固有名詞,地名,一般,*,*,キョウト,京都,*,A,*,*,*,*".as_bytes(),
+    )
+    .unwrap();
+    let mut sink = sink();
+    claim::assert_matches!(bldr.compile(&mut sink), Err(_));
 }

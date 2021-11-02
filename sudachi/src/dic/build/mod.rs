@@ -132,6 +132,9 @@ impl<D: DictionaryAccess> DictBuilder<D> {
         let mut bldr = Self::new_empty();
         bldr.set_user(true);
         bldr.lexicon.preload_pos(system.grammar());
+        let cm = system.grammar().conn_matrix();
+        bldr.lexicon
+            .set_max_conn_sizes(cm.num_left() as _, cm.num_right() as _);
         bldr.prebuilt = Some(system);
         bldr
     }
@@ -163,12 +166,16 @@ impl<D: DictionaryAccess> DictBuilder<D> {
         match data.convert() {
             DataSource::File(p) => self.conn.read_file(p),
             DataSource::Data(d) => self.conn.read(d),
-        }
+        }?;
+        self.lexicon
+            .set_max_conn_sizes(self.conn.left(), self.conn.right());
+        Ok(())
     }
 
     /// Compile the binary dictionary and write it to the specified sink
     pub fn compile<W: Write>(&mut self, w: &mut W) -> SudachiResult<()> {
         self.check_if_resolved()?;
+        self.lexicon.validate_entries()?;
         let mut written = self.header.write_to(w)?;
         written += self.write_grammar(w)?;
         self.write_lexicon(w, written)?;
