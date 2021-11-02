@@ -32,6 +32,7 @@ pub enum DicWriteReason {
     #[error("The actual size {actual} was larger than expected {expected}")]
     InvalidSize { actual: usize, expected: usize },
 
+    // this one should be rewrapped to SudachiError by the Context
     #[error(transparent)]
     Io(#[from] std::io::Error),
 
@@ -71,8 +72,17 @@ pub enum DicWriteReason {
     #[error("Split reference {0} was incorrect")]
     InvalidSplitWordReference(String),
 
-    #[error("Lexicon contains unresolved splits, call resolve() function")]
+    #[error("Lexicon contains unresolved splits, call resolve()")]
     UnresolvedSplits,
+
+    #[error("Connection size {0} was invalid: {1}")]
+    InvalidConnSize(&'static str, i16),
+
+    #[error("WordId table is not built, call build_word_id_table()")]
+    WordIdTableNotBuilt,
+
+    #[error("Failed to build trie")]
+    TrieBuildFailure,
 }
 
 pub struct DicCompilationCtx {

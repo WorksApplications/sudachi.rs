@@ -1,3 +1,23 @@
+/*
+ *  Copyright (c) 2021 Works Applications Co., Ltd.
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+// Adopted from: https://github.com/cbreeden/fxhash/blob/master/lib.rs
+// Removed functionality that were useless for us
+// Original Copyright:
+
 // Copyright 2015 The Rust Project Developers. See the COPYRIGHT
 // file at the top-level directory of this distribution and at
 // http://rust-lang.org/COPYRIGHT.
@@ -7,11 +27,6 @@
 // <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
-
-// Adopted from: https://github.com/cbreeden/fxhash/blob/master/lib.rs
-// Removed useless functions and non-core dependencies
-
-#![deny(missing_docs)]
 
 //! # Fx Hash
 //!
@@ -51,7 +66,7 @@ macro_rules! impl_hash_word {
     ($($ty:ty = $key:ident),* $(,)*) => (
         $(
             impl HashWord for $ty {
-                #[inline]
+                #[inline(always)]
                 fn hash_word(&mut self, word: Self) {
                     *self = self.rotate_left(ROTATE).bitxor(word).wrapping_mul($key);
                 }
@@ -134,6 +149,7 @@ impl Hasher for FxHasher64 {
         self.hash.hash_word(u64::from(i));
     }
 
+    #[inline]
     fn write_u64(&mut self, i: u64) {
         self.hash.hash_word(i);
     }

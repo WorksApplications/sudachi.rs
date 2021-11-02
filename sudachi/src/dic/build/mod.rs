@@ -68,7 +68,7 @@ impl<'a, const N: usize> AsDataSource<'a> for &'a [u8; N] {
     }
 }
 
-struct DictBuilder {
+pub struct DictBuilder {
     user: bool,
     lexicon: lexicon::LexiconReader,
     conn: conn::ConnBuffer,
@@ -178,7 +178,7 @@ impl DictBuilder {
     fn unsafe_make_resolver<'a, 'b>(&'a self) -> RawDictResolver<'b> {
         let resolver = RawDictResolver::new(self.lexicon.entries(), self.user);
         // resolver borrows parts of entries, but it does not touch splits
-        // so splits can be modified while other parts of entries are used
+        // resolve function only modifies splits
         unsafe { std::mem::transmute(resolver) }
     }
 

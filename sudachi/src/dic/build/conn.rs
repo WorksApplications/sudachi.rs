@@ -21,7 +21,7 @@ use std::path::Path;
 use lazy_static::lazy_static;
 use regex::Regex;
 
-use crate::dic::build::error::{DicCompilationCtx, DicWriteResult};
+use crate::dic::build::error::{DicCompilationCtx, DicWriteError, DicWriteReason, DicWriteResult};
 use crate::dic::build::parse::{it_next, parse_i16};
 use crate::error::SudachiResult;
 
@@ -35,7 +35,7 @@ pub struct ConnBuffer {
 
 lazy_static! {
     static ref SPLIT_REGEX: Regex = Regex::new(r"\s+").unwrap();
-    static ref LINE_REGEX: Regex = Regex::new(r"^\s*$").unwrap();
+    static ref EMPTY_LINE: Regex = Regex::new(r"^\s*$").unwrap();
 }
 
 impl ConnBuffer {
@@ -44,30 +44,33 @@ impl ConnBuffer {
             matrix: Vec::new(),
             ctx: DicCompilationCtx::default(),
             line: String::new(),
-            num_left: -1,
-            num_right: -1,
+            num_left: 0,
+            num_right: 0,
         }
     }
 
+    #[allow(unused)]
     pub fn matrix(&self) -> &[u8] {
         &self.matrix
     }
 
+    #[allow(unused)]
     pub fn left(&self) -> i16 {
         self.num_left
     }
 
+    #[allow(unused)]
     pub fn right(&self) -> i16 {
         self.num_right
     }
 
     pub fn write_to<W: Write>(&self, writer: &mut W) -> SudachiResult<usize> {
-        if self.num_left == -1 {
-            todo!()
+        if self.num_left < 0 {
+            return num_error("left", self.num_left);
         }
 
-        if self.num_right == -1 {
-            todo!()
+        if self.num_right < 0 {
+            return num_error("right", self.num_right);
         }
 
         writer.write_all(&i16::to_le_bytes(self.num_left))?;
@@ -94,13 +97,21 @@ impl ConnBuffer {
                 todo!()
             }
             self.ctx.add_line(1);
-            if !LINE_REGEX.is_match(&self.line) {
+            if !EMPTY_LINE.is_match(&self.line) {
                 break;
             }
         }
 
         let result = self.parse_header();
         let (left, right) = self.ctx.transform(result)?;
+        if left < 0 {
+            return num_error("left", left);
+        }
+
+        if right < 0 {
+            return num_error("right", right);
+        }
+
         let size = left as usize * right as usize * 2;
         self.matrix.resize(size, 0);
         self.num_left = left;
@@ -114,10 +125,11 @@ impl ConnBuffer {
             }
             self.ctx.add_line(1);
 
-            if LINE_REGEX.is_match(&self.line) {
+            if EMPTY_LINE.is_match(&self.line) {
                 continue;
             }
 
+            // borrow checker complains when written as a single line
             let status = self.parse_line();
             self.ctx.transform(status)?;
         }
@@ -149,6 +161,15 @@ impl ConnBuffer {
         self.matrix[index + 1] = bytes[1];
         Ok(())
     }
+}
+
+fn num_error<T>(part: &'static str, value: i16) -> SudachiResult<T> {
+    return Err(DicWriteError {
+        file: "<connection>".to_owned(),
+        line: 0,
+        cause: DicWriteReason::InvalidConnSize(part, value),
+    }
+    .into());
 }
 
 #[cfg(test)]

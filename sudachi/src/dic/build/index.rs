@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-use crate::dic::build::error::DicWriteError;
+use crate::dic::build::error::{DicWriteError, DicWriteReason};
 use crate::dic::build::primitives::write_u32_array;
 use crate::dic::word_id::WordId;
 use crate::error::{SudachiError, SudachiResult};
@@ -36,6 +36,8 @@ impl Default for IndexEntry {
 }
 
 pub struct IndexBuilder<'a> {
+    // Insertion order matters for the built dictionary,
+    // so using IndexMap here instead of a simple HashMap
     data: IndexMap<&'a str, IndexEntry, FxBuildHasher>,
 }
 
@@ -72,17 +74,27 @@ impl<'a> IndexBuilder<'a> {
         let mut trie_entries: Vec<(&str, u32)> = Vec::new();
         for (k, v) in self.data.drain(..) {
             if v.offset > u32::MAX as _ {
-                return Err(todo!());
+                return Err(DicWriteError {
+                    file: format!("entry {}", k),
+                    line: 0,
+                    cause: DicWriteReason::WordIdTableNotBuilt,
+                }
+                .into());
             }
             trie_entries.push((k, v.offset as u32));
         }
-
+        self.data.shrink_to_fit();
         trie_entries.sort_by(|(a, _), (b, _)| a.cmp(b));
 
         let trie = yada::builder::DoubleArrayBuilder::build(&trie_entries);
         match trie {
             Some(t) => Ok(t),
-            None => Err(SudachiError::MissingDictionaryTrie),
+            None => Err(DicWriteError {
+                file: "<trie>".to_owned(),
+                line: 0,
+                cause: DicWriteReason::TrieBuildFailure,
+            }
+            .into()),
         }
     }
 }
@@ -91,7 +103,6 @@ impl<'a> IndexBuilder<'a> {
 mod test {
     use super::*;
     use crate::dic::lexicon::trie::{Trie, TrieEntry};
-    use crate::dic::lexicon::Lexicon;
     use std::convert::TryInto;
 
     fn make_trie(data: Vec<u8>) -> Trie {

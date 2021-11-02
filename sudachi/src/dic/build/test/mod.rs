@@ -21,7 +21,6 @@ use crate::dic::header::{HeaderVersion, SystemDictVersion};
 use crate::dic::lexicon::{Lexicon, LexiconEntry};
 use crate::dic::word_id::WordId;
 use crate::dic::DictionaryLoader;
-use unicode_normalization::__test_api::quick_check::IsNormalized::No;
 
 #[test]
 fn build_grammar() {

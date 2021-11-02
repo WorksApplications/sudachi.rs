@@ -149,6 +149,7 @@ pub(crate) struct RawLexiconEntry {
     pub splits_a: Vec<SplitUnit>,
     pub splits_b: Vec<SplitUnit>,
     pub reading: Option<String>,
+    #[allow(unused)]
     pub splitting: Mode,
     pub word_structure: Vec<WordId>,
     pub synonym_groups: Vec<u32>,
