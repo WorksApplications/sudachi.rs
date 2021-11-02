@@ -15,12 +15,14 @@
  */
 
 use crate::analysis::stateless_tokenizer::DictionaryAccess;
+use crate::dic::build::error::{BuildFailure, DicBuildError};
 use crate::dic::build::DictBuilder;
 use crate::dic::grammar::Grammar;
 use crate::dic::header::{HeaderVersion, SystemDictVersion};
 use crate::dic::lexicon::{Lexicon, LexiconEntry};
 use crate::dic::word_id::WordId;
 use crate::dic::DictionaryLoader;
+use crate::error::SudachiError;
 use std::io::sink;
 
 static MATRIX_10_10: &'static [u8] = include_bytes!("matrix_10x10.def");
@@ -198,4 +200,156 @@ fn conn_id_too_big_right() {
     .unwrap();
     let mut sink = sink();
     claim::assert_matches!(bldr.compile(&mut sink), Err(_));
+}
+
+#[test]
+fn word_id_too_big_dicform() {
+    let mut bldr = DictBuilder::new_system();
+    bldr.read_conn(MATRIX_10_10).unwrap();
+    bldr.read_lexicon(
+        "京都,5,5,5293,京都,名詞,固有名詞,地名,一般,*,*,キョウト,京都,5,A,*,*,*,*".as_bytes(),
+    )
+    .unwrap();
+    let mut sink = sink();
+
+    claim::assert_matches!(
+        bldr.compile(&mut sink),
+        Err(SudachiError::DictionaryCompilationError(DicBuildError {
+            cause: BuildFailure::InvalidFieldSize {
+                field: "dic_form",
+                actual: 5,
+                ..
+            },
+            ..
+        }))
+    );
+}
+
+#[test]
+fn word_id_too_big_split_a() {
+    let mut bldr = DictBuilder::new_system();
+    bldr.read_conn(MATRIX_10_10).unwrap();
+    bldr.read_lexicon(
+        "京都,5,5,5293,京都,名詞,固有名詞,地名,一般,*,*,キョウト,京都,*,C,0/5,*,*,*".as_bytes(),
+    )
+    .unwrap();
+    let mut sink = sink();
+
+    claim::assert_matches!(
+        bldr.compile(&mut sink),
+        Err(SudachiError::DictionaryCompilationError(DicBuildError {
+            cause: BuildFailure::InvalidFieldSize {
+                field: "splits_a",
+                actual: 5,
+                ..
+            },
+            ..
+        }))
+    );
+}
+
+#[test]
+fn word_id_too_big_split_b() {
+    let mut bldr = DictBuilder::new_system();
+    bldr.read_conn(MATRIX_10_10).unwrap();
+    bldr.read_lexicon(
+        "京都,5,5,5293,京都,名詞,固有名詞,地名,一般,*,*,キョウト,京都,*,C,*,0/5,*,*".as_bytes(),
+    )
+    .unwrap();
+    let mut sink = sink();
+
+    claim::assert_matches!(
+        bldr.compile(&mut sink),
+        Err(SudachiError::DictionaryCompilationError(DicBuildError {
+            cause: BuildFailure::InvalidFieldSize {
+                field: "splits_b",
+                actual: 5,
+                ..
+            },
+            ..
+        }))
+    );
+}
+
+#[test]
+fn word_id_too_big_word_structure() {
+    let mut bldr = DictBuilder::new_system();
+    bldr.read_conn(MATRIX_10_10).unwrap();
+    bldr.read_lexicon(
+        "京都,5,5,5293,京都,名詞,固有名詞,地名,一般,*,*,キョウト,京都,*,C,*,*,0/5,*".as_bytes(),
+    )
+    .unwrap();
+    let mut sink = sink();
+
+    claim::assert_matches!(
+        bldr.compile(&mut sink),
+        Err(SudachiError::DictionaryCompilationError(DicBuildError {
+            cause: BuildFailure::InvalidFieldSize {
+                field: "word_structure",
+                actual: 5,
+                ..
+            },
+            ..
+        }))
+    );
+}
+
+#[test]
+fn word_id_too_big_dicform_userdic_insystem() {
+    let mut bldr = DictBuilder::new_system();
+    bldr.read_conn(MATRIX_10_10).unwrap();
+    bldr.read_lexicon(
+        "京都,5,5,5293,京都,名詞,固有名詞,地名,一般,*,*,キョウト,京都,*,A,*,*,*,*".as_bytes(),
+    )
+    .unwrap();
+    let mut data = Vec::new();
+    bldr.compile(&mut data).unwrap();
+    let dic = DictionaryLoader::read_system_dictionary(&data).unwrap();
+    let dic = dic.to_loaded().unwrap();
+    let mut bldr = DictBuilder::new_user(&dic);
+    bldr.read_lexicon("東,6,6,5293,東,名詞,一般,*,*,*,*,ヒガシ,*,10,A,*,*,*,*".as_bytes())
+        .unwrap();
+    let mut sink = sink();
+
+    claim::assert_matches!(
+        bldr.compile(&mut sink),
+        Err(SudachiError::DictionaryCompilationError(DicBuildError {
+            cause: BuildFailure::InvalidFieldSize {
+                field: "dic_form",
+                actual: 10,
+                ..
+            },
+            ..
+        }))
+    );
+}
+
+#[test]
+fn word_id_too_big_dicform_userdic_inuser() {
+    let mut bldr = DictBuilder::new_system();
+    bldr.read_conn(MATRIX_10_10).unwrap();
+    bldr.read_lexicon(
+        "京都,5,5,5293,京都,名詞,固有名詞,地名,一般,*,*,キョウト,京都,*,A,*,*,*,*".as_bytes(),
+    )
+    .unwrap();
+    let mut data = Vec::new();
+    bldr.compile(&mut data).unwrap();
+    let dic = DictionaryLoader::read_system_dictionary(&data).unwrap();
+    let dic = dic.to_loaded().unwrap();
+    let mut bldr = DictBuilder::new_user(&dic);
+    bldr.read_lexicon("東,6,6,5293,東,名詞,一般,*,*,*,*,ヒガシ,*,U15,A,*,*,*,*".as_bytes())
+        .unwrap();
+    let mut sink = sink();
+
+    claim::assert_matches!(
+        bldr.compile(&mut sink),
+        Err(SudachiError::DictionaryCompilationError(DicBuildError {
+            cause: BuildFailure::InvalidFieldSize {
+                field: "dic_form",
+                actual: 15,
+                ..
+            },
+            ..
+        }))
+    );
 }

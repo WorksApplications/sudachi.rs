@@ -35,6 +35,13 @@ pub enum BuildFailure {
     #[error("The actual size {actual} was larger than expected {expected}")]
     InvalidSize { actual: usize, expected: usize },
 
+    #[error("The actual size of {field} {actual} was larger than expected {expected}")]
+    InvalidFieldSize {
+        actual: usize,
+        expected: usize,
+        field: &'static str,
+    },
+
     // this one should be rewrapped to SudachiError by the Context
     #[error(transparent)]
     Io(#[from] std::io::Error),

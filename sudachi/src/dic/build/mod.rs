@@ -135,6 +135,8 @@ impl<D: DictionaryAccess> DictBuilder<D> {
         let cm = system.grammar().conn_matrix();
         bldr.lexicon
             .set_max_conn_sizes(cm.num_left() as _, cm.num_right() as _);
+        bldr.lexicon
+            .set_num_system_words(system.lexicon().size() as usize);
         bldr.prebuilt = Some(system);
         bldr
     }

@@ -227,6 +227,7 @@ pub struct LexiconReader {
     start_pos: usize,
     max_left: i16,
     max_right: i16,
+    num_system: usize,
 }
 
 impl LexiconReader {
@@ -239,6 +240,7 @@ impl LexiconReader {
             start_pos: 0,
             max_left: i16::MAX,
             max_right: i16::MAX,
+            num_system: usize::MAX,
         }
     }
 
@@ -253,6 +255,10 @@ impl LexiconReader {
     pub fn set_max_conn_sizes(&mut self, left: i16, right: i16) {
         self.max_left = left;
         self.max_right = right;
+    }
+
+    pub fn set_num_system_words(&mut self, num: usize) {
+        self.num_system = num;
     }
 
     pub fn preload_pos(&mut self, grammar: &Grammar) {
@@ -391,21 +397,77 @@ impl LexiconReader {
         let mut ctx = DicCompilationCtx::default();
         ctx.set_filename("<entry id>".to_owned());
         ctx.set_line(0);
+        let (max_0, max_1) = match self.num_system {
+            // means that we compile system dictionary, there must not be user words
+            usize::MAX => (self.entries.len(), 0),
+            // compiling user dictionary
+            x => (x, self.entries.len()),
+        };
         for e in self.entries.iter() {
             if e.left_id >= self.max_left {
-                return ctx.err(BuildFailure::InvalidSize {
+                return ctx.err(BuildFailure::InvalidFieldSize {
                     actual: e.left_id as _,
                     expected: self.max_left as _,
+                    field: "left_id",
                 });
             }
 
             if e.right_id >= self.max_right {
-                return ctx.err(BuildFailure::InvalidSize {
+                return ctx.err(BuildFailure::InvalidFieldSize {
                     actual: e.right_id as _,
                     expected: self.max_right as _,
+                    field: "right_id",
                 });
             }
+
+            if e.dic_form != WordId::INVALID {
+                ctx.transform(Self::validate_wid(e.dic_form, max_0, max_1, "dic_form"))?;
+            }
+
+            for s in e.splits_a.iter() {
+                match s {
+                    SplitUnit::Ref(wid) => {
+                        ctx.transform(Self::validate_wid(*wid, max_0, max_1, "splits_a"))?;
+                    }
+                    _ => panic!("at this point there must not be unresolved splits"),
+                }
+            }
+
+            for s in e.splits_b.iter() {
+                match s {
+                    SplitUnit::Ref(wid) => {
+                        ctx.transform(Self::validate_wid(*wid, max_0, max_1, "splits_b"))?;
+                    }
+                    _ => panic!("at this point there must not be unresolved splits"),
+                }
+            }
+
+            for wid in e.word_structure.iter() {
+                ctx.transform(Self::validate_wid(*wid, max_0, max_1, "word_structure"))?;
+            }
+
             ctx.add_line(1);
+        }
+        Ok(())
+    }
+
+    fn validate_wid(
+        wid: WordId,
+        dic0_max: usize,
+        dic1_max: usize,
+        label: &'static str,
+    ) -> DicWriteResult<()> {
+        let max = match wid.dic() {
+            0 => dic0_max,
+            1 => dic1_max,
+            x => panic!("invalid dictionary ID={}, should not happen", x),
+        };
+        if wid.word() >= max as u32 {
+            return Err(BuildFailure::InvalidFieldSize {
+                actual: wid.word() as _,
+                expected: max,
+                field: label,
+            });
         }
         Ok(())
     }
