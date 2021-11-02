@@ -80,7 +80,7 @@ impl DictionaryAccess for NoDic {
     }
 
     fn lexicon(&self) -> &LexiconSet<'_> {
-        panic!("there is not lexicon here")
+        panic!("there is no lexicon here")
     }
 
     fn input_text_plugins(&self) -> &[Box<dyn InputTextPlugin + Sync + Send>] {
@@ -104,7 +104,7 @@ pub struct DictBuilder<D> {
     ctx: DicCompilationCtx,
     header: Header,
     resolved: bool,
-    prebuilt: Option<Box<D>>,
+    prebuilt: Option<D>,
 }
 
 impl DictBuilder<NoDic> {
@@ -132,7 +132,7 @@ impl<D: DictionaryAccess> DictBuilder<D> {
         let mut bldr = Self::new_empty();
         bldr.set_user(true);
         bldr.lexicon.preload_pos(system.grammar());
-        bldr.prebuilt = Some(Box::new(system));
+        bldr.prebuilt = Some(system);
         bldr
     }
 
