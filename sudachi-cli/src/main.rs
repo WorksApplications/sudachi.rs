@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+mod build;
 mod output;
 
 use std::fs::File;
@@ -23,6 +24,7 @@ use std::process;
 
 use structopt::StructOpt;
 
+use crate::build::{build_main, is_build_mode};
 use crate::output::SudachiOutput;
 use sudachi::analysis::stateful_tokenizer::StatefulTokenizer;
 use sudachi::analysis::stateless_tokenizer::DictionaryAccess;
@@ -82,6 +84,11 @@ struct Cli {
 }
 
 fn main() {
+    if is_build_mode() {
+        build_main();
+        return;
+    }
+
     let args: Cli = Cli::from_args();
 
     let mode = match args.mode.as_str().parse() {

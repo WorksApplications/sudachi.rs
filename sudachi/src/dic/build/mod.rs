@@ -72,7 +72,7 @@ impl<'a, const N: usize> AsDataSource<'a> for &'a [u8; N] {
     }
 }
 
-enum NoDic {}
+pub enum NoDic {}
 
 impl DictionaryAccess for NoDic {
     fn grammar(&self) -> &Grammar<'_> {
