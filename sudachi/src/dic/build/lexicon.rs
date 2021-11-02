@@ -26,13 +26,14 @@ use indexmap::Equivalent;
 use memmap2::Mmap;
 
 use crate::analysis::Mode;
-use crate::dic::build::error::{DicCompilationCtx, DicWriteReason, DicWriteResult};
+use crate::dic::build::error::{BuildFailure, DicCompilationCtx, DicWriteResult};
 use crate::dic::build::parse::{
     it_next, none_if_equal, parse_dic_form, parse_i16, parse_mode, parse_slash_list,
     parse_u32_list, parse_wordid, parse_wordid_list, unescape, unescape_cow, WORD_ID_LITERAL,
 };
 use crate::dic::build::primitives::{write_u32_array, Utf16Writer};
 use crate::dic::build::MAX_POS_IDS;
+use crate::dic::grammar::Grammar;
 use crate::dic::word_id::WordId;
 use crate::dic::POS_DEPTH;
 use crate::error::SudachiResult;
@@ -77,6 +78,17 @@ impl StrPosEntry {
             Self::rewrap(d6),
         ];
         Self { data: owned }
+    }
+
+    pub fn from_built_pos(data: &Vec<String>) -> Self {
+        let mut iter = data.iter().map(|x| x.as_str());
+        let p1 = Cow::Borrowed(iter.next().unwrap());
+        let p2 = Cow::Borrowed(iter.next().unwrap());
+        let p3 = Cow::Borrowed(iter.next().unwrap());
+        let p4 = Cow::Borrowed(iter.next().unwrap());
+        let p5 = Cow::Borrowed(iter.next().unwrap());
+        let p6 = Cow::Borrowed(iter.next().unwrap());
+        Self::new([p1, p2, p3, p4, p5, p6])
     }
 
     pub fn fields(&self) -> &[Cow<'static, str>; 6] {
@@ -212,6 +224,7 @@ pub struct LexiconReader {
     ctx: DicCompilationCtx,
     entries: Vec<RawLexiconEntry>,
     unresolved: usize,
+    start_pos: usize,
 }
 
 impl LexiconReader {
@@ -221,6 +234,7 @@ impl LexiconReader {
             ctx: DicCompilationCtx::default(),
             entries: Vec::new(),
             unresolved: 0,
+            start_pos: 0,
         }
     }
 
@@ -230,6 +244,15 @@ impl LexiconReader {
 
     pub fn needs_split_resolution(&self) -> bool {
         self.unresolved > 0
+    }
+
+    pub fn preload_pos(&mut self, grammar: &Grammar) {
+        assert_eq!(self.pos.len(), 0);
+        for (i, pos) in grammar.pos_list.iter().enumerate() {
+            let key = StrPosEntry::from_built_pos(pos);
+            self.pos.insert(key, i as u16);
+        }
+        self.start_pos = self.pos.len();
     }
 
     pub(crate) fn pos_obj(&self, pos_id: u16) -> Option<&StrPosEntry> {
@@ -260,7 +283,7 @@ impl LexiconReader {
         while reader.read_record(&mut record).map_err(|e| {
             let line = e.position().map_or(0, |p| p.line());
             self.ctx.set_line(line as usize);
-            self.ctx.to_sudachi_err(DicWriteReason::CsvError(e))
+            self.ctx.to_sudachi_err(BuildFailure::CsvError(e))
         })? {
             let line = record.position().map_or(0, |p| p.line()) as usize;
             self.ctx.set_line(line);
@@ -304,7 +327,7 @@ impl LexiconReader {
 
         if splitting == Mode::A {
             if !split_a.is_empty() || !split_b.is_empty() {
-                return rec.ctx.err(DicWriteReason::InvalidSplit(
+                return rec.ctx.err(BuildFailure::InvalidSplit(
                     "A-mode tokens can't have splits".to_owned(),
                 ));
             }
@@ -313,7 +336,7 @@ impl LexiconReader {
         self.unresolved += resolve_a + resolve_b;
 
         if surface.is_empty() {
-            return rec.ctx.err(DicWriteReason::EmptySurface);
+            return rec.ctx.err(BuildFailure::EmptySurface);
         }
 
         self.ctx = rec.ctx;
@@ -345,7 +368,7 @@ impl LexiconReader {
                 let key = StrPosEntry::new(data);
                 let pos_id = self.pos.len();
                 if pos_id > MAX_POS_IDS {
-                    Err(DicWriteReason::PosLimitExceeded(format!("{:?}", key)))
+                    Err(BuildFailure::PosLimitExceeded(format!("{:?}", key)))
                 } else {
                     let pos_id = pos_id as u16;
                     self.pos.insert(key, pos_id);
@@ -397,17 +420,21 @@ impl LexiconReader {
 
     pub fn write_pos_table<W: Write>(&self, w: &mut W) -> SudachiResult<usize> {
         let mut u16w = Utf16Writer::new();
-        w.write_all(&u16::to_le_bytes(self.pos.len() as u16))?;
-        let mut count = 2;
+        let real_count = self.pos.len() - self.start_pos;
+        w.write_all(&u16::to_le_bytes(real_count as u16))?;
+        let mut written_bytes = 2;
         let mut ctx = DicCompilationCtx::default();
         ctx.set_filename("<pos-table>".to_owned());
-        for row in self.pos.keys() {
+        for (row, pos_id) in self.pos.iter() {
+            if (*pos_id as usize) < self.start_pos {
+                continue;
+            }
             for field in row.fields() {
-                ctx.apply(|| u16w.write(w, field).map(|written| count += written))?;
+                ctx.apply(|| u16w.write(w, field).map(|written| written_bytes += written))?;
             }
             ctx.add_line(1);
         }
-        Ok(count)
+        Ok(written_bytes)
     }
 
     //noinspection DuplicatedCode
@@ -474,7 +501,7 @@ impl<'a> RecordWrapper<'a> {
     {
         match self.record.get(idx) {
             Some(s) => self.ctx.transform(f(s)),
-            None => self.ctx.err(DicWriteReason::NoRawField(name)),
+            None => self.ctx.err(BuildFailure::NoRawField(name)),
         }
     }
 

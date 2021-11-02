@@ -67,6 +67,19 @@ impl<'a> LoadedDictionary<'a> {
             lexicon_set: LexiconSet::new(system_dict.lexicon),
         })
     }
+
+    #[cfg(test)]
+    pub(crate) fn merge_dictionary(
+        mut self,
+        other: DictionaryLoader<'a>,
+    ) -> SudachiResult<LoadedDictionary> {
+        let npos = self.grammar.pos_list.len();
+        let lexicon = other.lexicon;
+        let grammar = other.grammar;
+        self.lexicon_set.append(lexicon, npos)?;
+        grammar.map(|g| self.grammar.merge(g));
+        Ok(self)
+    }
 }
 
 impl<'a> DictionaryAccess for LoadedDictionary<'a> {

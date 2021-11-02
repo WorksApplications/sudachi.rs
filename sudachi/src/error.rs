@@ -18,7 +18,7 @@ use std::fmt::Debug;
 use thiserror::Error;
 
 use crate::config::ConfigError;
-use crate::dic::build::error::DicWriteError;
+use crate::dic::build::error::DicBuildError;
 use crate::dic::character_category::Error as CharacterCategoryError;
 use crate::dic::header::HeaderError;
 use crate::dic::lexicon_set::LexiconSetError;
@@ -109,7 +109,7 @@ pub enum SudachiError {
     InputTooLong(usize, usize),
 
     #[error(transparent)]
-    DictionaryCompilationError(#[from] DicWriteError),
+    DictionaryCompilationError(#[from] DicBuildError),
 }
 
 pub type SudachiNomResult<I, O> = nom::IResult<I, O, SudachiNomError<I>>;

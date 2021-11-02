@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-use crate::dic::build::error::{DicWriteError, DicWriteReason};
+use crate::dic::build::error::{BuildFailure, DicBuildError};
 use crate::dic::build::primitives::write_u32_array;
 use crate::dic::word_id::WordId;
 use crate::error::{SudachiError, SudachiResult};
@@ -60,7 +60,7 @@ impl<'a> IndexBuilder<'a> {
             // clear stored ids memory after use
             let ids = std::mem::take(&mut entry.ids);
             write_u32_array(&mut result, &ids).map_err(|e| {
-                SudachiError::DictionaryCompilationError(DicWriteError {
+                SudachiError::DictionaryCompilationError(DicBuildError {
                     cause: e,
                     line: 0,
                     file: format!("<word id table for `{}` has too much entries>", k),
@@ -74,10 +74,10 @@ impl<'a> IndexBuilder<'a> {
         let mut trie_entries: Vec<(&str, u32)> = Vec::new();
         for (k, v) in self.data.drain(..) {
             if v.offset > u32::MAX as _ {
-                return Err(DicWriteError {
+                return Err(DicBuildError {
                     file: format!("entry {}", k),
                     line: 0,
-                    cause: DicWriteReason::WordIdTableNotBuilt,
+                    cause: BuildFailure::WordIdTableNotBuilt,
                 }
                 .into());
             }
@@ -89,10 +89,10 @@ impl<'a> IndexBuilder<'a> {
         let trie = yada::builder::DoubleArrayBuilder::build(&trie_entries);
         match trie {
             Some(t) => Ok(t),
-            None => Err(DicWriteError {
+            None => Err(DicBuildError {
                 file: "<trie>".to_owned(),
                 line: 0,
-                cause: DicWriteReason::TrieBuildFailure,
+                cause: BuildFailure::TrieBuildFailure,
             }
             .into()),
         }

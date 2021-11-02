@@ -21,7 +21,7 @@ use std::path::Path;
 use lazy_static::lazy_static;
 use regex::Regex;
 
-use crate::dic::build::error::{DicCompilationCtx, DicWriteError, DicWriteReason, DicWriteResult};
+use crate::dic::build::error::{BuildFailure, DicBuildError, DicCompilationCtx, DicWriteResult};
 use crate::dic::build::parse::{it_next, parse_i16};
 use crate::error::SudachiResult;
 
@@ -164,10 +164,10 @@ impl ConnBuffer {
 }
 
 fn num_error<T>(part: &'static str, value: i16) -> SudachiResult<T> {
-    return Err(DicWriteError {
+    return Err(DicBuildError {
         file: "<connection>".to_owned(),
         line: 0,
-        cause: DicWriteReason::InvalidConnSize(part, value),
+        cause: BuildFailure::InvalidConnSize(part, value),
     }
     .into());
 }

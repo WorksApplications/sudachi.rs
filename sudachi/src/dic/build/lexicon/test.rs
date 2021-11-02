@@ -15,7 +15,7 @@
  */
 
 use super::*;
-use crate::dic::build::error::DicWriteError;
+use crate::dic::build::error::DicBuildError;
 use crate::dic::build::DictBuilder;
 use crate::dic::lexicon::word_infos::word_info_parser;
 use crate::error::SudachiError;
@@ -127,8 +127,8 @@ fn parse_kyoto_not_enough_fields() {
 
     assert_matches!(
         rdr.read_bytes(data.as_bytes()),
-        Err(SudachiError::DictionaryCompilationError(DicWriteError {
-            cause: DicWriteReason::NoRawField(_),
+        Err(SudachiError::DictionaryCompilationError(DicBuildError {
+            cause: BuildFailure::NoRawField(_),
             line: 1,
             ..
         }))
@@ -141,8 +141,8 @@ fn parse_kyoto_ignored_empty_surface() {
     let data = ",-1,-1,5293,京都,名詞,固有名詞,地名,一般,*,*,キョウト,京都,*,A,*,*,*,*";
     assert_matches!(
         rdr.read_bytes(data.as_bytes()),
-        Err(SudachiError::DictionaryCompilationError(DicWriteError {
-            cause: DicWriteReason::EmptySurface,
+        Err(SudachiError::DictionaryCompilationError(DicBuildError {
+            cause: BuildFailure::EmptySurface,
             line: 1,
             ..
         }))
@@ -164,8 +164,8 @@ fn parse_pos_exhausted() {
 
     assert_matches!(
         rdr.read_bytes(data.as_bytes()),
-        Err(SudachiError::DictionaryCompilationError(DicWriteError {
-            cause: DicWriteReason::PosLimitExceeded(_),
+        Err(SudachiError::DictionaryCompilationError(DicBuildError {
+            cause: BuildFailure::PosLimitExceeded(_),
             ..
         }))
     );
@@ -173,7 +173,7 @@ fn parse_pos_exhausted() {
 
 #[test]
 fn resolve_inline_same_dict() {
-    let mut rdr = DictBuilder::new();
+    let mut rdr = DictBuilder::new_system();
     let nread = rdr
         .read_lexicon(include_bytes!("data_kyoto_inline.csv"))
         .unwrap();

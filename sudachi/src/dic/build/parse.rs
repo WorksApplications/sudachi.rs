@@ -21,7 +21,7 @@ use lazy_static::lazy_static;
 use regex::Regex;
 
 use crate::analysis::Mode;
-use crate::dic::build::error::{DicWriteReason, DicWriteResult};
+use crate::dic::build::error::{BuildFailure, DicWriteResult};
 use crate::dic::build::{MAX_ARRAY_LEN, MAX_DIC_STRING_LEN};
 use crate::dic::word_id::WordId;
 
@@ -39,7 +39,7 @@ where
 {
     match data.next() {
         Some(s) => f(s),
-        None => Err(DicWriteReason::SplitFormatError {
+        None => Err(BuildFailure::SplitFormatError {
             original: orig.to_owned(),
             field,
         }),
@@ -63,7 +63,7 @@ pub(crate) fn parse_mode(data: &str) -> DicWriteResult<Mode> {
         "a" | "A" => Ok(Mode::A),
         "b" | "B" => Ok(Mode::B),
         "c" | "C" | "*" => Ok(Mode::C),
-        _ => Err(DicWriteReason::InvalidSplit(data.to_owned())),
+        _ => Err(BuildFailure::InvalidSplit(data.to_owned())),
     }
 }
 
@@ -71,7 +71,7 @@ pub(crate) fn parse_mode(data: &str) -> DicWriteResult<Mode> {
 pub(crate) fn parse_i16(data: &str) -> DicWriteResult<i16> {
     match i16::from_str(data) {
         Ok(v) => Ok(v),
-        Err(_) => Err(DicWriteReason::InvalidI16Literal(data.to_owned())),
+        Err(_) => Err(BuildFailure::InvalidI16Literal(data.to_owned())),
     }
 }
 
@@ -79,7 +79,7 @@ pub(crate) fn parse_i16(data: &str) -> DicWriteResult<i16> {
 pub(crate) fn parse_u32(data: &str) -> DicWriteResult<u32> {
     match u32::from_str(data) {
         Ok(v) => Ok(v),
-        Err(_) => Err(DicWriteReason::InvalidU32Literal(data.to_owned())),
+        Err(_) => Err(BuildFailure::InvalidU32Literal(data.to_owned())),
     }
 }
 
@@ -107,9 +107,9 @@ fn parse_wordid_raw(data: &str) -> DicWriteResult<WordId> {
     match u32::from_str(data) {
         Ok(v) => match WordId::checked(0, v) {
             Ok(id) => Ok(id),
-            Err(_) => Err(DicWriteReason::InvalidWordId(data.to_owned())),
+            Err(_) => Err(BuildFailure::InvalidWordId(data.to_owned())),
         },
-        Err(_) => Err(DicWriteReason::InvalidWordId(data.to_owned())),
+        Err(_) => Err(BuildFailure::InvalidWordId(data.to_owned())),
     }
 }
 
@@ -147,7 +147,7 @@ where
     }
 
     if result.len() > MAX_ARRAY_LEN {
-        return Err(DicWriteReason::InvalidSize {
+        return Err(BuildFailure::InvalidSize {
             expected: MAX_ARRAY_LEN,
             actual: result.len(),
         });
@@ -163,7 +163,7 @@ lazy_static! {
 
 fn check_str_len(data: &str) -> DicWriteResult<()> {
     if data.len() > MAX_DIC_STRING_LEN {
-        Err(DicWriteReason::InvalidSize {
+        Err(BuildFailure::InvalidSize {
             expected: MAX_DIC_STRING_LEN,
             actual: data.len(),
         })
@@ -203,17 +203,9 @@ fn unescape_slow(original: &str) -> DicWriteResult<String> {
         match u32::from_str_radix(braces.as_str(), 16) {
             Ok(c) => match char::from_u32(c) {
                 Some(cx) => result.push(cx),
-                None => {
-                    return Err(DicWriteReason::InvalidCharLiteral(
-                        braces.as_str().to_owned(),
-                    ))
-                }
+                None => return Err(BuildFailure::InvalidCharLiteral(braces.as_str().to_owned())),
             },
-            Err(_) => {
-                return Err(DicWriteReason::InvalidCharLiteral(
-                    braces.as_str().to_owned(),
-                ))
-            }
+            Err(_) => return Err(BuildFailure::InvalidCharLiteral(braces.as_str().to_owned())),
         }
         start = whole.end();
     }

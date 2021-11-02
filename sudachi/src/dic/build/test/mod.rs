@@ -24,21 +24,15 @@ use crate::dic::DictionaryLoader;
 
 #[test]
 fn build_grammar() {
-    let mut bldr = DictBuilder::new();
+    let mut bldr = DictBuilder::new_system();
     bldr.read_conn(include_bytes!("matrix_10x10.def")).unwrap();
-    assert_eq!(
-        1,
-        bldr.read_lexicon(include_bytes!("data_1word.csv")).unwrap()
-    );
+    assert_eq!(1, bldr.read_lexicon(include_bytes!("data_1word.csv")).unwrap());
     let mut built = Vec::new();
     let written = bldr.write_grammar(&mut built).unwrap();
     assert_eq!(built.len(), written);
     let grammar = Grammar::parse(&built, 0).unwrap();
     assert_eq!(grammar.pos_list.len(), 1);
-    assert_eq!(
-        grammar.pos_list[0],
-        &["名詞", "固有名詞", "地名", "一般", "*", "*"]
-    );
+    assert_eq!(grammar.pos_list[0], &["名詞", "固有名詞", "地名", "一般", "*", "*"]);
     let conn = grammar.conn_matrix();
     assert_eq!(conn.num_left(), 10);
     assert_eq!(conn.num_right(), 10);
@@ -46,11 +40,8 @@ fn build_grammar() {
 
 #[test]
 fn build_lexicon_1word() {
-    let mut bldr = DictBuilder::new();
-    assert_eq!(
-        1,
-        bldr.read_lexicon(include_bytes!("data_1word.csv")).unwrap()
-    );
+    let mut bldr = DictBuilder::new_system();
+    assert_eq!(1, bldr.read_lexicon(include_bytes!("data_1word.csv")).unwrap());
     let mut built = Vec::new();
     bldr.write_lexicon(&mut built, 0).unwrap();
     let mut lex = Lexicon::parse(&built, 0, true).unwrap();
@@ -74,19 +65,13 @@ fn build_lexicon_1word() {
 
 #[test]
 fn build_system_1word() {
-    let mut bldr = DictBuilder::new();
+    let mut bldr = DictBuilder::new_system();
     bldr.read_conn(include_bytes!("matrix_10x10.def")).unwrap();
-    assert_eq!(
-        1,
-        bldr.read_lexicon(include_bytes!("data_1word.csv")).unwrap()
-    );
+    assert_eq!(1, bldr.read_lexicon(include_bytes!("data_1word.csv")).unwrap());
     let mut built = Vec::new();
     bldr.compile(&mut built).unwrap();
-    let dic = DictionaryLoader::read_dictionary(&built).unwrap();
-    assert_eq!(
-        dic.header.version,
-        HeaderVersion::SystemDict(SystemDictVersion::Version2)
-    );
+    let dic = DictionaryLoader::read_system_dictionary(&built).unwrap();
+    assert_eq!(dic.header.version, HeaderVersion::SystemDict(SystemDictVersion::Version2));
 
     let dic = dic.to_loaded().unwrap();
 
@@ -99,17 +84,13 @@ fn build_system_1word() {
 
 #[test]
 fn build_system_3words() {
-    let mut bldr = DictBuilder::new();
+    let mut bldr = DictBuilder::new_system();
     bldr.read_conn(include_bytes!("matrix_10x10.def")).unwrap();
-    assert_eq!(
-        3,
-        bldr.read_lexicon(include_bytes!("data_3words.csv"))
-            .unwrap()
-    );
+    assert_eq!(3, bldr.read_lexicon(include_bytes!("data_3words.csv")).unwrap());
     bldr.resolve().unwrap();
     let mut built = Vec::new();
     bldr.compile(&mut built).unwrap();
-    let dic = DictionaryLoader::read_dictionary(&built).unwrap();
+    let dic = DictionaryLoader::read_system_dictionary(&built).unwrap();
     let dic = dic.to_loaded().unwrap();
     let mut iter = dic.lexicon().lookup("東京".as_bytes(), 0);
     let entry = iter.next().unwrap();
@@ -119,4 +100,41 @@ fn build_system_3words() {
     assert_eq!(iter.next(), None);
     let info = dic.lexicon().get_word_info(entry.word_id).unwrap();
     assert_eq!(info.a_unit_split, [WordId::new(0, 1), WordId::new(0, 0)]);
+}
+
+#[test]
+fn build_user_dictionary_crossrefs() {
+    let mut bldr = DictBuilder::new_system();
+    bldr.read_conn(include_bytes!("matrix_10x10.def")).unwrap();
+    assert_eq!(3, bldr.read_lexicon(include_bytes!("data_3words.csv")).unwrap());
+    bldr.resolve().unwrap();
+    let mut system_bin = Vec::new();
+    bldr.compile(&mut system_bin).unwrap();
+    let dic = DictionaryLoader::read_system_dictionary(&system_bin).unwrap();
+    let dic = dic.to_loaded().unwrap();
+    // user dictionary
+    let mut bldr2 = DictBuilder::new_user(&dic);
+    assert_eq!(2, bldr2.read_lexicon(include_bytes!("data_2words_3w_refs.csv")).unwrap());
+    bldr2.resolve().unwrap();
+    let mut user_dic = Vec::new();
+    bldr2.compile(&mut user_dic).unwrap();
+    let udic = DictionaryLoader::read_user_dictionary(&user_dic).unwrap();
+    let dic = dic.merge_dictionary(udic).unwrap();
+    let mut iter = dic.lexicon_set.lookup("関東".as_bytes(), 0);
+    let entry = iter.next().unwrap();
+    assert_eq!(entry.word_id, WordId::new(1, 0));
+    let winfo = dic.lexicon_set.get_word_info(entry.word_id).unwrap();
+    assert_eq!(dic.lexicon_set.get_word_param(entry.word_id).unwrap(), (4, 4, 4000));
+    assert_eq!(winfo.surface, "関");
+    assert_eq!(winfo.a_unit_split.len(), 0);
+    assert_eq!(winfo.word_structure, [WordId::new(1, 1), WordId::new(0, 2)]);
+    assert_eq!(winfo.synonym_group_ids, [0, 1]);
+    let entry = iter.next().unwrap();
+    assert_eq!(entry.word_id, WordId::new(1, 1));
+    assert_eq!(dic.lexicon_set.get_word_param(entry.word_id).unwrap(), (5, 5, 5000));
+    let winfo = dic.lexicon_set.get_word_info(entry.word_id).unwrap();
+    assert_eq!(winfo.surface, "関東");
+    assert_eq!(winfo.a_unit_split, [WordId::new(1, 0), WordId::new(0, 1)]);
+    assert_eq!(winfo.b_unit_split, [WordId::new(1, 0), WordId::new(0, 1)]);
+    assert_eq!(iter.next(), None);
 }

@@ -16,7 +16,7 @@
 
 use nom::{bytes::complete::take, number::complete::le_u64};
 use std::io::Write;
-use std::time::SystemTime;
+use std::time::{Duration, SystemTime};
 use thiserror::Error;
 
 use crate::error::{SudachiError, SudachiNomResult, SudachiResult};
@@ -123,7 +123,8 @@ impl Header {
     const DESCRIPTION_SIZE: usize = 256;
     pub const STORAGE_SIZE: usize = 8 + 8 + Header::DESCRIPTION_SIZE;
 
-    /// Creates new System header
+    /// Creates new system dictionary header
+    /// Its version field should be modified to create user dictionary header
     pub fn new() -> Self {
         let unix_time = SystemTime::now()
             .duration_since(SystemTime::UNIX_EPOCH)
@@ -134,6 +135,17 @@ impl Header {
             create_time: unix_time.as_secs(),
             description: String::new(),
         }
+    }
+
+    /// Set creation time
+    pub fn set_time(&mut self, time: SystemTime) -> SystemTime {
+        let unix_time = time
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .expect("unix time error");
+
+        let old_unix_secs = std::mem::replace(&mut self.create_time, unix_time.as_secs());
+
+        SystemTime::UNIX_EPOCH + Duration::from_secs(old_unix_secs)
     }
 
     /// Creates a new header from a dictionary bytes

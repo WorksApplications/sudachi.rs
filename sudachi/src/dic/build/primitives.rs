@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-use crate::dic::build::error::DicWriteReason::InvalidSize;
+use crate::dic::build::error::BuildFailure::InvalidSize;
 use crate::dic::build::error::DicWriteResult;
 use crate::dic::build::lexicon::SplitUnit;
 use crate::dic::word_id::WordId;

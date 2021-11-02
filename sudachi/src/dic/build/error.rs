@@ -18,17 +18,20 @@ use crate::error::SudachiError;
 use crate::prelude::SudachiResult;
 use thiserror::Error;
 
+/// Dictionary building-process related parent error.
+/// Captures file/line information and underlying cause.
 #[derive(Error, Debug)]
 #[error("{file}:{line}\t{cause}")]
-pub struct DicWriteError {
-    pub(super) file: String,
-    pub(super) line: usize,
-    pub(super) cause: DicWriteReason,
+pub struct DicBuildError {
+    pub file: String,
+    pub line: usize,
+    pub cause: BuildFailure,
 }
 
+/// Actual specific errors for dictionary compilation
 #[derive(Error, Debug)]
 #[non_exhaustive]
-pub enum DicWriteReason {
+pub enum BuildFailure {
     #[error("The actual size {actual} was larger than expected {expected}")]
     InvalidSize { actual: usize, expected: usize },
 
@@ -85,7 +88,7 @@ pub enum DicWriteReason {
     TrieBuildFailure,
 }
 
-pub struct DicCompilationCtx {
+pub(crate) struct DicCompilationCtx {
     name: String,
     line: usize,
 }
@@ -108,16 +111,16 @@ impl DicCompilationCtx {
     }
 
     #[inline]
-    pub fn err<T, E: Into<DicWriteReason>>(&self, reason: E) -> SudachiResult<T> {
+    pub fn err<T, E: Into<BuildFailure>>(&self, reason: E) -> SudachiResult<T> {
         Err(self.to_sudachi_err(reason))
     }
 
     #[inline(always)]
-    pub fn to_sudachi_err<E: Into<DicWriteReason>>(&self, reason: E) -> SudachiError {
+    pub fn to_sudachi_err<E: Into<BuildFailure>>(&self, reason: E) -> SudachiError {
         match reason.into() {
-            DicWriteReason::Io(e) => e.into(),
+            BuildFailure::Io(e) => e.into(),
             reason => {
-                let err = DicWriteError {
+                let err = DicBuildError {
                     file: self.name.clone(),
                     line: self.line,
                     cause: reason,
@@ -129,7 +132,7 @@ impl DicCompilationCtx {
 
     #[inline(never)]
     #[cold]
-    pub fn to_sudachi_err_cold<E: Into<DicWriteReason>>(&self, reason: E) -> SudachiError {
+    pub fn to_sudachi_err_cold<E: Into<BuildFailure>>(&self, reason: E) -> SudachiError {
         self.to_sudachi_err(reason)
     }
 
@@ -162,4 +165,4 @@ impl DicCompilationCtx {
     }
 }
 
-pub type DicWriteResult<T> = std::result::Result<T, DicWriteReason>;
+pub type DicWriteResult<T> = std::result::Result<T, BuildFailure>;

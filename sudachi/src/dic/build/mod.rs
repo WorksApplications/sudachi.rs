@@ -18,14 +18,18 @@ use std::io::Write;
 use std::path::Path;
 
 use crate::analysis::stateless_tokenizer::DictionaryAccess;
-use crate::dic::build::error::{DicCompilationCtx, DicWriteError, DicWriteReason};
+use crate::dic::build::error::{BuildFailure, DicBuildError, DicCompilationCtx};
 use crate::dic::build::index::IndexBuilder;
 use crate::dic::build::lexicon::LexiconWriter;
 use crate::dic::build::resolve::{BuiltDictResolver, ChainedResolver, RawDictResolver};
-use crate::dic::dictionary::JapaneseDictionary;
+use crate::dic::grammar::Grammar;
 use crate::dic::header::{Header, HeaderVersion, SystemDictVersion, UserDictVersion};
+use crate::dic::lexicon_set::LexiconSet;
 use crate::dic::word_id::WordId;
 use crate::error::SudachiResult;
+use crate::plugin::input_text::InputTextPlugin;
+use crate::plugin::oov::OovProviderPlugin;
+use crate::plugin::path_rewrite::PathRewritePlugin;
 
 pub(crate) mod conn;
 pub mod error;
@@ -68,40 +72,85 @@ impl<'a, const N: usize> AsDataSource<'a> for &'a [u8; N] {
     }
 }
 
-pub struct DictBuilder {
+enum NoDic {}
+
+impl DictionaryAccess for NoDic {
+    fn grammar(&self) -> &Grammar<'_> {
+        panic!("there is no grammar here")
+    }
+
+    fn lexicon(&self) -> &LexiconSet<'_> {
+        panic!("there is not lexicon here")
+    }
+
+    fn input_text_plugins(&self) -> &[Box<dyn InputTextPlugin + Sync + Send>] {
+        return &[];
+    }
+
+    fn oov_provider_plugins(&self) -> &[Box<dyn OovProviderPlugin + Sync + Send>] {
+        return &[];
+    }
+
+    fn path_rewrite_plugins(&self) -> &[Box<dyn PathRewritePlugin + Sync + Send>] {
+        return &[];
+    }
+}
+
+/// Builds a binary dictionary from csv lexicon and connection matrix (optional)
+pub struct DictBuilder<D> {
     user: bool,
     lexicon: lexicon::LexiconReader,
     conn: conn::ConnBuffer,
     ctx: DicCompilationCtx,
     header: Header,
     resolved: bool,
+    prebuilt: Option<Box<D>>,
 }
 
-impl DictBuilder {
-    pub fn new() -> Self {
-        DictBuilder {
+impl DictBuilder<NoDic> {
+    /// Creates a new builder for system dictionary
+    pub fn new_system() -> Self {
+        Self::new_empty()
+    }
+}
+
+impl<D: DictionaryAccess> DictBuilder<D> {
+    fn new_empty() -> Self {
+        Self {
             user: false,
             lexicon: lexicon::LexiconReader::new(),
             conn: conn::ConnBuffer::new(),
             ctx: DicCompilationCtx::default(),
             header: Header::new(),
             resolved: false,
+            prebuilt: None,
         }
     }
 
-    pub fn set_user(&mut self, user: bool) {
-        if user {
-            self.header.version = HeaderVersion::UserDict(UserDictVersion::Version3)
-        } else {
-            self.header.version = HeaderVersion::SystemDict(SystemDictVersion::Version2)
-        }
-        self.user = user;
+    /// Creates a new builder for user dictionary
+    pub fn new_user(system: D) -> Self {
+        let mut bldr = Self::new_empty();
+        bldr.set_user(true);
+        bldr.lexicon.preload_pos(system.grammar());
+        bldr.prebuilt = Some(Box::new(system));
+        bldr
     }
 
-    pub fn set_description(&mut self, description: String) {
-        self.header.description = description
+    /// Set the dictionary compile time to the specified time
+    /// instead of current time
+    pub fn set_compile_time<T: Into<std::time::SystemTime>>(
+        &mut self,
+        time: T,
+    ) -> std::time::SystemTime {
+        self.header.set_time(time.into())
     }
 
+    /// Set the dictionary description
+    pub fn set_description<T: Into<String>>(&mut self, description: T) {
+        self.header.description = description.into()
+    }
+
+    /// Read the csv lexicon from either a file or an in-memory buffer
     pub fn read_lexicon<'a, T: AsDataSource<'a> + 'a>(&mut self, data: T) -> SudachiResult<usize> {
         match data.convert() {
             DataSource::File(p) => self.lexicon.read_file(p),
@@ -109,6 +158,7 @@ impl DictBuilder {
         }
     }
 
+    /// Read the connection matrix from either a file or an in-memory buffer
     pub fn read_conn<'a, T: AsDataSource<'a> + 'a>(&mut self, data: T) -> SudachiResult<()> {
         match data.convert() {
             DataSource::File(p) => self.conn.read_file(p),
@@ -116,12 +166,32 @@ impl DictBuilder {
         }
     }
 
+    /// Compile the binary dictionary and write it to the specified sink
     pub fn compile<W: Write>(&mut self, w: &mut W) -> SudachiResult<()> {
         self.check_if_resolved()?;
         let mut written = self.header.write_to(w)?;
         written += self.write_grammar(w)?;
         self.write_lexicon(w, written)?;
         Ok(())
+    }
+
+    /// Resolve the dictionary references.
+    ///
+    /// Returns the number of resolved entries
+    pub fn resolve(&mut self) -> SudachiResult<usize> {
+        self.resolve_impl()
+    }
+}
+
+// private functions
+impl<D: DictionaryAccess> DictBuilder<D> {
+    fn set_user(&mut self, user: bool) {
+        if user {
+            self.header.version = HeaderVersion::UserDict(UserDictVersion::Version3)
+        } else {
+            self.header.version = HeaderVersion::SystemDict(SystemDictVersion::Version2)
+        }
+        self.user = user;
     }
 
     fn write_grammar<W: Write>(&mut self, w: &mut W) -> SudachiResult<usize> {
@@ -168,13 +238,13 @@ impl DictBuilder {
 
     fn check_if_resolved(&self) -> SudachiResult<()> {
         if self.lexicon.needs_split_resolution() && !self.resolved {
-            return self.ctx.err(DicWriteReason::UnresolvedSplits);
+            return self.ctx.err(BuildFailure::UnresolvedSplits);
         }
 
         Ok(())
     }
 
-    /// this function must only be used in resolve_splits
+    /// this function must only be used in resolve_impl
     fn unsafe_make_resolver<'a, 'b>(&'a self) -> RawDictResolver<'b> {
         let resolver = RawDictResolver::new(self.lexicon.entries(), self.user);
         // resolver borrows parts of entries, but it does not touch splits
@@ -182,11 +252,7 @@ impl DictBuilder {
         unsafe { std::mem::transmute(resolver) }
     }
 
-    pub fn resolve(&mut self) -> SudachiResult<usize> {
-        self.resolve_dict::<&JapaneseDictionary>(None)
-    }
-
-    pub fn resolve_dict<D: DictionaryAccess>(&mut self, system: Option<D>) -> SudachiResult<usize> {
+    fn resolve_impl(&mut self) -> SudachiResult<usize> {
         if !self.lexicon.needs_split_resolution() {
             self.resolved = true;
             return Ok(0);
@@ -194,7 +260,7 @@ impl DictBuilder {
 
         let this_resolver = self.unsafe_make_resolver();
 
-        let cnt = match system {
+        let cnt = match self.prebuilt.as_ref() {
             Some(d) => {
                 let built_resolver = BuiltDictResolver::new(d);
                 let chained = ChainedResolver::new(this_resolver, built_resolver);
@@ -207,10 +273,10 @@ impl DictBuilder {
                 self.resolved = true;
                 Ok(cnt)
             }
-            Err((split_info, line)) => Err(DicWriteError {
+            Err((split_info, line)) => Err(DicBuildError {
                 file: "<entries>".to_owned(),
                 line,
-                cause: DicWriteReason::InvalidSplitWordReference(split_info),
+                cause: BuildFailure::InvalidSplitWordReference(split_info),
             }
             .into()),
         }
