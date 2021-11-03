@@ -21,6 +21,7 @@ use crate::analysis::stateless_tokenizer::DictionaryAccess;
 use crate::dic::build::error::{BuildFailure, DicBuildError, DicCompilationCtx};
 use crate::dic::build::index::IndexBuilder;
 use crate::dic::build::lexicon::LexiconWriter;
+use crate::dic::build::report::{DictPartReport, ReportBuilder, Reporter};
 use crate::dic::build::resolve::{BuiltDictResolver, ChainedResolver, RawDictResolver};
 use crate::dic::grammar::Grammar;
 use crate::dic::header::{Header, HeaderVersion, SystemDictVersion, UserDictVersion};
@@ -37,6 +38,7 @@ pub(crate) mod index;
 pub(crate) mod lexicon;
 pub(crate) mod parse;
 pub(crate) mod primitives;
+pub mod report;
 mod resolve;
 #[cfg(test)]
 mod test;
@@ -52,11 +54,18 @@ pub enum DataSource<'a> {
 
 pub trait AsDataSource<'a> {
     fn convert(self) -> DataSource<'a>;
+    fn name(&self) -> String;
 }
 
 impl<'a> AsDataSource<'a> for &'a Path {
     fn convert(self) -> DataSource<'a> {
         DataSource::File(self)
+    }
+    fn name(&self) -> String {
+        self.as_os_str()
+            .to_str()
+            .map(|s| s.to_owned())
+            .unwrap_or_default()
     }
 }
 
@@ -64,11 +73,17 @@ impl<'a> AsDataSource<'a> for &'a [u8] {
     fn convert(self) -> DataSource<'a> {
         DataSource::Data(self)
     }
+    fn name(&self) -> String {
+        format!("memory ({} bytes)", self.len())
+    }
 }
 
 impl<'a, const N: usize> AsDataSource<'a> for &'a [u8; N] {
     fn convert(self) -> DataSource<'a> {
         DataSource::Data(&self[..])
+    }
+    fn name(&self) -> String {
+        format!("memory ({} bytes)", self.len())
     }
 }
 
@@ -105,6 +120,7 @@ pub struct DictBuilder<D> {
     header: Header,
     resolved: bool,
     prebuilt: Option<D>,
+    reporter: Reporter,
 }
 
 impl DictBuilder<NoDic> {
@@ -124,6 +140,7 @@ impl<D: DictionaryAccess> DictBuilder<D> {
             header: Header::new(),
             resolved: false,
             prebuilt: None,
+            reporter: Reporter::new(),
         }
     }
 
@@ -157,27 +174,36 @@ impl<D: DictionaryAccess> DictBuilder<D> {
 
     /// Read the csv lexicon from either a file or an in-memory buffer
     pub fn read_lexicon<'a, T: AsDataSource<'a> + 'a>(&mut self, data: T) -> SudachiResult<usize> {
-        match data.convert() {
+        let report = ReportBuilder::new(data.name()).read();
+        let result = match data.convert() {
             DataSource::File(p) => self.lexicon.read_file(p),
             DataSource::Data(d) => self.lexicon.read_bytes(d),
-        }
+        };
+        self.reporter.collect_r(result, report)
     }
 
     /// Read the connection matrix from either a file or an in-memory buffer
     pub fn read_conn<'a, T: AsDataSource<'a> + 'a>(&mut self, data: T) -> SudachiResult<()> {
+        let report = ReportBuilder::new(data.name()).read();
         match data.convert() {
             DataSource::File(p) => self.conn.read_file(p),
             DataSource::Data(d) => self.conn.read(d),
         }?;
         self.lexicon
             .set_max_conn_sizes(self.conn.left(), self.conn.right());
+        self.reporter.collect(
+            self.conn.left() as usize * self.conn.right() as usize,
+            report,
+        );
         Ok(())
     }
 
     /// Compile the binary dictionary and write it to the specified sink
     pub fn compile<W: Write>(&mut self, w: &mut W) -> SudachiResult<()> {
         self.check_if_resolved()?;
+        let report = ReportBuilder::new("validate").read();
         self.lexicon.validate_entries()?;
+        self.reporter.collect(self.lexicon.entries().len(), report);
         let mut written = self.header.write_to(w)?;
         written += self.write_grammar(w)?;
         self.write_lexicon(w, written)?;
@@ -189,6 +215,11 @@ impl<D: DictionaryAccess> DictBuilder<D> {
     /// Returns the number of resolved entries
     pub fn resolve(&mut self) -> SudachiResult<usize> {
         self.resolve_impl()
+    }
+
+    /// Return dictionary build report
+    pub fn report(&self) -> &[DictPartReport] {
+        self.reporter.reports()
     }
 }
 
@@ -205,8 +236,12 @@ impl<D: DictionaryAccess> DictBuilder<D> {
 
     fn write_grammar<W: Write>(&mut self, w: &mut W) -> SudachiResult<usize> {
         let mut size = 0;
+        let r1 = ReportBuilder::new("pos_table");
         size += self.lexicon.write_pos_table(w)?;
+        self.reporter.collect(size, r1);
+        let r2 = ReportBuilder::new("conn_matrix");
         size += self.conn.write_to(w)?;
+        self.reporter.collect(size, r2);
         Ok(size)
     }
 
@@ -220,6 +255,7 @@ impl<D: DictionaryAccess> DictBuilder<D> {
             }
         }
 
+        let report = ReportBuilder::new("trie");
         let word_id_table = index.build_word_id_table()?;
         let trie = index.build_trie()?;
 
@@ -229,18 +265,23 @@ impl<D: DictionaryAccess> DictBuilder<D> {
         w.write_all(&trie)?;
         size += trie.len();
         std::mem::drop(trie); //can be big, so drop explicitly
+        self.reporter.collect(size, report);
+        let cur_size = size;
 
+        let report = ReportBuilder::new("word_id table");
         w.write_all(&(word_id_table.len() as u32).to_le_bytes())?;
         size += 4;
         w.write_all(&word_id_table)?;
         size += word_id_table.len();
+        self.reporter.collect(size - cur_size, report);
 
         Ok(size)
     }
 
     fn write_lexicon<W: Write>(&mut self, w: &mut W, offset: usize) -> SudachiResult<usize> {
         let mut size = self.write_index(w)?;
-        let mut writer = LexiconWriter::new(self.lexicon.entries(), offset + size);
+        let mut writer =
+            LexiconWriter::new(self.lexicon.entries(), offset + size, &mut self.reporter);
         size += writer.write(w)?;
         Ok(size)
     }
@@ -268,6 +309,7 @@ impl<D: DictionaryAccess> DictBuilder<D> {
         }
 
         let this_resolver = self.unsafe_make_resolver();
+        let report = ReportBuilder::new("resolve");
 
         let cnt = match self.prebuilt.as_ref() {
             Some(d) => {
@@ -277,6 +319,7 @@ impl<D: DictionaryAccess> DictBuilder<D> {
             }
             None => self.lexicon.resolve_splits(&this_resolver),
         };
+        let cnt = self.reporter.collect_r(cnt, report);
         match cnt {
             Ok(cnt) => {
                 self.resolved = true;

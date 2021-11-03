@@ -20,8 +20,13 @@ use std::path::{Path, PathBuf};
 
 use structopt::StructOpt;
 use sudachi::config::Config;
+use sudachi::dic::build::report::DictPartReport;
 use sudachi::dic::build::DictBuilder;
 use sudachi::dic::dictionary::JapaneseDictionary;
+use sudachi::dic::grammar::Grammar;
+use sudachi::dic::lexicon_set::LexiconSet;
+use sudachi::dic::word_id::WordId;
+use sudachi::error::SudachiResult;
 
 pub fn is_build_mode() -> bool {
     let mut args = std::env::args_os();
@@ -29,7 +34,7 @@ pub fn is_build_mode() -> bool {
     let arg = args.next();
     match arg {
         Some(x) => {
-            if !(x == "build" || x == "ubuild") {
+            if !(x == "build" || x == "ubuild" || x == "dump") {
                 return false;
             }
 
@@ -53,7 +58,7 @@ enum BuildCli {
         common: BuildCmd,
 
         /// Path to matrix definition
-        #[structopt(parse(from_os_str))]
+        #[structopt(short, long, parse(from_os_str))]
         matrix: PathBuf,
     },
 
@@ -67,12 +72,18 @@ enum BuildCli {
         #[structopt(short = "s", long = "system")]
         dictionary: PathBuf,
     },
+
+    Dump {
+        dict: PathBuf,
+        part: String,
+        output: PathBuf,
+    },
 }
 
 #[derive(StructOpt)]
 struct BuildCmd {
     /// Input csv files
-    #[structopt(parse(from_os_str))]
+    #[structopt(required = true, parse(from_os_str))]
     inputs: Vec<PathBuf>,
 
     /// Output text file: If not present, use stdout
@@ -80,7 +91,7 @@ struct BuildCmd {
     output_file: PathBuf,
 
     /// Description string to embed into dictionary
-    #[structopt(short = "d", long = "description")]
+    #[structopt(short, long, default_value = "")]
     description: String,
 }
 
@@ -90,6 +101,7 @@ pub fn build_main() {
     match args {
         BuildCli::System { common, matrix } => build_system(common, matrix),
         BuildCli::User { common, dictionary } => build_user(common, dictionary),
+        BuildCli::Dump { dict, part, output } => dump_part(dict, part, output),
     }
 }
 
@@ -115,11 +127,12 @@ fn build_system(mut cmd: BuildCmd, matrix: PathBuf) {
         .compile(&mut buf_writer)
         .expect("failed to compile dictionary");
     buf_writer.flush().expect("failed to flush");
+    print_stats(builder.report());
 }
 
 fn build_user(mut cmd: BuildCmd, system: PathBuf) {
-    let mut cfg = Config::default();
-    cfg.system_dict = Some(system);
+    let cfg =
+        Config::new(None, None, Some(system)).expect("failed to create default configuration");
     let dict = JapaneseDictionary::from_cfg(&cfg).expect("failed to load system dictionary");
 
     let mut builder = DictBuilder::new_user(&dict);
@@ -140,4 +153,114 @@ fn build_user(mut cmd: BuildCmd, system: PathBuf) {
         .compile(&mut buf_writer)
         .expect("failed to compile dictionary");
     buf_writer.flush().expect("failed to flush");
+    print_stats(builder.report());
+}
+
+fn print_stats(report: &[DictPartReport]) {
+    let max_len = report.iter().map(|r| r.part().len()).max().unwrap_or(0);
+
+    for part in report {
+        let unit = if part.is_write() { "bytes" } else { "entries" };
+        eprintln!(
+            "{0:1$} {2} {3} in {4:.3} sec",
+            part.part(),
+            max_len,
+            part.size(),
+            unit,
+            part.time().as_secs_f32()
+        )
+    }
+}
+
+fn dump_part(dict: PathBuf, part: String, output: PathBuf) {
+    let cfg = Config::new(None, None, Some(dict)).unwrap();
+    let dict = JapaneseDictionary::from_cfg(&cfg).unwrap();
+
+    let outf = OpenOptions::new()
+        .write(true)
+        .create(true)
+        .open(&output)
+        .unwrap();
+    let mut writer = BufWriter::new(outf);
+
+    match part.as_str() {
+        "pos" => dump_pos(dict.grammar(), &mut writer),
+        "matrix" => dump_matrix(dict.grammar(), &mut writer),
+        "winfo" => dump_word_info(dict.lexicon(), &mut writer).unwrap(),
+        _ => unimplemented!(),
+    }
+    writer.flush().unwrap();
+}
+
+fn dump_pos<W: Write>(grammar: &Grammar, w: &mut W) {
+    for p in grammar.pos_list.iter() {
+        for (i, e) in p.iter().enumerate() {
+            w.write_all(e.as_bytes()).unwrap();
+            if (i + 1) == p.len() {
+                w.write_all(b"\n").unwrap();
+            } else {
+                w.write_all(b",").unwrap();
+            }
+        }
+    }
+}
+
+fn dump_matrix<W: Write>(grammar: &Grammar, w: &mut W) {
+    let conn = grammar.conn_matrix();
+    write!(w, "{} {}", conn.num_left(), conn.num_right()).unwrap();
+
+    for left in 0..conn.num_left() {
+        for right in 0..conn.num_right() {
+            let cost = conn.cost(left as _, right as _);
+            write!(w, "{} {} {}\n", left, right, cost).unwrap();
+        }
+    }
+}
+
+fn dump_word_info<W: Write>(lex: &LexiconSet, w: &mut W) -> SudachiResult<()> {
+    let size = lex.size();
+    for i in 0..size {
+        let wid = WordId::checked(0, i)?;
+        let (left, right, cost) = lex.get_word_param(wid)?;
+        let winfo = lex.get_word_info(wid)?;
+        write!(w, "{},{},{},", left, right, cost)?;
+        write!(w, "{},", winfo.surface)?;
+        write!(w, "{},", winfo.head_word_length)?;
+        write!(w, "{},", winfo.normalized_form)?;
+        write!(w, "{},", winfo.dictionary_form_word_id)?;
+        write!(w, "{},", winfo.reading_form)?;
+        dump_wids(w, &winfo.a_unit_split)?;
+        w.write_all(b",")?;
+        dump_wids(w, &winfo.b_unit_split)?;
+        w.write_all(b",")?;
+        dump_wids(w, &winfo.word_structure)?;
+        w.write_all(b",")?;
+        dump_gids(w, &winfo.synonym_group_ids)?;
+        w.write_all(b"\n")?;
+    }
+    Ok(())
+}
+
+fn dump_wids<W: Write>(w: &mut W, data: &[WordId]) -> SudachiResult<()> {
+    for (i, e) in data.iter().enumerate() {
+        let prefix = match e.dic() {
+            0 => "",
+            _ => "U",
+        };
+        write!(w, "{}{}", prefix, e.word())?;
+        if i + 1 != data.len() {
+            w.write_all(b"/")?;
+        }
+    }
+    Ok(())
+}
+
+fn dump_gids<W: Write>(w: &mut W, data: &[u32]) -> SudachiResult<()> {
+    for (i, e) in data.iter().enumerate() {
+        write!(w, "{}", e)?;
+        if i + 1 != data.len() {
+            w.write_all(b"/")?;
+        }
+    }
+    Ok(())
 }

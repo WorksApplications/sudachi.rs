@@ -63,6 +63,7 @@ pub(crate) fn parse_mode(data: &str) -> DicWriteResult<Mode> {
         "a" | "A" => Ok(Mode::A),
         "b" | "B" => Ok(Mode::B),
         "c" | "C" | "*" => Ok(Mode::C),
+        "BC" => Ok(Mode::B),
         _ => Err(BuildFailure::InvalidSplit(data.to_owned())),
     }
 }

@@ -32,6 +32,7 @@ use crate::dic::build::parse::{
     parse_u32_list, parse_wordid, parse_wordid_list, unescape, unescape_cow, WORD_ID_LITERAL,
 };
 use crate::dic::build::primitives::{write_u32_array, Utf16Writer};
+use crate::dic::build::report::{ReportBuilder, Reporter};
 use crate::dic::build::MAX_POS_IDS;
 use crate::dic::grammar::Grammar;
 use crate::dic::word_id::WordId;
@@ -617,15 +618,21 @@ pub struct LexiconWriter<'a> {
     u16: Utf16Writer,
     buffer: Vec<u8>,
     offset: usize,
+    reporter: &'a mut Reporter,
 }
 
 impl<'a> LexiconWriter<'a> {
-    pub(crate) fn new(entries: &'a [RawLexiconEntry], offset: usize) -> Self {
+    pub(crate) fn new(
+        entries: &'a [RawLexiconEntry],
+        offset: usize,
+        reporter: &'a mut Reporter,
+    ) -> Self {
         Self {
             buffer: Vec::with_capacity(entries.len() * 32),
             entries,
             u16: Utf16Writer::new(),
             offset,
+            reporter,
         }
     }
 
@@ -637,12 +644,16 @@ impl<'a> LexiconWriter<'a> {
         let num_entries = self.entries.len() as u32;
         w.write_all(&num_entries.to_le_bytes())?;
 
+        let rep = ReportBuilder::new("word_params");
         ctx.set_line(0);
         for e in self.entries {
             total += ctx.transform(e.write_params(w))?;
             ctx.add_line(1);
         }
+        self.reporter.collect(total, rep);
+        let start = total;
 
+        let rep = ReportBuilder::new("wordinfo_offsets");
         ctx.set_line(0);
         let offset_base = self.offset + (6 + 4) * self.entries.len() + 4;
         let mut word_offset = 0;
@@ -654,9 +665,12 @@ impl<'a> LexiconWriter<'a> {
             total += 4;
             ctx.add_line(1);
         }
+        self.reporter.collect(total - start, rep);
 
+        let rep = ReportBuilder::new("wordinfos (copy only)");
         let info_size = self.buffer.len();
         w.write_all(&self.buffer)?;
+        self.reporter.collect(info_size, rep);
 
         Ok(total + info_size)
     }
