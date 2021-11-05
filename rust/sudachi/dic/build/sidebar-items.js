@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["DataSource",""],["NoDic",""]],"mod":[["error",""],["report",""]],"struct":[["DictBuilder","Builds a binary dictionary from csv lexicon and connection matrix (optional)"]],"trait":[["AsDataSource",""]]});
