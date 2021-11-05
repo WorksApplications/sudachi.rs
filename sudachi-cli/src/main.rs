@@ -38,6 +38,8 @@ use sudachi::sentence_splitter::{SentenceSplitter, SplitSentences};
 const BAKED_DICTIONARY_BYTES: &[u8] = include_bytes!(env!("SUDACHI_DICT_PATH"));
 
 /// A Japanese tokenizer
+///
+/// If you are looking for options for the dictionary building, try sudachi build/ubuild --help.
 #[derive(StructOpt)]
 #[structopt(name = "sudachi")]
 struct Cli {

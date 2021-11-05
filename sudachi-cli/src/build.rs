@@ -14,11 +14,13 @@
  *  limitations under the License.
  */
 
-use std::fs::OpenOptions;
+use memmap2::Mmap;
+use std::fs::{File, OpenOptions};
 use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
 
 use structopt::StructOpt;
+use sudachi::analysis::stateless_tokenizer::DictionaryAccess;
 use sudachi::config::Config;
 use sudachi::dic::build::report::DictPartReport;
 use sudachi::dic::build::DictBuilder;
@@ -26,8 +28,12 @@ use sudachi::dic::dictionary::JapaneseDictionary;
 use sudachi::dic::grammar::Grammar;
 use sudachi::dic::lexicon_set::LexiconSet;
 use sudachi::dic::word_id::WordId;
+use sudachi::dic::DictionaryLoader;
 use sudachi::error::SudachiResult;
 
+/// Check that the first argument is a subcommand and the file with the same name does
+/// not exists.
+/// If the file does exists, probably it's safer to use default Sudachi analysis mode.
 pub fn is_build_mode() -> bool {
     let mut args = std::env::args_os();
     let _ = args.next();
@@ -86,7 +92,8 @@ struct BuildCmd {
     #[structopt(required = true, parse(from_os_str))]
     inputs: Vec<PathBuf>,
 
-    /// Output text file: If not present, use stdout
+    /// Where to place compiled dictionary.
+    /// If there was an existing one it will be overwritten.
     #[structopt(short = "o", long = "output", parse(from_os_str))]
     output_file: PathBuf,
 
@@ -117,11 +124,7 @@ fn build_system(mut cmd: BuildCmd, matrix: PathBuf) {
             .unwrap_or_else(|e| panic!("failed to read {:?}\n{:?}", d, e));
     }
     builder.resolve().expect("failed to resolve references");
-    let file = OpenOptions::new()
-        .write(true)
-        .create(true)
-        .open(&cmd.output_file)
-        .unwrap_or_else(|e| panic!("failed to open {:?} for writing\n{:?}", cmd.output_file, e));
+    let file = output_file(&cmd.output_file);
     let mut buf_writer = BufWriter::with_capacity(16 * 1024, file);
     builder
         .compile(&mut buf_writer)
@@ -143,11 +146,7 @@ fn build_user(mut cmd: BuildCmd, system: PathBuf) {
             .unwrap_or_else(|e| panic!("failed to read {:?}\n{:?}", d, e));
     }
     builder.resolve().expect("failed to resolve references");
-    let file = OpenOptions::new()
-        .write(true)
-        .create(true)
-        .open(&cmd.output_file)
-        .unwrap_or_else(|e| panic!("failed to open {:?} for writing\n{:?}", cmd.output_file, e));
+    let file = output_file(&cmd.output_file);
     let mut buf_writer = BufWriter::with_capacity(16 * 1024, file);
     builder
         .compile(&mut buf_writer)
@@ -172,15 +171,26 @@ fn print_stats(report: &[DictPartReport]) {
     }
 }
 
-fn dump_part(dict: PathBuf, part: String, output: PathBuf) {
-    let cfg = Config::new(None, None, Some(dict)).unwrap();
-    let dict = JapaneseDictionary::from_cfg(&cfg).unwrap();
+fn output_file(p: &Path) -> File {
+    if p.exists() {
+        std::fs::remove_file(p).unwrap_or_else(|e| panic!("failed to delete {:?}\n{:?}", p, e));
+    }
 
-    let outf = OpenOptions::new()
+    OpenOptions::new()
         .write(true)
-        .create(true)
-        .open(&output)
-        .unwrap();
+        .create_new(true)
+        .open(&p)
+        .unwrap_or_else(|e| panic!("failed to open {:?} for writing:\n{:?}", p, e))
+}
+
+fn dump_part(dict: PathBuf, part: String, output: PathBuf) {
+    let file = File::open(&dict).expect("open failed");
+    let data = unsafe { Mmap::map(&file) }.expect("mmap failed");
+    let loader =
+        unsafe { DictionaryLoader::read_any_dictionary(&data) }.expect("failed to load dictionary");
+    let dict = loader.to_loaded().expect("should contain grammar");
+
+    let outf = output_file(&output);
     let mut writer = BufWriter::new(outf);
 
     match part.as_str() {
