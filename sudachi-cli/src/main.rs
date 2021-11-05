@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+mod build;
 mod output;
 
 use std::fs::File;
@@ -23,6 +24,7 @@ use std::process;
 
 use structopt::StructOpt;
 
+use crate::build::{build_main, is_build_mode};
 use crate::output::SudachiOutput;
 use sudachi::analysis::stateful_tokenizer::StatefulTokenizer;
 use sudachi::analysis::stateless_tokenizer::DictionaryAccess;
@@ -36,6 +38,8 @@ use sudachi::sentence_splitter::{SentenceSplitter, SplitSentences};
 const BAKED_DICTIONARY_BYTES: &[u8] = include_bytes!(env!("SUDACHI_DICT_PATH"));
 
 /// A Japanese tokenizer
+///
+/// If you are looking for options for the dictionary building, try sudachi build/ubuild --help.
 #[derive(StructOpt)]
 #[structopt(name = "sudachi")]
 struct Cli {
@@ -82,6 +86,11 @@ struct Cli {
 }
 
 fn main() {
+    if is_build_mode() {
+        build_main();
+        return;
+    }
+
     let args: Cli = Cli::from_args();
 
     let mode = match args.mode.as_str().parse() {

@@ -104,6 +104,6 @@ mod tests {
     }
 
     fn build_mock_grammar(bytes: &[u8]) -> Grammar {
-        Grammar::new(bytes, 0).expect("Failed to create grammar")
+        Grammar::parse(bytes, 0).expect("Failed to create grammar")
     }
 }

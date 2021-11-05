@@ -31,6 +31,7 @@ pub mod input_text;
 pub mod plugin;
 pub mod sentence_detector;
 pub mod sentence_splitter;
+pub(crate) mod util;
 
 mod hash;
 #[cfg(test)]

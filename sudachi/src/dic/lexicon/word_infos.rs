@@ -14,17 +14,18 @@
  * limitations under the License.
  */
 
+use std::iter::FusedIterator;
+
 use nom::{
     bytes::complete::take,
     number::complete::{le_i32, le_u16, le_u32},
 };
-use std::iter::FusedIterator;
 
 use crate::dic::lexicon_set::LexiconSet;
-use crate::dic::word_id::WordId;
-use crate::dic::{
+use crate::dic::read::{
     string_length_parser, u32_array_parser, u32_wid_array_parser, utf16_string_parser,
 };
+use crate::dic::word_id::WordId;
 use crate::error::SudachiNomResult;
 use crate::prelude::*;
 
@@ -72,7 +73,7 @@ fn u32_parser(input: &[u8]) -> SudachiNomResult<&[u8], u32> {
     le_u32(input)
 }
 
-fn word_info_parser(
+pub(crate) fn word_info_parser(
     input: &[u8],
     offset: usize,
     has_synonym_group_ids: bool,

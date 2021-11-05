@@ -68,7 +68,7 @@ impl LexiconEntry {
 impl<'a> Lexicon<'a> {
     const USER_DICT_COST_PER_MORPH: i32 = -20;
 
-    pub fn new(
+    pub fn parse(
         buf: &[u8],
         original_offset: usize,
         has_synonym_group_ids: bool,
@@ -123,7 +123,7 @@ impl<'a> Lexicon<'a> {
             .common_prefix_iterator(input, offset)
             .flat_map(move |e| {
                 self.word_id_table
-                    .entries(e.word_id as usize)
+                    .entries(e.value as usize)
                     .map(move |wid| LexiconEntry::new(self.word_id(wid), e.end))
             })
     }

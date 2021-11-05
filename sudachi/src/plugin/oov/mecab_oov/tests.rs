@@ -538,7 +538,7 @@ fn build_mock_bytes() -> Vec<u8> {
 }
 
 fn build_mock_grammar(bytes: &[u8]) -> Grammar {
-    let mut grammar = Grammar::new(bytes, 0).expect("Failed to create grammar");
+    let mut grammar = Grammar::parse(bytes, 0).expect("Failed to create grammar");
     grammar.set_character_category(char_cats());
     grammar
 }
