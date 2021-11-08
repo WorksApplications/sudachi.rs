@@ -14,6 +14,8 @@
  *  limitations under the License.
  */
 
+mod with_analysis;
+
 use crate::analysis::stateless_tokenizer::DictionaryAccess;
 use crate::dic::build::error::{BuildFailure, DicBuildError};
 use crate::dic::build::DictBuilder;

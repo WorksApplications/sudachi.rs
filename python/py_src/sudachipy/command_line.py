@@ -17,9 +17,11 @@ import fileinput
 import logging
 import os
 import sys
+from pathlib import Path
 
 from . import __version__
 from . import Dictionary, SplitMode
+from . import sudachipy
 
 
 def _set_default_subparser(self, name, args=None):
@@ -122,13 +124,73 @@ def _command_tokenize(args, print_usage):
 
 
 def _command_build(args, print_usage):
-    raise NotImplementedError(
-        "Build dictionary feature is not yet implemented. Please use sudachipy<0.6.")
+    matrix = Path(args.matrix_file)
+    if not matrix.exists():
+        print("Matrix file", matrix, "does not exist", file=sys.stderr)
+        return print_usage()
+
+    in_files = []
+    for file in args.in_files:
+        file = Path(file)
+        if not file.exists():
+            print("Input file", file, "does not exists", file=sys.stderr)
+            return print_usage()
+        in_files.append(file)
+
+    out_file = Path(args.out_file)
+    if out_file.exists():
+        print("File", out_file, "already exists, refusing to overwrite it", file=sys.stderr)
+        return
+
+    description = args.description or ""
+    if len(description.encode("utf-8")) > 255:
+        print("Description is longer than 255 bytes in utf-8, it will be truncated")
+        return
+
+    stats = sudachipy.build_system_dic(
+        matrix=matrix,
+        lex=in_files,
+        output=out_file,
+        description=description,
+    )
+
+    for (name, size, time) in stats:
+        print("{} -> {} in {:.2F} sec".format(name, size, time))
 
 
 def _command_user_build(args, print_usage):
-    raise NotImplementedError(
-        "Build dictionary feature is not yet implemented. Please use sudachipy<0.6.")
+    system = Path(args.system_dic)
+    if not system.exists():
+        print("System dictionary file", system, "does not exist", file=sys.stderr)
+        return print_usage()
+
+    in_files = []
+    for file in args.in_files:
+        file = Path(file)
+        if not file.exists():
+            print("Input file", file, "does not exists", file=sys.stderr)
+            return print_usage()
+        in_files.append(file)
+
+    out_file = Path(args.out_file)
+    if out_file.exists():
+        print("File", out_file, "already exists, refusing to overwrite it", file=sys.stderr)
+        return
+
+    description = args.description or ""
+    if len(description.encode("utf-8")) > 255:
+        print("Description is longer than 255 bytes in utf-8, it will be truncated")
+        return
+
+    stats = sudachipy.build_user_dic(
+        system=system,
+        lex=in_files,
+        output=out_file,
+        description=description,
+    )
+
+    for (name, size, time) in stats:
+        print("{} -> {} in {:.2F} sec".format(name, size, time))
 
 
 def print_version():

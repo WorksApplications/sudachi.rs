@@ -15,5 +15,5 @@ __pycache__/
 .env
 *.egg-info
 *.so
-python/py_src/sudachi/*.pyd
+python/py_src/sudachipy/*.pyd
 python/build/

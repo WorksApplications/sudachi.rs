@@ -57,15 +57,25 @@ pub trait AsDataSource<'a> {
     fn name(&self) -> String;
 }
 
+impl<'a> AsDataSource<'a> for DataSource<'a> {
+    fn convert(self) -> DataSource<'a> {
+        self
+    }
+
+    fn name(&self) -> String {
+        match self {
+            DataSource::File(p) => p.to_str().map(|s| s.to_owned()).unwrap_or_default(),
+            DataSource::Data(d) => format!("memory ({} bytes)", d.len()),
+        }
+    }
+}
+
 impl<'a> AsDataSource<'a> for &'a Path {
     fn convert(self) -> DataSource<'a> {
         DataSource::File(self)
     }
     fn name(&self) -> String {
-        self.as_os_str()
-            .to_str()
-            .map(|s| s.to_owned())
-            .unwrap_or_default()
+        self.to_str().map(|s| s.to_owned()).unwrap_or_default()
     }
 }
 

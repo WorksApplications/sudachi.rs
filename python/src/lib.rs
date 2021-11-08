@@ -16,6 +16,7 @@
 
 use pyo3::prelude::*;
 
+mod build;
 mod dictionary;
 mod morpheme;
 mod tokenizer;
@@ -30,5 +31,6 @@ fn sudachipy(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<morpheme::PyMorphemeListWrapper>()?;
     m.add_class::<morpheme::PyMorpheme>()?;
     m.add_class::<word_info::PyWordInfo>()?;
+    build::register_functions(m)?;
     Ok(())
 }

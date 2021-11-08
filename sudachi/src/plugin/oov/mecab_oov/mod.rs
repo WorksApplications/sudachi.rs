@@ -142,6 +142,29 @@ impl MeCabOovPlugin {
                     SudachiError::InvalidPartOfSpeech(format!("{:?}", &cols[4..10])),
                 )?,
             };
+
+            if oov.left_id as usize > grammar.conn_matrix().num_left() {
+                return Err(SudachiError::InvalidDataFormat(
+                    0,
+                    format!(
+                        "max grammar left_id is {}, was {}",
+                        grammar.conn_matrix().num_left(),
+                        oov.left_id
+                    ),
+                ));
+            }
+
+            if oov.right_id as usize > grammar.conn_matrix().num_right() {
+                return Err(SudachiError::InvalidDataFormat(
+                    0,
+                    format!(
+                        "max grammar right_id is {}, was {}",
+                        grammar.conn_matrix().num_right(),
+                        oov.right_id
+                    ),
+                ));
+            }
+
             match oov_list.get_mut(&category_type) {
                 None => {
                     oov_list.insert(category_type, vec![oov]);

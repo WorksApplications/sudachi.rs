@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use pyo3::exceptions::PyException;
@@ -41,6 +41,7 @@ impl PyDictionary {
     ///
     /// If both config.systemDict and dict_type are not given, `sudachidict_core` is used.
     /// If both config.systemDict and dict_type are given, dict_type is used.
+    /// If dict_type is an absolute path to a file, it is used as a dictionary
     #[new]
     #[args(config_path = "None", resource_dir = "None", dict_type = "None")]
     fn new(
@@ -59,7 +60,14 @@ impl PyDictionary {
         };
         let dict_path = match dict_type {
             None => None,
-            Some(dt) => Some(find_dict_path(py, dt)?),
+            Some(dt) => {
+                let path = Path::new(dt);
+                if path.is_absolute() && path.exists() {
+                    Some(path.to_path_buf())
+                } else {
+                    Some(find_dict_path(py, dt)?)
+                }
+            }
         };
 
         let mut config = Config::new(config_path, resource_dir, dict_path).map_err(|e| {
