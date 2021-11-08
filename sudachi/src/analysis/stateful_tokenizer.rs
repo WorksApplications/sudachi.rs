@@ -118,7 +118,7 @@ impl<D: DictionaryAccess> StatefulTokenizer<D> {
 
         if debug {
             println!("=== Before Rewriting:");
-            dump_path(self.top_path.as_ref().unwrap());
+            dump_path(&path);
         };
 
         for plugin in self.dictionary.path_rewrite_plugins() {
@@ -129,13 +129,13 @@ impl<D: DictionaryAccess> StatefulTokenizer<D> {
 
         self.translate_indices(&mut path);
 
-        self.top_path = Some(path);
-
         if debug {
             println!("=== After Rewriting:");
-            dump_path(self.top_path.as_ref().unwrap());
+            dump_path(&path);
             println!("===");
         };
+
+        self.top_path = Some(path);
 
         Ok(())
     }

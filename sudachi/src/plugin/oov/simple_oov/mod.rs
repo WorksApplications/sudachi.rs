@@ -64,6 +64,26 @@ impl OovProviderPlugin for SimpleOovPlugin {
         self.right_id = settings.rightId as u16;
         self.cost = cost;
 
+        if self.left_id as usize > grammar.conn_matrix().num_left() {
+            return Err(SudachiError::InvalidDataFormat(
+                self.left_id as usize,
+                format!(
+                    "max grammar left_id is {}",
+                    grammar.conn_matrix().num_left()
+                ),
+            ));
+        }
+
+        if self.right_id as usize > grammar.conn_matrix().num_right() {
+            return Err(SudachiError::InvalidDataFormat(
+                self.right_id as usize,
+                format!(
+                    "max grammar left_id is {}",
+                    grammar.conn_matrix().num_right()
+                ),
+            ));
+        }
+
         Ok(())
     }
 

@@ -531,9 +531,16 @@ fn build_mock_bytes() -> Vec<u8> {
             buf.extend(&(c).to_le_bytes());
         }
     }
-    // set 0 for left and right id size
-    buf.extend(&(0 as i16).to_le_bytes());
-    buf.extend(&(0 as i16).to_le_bytes());
+    // set 10 for left and right id sizes
+    buf.extend(&(10 as i16).to_le_bytes());
+    buf.extend(&(10 as i16).to_le_bytes());
+    for i in 0..10 {
+        for j in 0..10 {
+            let val = i * 100 + j;
+            buf.extend(&(val as i16).to_le_bytes());
+        }
+    }
+
     buf
 }
 

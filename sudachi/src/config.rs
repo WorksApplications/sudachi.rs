@@ -134,6 +134,24 @@ impl Config {
         })
     }
 
+    /// Return minimal config with a system dictionary
+    pub fn min_system(system: PathBuf) -> Config {
+        let mut cfg = Config::default();
+        cfg.system_dict = Some(system);
+        let src_root_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let default_resource_dir_path = src_root_path.join("..").join(DEFAULT_RESOURCE_DIR);
+        cfg.character_definition_file = default_resource_dir_path.join(DEFAULT_CHAR_DEF_FILE);
+        cfg.resource_dir = default_resource_dir_path;
+        cfg.oov_provider_plugins = vec![serde_json::json!(
+            { "class" : "com.worksap.nlp.sudachi.SimpleOovPlugin",
+              "oovPOS" : [ "名詞", "普通名詞", "一般", "*", "*", "*" ],
+              "leftId" : 0,
+              "rightId" : 0,
+              "cost" : 30000 }
+        )];
+        cfg
+    }
+
     /// Resolve variables in path.
     /// Starting $exe is replaced with a directory of the current executable
     /// Starting $cfg is replaced with the resource directory
@@ -201,9 +219,10 @@ lazy_static! {
 
 #[cfg(test)]
 mod tests {
-    use super::CURRENT_EXE_DIR;
     use crate::config::Config;
     use crate::prelude::SudachiResult;
+
+    use super::CURRENT_EXE_DIR;
 
     #[test]
     fn resolve_exe() -> SudachiResult<()> {
