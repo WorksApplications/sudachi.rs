@@ -133,21 +133,19 @@ impl<'a> Lexicon<'a> {
         self.word_infos.get_word_info(word_id)
     }
 
-    /// Returns word_param for given word_id
-    pub fn get_word_param(&self, word_id: u32) -> SudachiResult<(i16, i16, i16)> {
-        let left_id = self.word_params.get_left_id(word_id)?;
-        let right_id = self.word_params.get_right_id(word_id)?;
-        let cost = self.word_params.get_cost(word_id)?;
-
-        Ok((left_id, right_id, cost))
+    /// Returns word_param for given word_id.
+    /// Params are (left_id, right_id, cost).
+    #[inline]
+    pub fn get_word_param(&self, word_id: u32) -> (i16, i16, i16) {
+        self.word_params.get_params(word_id)
     }
 
     /// update word_param cost based on current tokenizer
     pub fn update_cost<D: DictionaryAccess>(&mut self, dict: &D) -> SudachiResult<()> {
         let mut tok = StatefulTokenizer::create(dict, false, Mode::C);
         let mut ms = MorphemeList::empty(dict);
-        for wid in 0..self.word_params.size() as u32 {
-            if self.word_params.get_cost(wid)? != i16::MIN {
+        for wid in 0..self.word_params.size() {
+            if self.word_params.get_cost(wid) != i16::MIN {
                 continue;
             }
             let surface = self.get_word_info(wid)?.surface;

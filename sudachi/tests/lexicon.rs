@@ -42,22 +42,13 @@ fn lookup() {
 #[test]
 fn parameters() {
     // た
-    assert_eq!(
-        (1, 1, 8729),
-        LEXICON.get_word_param(0).expect("failed to get word param")
-    );
+    assert_eq!((1, 1, 8729), LEXICON.get_word_param(0));
 
     // 東京都
-    assert_eq!(
-        (6, 8, 5320),
-        LEXICON.get_word_param(6).expect("failed to get word param")
-    );
+    assert_eq!((6, 8, 5320), LEXICON.get_word_param(6));
 
     // 都
-    assert_eq!(
-        (8, 8, 2914),
-        LEXICON.get_word_param(9).expect("failed to get word param")
-    );
+    assert_eq!((8, 8, 2914), LEXICON.get_word_param(9));
 }
 
 #[test]
