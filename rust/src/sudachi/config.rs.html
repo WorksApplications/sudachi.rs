@@ -223,6 +223,25 @@
 <span id="223">223</span>
 <span id="224">224</span>
 <span id="225">225</span>
+<span id="226">226</span>
+<span id="227">227</span>
+<span id="228">228</span>
+<span id="229">229</span>
+<span id="230">230</span>
+<span id="231">231</span>
+<span id="232">232</span>
+<span id="233">233</span>
+<span id="234">234</span>
+<span id="235">235</span>
+<span id="236">236</span>
+<span id="237">237</span>
+<span id="238">238</span>
+<span id="239">239</span>
+<span id="240">240</span>
+<span id="241">241</span>
+<span id="242">242</span>
+<span id="243">243</span>
+<span id="244">244</span>
 </pre><pre class="rust"><code><span class="comment">/*
  * Copyright (c) 2021 Works Applications Co., Ltd.
  *
@@ -359,6 +378,24 @@
         })
     }
 
+    <span class="doccomment">/// Return minimal config with a system dictionary</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">min_system</span>(<span class="ident">system</span>: <span class="ident">PathBuf</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Config</span> {
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">cfg</span> <span class="op">=</span> <span class="ident">Config::default</span>();
+        <span class="ident">cfg</span>.<span class="ident">system_dict</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="ident">system</span>);
+        <span class="kw">let</span> <span class="ident">src_root_path</span> <span class="op">=</span> <span class="ident">PathBuf::from</span>(<span class="macro">env!</span>(<span class="string">&quot;CARGO_MANIFEST_DIR&quot;</span>));
+        <span class="kw">let</span> <span class="ident">default_resource_dir_path</span> <span class="op">=</span> <span class="ident">src_root_path</span>.<span class="ident">join</span>(<span class="string">&quot;..&quot;</span>).<span class="ident">join</span>(<span class="ident">DEFAULT_RESOURCE_DIR</span>);
+        <span class="ident">cfg</span>.<span class="ident">character_definition_file</span> <span class="op">=</span> <span class="ident">default_resource_dir_path</span>.<span class="ident">join</span>(<span class="ident">DEFAULT_CHAR_DEF_FILE</span>);
+        <span class="ident">cfg</span>.<span class="ident">resource_dir</span> <span class="op">=</span> <span class="ident">default_resource_dir_path</span>;
+        <span class="ident">cfg</span>.<span class="ident">oov_provider_plugins</span> <span class="op">=</span> <span class="macro">vec!</span>[<span class="macro">serde_json::json!</span>(
+            { <span class="string">&quot;class&quot;</span> : <span class="string">&quot;com.worksap.nlp.sudachi.SimpleOovPlugin&quot;</span>,
+              <span class="string">&quot;oovPOS&quot;</span> : [ <span class="string">&quot;名詞&quot;</span>, <span class="string">&quot;普通名詞&quot;</span>, <span class="string">&quot;一般&quot;</span>, <span class="string">&quot;*&quot;</span>, <span class="string">&quot;*&quot;</span>, <span class="string">&quot;*&quot;</span> ],
+              <span class="string">&quot;leftId&quot;</span> : <span class="number">0</span>,
+              <span class="string">&quot;rightId&quot;</span> : <span class="number">0</span>,
+              <span class="string">&quot;cost&quot;</span> : <span class="number">30000</span> }
+        )];
+        <span class="ident">cfg</span>
+    }
+
     <span class="doccomment">/// Resolve variables in path.</span>
     <span class="doccomment">/// Starting $exe is replaced with a directory of the current executable</span>
     <span class="doccomment">/// Starting $cfg is replaced with the resource directory</span>
@@ -426,9 +463,10 @@
 
 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">test</span>)]</span>
 <span class="kw">mod</span> <span class="ident">tests</span> {
-    <span class="kw">use</span> <span class="ident"><span class="kw">super</span>::CURRENT_EXE_DIR</span>;
     <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::config::Config</span>;
     <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::prelude::SudachiResult</span>;
+
+    <span class="kw">use</span> <span class="ident"><span class="kw">super</span>::CURRENT_EXE_DIR</span>;
 
     <span class="attribute">#[<span class="ident">test</span>]</span>
     <span class="kw">fn</span> <span class="ident">resolve_exe</span>() <span class="op">-</span><span class="op">&gt;</span> <span class="ident">SudachiResult</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {

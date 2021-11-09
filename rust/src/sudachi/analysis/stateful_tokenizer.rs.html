@@ -399,7 +399,7 @@
 
         <span class="kw">if</span> <span class="ident">debug</span> {
             <span class="macro">println!</span>(<span class="string">&quot;=== Before Rewriting:&quot;</span>);
-            <span class="ident">dump_path</span>(<span class="self">self</span>.<span class="ident">top_path</span>.<span class="ident">as_ref</span>().<span class="ident">unwrap</span>());
+            <span class="ident">dump_path</span>(<span class="kw-2">&amp;</span><span class="ident">path</span>);
         };
 
         <span class="kw">for</span> <span class="ident">plugin</span> <span class="kw">in</span> <span class="self">self</span>.<span class="ident">dictionary</span>.<span class="ident">path_rewrite_plugins</span>() {
@@ -410,13 +410,13 @@
 
         <span class="self">self</span>.<span class="ident">translate_indices</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">path</span>);
 
-        <span class="self">self</span>.<span class="ident">top_path</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="ident">path</span>);
-
         <span class="kw">if</span> <span class="ident">debug</span> {
             <span class="macro">println!</span>(<span class="string">&quot;=== After Rewriting:&quot;</span>);
-            <span class="ident">dump_path</span>(<span class="self">self</span>.<span class="ident">top_path</span>.<span class="ident">as_ref</span>().<span class="ident">unwrap</span>());
+            <span class="ident">dump_path</span>(<span class="kw-2">&amp;</span><span class="ident">path</span>);
             <span class="macro">println!</span>(<span class="string">&quot;===&quot;</span>);
         };
+
+        <span class="self">self</span>.<span class="ident">top_path</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="ident">path</span>);
 
         <span class="prelude-val">Ok</span>(())
     }
