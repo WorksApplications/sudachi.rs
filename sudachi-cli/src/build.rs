@@ -231,7 +231,7 @@ fn dump_word_info<W: Write>(lex: &LexiconSet, w: &mut W) -> SudachiResult<()> {
     let size = lex.size();
     for i in 0..size {
         let wid = WordId::checked(0, i)?;
-        let (left, right, cost) = lex.get_word_param(wid)?;
+        let (left, right, cost) = lex.get_word_param(wid);
         let winfo = lex.get_word_info(wid)?;
         write!(w, "{},{},{},", left, right, cost)?;
         write!(w, "{},", winfo.surface)?;

@@ -114,7 +114,7 @@ impl LexiconSet<'_> {
     }
 
     /// Returns word_param for given word_id
-    pub fn get_word_param(&self, id: WordId) -> SudachiResult<(i16, i16, i16)> {
+    pub fn get_word_param(&self, id: WordId) -> (i16, i16, i16) {
         let dic_id = id.dic() as usize;
         self.lexicons[dic_id].get_word_param(id.word())
     }

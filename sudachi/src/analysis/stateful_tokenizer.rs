@@ -224,7 +224,7 @@ impl<D: DictionaryAccess> StatefulTokenizer<D> {
                     continue;
                 }
                 has_word = true;
-                let (left_id, right_id, cost) = dict.lexicon().get_word_param(e.word_id)?;
+                let (left_id, right_id, cost) = dict.lexicon().get_word_param(e.word_id);
                 let end_c = input.ch_idx(e.end);
                 let node = Node::new(
                     ch_off as u16,

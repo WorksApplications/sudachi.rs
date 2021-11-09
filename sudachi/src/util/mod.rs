@@ -14,4 +14,5 @@
  *  limitations under the License.
  */
 
+pub mod cow_array;
 pub mod fxhash;

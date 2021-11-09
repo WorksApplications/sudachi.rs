@@ -14,29 +14,22 @@
  * limitations under the License.
  */
 
-use nom::{bytes::complete::take, number::complete::le_i16};
-use std::collections::HashMap;
-
-use crate::error::SudachiNomResult;
-use crate::hash::RoMu;
-use crate::prelude::*;
+use crate::util::cow_array::CowArray;
 
 pub struct WordParams<'a> {
-    bytes: &'a [u8],
+    data: CowArray<'a, i16>,
     size: u32,
-    offset: usize,
-    cost_map: HashMap<u32, i16, RoMu>,
 }
 
 impl<'a> WordParams<'a> {
-    const ELEMENT_SIZE: usize = 2 * 3;
+    const PARAM_SIZE: usize = 3;
+    const ELEMENT_SIZE: usize = 2 * Self::PARAM_SIZE;
 
     pub fn new(bytes: &'a [u8], size: u32, offset: usize) -> WordParams {
-        WordParams {
-            bytes,
+        let n_entries = size as usize * Self::PARAM_SIZE;
+        Self {
+            data: CowArray::from_bytes(bytes, offset, n_entries),
             size,
-            offset,
-            cost_map: HashMap::with_hasher(RoMu::new()),
         }
     }
 
@@ -48,39 +41,21 @@ impl<'a> WordParams<'a> {
         self.size
     }
 
-    pub fn get_left_id(&self, word_id: u32) -> SudachiResult<i16> {
-        let (_rest, num) = i16_parser(
-            self.bytes,
-            self.offset + WordParams::ELEMENT_SIZE * word_id as usize,
-        )?;
-        Ok(num)
+    #[inline]
+    pub fn get_params(&self, word_id: u32) -> (i16, i16, i16) {
+        let begin = word_id as usize * Self::PARAM_SIZE;
+        let end = begin + Self::PARAM_SIZE;
+        let slice = &self.data[begin..end];
+        (slice[0], slice[1], slice[2])
     }
 
-    pub fn get_right_id(&self, word_id: u32) -> SudachiResult<i16> {
-        let (_rest, num) = i16_parser(
-            self.bytes,
-            self.offset + WordParams::ELEMENT_SIZE * word_id as usize + 2,
-        )?;
-        Ok(num)
-    }
-
-    pub fn get_cost(&self, word_id: u32) -> SudachiResult<i16> {
-        if let Some(v) = self.cost_map.get(&word_id) {
-            return Ok(*v);
-        }
-
-        let (_rest, num) = i16_parser(
-            self.bytes,
-            self.offset + WordParams::ELEMENT_SIZE * word_id as usize + 4,
-        )?;
-        Ok(num)
+    pub fn get_cost(&self, word_id: u32) -> i16 {
+        let cost_offset = word_id as usize * Self::PARAM_SIZE + 2;
+        self.data[cost_offset]
     }
 
     pub fn set_cost(&mut self, word_id: u32, cost: i16) {
-        self.cost_map.insert(word_id, cost);
+        let cost_offset = word_id as usize * Self::PARAM_SIZE + 2;
+        self.data.set(cost_offset, cost)
     }
-}
-
-fn i16_parser(input: &[u8], offset: usize) -> SudachiNomResult<&[u8], i16> {
-    nom::sequence::preceded(take(offset), le_i16)(input)
 }
