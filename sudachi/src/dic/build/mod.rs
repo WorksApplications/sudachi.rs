@@ -22,7 +22,7 @@ use crate::dic::build::error::{BuildFailure, DicBuildError, DicCompilationCtx};
 use crate::dic::build::index::IndexBuilder;
 use crate::dic::build::lexicon::LexiconWriter;
 use crate::dic::build::report::{DictPartReport, ReportBuilder, Reporter};
-use crate::dic::build::resolve::{BuiltDictResolver, ChainedResolver, RawDictResolver};
+use crate::dic::build::resolve::{BinDictResolver, ChainedResolver, RawDictResolver};
 use crate::dic::grammar::Grammar;
 use crate::dic::header::{Header, HeaderVersion, SystemDictVersion, UserDictVersion};
 use crate::dic::lexicon_set::LexiconSet;
@@ -323,7 +323,7 @@ impl<D: DictionaryAccess> DictBuilder<D> {
 
         let cnt = match self.prebuilt.as_ref() {
             Some(d) => {
-                let built_resolver = BuiltDictResolver::new(d);
+                let built_resolver = BinDictResolver::new(d)?;
                 let chained = ChainedResolver::new(this_resolver, built_resolver);
                 self.lexicon.resolve_splits(&chained)
             }

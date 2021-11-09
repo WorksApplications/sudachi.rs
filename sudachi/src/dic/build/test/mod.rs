@@ -349,3 +349,37 @@ fn word_id_too_big_dicform_userdic_inuser() {
         }))
     );
 }
+
+#[test]
+fn resolve_user_entry_without_system_in_trie() {
+    let mut bldr = DictBuilder::new_system();
+    bldr.read_conn(MATRIX_10_10).unwrap();
+    bldr.read_lexicon(include_bytes!("sys_no_entry.csv"))
+        .unwrap();
+    bldr.resolve().unwrap();
+    let mut data = Vec::new();
+    bldr.compile(&mut data).unwrap();
+    let dic = DictionaryLoader::read_system_dictionary(&data).unwrap();
+    let dic = dic.to_loaded().unwrap();
+    let mut iter = dic.lexicon().lookup("東京".as_bytes(), 0);
+    let e = iter.next().unwrap();
+    assert_eq!(e.end, 6);
+    assert_eq!(iter.next(), None);
+    drop(iter);
+    let mut bldr = DictBuilder::new_user(&dic);
+    bldr.read_lexicon(include_bytes!("data_2words_3w_refs.csv"))
+        .unwrap();
+    bldr.resolve().unwrap();
+    let mut data2 = Vec::new();
+    bldr.compile(&mut data2).unwrap();
+    let udic = DictionaryLoader::read_user_dictionary(&data2).unwrap();
+    let dic = dic.merge_dictionary(udic).unwrap();
+    let mut iter = dic.lexicon().lookup("関東".as_bytes(), 0);
+    let _ = iter.next().unwrap();
+    let e = iter.next().unwrap();
+    assert_eq!(iter.next(), None);
+    let winfo = dic.lexicon_set.get_word_info(e.word_id).unwrap();
+    assert_eq!(winfo.a_unit_split.len(), 2);
+    assert_eq!(winfo.a_unit_split[0], WordId::new(1, 0));
+    assert_eq!(winfo.a_unit_split[1], WordId::new(0, 1));
+}
