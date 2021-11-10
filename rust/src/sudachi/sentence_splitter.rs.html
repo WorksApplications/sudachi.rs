@@ -117,6 +117,8 @@
 <span id="117">117</span>
 <span id="118">118</span>
 <span id="119">119</span>
+<span id="120">120</span>
+<span id="121">121</span>
 </pre><pre class="rust"><code><span class="comment">/*
  *  Copyright (c) 2021 Works Applications Co., Ltd.
  *
@@ -133,6 +135,7 @@
  *  limitations under the License.
  */</span>
 
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::dic::lexicon_set::LexiconSet</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::sentence_detector</span>::{<span class="ident">NonBreakChecker</span>, <span class="ident">SentenceDetector</span>};
 <span class="kw">use</span> <span class="ident">std::ops::Range</span>;
 
@@ -171,7 +174,7 @@
 
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">SentenceSplitter</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
     <span class="ident">detector</span>: <span class="ident">SentenceDetector</span>,
-    <span class="ident">checker</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">NonBreakChecker</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+    <span class="ident">checker</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">NonBreakChecker</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span><span class="op">&gt;</span>,
 }
 
 <span class="kw">impl</span> <span class="ident">SentenceSplitter</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span> {
@@ -189,7 +192,8 @@
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">with_checker</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="ident">checker</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">NonBreakChecker</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">SentenceSplitter</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">with_checker</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="ident">lexicon</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">LexiconSet</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">SentenceSplitter</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
+        <span class="kw">let</span> <span class="ident">checker</span> <span class="op">=</span> <span class="ident">NonBreakChecker::new</span>(<span class="ident">lexicon</span>);
         <span class="ident">SentenceSplitter</span> {
             <span class="ident">detector</span>: <span class="self">self</span>.<span class="ident">detector</span>,
             <span class="ident">checker</span>: <span class="prelude-val">Some</span>(<span class="ident">checker</span>),
@@ -203,7 +207,7 @@
             <span class="ident">data</span>,
             <span class="ident">position</span>: <span class="number">0</span>,
             <span class="ident">splitter</span>: <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">detector</span>,
-            <span class="ident">checker</span>: <span class="self">self</span>.<span class="ident">checker</span>,
+            <span class="ident">checker</span>: <span class="self">self</span>.<span class="ident">checker</span>.<span class="ident">as_ref</span>(),
         }
     }
 }
