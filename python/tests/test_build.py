@@ -30,7 +30,9 @@ class MyTestCase(unittest.TestCase):
 
     def tearDown(self) -> None:
         for f in self.tempfiles:
-            Path(f).unlink(missing_ok=True)
+            p = Path(f)
+            if p.exists():
+                p.unlink()
         super().tearDown()
 
     def make_config(self, system, user):
