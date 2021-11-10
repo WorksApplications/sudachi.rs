@@ -32,7 +32,7 @@ export RUSTFLAGS='-C profile-use=/tmp/sudachi-profdata.merged -C opt-level=3'
 
 for PYBIN in /opt/python/cp{36,37,38,39,310}*/bin; do
     "${PYBIN}/pip" install -U setuptools wheel setuptools-rust
-    rm -f build/lib/sudachi/SudachiPy*.so
+    rm -f build/lib/sudachi/sudachipy*.so
     "${PYBIN}/python" setup.py bdist_wheel
 done
 
