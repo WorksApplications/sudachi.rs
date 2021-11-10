@@ -4,11 +4,13 @@
 * ~15% analysis speed improvement over 0.6.0-rc1
 
 # Rust
-* Add dictionary build functionality
+* Added dictionary build functionality
   * https://github.com/WorksApplications/sudachi.rs/pull/143
+* Added an option to perform analysis without sentence splitting
+  * Use it with `--split-sentences=no`
 
 # Python
-* Add bindings for dictionary build (undocumented and not supported as API).
+* Added bindings for dictionary build (undocumented and not supported as API).
   * See https://github.com/WorksApplications/sudachi.rs/issues/157
 * `sudachipy build` and `sudachipy ubuild` should work once more
   * Report on build times and dictionary part sizes can differ from the original SudachiPy
