@@ -24,7 +24,7 @@
 * ~30x speed improvement over original SudachiPy
 * Dictionary build mode will be done before 0.6.0 final (See #13)
 
-## Rust
+## Rust 
 
 * Analysis: feature parity with Python and Java version
 * Dictionary build is not supported in rc1
