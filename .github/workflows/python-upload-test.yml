@@ -20,6 +20,10 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install --upgrade setuptools setuptools-rust
+
+      - name: Make .devXX version
+        run: python ./python/latest_dev_version.py
+
       - name: Build
         working-directory: ./python
         run: bash build-sdist.sh
@@ -46,6 +50,9 @@ jobs:
             ~/.cargo/git/db/
             target/
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Make .devXX version
+        run: python ./python/latest_dev_version.py
 
       - uses: eiennohito/gha-manylinux-build@master
         with:
@@ -79,6 +86,9 @@ jobs:
             ~/.cargo/git/db/
             target/
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Make .devXX version
+        run: python ./python/latest_dev_version.py
 
       - name: Install dependencies
         run: |
