@@ -18,7 +18,6 @@ mod analysis;
 mod build;
 mod output;
 
-use regex::Regex;
 use std::fs::File;
 use std::io::{self, BufRead, BufReader, BufWriter, Read, Write};
 use std::path::PathBuf;
@@ -200,10 +199,10 @@ fn main() {
 fn strip_eol(data: &str) -> &str {
     let mut bytes = data.as_bytes();
     let mut len = bytes.len();
-    if len > 1 && bytes[len - 1] == '\n' {
+    if len > 1 && bytes[len - 1] == b'\n' {
         len = len - 1;
         bytes = &bytes[..len];
-        if len > 1 && bytes[len - 1] == '\r' {
+        if len > 1 && bytes[len - 1] == b'\r' {
             len = len - 1;
             bytes = &bytes[..len];
         }
