@@ -17,47 +17,66 @@
 use crate::analysis::stateless_tokenizer::DictionaryAccess;
 use crate::dic::build::lexicon::{RawLexiconEntry, SplitUnitResolver};
 use crate::dic::word_id::WordId;
+use crate::error::SudachiResult;
+use crate::util::fxhash::FxBuildHasher;
 use std::collections::HashMap;
 
-pub struct BuiltDictResolver<D: DictionaryAccess> {
-    dict: D,
+/// We can't use trie to resolve splits because it is possible that refs are not in trie
+/// This resolver has to be owning because the dictionary content is lazily loaded and transient
+pub struct BinDictResolver {
+    index: HashMap<String, Vec<(u16, Option<String>, WordId)>, FxBuildHasher>,
 }
 
-impl<D: DictionaryAccess> BuiltDictResolver<D> {
-    pub fn new(dict: D) -> Self {
-        Self { dict }
+impl BinDictResolver {
+    pub fn new<D: DictionaryAccess>(dict: D) -> SudachiResult<Self> {
+        let lex = dict.lexicon();
+        let size = lex.size();
+        let mut index: HashMap<String, Vec<(u16, Option<String>, WordId)>, FxBuildHasher> =
+            HashMap::default();
+        for id in 0..size {
+            let wid = WordId::new(0, id);
+            let winfo = lex.get_word_info(wid)?;
+            let surface = winfo.surface;
+            let reading = winfo.reading_form;
+            let pos_id = winfo.pos_id;
+
+            let rdfield = if surface == reading {
+                None
+            } else {
+                Some(reading)
+            };
+
+            index
+                .entry(surface)
+                .or_default()
+                .push((pos_id, rdfield, wid));
+        }
+
+        Ok(Self { index })
     }
 }
 
-impl<D: DictionaryAccess> SplitUnitResolver for BuiltDictResolver<D> {
+impl SplitUnitResolver for BinDictResolver {
     fn resolve_inline(&self, surface: &str, pos: u16, reading: Option<&str>) -> Option<WordId> {
-        let len = surface.len();
-        let ids = self
-            .dict
-            .lexicon()
-            .lookup(surface.as_bytes(), 0)
-            .filter(|e| e.end == len)
-            .map(|e| e.word_id);
-        for wid in ids {
-            let winfo = match self.dict.lexicon().get_word_info(wid) {
-                Ok(wi) => wi,
-                Err(_) => return None,
-            };
-            if winfo.pos_id == pos && reading.as_deref().unwrap_or(&surface) == winfo.reading_form {
-                return Some(wid);
+        self.index.get(surface).and_then(|v| {
+            for (p, rd, wid) in v {
+                if *p == pos && reading.eq(&rd.as_deref()) {
+                    return Some(*wid);
+                }
             }
-        }
-        None
+            None
+        })
     }
 }
 
 pub struct RawDictResolver<'a> {
-    data: HashMap<&'a str, Vec<(u16, Option<&'a str>, WordId)>>,
+    data: HashMap<&'a str, Vec<(u16, Option<&'a str>, WordId)>, FxBuildHasher>,
 }
 
 impl<'a> RawDictResolver<'a> {
     pub(crate) fn new(entries: &'a [RawLexiconEntry], user: bool) -> Self {
-        let mut data: HashMap<&'a str, Vec<(u16, Option<&'a str>, WordId)>> = HashMap::new();
+        let mut data: HashMap<&'a str, Vec<(u16, Option<&'a str>, WordId)>, FxBuildHasher> =
+            HashMap::default();
 
         let dic_id = if user { 1 } else { 0 };
 
