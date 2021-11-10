@@ -261,7 +261,7 @@ impl Lattice {
 
                 write!(
                     out,
-                    "{}: {} {} {}({}) {} {} {} {}:",
+                    "{}: {} {} {}{} {} {} {} {}:",
                     dump_idx,
                     r_node.begin(),
                     r_node.end(),

@@ -20,7 +20,7 @@ use sudachi::analysis::stateless_tokenizer::DictionaryAccess;
 
 use sudachi::prelude::{MorphemeList, SudachiResult};
 
-type Writer = BufWriter<Box<dyn Write>>;
+pub type Writer = BufWriter<Box<dyn Write>>;
 
 pub trait SudachiOutput<T> {
     fn write(&self, writer: &mut Writer, morphemes: &MorphemeList<T>) -> SudachiResult<()>;

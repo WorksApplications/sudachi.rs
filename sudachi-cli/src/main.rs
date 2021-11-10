@@ -14,28 +14,54 @@
  * limitations under the License.
  */
 
+mod analysis;
 mod build;
 mod output;
 
 use std::fs::File;
-use std::io::{self, BufRead, BufReader, BufWriter, Write};
+use std::io::{self, BufRead, BufReader, BufWriter, Read, Write};
 use std::path::PathBuf;
-use std::process;
+use std::str::FromStr;
 
 use structopt::StructOpt;
 
+use crate::analysis::{Analysis, AnalyzeNonSplitted, AnalyzeSplitted, SplitSentencesOnly};
 use crate::build::{build_main, is_build_mode};
-use crate::output::SudachiOutput;
-use sudachi::analysis::stateful_tokenizer::StatefulTokenizer;
-use sudachi::analysis::stateless_tokenizer::DictionaryAccess;
 use sudachi::config::Config;
 use sudachi::dic::dictionary::JapaneseDictionary;
 use sudachi::prelude::*;
-use sudachi::sentence_detector::NonBreakChecker;
-use sudachi::sentence_splitter::{SentenceSplitter, SplitSentences};
 
 #[cfg(feature = "bake_dictionary")]
 const BAKED_DICTIONARY_BYTES: &[u8] = include_bytes!(env!("SUDACHI_DICT_PATH"));
+
+#[derive(StructOpt, Debug, Eq, PartialEq)]
+pub enum SentenceSplitMode {
+    /// Do both sentence splitting and analysis
+    Default,
+    /// Do only sentence splitting and not analysis
+    Only,
+    /// Do only analysis without sentence splitting
+    None,
+}
+
+impl Default for SentenceSplitMode {
+    fn default() -> Self {
+        SentenceSplitMode::Default
+    }
+}
+
+impl FromStr for SentenceSplitMode {
+    type Err = &'static str;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "yes" | "default" => Ok(SentenceSplitMode::Default),
+            "no" | "none" => Ok(SentenceSplitMode::None),
+            "only" => Ok(SentenceSplitMode::Only),
+            _ => Err("invalid sentence split mode: allowed values - yes, default, no, none, only"),
+        }
+    }
+}
 
 /// A Japanese tokenizer
 ///
@@ -57,7 +83,7 @@ struct Cli {
 
     /// Split unit: "A" (short), "B" (middle), or "C" (Named Entity)
     #[structopt(short = "m", long = "mode", default_value = "C")]
-    mode: String,
+    mode: Mode,
 
     // Output text file: If not present, use stdout
     #[structopt(short = "o", long = "output", parse(from_os_str))]
@@ -80,9 +106,25 @@ struct Cli {
     #[structopt(short = "l", long = "dict")]
     dictionary_path: Option<PathBuf>,
 
-    /// Only split sentences, do not perform analysis
-    #[structopt(long = "only-split-sentences")]
-    only_split_sentences: bool,
+    /// How to split sentences.
+    ///
+    /// "yes", "default" means split sentences,
+    /// "no", "none" means don't split sentences,
+    /// "only" means split sentences, do not perform analysis
+    #[structopt(long = "split-sentences", default_value = "yes")]
+    split_sentences: SentenceSplitMode,
+}
+
+// want to instantiate a different type for different output format
+// this takes a f as a function which will be created with a different actual type
+macro_rules! with_output {
+    ($cli: expr, $f: expr) => {
+        if $cli.wakati {
+            Box::new($f(output::Wakachi::default()))
+        } else {
+            Box::new($f(output::Simple::new($cli.print_all)))
+        }
+    };
 }
 
 fn main() {
@@ -93,24 +135,16 @@ fn main() {
 
     let args: Cli = Cli::from_args();
 
-    let mode = match args.mode.as_str().parse() {
-        Ok(mode) => mode,
-        Err(err) => {
-            eprintln!("Invalid mode: {}", err);
-            process::exit(1);
-        }
+    let inner_reader: Box<dyn Read> = match args.file.as_ref() {
+        Some(input_path) => Box::new(
+            File::open(input_path)
+                .unwrap_or_else(|_| panic!("Failed to open input file {:?}", &input_path)),
+        ),
+        None => Box::new(io::stdin()),
     };
-
-    let enable_debug = args.enable_debug;
 
     // input: stdin or file
-    let reader: Box<dyn BufRead> = match &args.file {
-        Some(input_path) => Box::new(BufReader::new(
-            File::open(&input_path)
-                .unwrap_or_else(|_| panic!("Failed to open input file {:?}", &input_path)),
-        )),
-        None => Box::new(BufReader::new(io::stdin())),
-    };
+    let mut reader = BufReader::new(inner_reader);
 
     // output: stdout or file
     let inner_writer: Box<dyn Write> = match &args.output_file {
@@ -132,46 +166,31 @@ fn main() {
 
     let dict = JapaneseDictionary::from_cfg(&config)
         .unwrap_or_else(|e| panic!("Failed to create dictionary: {:?}", e));
-    let mut tokenizer = StatefulTokenizer::create(&dict, enable_debug, mode);
-    let checker = NonBreakChecker::new(dict.lexicon());
-    let splitter = SentenceSplitter::with_limit(32 * 1024).with_checker(&checker);
-    let mut morphemes = MorphemeList::empty(&dict);
 
+    let mut analyzer: Box<dyn Analysis> = match args.split_sentences {
+        SentenceSplitMode::Only => Box::new(SplitSentencesOnly::new(&dict)),
+        SentenceSplitMode::Default => with_output!(args, |o| {
+            AnalyzeSplitted::new(o, &dict, args.mode, args.enable_debug)
+        }),
+        SentenceSplitMode::None => with_output!(args, |o| {
+            AnalyzeNonSplitted::new(o, &dict, args.mode, args.enable_debug)
+        }),
+    };
+
+    let mut data = String::with_capacity(4 * 1024);
     let is_stdout = args.output_file.is_none();
 
-    let format = make_output::<&JapaneseDictionary>(&args);
-
     // tokenize and output results
-    for line in reader.lines() {
-        let input = line.expect("Failed to read line");
-        for (_, sentence) in splitter.split(&input) {
-            if args.only_split_sentences {
-                writeln!(&mut writer, "{}", sentence).expect("Failed to write output");
-                continue;
-            }
-            tokenizer.reset().push_str(sentence);
-            tokenizer.do_tokenize().expect("Failed to tokenize input");
-
-            morphemes
-                .collect_results(&mut tokenizer)
-                .expect("failed to collect results");
-
-            format
-                .write(&mut writer, &morphemes)
-                .expect("Failed to write output");
-        }
+    while reader.read_line(&mut data).expect("readline failed") > 0 {
+        let without_break = &data[..data.len() - 1];
+        analyzer.analyze(without_break, &mut writer);
         if is_stdout {
+            // for stdout we want to flush every result
             writer.flush().expect("flush failed");
         }
+        data.clear();
     }
+
     // it is recommended to call write before dropping BufWriter
     writer.flush().expect("flush failed");
-}
-
-fn make_output<T: DictionaryAccess>(cli: &Cli) -> Box<dyn SudachiOutput<T>> {
-    if cli.wakati {
-        Box::new(output::Wakachi::default())
-    } else {
-        Box::new(output::Simple::new(cli.print_all))
-    }
 }
