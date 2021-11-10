@@ -182,8 +182,8 @@ fn main() {
 
     // tokenize and output results
     while reader.read_line(&mut data).expect("readline failed") > 0 {
-        let without_break = &data[..data.len() - 1];
-        analyzer.analyze(without_break, &mut writer);
+        let no_eol = data.trim_end_matches(|c: char| c == '\n');
+        analyzer.analyze(no_eol, &mut writer);
         if is_stdout {
             // for stdout we want to flush every result
             writer.flush().expect("flush failed");
