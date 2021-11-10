@@ -18,6 +18,7 @@ mod analysis;
 mod build;
 mod output;
 
+use regex::Regex;
 use std::fs::File;
 use std::io::{self, BufRead, BufReader, BufWriter, Read, Write};
 use std::path::PathBuf;
@@ -182,7 +183,7 @@ fn main() {
 
     // tokenize and output results
     while reader.read_line(&mut data).expect("readline failed") > 0 {
-        let no_eol = data.trim_end_matches(|c: char| c == '\n');
+        let no_eol = strip_eol(&data);
         analyzer.analyze(no_eol, &mut writer);
         if is_stdout {
             // for stdout we want to flush every result
@@ -193,4 +194,21 @@ fn main() {
 
     // it is recommended to call write before dropping BufWriter
     writer.flush().expect("flush failed");
+}
+
+/// strip (\r?\n)? pattern at the end of string
+fn strip_eol(data: &str) -> &str {
+    let mut bytes = data.as_bytes();
+    let mut len = bytes.len();
+    if len > 1 && bytes[len - 1] == '\n' {
+        len = len - 1;
+        bytes = &bytes[..len];
+        if len > 1 && bytes[len - 1] == '\r' {
+            len = len - 1;
+            bytes = &bytes[..len];
+        }
+    }
+
+    // Safety: str was correct and we only removed full characters
+    unsafe { std::str::from_utf8_unchecked(bytes) }
 }
