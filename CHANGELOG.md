@@ -3,13 +3,13 @@
 * Full feature parity with Java version
 * ~15% analysis speed improvement over 0.6.0-rc1
 
-# Rust
+## Rust
 * Added dictionary build functionality
   * https://github.com/WorksApplications/sudachi.rs/pull/143
 * Added an option to perform analysis without sentence splitting
   * Use it with `--split-sentences=no`
 
-# Python
+## Python
 * Added bindings for dictionary build (undocumented and not supported as API).
   * See https://github.com/WorksApplications/sudachi.rs/issues/157
 * `sudachipy build` and `sudachipy ubuild` should work once more
