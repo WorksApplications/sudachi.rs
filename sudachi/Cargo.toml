@@ -24,7 +24,7 @@ serde = { version = "1.0", features = ["derive"] } # MIT/Apache 2.0
 serde_json = "1.0" # MIT/Apache 2.0
 thiserror = "1.0" # MIT/Apache 2.0
 unicode-normalization = "0.1.19" # MIT/Apache 2.0
-yada = "0.4" # MIT/Apache 2.0
+yada = "0.5" # MIT/Apache 2.0
 
 [dev-dependencies]
 claim = "0.5" # MIT/Apache 2.0
