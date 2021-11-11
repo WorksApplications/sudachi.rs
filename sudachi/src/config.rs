@@ -134,14 +134,12 @@ impl Config {
         })
     }
 
-    /// Return minimal config with a system dictionary
-    pub fn min_system(system: PathBuf) -> Config {
+    /// Creates a minimal config with the provided resource directory
+    pub fn minimal_at(resource_dir: impl Into<PathBuf>) -> Config {
         let mut cfg = Config::default();
-        cfg.system_dict = Some(system);
-        let src_root_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        let default_resource_dir_path = src_root_path.join("..").join(DEFAULT_RESOURCE_DIR);
-        cfg.character_definition_file = default_resource_dir_path.join(DEFAULT_CHAR_DEF_FILE);
-        cfg.resource_dir = default_resource_dir_path;
+        let resource = resource_dir.into();
+        cfg.character_definition_file = resource.join(DEFAULT_CHAR_DEF_FILE);
+        cfg.resource_dir = resource;
         cfg.oov_provider_plugins = vec![serde_json::json!(
             { "class" : "com.worksap.nlp.sudachi.SimpleOovPlugin",
               "oovPOS" : [ "名詞", "普通名詞", "一般", "*", "*", "*" ],
@@ -150,6 +148,12 @@ impl Config {
               "cost" : 30000 }
         )];
         cfg
+    }
+
+    /// Sets the system dictionary to the provided path
+    pub fn with_system_dic(mut self, system: impl Into<PathBuf>) -> Config {
+        self.system_dict = Some(system.into());
+        self
     }
 
     /// Resolve variables in path.
