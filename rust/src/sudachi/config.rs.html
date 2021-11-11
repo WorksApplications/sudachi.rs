@@ -242,6 +242,10 @@
 <span id="242">242</span>
 <span id="243">243</span>
 <span id="244">244</span>
+<span id="245">245</span>
+<span id="246">246</span>
+<span id="247">247</span>
+<span id="248">248</span>
 </pre><pre class="rust"><code><span class="comment">/*
  * Copyright (c) 2021 Works Applications Co., Ltd.
  *
@@ -378,14 +382,12 @@
         })
     }
 
-    <span class="doccomment">/// Return minimal config with a system dictionary</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">min_system</span>(<span class="ident">system</span>: <span class="ident">PathBuf</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Config</span> {
+    <span class="doccomment">/// Creates a minimal config with the provided resource directory</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">minimal_at</span>(<span class="ident">resource_dir</span>: <span class="kw">impl</span> <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">PathBuf</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Config</span> {
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">cfg</span> <span class="op">=</span> <span class="ident">Config::default</span>();
-        <span class="ident">cfg</span>.<span class="ident">system_dict</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="ident">system</span>);
-        <span class="kw">let</span> <span class="ident">src_root_path</span> <span class="op">=</span> <span class="ident">PathBuf::from</span>(<span class="macro">env!</span>(<span class="string">&quot;CARGO_MANIFEST_DIR&quot;</span>));
-        <span class="kw">let</span> <span class="ident">default_resource_dir_path</span> <span class="op">=</span> <span class="ident">src_root_path</span>.<span class="ident">join</span>(<span class="string">&quot;..&quot;</span>).<span class="ident">join</span>(<span class="ident">DEFAULT_RESOURCE_DIR</span>);
-        <span class="ident">cfg</span>.<span class="ident">character_definition_file</span> <span class="op">=</span> <span class="ident">default_resource_dir_path</span>.<span class="ident">join</span>(<span class="ident">DEFAULT_CHAR_DEF_FILE</span>);
-        <span class="ident">cfg</span>.<span class="ident">resource_dir</span> <span class="op">=</span> <span class="ident">default_resource_dir_path</span>;
+        <span class="kw">let</span> <span class="ident">resource</span> <span class="op">=</span> <span class="ident">resource_dir</span>.<span class="ident">into</span>();
+        <span class="ident">cfg</span>.<span class="ident">character_definition_file</span> <span class="op">=</span> <span class="ident">resource</span>.<span class="ident">join</span>(<span class="ident">DEFAULT_CHAR_DEF_FILE</span>);
+        <span class="ident">cfg</span>.<span class="ident">resource_dir</span> <span class="op">=</span> <span class="ident">resource</span>;
         <span class="ident">cfg</span>.<span class="ident">oov_provider_plugins</span> <span class="op">=</span> <span class="macro">vec!</span>[<span class="macro">serde_json::json!</span>(
             { <span class="string">&quot;class&quot;</span> : <span class="string">&quot;com.worksap.nlp.sudachi.SimpleOovPlugin&quot;</span>,
               <span class="string">&quot;oovPOS&quot;</span> : [ <span class="string">&quot;名詞&quot;</span>, <span class="string">&quot;普通名詞&quot;</span>, <span class="string">&quot;一般&quot;</span>, <span class="string">&quot;*&quot;</span>, <span class="string">&quot;*&quot;</span>, <span class="string">&quot;*&quot;</span> ],
@@ -394,6 +396,12 @@
               <span class="string">&quot;cost&quot;</span> : <span class="number">30000</span> }
         )];
         <span class="ident">cfg</span>
+    }
+
+    <span class="doccomment">/// Sets the system dictionary to the provided path</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">with_system_dic</span>(<span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">system</span>: <span class="kw">impl</span> <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">PathBuf</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Config</span> {
+        <span class="self">self</span>.<span class="ident">system_dict</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="ident">system</span>.<span class="ident">into</span>());
+        <span class="self">self</span>
     }
 
     <span class="doccomment">/// Resolve variables in path.</span>
