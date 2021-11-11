@@ -7,15 +7,6 @@ SudachiPy is a Python version of [Sudachi](https://github.com/WorksApplications/
 Buindings over the [Rust implementation](https://github.com/WorksApplications/sudachi.rs).
 
 
-## Note about installing version 0.6.0rc1
-
-- You need to explicitly specify the version to install: `pip install sudachipy==0.6.0rc1`.
-- You can safely ignore the error about version incompatibility from `sudachidict_*`.
-- Installing `sudachidict_*` will overwrites this version.
-  - Install a dictionary first, or re-install this module.
-- Please also check [CHANGELOG.md](./CHANGELOG.md).
-
-
 ## TL;DR
 
 ```bash
@@ -112,7 +103,7 @@ optional arguments:
   -v, --version  print sudachipy version
 ```
 
-__Note: The Debug option (`-d`) is disabled in version 0.6.0rc1.__
+__Note: The Debug option (`-d`) is disabled in version 0.6.0.__
 
 
 ### Output
@@ -305,8 +296,6 @@ $ sudachipy -r path/to/sudachi.json
 
 You can build a user dictionary with the subcommand `ubuild`.
 
-__Note: in v0.6.0rc1, `ubuild` subcommand is not yet implemented. Please downgrade to sudachipy<0.6.__
-
 
 ```bash
 $ sudachipy ubuild -h
@@ -328,8 +317,6 @@ About the dictionary file format, please refer to [this document](https://github
 
 
 ## Customized System Dictionary
-
-__Note: in v0.6.0rc1, `build` subcommand is not yet implemented. Please downgrade to sudachipy<0.6.__
 
 ```bash
 $ sudachipy build -h
