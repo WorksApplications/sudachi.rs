@@ -4,7 +4,8 @@
 
 SudachiPy is a Python version of [Sudachi](https://github.com/WorksApplications/Sudachi), a Japanese morphological analyzer.
 
-Buindings over the [Rust implementation](https://github.com/WorksApplications/sudachi.rs).
+This is not a pure Python implementation, but bindings for the 
+[Sudachi.rs](https://github.com/WorksApplications/sudachi.rs).
 
 ## Binary wheels
 
