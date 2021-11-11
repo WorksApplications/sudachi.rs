@@ -112,13 +112,13 @@ impl PyDictionary {
     }
 }
 
-fn get_default_setting_path(py: Python) -> PyResult<PathBuf> {
+pub(crate) fn get_default_setting_path(py: Python) -> PyResult<PathBuf> {
     let path = PyModule::import(py, "sudachipy")?.getattr("_DEFAULT_SETTINGFILE")?;
     let path = path.cast_as::<PyString>()?.to_str()?;
     Ok(PathBuf::from(path))
 }
 
-fn get_default_resource_dir(py: Python) -> PyResult<PathBuf> {
+pub(crate) fn get_default_resource_dir(py: Python) -> PyResult<PathBuf> {
     let path = PyModule::import(py, "sudachipy")?.getattr("_DEFAULT_RESOURCEDIR")?;
     let path = path.cast_as::<PyString>()?.to_str()?;
     Ok(PathBuf::from(path))

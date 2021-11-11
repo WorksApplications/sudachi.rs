@@ -29,10 +29,12 @@ target/x86_64-unknown-linux-gnu/release/sudachi --all --mode=B -o /dev/null lead
 cd "$DIR"
 
 export RUSTFLAGS='-C profile-use=/tmp/sudachi-profdata.merged -C opt-level=3'
+export CARGO_BUILD_TARGET=x86_64-unknown-linux-gnu
 
 for PYBIN in /opt/python/cp{36,37,38,39,310}*/bin; do
     "${PYBIN}/pip" install -U setuptools wheel setuptools-rust
-    rm -f build/lib/sudachi/SudachiPy*.so
+    find . -iname 'sudachipy*.so'
+    rm -f build/lib/sudachipy/sudachipy*.so
     "${PYBIN}/python" setup.py bdist_wheel
 done
 

@@ -6,14 +6,12 @@ sudachi.rs は日本語形態素解析器 [Sudachi](https://github.com/WorksAppl
 
 [English README](README.md)
 
-## 注意
-
-実装が未完の部分があります。
-
-他の方によるRust実装も参照ください; [Yasu-umi/sudachiclone-rs](https://github.com/Yasu-umi/sudachiclone-rs)
-
-
 ## TL;DR
+
+SudachiPyとして使うには
+```bash
+$ pip install --update 'sudachipy>=0.6.0'
+```
 
 ```bash
 $ git clone https://github.com/WorksApplications/sudachi.rs.git

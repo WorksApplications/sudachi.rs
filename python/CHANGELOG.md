@@ -2,15 +2,19 @@
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [Unreleased]
+## Unreleased
 
-- [#13] Build dictionary feature is not implemented yet.
-    - Will be included in v0.6.0.
 - Print Debug feature is disabled now.
-    - `-d` option of `sudachipy` cli does nothing.
-    - `sudachipy.Tokenizer` will ignore the provided logger.
-    - Ref: [#76]
+  - `-d` option of `sudachipy` cli does nothing.
+  - `sudachipy.Tokenizer` will ignore the provided logger.
+  - Ref: [#76]
 
+## [0.6.0] - 2021/10/11
+
+### Changed
+
+- Support building dictionary
+- `sudachidict_*` packages starting from 20210802.post1 are compatible with 0.6.0 release and will work as is
 
 ## [0.6.0-rc1] - 2021/10/22
 

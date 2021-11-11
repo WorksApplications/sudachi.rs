@@ -2,14 +2,12 @@
 
 [![Rust](https://github.com/WorksApplications/sudachi.rs/actions/workflows/rust.yml/badge.svg)](https://github.com/WorksApplications/sudachi.rs/actions/workflows/rust.yml)
 
-**2021-10-26 UPDATE**: [First pre-release of SudachiPy-compatible bindings](https://github.com/WorksApplications/sudachi.rs/releases/tag/v0.6.0-rc1)
+**2021-11-11 UPDATE**: [First release of SudachiPy-compatible bindings](https://github.com/WorksApplications/sudachi.rs/releases/tag/v0.6.0)
 
 Try it:
 ```shell
-pip install sudachidict_core
-pip install sudachipy==0.6.0rc1
+pip install --update 'sudachipy>=0.6.0'
 ```
-Because of dictionary version incompatibilities, you first need to install the dictionary, then install the pre-release version of SudachiPy.
 
 
 <p align="center"><img width="100" src="logo.png" alt="sudachi.rs logo"></p>
@@ -17,14 +15,6 @@ Because of dictionary version incompatibilities, you first need to install the d
 sudachi.rs is a Rust implementation of [Sudachi](https://github.com/WorksApplications/Sudachi), a Japanese morphological analyzer.
 
 [日本語 README](README.ja.md)
-
-
-## Caution
-
-This project is under development.
-
-Please also have a look at an alternative by another person, [Yasu-umi/sudachiclone-rs](https://github.com/Yasu-umi/sudachiclone-rs).
-
 
 ## TL;DR
 

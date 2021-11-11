@@ -6,6 +6,14 @@ SudachiPy is a Python version of [Sudachi](https://github.com/WorksApplications/
 
 Buindings over the [Rust implementation](https://github.com/WorksApplications/sudachi.rs).
 
+## Binary wheels
+
+We provide binary builds for macOS (10.14+), Windows and Linux only for x86_64 architecture.
+x86 32-bit architecture is not supported and is not tested.
+MacOS source builds seem to work on ARM-based (Aarch64) Macs, 
+but this architecture also is not tested and require installing Rust toolchain and Cargo.
+
+More information [here](https://worksapplications.github.io/sudachi.rs/python/wheels.html).
 
 ## TL;DR
 

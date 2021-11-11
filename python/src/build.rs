@@ -14,6 +14,7 @@
  *  limitations under the License.
  */
 
+use crate::dictionary::get_default_resource_dir;
 use pyo3::exceptions::PyException;
 use pyo3::prelude::*;
 use pyo3::types::{PyBytes, PyList, PyString, PyTuple, PyType};
@@ -112,7 +113,8 @@ fn build_user_dic<'p>(
 ) -> PyResult<&'p PyList> {
     let system_dic = match as_data_source(&py, system)? {
         DataSource::File(f) => {
-            let cfg = Config::min_system(f.to_owned());
+            let resource_path = get_default_resource_dir(py)?;
+            let cfg = Config::minimal_at(resource_path).with_system_dic(f);
             wrap_ctx(JapaneseDictionary::from_cfg(&cfg), f)?
         }
         DataSource::Data(_) => {
