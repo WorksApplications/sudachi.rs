@@ -1,6 +1,6 @@
 [package]
 name = "sudachipy"
-version = "0.7.0-a1"
+version = "0.6.1-a1"
 edition = "2018"
 description = "Python bindings of sudachi.rs, the Japanese Morphological Analyzer"
 homepage = "https://github.com/WorksApplications/sudachi.rs"

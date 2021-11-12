@@ -22,7 +22,7 @@ copyright = '2021, Works Applications'
 author = 'Works Applications'
 
 # The full version, including alpha/beta/rc tags
-release = '0.7.0-a1'
+release = '0.6.1-a1'
 
 
 # -- General configuration ---------------------------------------------------

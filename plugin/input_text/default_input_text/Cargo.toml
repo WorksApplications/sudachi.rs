@@ -1,6 +1,6 @@
 [package]
 name = "default_input_text"
-version = "0.7.0-a1"
+version = "0.6.1-a1"
 authors = ["Works Applications <sudachi@worksap.co.jp>"]
 edition = "2018"
 license = "Apache-2.0"
