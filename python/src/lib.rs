@@ -20,6 +20,7 @@ mod build;
 mod dictionary;
 mod morpheme;
 mod pos_matcher;
+mod pretokenizer;
 mod tokenizer;
 mod word_info;
 

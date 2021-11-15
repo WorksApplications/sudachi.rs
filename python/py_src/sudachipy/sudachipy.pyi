@@ -1,6 +1,7 @@
 from typing import ClassVar, Iterator, List, Tuple, Union, Callable, Iterable, Optional, Literal, Set
 
 import sudachipy
+from sudachipy.pretokenizer import SudachiPreTokenizer
 
 POS = Tuple[str, str, str, str, str, str]
 # POS element
@@ -41,7 +42,7 @@ class Dictionary:
         ...
 
     def create(self,
-               mode: SplitMode = SplitMode.C,
+               mode: SplitMode = sudachipy.SplitMode.C,
                fields: FieldSet = None) -> Tokenizer:
         """
         Creates a Sudachi Tokenizer.
@@ -64,6 +65,17 @@ class Dictionary:
         (None, None, None, None, None, '終止形') will match any word in 終止形 conjugation form.
 
         :param target: can be either a function or a list of POS tuples.
+        """
+        ...
+
+    def pre_tokenizer(self, mode: SplitMode = sudachipy.SplitMode.C) -> SudachiPreTokenizer:
+        """
+        Creates HuggingFace-compatible pretokenizer.
+        Pretokenizer is threading aware and can be used with multiple threads.
+        It will internally create a different Sudachi Tokenizer for each thread.
+
+        :param mode: specified mode
+        :return: the created pretokenizer
         """
         ...
 

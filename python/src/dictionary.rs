@@ -23,6 +23,8 @@ use pyo3::types::{PySet, PyString, PyTuple};
 
 use sudachi::analysis::stateless_tokenizer::DictionaryAccess;
 
+use crate::pretokenizer::PyPretokenizer;
+
 use crate::pos_matcher::PyPosMatcher;
 use sudachi::config::Config;
 use sudachi::dic::dictionary::JapaneseDictionary;
@@ -172,6 +174,28 @@ impl PyDictionary {
     #[pyo3(text_signature = "($self, target")]
     fn pos_matcher<'py>(&'py self, py: Python<'py>, target: &PyAny) -> PyResult<PyPosMatcher> {
         PyPosMatcher::create(py, self.dictionary.as_ref().unwrap(), target)
+    }
+
+    /// Creates HuggingFace Tokenizers-compatible PreTokenizer.
+    ///
+    /// Use this split mode (C by default)
+    #[pyo3(
+        text_signature = "($self, mode: sudachipy.SplitMode = sudachipy.SplitMode.C) -> sudachipy.PreTokenizer"
+    )]
+    #[args(mode = "None")]
+    fn pre_tokenizer<'p>(
+        &'p self,
+        py: Python<'p>,
+        mode: Option<PySplitMode>,
+    ) -> PyResult<&'p PyAny> {
+        let mode = mode.unwrap_or(PySplitMode::C).into();
+        let internal = PyPretokenizer::new(self.dictionary.as_ref().unwrap().clone(), mode);
+        let internal_cell = PyCell::new(py, internal)?;
+        let module = py.import("tokenizers.pre_tokenizers")?;
+        module
+            .getattr("PreTokenizer")?
+            .getattr("custom")?
+            .call1(PyTuple::new(py, [internal_cell]))
     }
 
     /// Close this dictionary
