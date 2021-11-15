@@ -177,8 +177,9 @@ impl PyDictionary {
     }
 
     /// Creates HuggingFace Tokenizers-compatible PreTokenizer.
+    /// Requires package `tokenizers` to be installed.
     ///
-    /// Use this split mode (C by default)
+    /// mode: Use this split mode (C by default)
     #[pyo3(
         text_signature = "($self, mode: sudachipy.SplitMode = sudachipy.SplitMode.C) -> sudachipy.PreTokenizer"
     )]

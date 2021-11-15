@@ -70,12 +70,10 @@ class Dictionary:
 
     def pre_tokenizer(self, mode: SplitMode = sudachipy.SplitMode.C) -> SudachiPreTokenizer:
         """
-        Creates HuggingFace-compatible pretokenizer.
-        Pretokenizer is threading aware and can be used with multiple threads.
-        It will internally create a different Sudachi Tokenizer for each thread.
+        Creates HuggingFace Tokenizers-compatible PreTokenizer.
+        Requires package `tokenizers` to be installed.
 
-        :param mode: specified mode
-        :return: the created pretokenizer
+        mode: Use this split mode (C by default)
         """
         ...
 

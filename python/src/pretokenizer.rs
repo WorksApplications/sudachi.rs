@@ -26,6 +26,8 @@ use sudachi::dic::dictionary::JapaneseDictionary;
 use sudachi::prelude::{Mode, MorphemeList};
 use thread_local::ThreadLocal;
 
+/// This struct perform actual tokenization
+/// There should be at most one instance per thread of execution
 struct PerThreadPreTokenizer {
     tokenizer: StatefulTokenizer<Arc<JapaneseDictionary>>,
     morphemes: MorphemeList<Arc<JapaneseDictionary>>,
@@ -51,6 +53,9 @@ impl PerThreadPreTokenizer {
     }
 }
 
+/// Binding for the Tokenizer, which handles threading for tokenization
+///
+/// We use ThreadLocal for storing actual tokenizers
 #[pyclass(module = "sudachipy.pretokenizer", name = "SudachiPreTokenizer")]
 pub struct PyPretokenizer {
     dict: Arc<JapaneseDictionary>,
@@ -70,7 +75,7 @@ impl PyPretokenizer {
     fn tokenizer_cell(&self) -> &RefCell<PerThreadPreTokenizer> {
         let tok = self
             .tokenizers
-            .get_or(|| RefCell::new(PerThreadPreTokenizer::new(&self.dict, Mode::C)));
+            .get_or(|| RefCell::new(PerThreadPreTokenizer::new(&self.dict, self.mode)));
 
         tok
     }
@@ -78,6 +83,10 @@ impl PyPretokenizer {
 
 #[pymethods]
 impl PyPretokenizer {
+    /// Perform a tokenization for a sentence (passed as string)
+    ///
+    /// Implementation uses Sudachi to perform the analysis, then uses slice method
+    /// of the passed parameter to create output data
     pub fn __call__<'p>(
         &'p self,
         py: Python<'p>,
@@ -85,9 +94,9 @@ impl PyPretokenizer {
         string: &'p PyAny,
     ) -> PyResult<&'p PyList> {
         let input_data = string.str()?.to_str()?;
-        // tokenization itself should work without GIL, it is thread-safe
+        // tokenization itself should work without GIL, we have thread-local tokenizers here
         py.allow_threads(|| self.tokenizer_cell().borrow_mut().tokenize(input_data))?;
-        // then copy results again with GIL
+        // then prepare results with GIL
         let cell = self.tokenizer_cell().borrow();
         let morphs = cell.result();
         let result = PyList::empty(py);
@@ -101,19 +110,12 @@ impl PyPretokenizer {
         Ok(result)
     }
 
+    /// Entry function for tokenization
     pub fn pre_tokenize<'p>(
         self_: &'p PyCell<Self>,
         py: Python<'p>,
         data: &'p PyAny,
     ) -> PyResult<&'p PyAny> {
         data.call_method1("split", PyTuple::new(py, [self_]))
-    }
-
-    // RefCell is not Sync, so can't use iter() :(
-    // Python's GIL makes it OK to use mut here though
-    pub fn __repr__<'p>(&'p mut self, _py: Python<'p>) -> String {
-        let iter = self.tokenizers.iter_mut();
-        let cnt = iter.count();
-        format!("SudachiPreTokenizer(mode={}, instances={})", self.mode, cnt)
     }
 }

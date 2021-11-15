@@ -41,6 +41,21 @@ class PretokenizerTestCase(unittest.TestCase):
         res = tok.encode("京都へ行く")
         self.assertEqual(res.ids, [1, 0, 3])
 
+    def test_works_with_different_split_mode(self):
+        pretok = self.dict.pre_tokenizer(sudachipy.SplitMode.A)
+        vocab = {
+            "[UNK]": 0,
+            "外国": 1,
+            "参政": 2,
+            "権": 3,
+            "人": 5,
+            "外国人参政権": 4
+        }
+        tok = tokenizers.Tokenizer(WordLevel(vocab, unk_token="[UNK]"))
+        tok.pre_tokenizer = pretok
+        res = tok.encode("外国人参政権")
+        self.assertEqual(res.ids, [1, 5, 2, 3])
+
 
 if __name__ == '__main__':
     unittest.main()
