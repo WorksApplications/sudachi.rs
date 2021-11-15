@@ -14,11 +14,10 @@
  *  limitations under the License.
  */
 
+use crate::errors::wrap;
 use pyo3::prelude::*;
-use pyo3::types::{PyList, PySlice, PyString, PyTuple};
-use pyo3::PyObjectProtocol;
-use std::borrow::Borrow;
-use std::cell::{RefCell, RefMut};
+use pyo3::types::{PyList, PySlice, PyTuple};
+use std::cell::RefCell;
 use std::sync::Arc;
 use sudachi::analysis::node::LatticeNode;
 use sudachi::analysis::stateful_tokenizer::StatefulTokenizer;
@@ -43,7 +42,7 @@ impl PerThreadPreTokenizer {
 
     pub fn tokenize(&mut self, data: &str) -> PyResult<()> {
         self.tokenizer.reset().push_str(data);
-        self.tokenizer.do_tokenize().map_err(|e| panic!("{:?}", e));
+        wrap(self.tokenizer.do_tokenize())?;
         self.morphemes.collect_results(&mut self.tokenizer).unwrap();
         Ok(())
     }

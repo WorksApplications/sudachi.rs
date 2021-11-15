@@ -37,7 +37,7 @@ setup(
     },
     extras_require={
         "tests": [
-            "tokenizers"
+            "tokenizers", "sudachidict_core"
         ]
     },
     # rust extensions are not zip safe, just like C-extensions.
