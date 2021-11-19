@@ -215,7 +215,7 @@ impl<D: DictionaryAccess> StatefulTokenizer<D> {
     ) {
         self.input.swap_original(input);
         std::mem::swap(self.top_path.as_mut().unwrap(), result);
-        std::mem::swap(&mut self.subset, subset);
+        *subset = self.subset;
     }
 
     fn rewrite_input(&mut self) -> SudachiResult<()> {
