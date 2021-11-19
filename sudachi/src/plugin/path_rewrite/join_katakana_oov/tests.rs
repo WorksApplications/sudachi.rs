@@ -19,7 +19,7 @@ use super::*;
 use crate::analysis::Node;
 use crate::dic::character_category::CharacterCategory;
 use crate::dic::grammar::Grammar;
-use crate::dic::lexicon::word_infos::WordInfo;
+use crate::dic::lexicon::word_infos::WordInfoData;
 use crate::dic::word_id::WordId;
 use crate::test::zero_grammar;
 use lazy_static::lazy_static;
@@ -119,7 +119,7 @@ fn with_noovbow() {
         .rewrite(&text, path, &Lattice::default())
         .expect("Failed to rewrite path");
     assert_eq!(2, path.len());
-    assert_eq!("ァ", path[0].word_info().surface);
+    assert_eq!("ァ", path[0].word_info().surface());
 
     let text = build_text("アイウァアイウ");
     let path = vec![
@@ -156,14 +156,15 @@ fn build_node(start: usize, end: usize, cost: i32, surface: &str) -> ResultNode 
         cost,
         start as u16,
         end as u16,
-        WordInfo {
+        WordInfoData {
             surface: surface.to_string(),
             normalized_form: surface.to_string(),
             dictionary_form: surface.to_string(),
             pos_id: 4,
             dictionary_form_word_id: -1,
             ..Default::default()
-        },
+        }
+        .into(),
     )
 }
 
@@ -182,14 +183,15 @@ fn build_node_oov(start: usize, end: usize, cost: i32, surface: &str) -> ResultN
         cost,
         start as u16,
         end as u16,
-        WordInfo {
+        WordInfoData {
             surface: surface.to_string(),
             normalized_form: surface.to_string(),
             dictionary_form: surface.to_string(),
             pos_id: 4,
             dictionary_form_word_id: -1,
             ..Default::default()
-        },
+        }
+        .into(),
     )
 }
 

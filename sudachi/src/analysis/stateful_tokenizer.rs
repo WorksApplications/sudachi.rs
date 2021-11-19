@@ -20,7 +20,8 @@ use crate::analysis::node::{LatticeNode, ResultNode};
 use crate::analysis::stateless_tokenizer::{dump_path, split_path, DictionaryAccess};
 use crate::analysis::Mode;
 use crate::dic::category_type::CategoryType;
-use crate::dic::lexicon::word_infos::WordInfo;
+use crate::dic::lexicon::word_infos::WordInfoData;
+use crate::dic::subset::InfoSubset;
 use crate::error::{SudachiError, SudachiResult};
 use crate::input_text::InputBuffer;
 use crate::input_text::InputTextIndex;
@@ -35,6 +36,7 @@ pub struct StatefulTokenizer<D> {
     lattice: Lattice,
     top_path_ids: Vec<NodeIdx>,
     top_path: Option<Vec<ResultNode>>,
+    subset: InfoSubset,
 }
 
 impl<D: DictionaryAccess + Clone> StatefulTokenizer<D> {
@@ -61,6 +63,7 @@ impl<D: DictionaryAccess> StatefulTokenizer<D> {
             lattice: Lattice::default(),
             top_path_ids: Vec::new(),
             top_path: Some(Vec::new()),
+            subset: InfoSubset::all(),
         }
     }
 
@@ -71,7 +74,23 @@ impl<D: DictionaryAccess> StatefulTokenizer<D> {
 
     /// Set the analysis mode and returns the current one
     pub fn set_mode(&mut self, mode: Mode) -> Mode {
+        self.subset |= match mode {
+            Mode::A => InfoSubset::SPLIT_A,
+            Mode::B => InfoSubset::SPLIT_B,
+            _ => InfoSubset::empty(),
+        };
         std::mem::replace(&mut self.mode, mode)
+    }
+
+    /// Analyzer will read only following WordInfo field subset
+    pub fn set_subset(&mut self, subset: InfoSubset) -> InfoSubset {
+        let new_subset = subset.normalize();
+        let mode_subset = match self.mode {
+            Mode::A => InfoSubset::SPLIT_A,
+            Mode::B => InfoSubset::SPLIT_B,
+            _ => InfoSubset::empty(),
+        };
+        std::mem::replace(&mut self.subset, new_subset | mode_subset)
     }
 
     /// Prepare StatefulTokenizer for the next data.
@@ -125,7 +144,7 @@ impl<D: DictionaryAccess> StatefulTokenizer<D> {
             path = plugin.rewrite(&self.input, path, &self.lattice)?;
         }
 
-        path = split_path(&self.dictionary, path, self.mode)?;
+        path = split_path(&self.dictionary, path, self.mode, self.subset)?;
 
         self.translate_indices(&mut path);
 
@@ -150,14 +169,14 @@ impl<D: DictionaryAccess> StatefulTokenizer<D> {
             let (inner, cost) = self.lattice.node(pid);
             let wi = if inner.word_id().is_oov() {
                 let curr_slice = self.input.curr_slice_c(inner.char_range()).to_owned();
-                WordInfo {
+                WordInfoData {
                     pos_id: inner.word_id().word() as u16,
-                    dictionary_form: curr_slice.clone(),
-                    normalized_form: curr_slice,
+                    surface: curr_slice,
                     ..Default::default()
                 }
+                .into()
             } else {
-                lex.get_word_info(inner.word_id())?
+                lex.get_word_info_subset(inner.word_id(), self.subset)?
             };
 
             let byte_begin = self.input.to_curr_byte_idx(inner.begin());
@@ -188,9 +207,15 @@ impl<D: DictionaryAccess> StatefulTokenizer<D> {
     }
 
     /// Swap result data with the current analyzer
-    pub fn swap_result(&mut self, input: &mut String, result: &mut Vec<ResultNode>) {
+    pub fn swap_result(
+        &mut self,
+        input: &mut String,
+        result: &mut Vec<ResultNode>,
+        subset: &mut InfoSubset,
+    ) {
         self.input.swap_original(input);
         std::mem::swap(self.top_path.as_mut().unwrap(), result);
+        std::mem::swap(&mut self.subset, subset);
     }
 
     fn rewrite_input(&mut self) -> SudachiResult<()> {
@@ -273,9 +298,12 @@ impl<D: DictionaryAccess> StatefulTokenizer<D> {
     pub fn into_morpheme_list(self) -> SudachiResult<MorphemeList<D>> {
         match self.top_path {
             None => Err(SudachiError::EosBosDisconnect),
-            Some(path) => {
-                MorphemeList::from_components(self.dictionary, self.input.into_original(), path)
-            }
+            Some(path) => MorphemeList::from_components(
+                self.dictionary,
+                self.input.into_original(),
+                path,
+                self.subset,
+            ),
         }
     }
 }

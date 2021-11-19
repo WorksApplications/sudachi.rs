@@ -16,17 +16,11 @@
 
 use std::iter::FusedIterator;
 
-use nom::{
-    bytes::complete::take,
-    number::complete::{le_i32, le_u16, le_u32},
-};
-
 use crate::dic::lexicon_set::LexiconSet;
-use crate::dic::read::{
-    string_length_parser, u32_array_parser, u32_wid_array_parser, utf16_string_parser,
-};
+use crate::dic::read::u32_parser;
+use crate::dic::read::word_info::WordInfoParser;
+use crate::dic::subset::InfoSubset;
 use crate::dic::word_id::WordId;
-use crate::error::SudachiNomResult;
 use crate::prelude::*;
 
 pub struct WordInfos<'a> {
@@ -55,82 +49,37 @@ impl<'a> WordInfos<'a> {
         Ok(u32_parser(&self.bytes[self.offset + (4 * word_id as usize)..])?.1 as usize)
     }
 
-    pub fn get_word_info(&self, word_id: u32) -> SudachiResult<WordInfo> {
+    fn parse_word_info(&self, word_id: u32, subset: InfoSubset) -> SudachiResult<WordInfoData> {
         let index = self.word_id_to_offset(word_id)?;
-        let mut word_info = word_info_parser(self.bytes, index, self.has_synonym_group_ids)?.1;
+        let parser = WordInfoParser::subset(subset);
+        parser.parse(&self.bytes[index..])
+    }
+
+    pub fn get_word_info(&self, word_id: u32, mut subset: InfoSubset) -> SudachiResult<WordInfo> {
+        if !self.has_synonym_group_ids {
+            subset -= InfoSubset::SYNONYM_GROUP_ID;
+        }
+
+        let mut word_info = self.parse_word_info(word_id, subset)?;
 
         // consult dictionary form
         let dfwi = word_info.dictionary_form_word_id;
         if (dfwi >= 0) && (dfwi != word_id as i32) {
-            word_info.dictionary_form = self.get_word_info(dfwi as u32)?.surface;
+            let inner = self.parse_word_info(dfwi as u32, InfoSubset::SURFACE)?;
+            word_info.dictionary_form = inner.surface;
         };
 
-        Ok(word_info)
+        Ok(word_info.into())
     }
 }
 
-fn u32_parser(input: &[u8]) -> SudachiNomResult<&[u8], u32> {
-    le_u32(input)
-}
-
-pub(crate) fn word_info_parser(
-    input: &[u8],
-    offset: usize,
-    has_synonym_group_ids: bool,
-) -> SudachiNomResult<&[u8], WordInfo> {
-    let (
-        rest,
-        (
-            surface,
-            head_word_length,
-            pos_id,
-            normalized_form,
-            dictionary_form_word_id,
-            reading_form,
-            a_unit_split,
-            b_unit_split,
-            word_structure,
-            synonym_group_ids,
-        ),
-    ) = nom::sequence::preceded(
-        take(offset),
-        nom::sequence::tuple((
-            utf16_string_parser,
-            string_length_parser,
-            le_u16,
-            utf16_string_parser,
-            le_i32,
-            utf16_string_parser,
-            u32_wid_array_parser,
-            u32_wid_array_parser,
-            u32_wid_array_parser,
-            nom::combinator::cond(has_synonym_group_ids, u32_array_parser),
-        )),
-    )(input)?;
-
-    Ok((
-        rest,
-        WordInfo {
-            head_word_length,
-            pos_id,
-            normalized_form: match normalized_form.len() {
-                0 => surface.clone(),
-                _ => normalized_form,
-            },
-            dictionary_form_word_id,
-            dictionary_form: surface.clone(),
-            surface, // after normalized_form and dictionary_form, as it may be cloned there
-            reading_form,
-            a_unit_split,
-            b_unit_split,
-            word_structure,
-            synonym_group_ids: synonym_group_ids.unwrap_or_else(|| Vec::new()),
-        },
-    ))
-}
-
+/// Internal storage of the WordInfo.
+/// It is not accessible by default, but a WordInfo can be created from it:
+/// `let wi: WordInfo = data.into();`
+///
+/// String fields CAN be empty, in this case the value of the surface field should be used instead
 #[derive(Clone, Debug, Default)]
-pub struct WordInfo {
+pub struct WordInfoData {
     pub surface: String,
     pub head_word_length: u16,
     pub pos_id: u16,
@@ -142,6 +91,91 @@ pub struct WordInfo {
     pub b_unit_split: Vec<WordId>,
     pub word_structure: Vec<WordId>,
     pub synonym_group_ids: Vec<u32>,
+}
+
+/// WordInfo API.
+///
+/// Internal data is not accessible by default, but can be extracted as
+/// `let data: WordInfoData = info.into()`.
+/// Note: this will consume WordInfo.
+#[derive(Clone, Default)]
+#[repr(transparent)]
+pub struct WordInfo {
+    data: WordInfoData,
+}
+
+impl WordInfo {
+    pub fn surface(&self) -> &str {
+        &self.data.surface
+    }
+
+    pub fn head_word_length(&self) -> usize {
+        self.data.head_word_length as usize
+    }
+
+    pub fn pos_id(&self) -> u16 {
+        self.data.pos_id
+    }
+
+    pub fn normalized_form(&self) -> &str {
+        if self.data.normalized_form.is_empty() {
+            self.surface()
+        } else {
+            &self.data.normalized_form
+        }
+    }
+
+    pub fn dictionary_form_word_id(&self) -> i32 {
+        self.data.dictionary_form_word_id
+    }
+
+    pub fn dictionary_form(&self) -> &str {
+        if self.data.dictionary_form.is_empty() {
+            self.surface()
+        } else {
+            &self.data.dictionary_form
+        }
+    }
+
+    pub fn reading_form(&self) -> &str {
+        if self.data.reading_form.is_empty() {
+            self.surface()
+        } else {
+            &self.data.reading_form
+        }
+    }
+
+    pub fn a_unit_split(&self) -> &[WordId] {
+        &self.data.a_unit_split
+    }
+
+    pub fn b_unit_split(&self) -> &[WordId] {
+        &self.data.b_unit_split
+    }
+
+    pub fn word_structure(&self) -> &[WordId] {
+        &self.data.word_structure
+    }
+
+    pub fn synonym_group_ids(&self) -> &[u32] {
+        &self.data.synonym_group_ids
+    }
+
+    pub fn borrow_data(&self) -> &WordInfoData {
+        &self.data
+    }
+}
+
+impl From<WordInfoData> for WordInfo {
+    fn from(data: WordInfoData) -> Self {
+        WordInfo { data }
+    }
+}
+
+impl From<WordInfo> for WordInfoData {
+    fn from(info: WordInfo) -> Self {
+        info.data
+    }
 }
 
 struct SplitIter<'a> {
@@ -161,6 +195,11 @@ impl Iterator for SplitIter<'_> {
             self.index += 1;
             Some(self.lexicon.get_word_info(self.split[idx]))
         }
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let rem = self.split.len() - self.index;
+        (rem, Some(rem))
     }
 }
 

@@ -18,6 +18,7 @@ use std::cmp;
 
 use crate::analysis::stateful_tokenizer::StatefulTokenizer;
 use crate::analysis::stateless_tokenizer::DictionaryAccess;
+use crate::dic::subset::InfoSubset;
 use crate::dic::word_id::WordId;
 use nom::{bytes::complete::take, number::complete::le_u32};
 
@@ -75,17 +76,17 @@ impl<'a> Lexicon<'a> {
     ) -> SudachiResult<Lexicon> {
         let mut offset = original_offset;
 
-        let (_rest, trie_size) = u32_parser(buf, offset)?;
+        let (_rest, trie_size) = u32_parser_offset(buf, offset)?;
         offset += 4;
         let (_rest, trie_array) = trie_array_parser(buf, offset, trie_size)?;
         let trie = Trie::new(trie_array, trie_size);
         offset += trie.total_size();
 
-        let (_rest, word_id_table_size) = u32_parser(buf, offset)?;
+        let (_rest, word_id_table_size) = u32_parser_offset(buf, offset)?;
         let word_id_table = WordIdTable::new(buf, word_id_table_size, offset + 4);
         offset += word_id_table.storage_size();
 
-        let (_rest, word_params_size) = u32_parser(buf, offset)?;
+        let (_rest, word_params_size) = u32_parser_offset(buf, offset)?;
         let word_params = WordParams::new(buf, word_params_size, offset + 4);
         offset += word_params.storage_size();
 
@@ -128,9 +129,11 @@ impl<'a> Lexicon<'a> {
             })
     }
 
-    /// Returns word_info for given word_id
-    pub fn get_word_info(&self, word_id: u32) -> SudachiResult<WordInfo> {
-        self.word_infos.get_word_info(word_id)
+    /// Returns WordInfo for given word_id
+    ///
+    /// WordInfo will contain only fields included in InfoSubset
+    pub fn get_word_info(&self, word_id: u32, subset: InfoSubset) -> SudachiResult<WordInfo> {
+        self.word_infos.get_word_info(word_id, subset)
     }
 
     /// Returns word_param for given word_id.
@@ -148,8 +151,8 @@ impl<'a> Lexicon<'a> {
             if self.word_params.get_cost(wid) != i16::MIN {
                 continue;
             }
-            let surface = self.get_word_info(wid)?.surface;
-            tok.reset().push_str(&surface);
+            let wi = self.get_word_info(wid, InfoSubset::SURFACE)?;
+            tok.reset().push_str(wi.surface());
             tok.do_tokenize()?;
             ms.collect_results(&mut tok)?;
             let internal_cost = ms.get_internal_cost();
@@ -167,7 +170,7 @@ impl<'a> Lexicon<'a> {
     }
 }
 
-fn u32_parser(input: &[u8], offset: usize) -> SudachiNomResult<&[u8], u32> {
+fn u32_parser_offset(input: &[u8], offset: usize) -> SudachiNomResult<&[u8], u32> {
     nom::sequence::preceded(take(offset), le_u32)(input)
 }
 

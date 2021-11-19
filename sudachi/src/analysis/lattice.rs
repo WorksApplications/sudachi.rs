@@ -19,6 +19,7 @@ use crate::analysis::node::{LatticeNode, PathCost, RightId};
 use crate::dic::connect::ConnectionMatrix;
 use crate::dic::grammar::Grammar;
 use crate::dic::lexicon_set::LexiconSet;
+use crate::dic::subset::InfoSubset;
 use crate::dic::word_id::WordId;
 use crate::error::SudachiResult;
 use crate::input_text::InputBuffer;
@@ -252,10 +253,11 @@ impl Lattice {
                         PosData::Borrow(&grammar.pos_list[pos_id]),
                     )
                 } else {
-                    let winfo = lexicon.get_word_info(r_node.word_id())?;
+                    let winfo =
+                        lexicon.get_word_info_subset(r_node.word_id(), InfoSubset::POS_ID)?;
                     (
                         input.orig_slice_c(r_node.begin()..r_node.end()),
-                        PosData::Borrow(&grammar.pos_list[winfo.pos_id as usize]),
+                        PosData::Borrow(&grammar.pos_list[winfo.pos_id() as usize]),
                     )
                 };
 

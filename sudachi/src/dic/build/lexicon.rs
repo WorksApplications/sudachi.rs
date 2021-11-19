@@ -42,6 +42,9 @@ use crate::error::SudachiResult;
 #[cfg(test)]
 mod test;
 
+#[cfg(test)]
+mod wordinfo_test;
+
 #[derive(Hash, Eq, PartialEq)]
 pub struct StrPosEntry {
     data: [Cow<'static, str>; POS_DEPTH],

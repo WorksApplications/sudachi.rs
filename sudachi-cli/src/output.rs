@@ -17,6 +17,7 @@
 use std::io::{BufWriter, Write};
 use sudachi::analysis::morpheme::Morpheme;
 use sudachi::analysis::stateless_tokenizer::DictionaryAccess;
+use sudachi::dic::subset::InfoSubset;
 
 use sudachi::prelude::{MorphemeList, SudachiResult};
 
@@ -24,6 +25,7 @@ pub type Writer = BufWriter<Box<dyn Write>>;
 
 pub trait SudachiOutput<T> {
     fn write(&self, writer: &mut Writer, morphemes: &MorphemeList<T>) -> SudachiResult<()>;
+    fn subset(&self) -> InfoSubset;
 }
 
 pub struct Wakachi {
@@ -58,6 +60,10 @@ impl<T: DictionaryAccess> SudachiOutput<T> for Wakachi {
         }
         Ok(())
     }
+
+    fn subset(&self) -> InfoSubset {
+        InfoSubset::SURFACE
+    }
 }
 
 pub struct Simple {
@@ -81,6 +87,18 @@ impl<T: DictionaryAccess> SudachiOutput<T> for Simple {
         }
         writer.write_all(b"EOS\n")?;
         Ok(())
+    }
+
+    fn subset(&self) -> InfoSubset {
+        let mut subset = InfoSubset::SURFACE | InfoSubset::POS_ID | InfoSubset::NORMALIZED_FORM;
+
+        if self.print_all {
+            subset |= InfoSubset::DIC_FORM_WORD_ID
+                | InfoSubset::READING_FORM
+                | InfoSubset::SYNONYM_GROUP_ID;
+        }
+
+        subset
     }
 }
 

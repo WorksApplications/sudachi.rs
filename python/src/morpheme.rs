@@ -197,25 +197,25 @@ impl PyMorpheme {
     /// Returns the id of the part of speech in the dictionary
     #[pyo3(text_signature = "($self)")]
     fn part_of_speech_id(&self) -> u16 {
-        self.list.get_word_info(self.index).pos_id
+        self.list.get_word_info(self.index).pos_id()
     }
 
     /// Returns the dictionary form
     #[pyo3(text_signature = "($self)")]
     fn dictionary_form(&self) -> &str {
-        &self.list.get_word_info(self.index).dictionary_form
+        self.list.get_word_info(self.index).dictionary_form()
     }
 
     /// Returns the normalized form
     #[pyo3(text_signature = "($self)")]
     fn normalized_form(&self) -> &str {
-        &self.list.get_word_info(self.index).normalized_form
+        self.list.get_word_info(self.index).normalized_form()
     }
 
     /// Returns the reading form
     #[pyo3(text_signature = "($self)")]
     fn reading_form(&self) -> &str {
-        &self.list.get_word_info(self.index).reading_form
+        self.list.get_word_info(self.index).reading_form()
     }
 
     /// Returns a list of morphemes splitting itself with given split mode
@@ -264,7 +264,7 @@ impl PyMorpheme {
     /// Returns the list of synonym group ids
     #[pyo3(text_signature = "($self)")]
     fn synonym_group_ids(&self, py: Python) -> Py<PyList> {
-        let ids = &self.list.get_word_info(self.index).synonym_group_ids;
+        let ids = self.list.get_word_info(self.index).synonym_group_ids();
         PyList::new(py, ids).into()
     }
 
