@@ -131,6 +131,13 @@
 <span id="131">131</span>
 <span id="132">132</span>
 <span id="133">133</span>
+<span id="134">134</span>
+<span id="135">135</span>
+<span id="136">136</span>
+<span id="137">137</span>
+<span id="138">138</span>
+<span id="139">139</span>
+<span id="140">140</span>
 </pre><pre class="rust"><code><span class="comment">/*
  *  Copyright (c) 2021 Works Applications Co., Ltd.
  *
@@ -149,6 +156,8 @@
 
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::analysis::stateless_tokenizer::DictionaryAccess</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::dic::build::lexicon</span>::{<span class="ident">RawLexiconEntry</span>, <span class="ident">SplitUnitResolver</span>};
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::dic::lexicon::word_infos::WordInfoData</span>;
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::dic::subset::InfoSubset</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::dic::word_id::WordId</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::error::SudachiResult</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::util::fxhash::FxBuildHasher</span>;
@@ -168,12 +177,17 @@
             <span class="ident">HashMap::default</span>();
         <span class="kw">for</span> <span class="ident">id</span> <span class="kw">in</span> <span class="number">0</span>..<span class="ident">size</span> {
             <span class="kw">let</span> <span class="ident">wid</span> <span class="op">=</span> <span class="ident">WordId::new</span>(<span class="number">0</span>, <span class="ident">id</span>);
-            <span class="kw">let</span> <span class="ident">winfo</span> <span class="op">=</span> <span class="ident">lex</span>.<span class="ident">get_word_info</span>(<span class="ident">wid</span>)<span class="question-mark">?</span>;
+            <span class="kw">let</span> <span class="ident">winfo</span>: <span class="ident">WordInfoData</span> <span class="op">=</span> <span class="ident">lex</span>
+                .<span class="ident">get_word_info_subset</span>(
+                    <span class="ident">wid</span>,
+                    <span class="ident">InfoSubset::SURFACE</span> <span class="op">|</span> <span class="ident">InfoSubset::READING_FORM</span> <span class="op">|</span> <span class="ident">InfoSubset::POS_ID</span>,
+                )<span class="question-mark">?</span>
+                .<span class="ident">into</span>();
             <span class="kw">let</span> <span class="ident">surface</span> <span class="op">=</span> <span class="ident">winfo</span>.<span class="ident">surface</span>;
             <span class="kw">let</span> <span class="ident">reading</span> <span class="op">=</span> <span class="ident">winfo</span>.<span class="ident">reading_form</span>;
             <span class="kw">let</span> <span class="ident">pos_id</span> <span class="op">=</span> <span class="ident">winfo</span>.<span class="ident">pos_id</span>;
 
-            <span class="kw">let</span> <span class="ident">rdfield</span> <span class="op">=</span> <span class="kw">if</span> <span class="ident">surface</span> <span class="op">=</span><span class="op">=</span> <span class="ident">reading</span> {
+            <span class="kw">let</span> <span class="ident">rdfield</span> <span class="op">=</span> <span class="kw">if</span> <span class="ident">reading</span>.<span class="ident">is_empty</span>() <span class="op">|</span><span class="op">|</span> <span class="ident">surface</span> <span class="op">=</span><span class="op">=</span> <span class="ident">reading</span> {
                 <span class="prelude-val">None</span>
             } <span class="kw">else</span> {
                 <span class="prelude-val">Some</span>(<span class="ident">reading</span>)

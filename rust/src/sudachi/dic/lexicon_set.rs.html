@@ -134,6 +134,27 @@
 <span id="134">134</span>
 <span id="135">135</span>
 <span id="136">136</span>
+<span id="137">137</span>
+<span id="138">138</span>
+<span id="139">139</span>
+<span id="140">140</span>
+<span id="141">141</span>
+<span id="142">142</span>
+<span id="143">143</span>
+<span id="144">144</span>
+<span id="145">145</span>
+<span id="146">146</span>
+<span id="147">147</span>
+<span id="148">148</span>
+<span id="149">149</span>
+<span id="150">150</span>
+<span id="151">151</span>
+<span id="152">152</span>
+<span id="153">153</span>
+<span id="154">154</span>
+<span id="155">155</span>
+<span id="156">156</span>
+<span id="157">157</span>
 </pre><pre class="rust"><code><span class="comment">/*
  * Copyright (c) 2021 Works Applications Co., Ltd.
  *
@@ -152,8 +173,9 @@
 
 <span class="kw">use</span> <span class="ident">thiserror::Error</span>;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::dic::lexicon::word_infos::WordInfo</span>;
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::dic::lexicon::word_infos</span>::{<span class="ident">WordInfo</span>, <span class="ident">WordInfoData</span>};
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::dic::lexicon</span>::{<span class="ident">Lexicon</span>, <span class="ident">LexiconEntry</span>, <span class="ident">MAX_DICTIONARIES</span>};
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::dic::subset::InfoSubset</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::dic::word_id::WordId</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::prelude</span>::<span class="kw-2">*</span>;
 
@@ -231,22 +253,42 @@
             .<span class="ident">flat_map</span>(<span class="kw">move</span> <span class="op">|</span><span class="ident">l</span><span class="op">|</span> <span class="ident">l</span>.<span class="ident">lookup</span>(<span class="ident">input</span>, <span class="ident">offset</span>))
     }
 
-    <span class="doccomment">/// Returns word_info for given word_id</span>
+    <span class="doccomment">/// Returns WordInfo for given WordId</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_word_info</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">id</span>: <span class="ident">WordId</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="ident">WordInfo</span><span class="op">&gt;</span> {
+        <span class="self">self</span>.<span class="ident">get_word_info_subset</span>(<span class="ident">id</span>, <span class="ident">InfoSubset::all</span>())
+    }
+
+    <span class="doccomment">/// Returns WordInfo for given WordId.</span>
+    <span class="doccomment">/// Only fills a requested subset of fields.</span>
+    <span class="doccomment">/// Rest will be of default values (0 or empty).</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_word_info_subset</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">id</span>: <span class="ident">WordId</span>, <span class="ident">subset</span>: <span class="ident">InfoSubset</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="ident">WordInfo</span><span class="op">&gt;</span> {
         <span class="kw">let</span> <span class="ident">dict_id</span> <span class="op">=</span> <span class="ident">id</span>.<span class="ident">dic</span>();
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">word_info</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">lexicons</span>[<span class="ident">dict_id</span> <span class="kw">as</span> <span class="ident">usize</span>].<span class="ident">get_word_info</span>(<span class="ident">id</span>.<span class="ident">word</span>())<span class="question-mark">?</span>;
-        <span class="kw">let</span> <span class="ident">pos_id</span> <span class="op">=</span> <span class="ident">word_info</span>.<span class="ident">pos_id</span>;
-        <span class="kw">if</span> <span class="ident">dict_id</span> <span class="op">&gt;</span> <span class="number">0</span> <span class="op">&amp;&amp;</span> <span class="ident">pos_id</span> <span class="kw">as</span> <span class="ident">usize</span> <span class="op">&gt;</span><span class="op">=</span> <span class="self">self</span>.<span class="ident">pos_offsets</span>[<span class="number">1</span>] {
-            <span class="comment">// user defined part-of-speech</span>
-            <span class="ident">word_info</span>.<span class="ident">pos_id</span> <span class="op">=</span>
-                (<span class="ident">pos_id</span> <span class="kw">as</span> <span class="ident">usize</span> <span class="op">-</span> <span class="self">self</span>.<span class="ident">pos_offsets</span>[<span class="number">1</span>] <span class="op">+</span> <span class="self">self</span>.<span class="ident">pos_offsets</span>[<span class="ident">dict_id</span> <span class="kw">as</span> <span class="ident">usize</span>]) <span class="kw">as</span> <span class="ident">u16</span>;
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">word_info</span>: <span class="ident">WordInfoData</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">lexicons</span>[<span class="ident">dict_id</span> <span class="kw">as</span> <span class="ident">usize</span>]
+            .<span class="ident">get_word_info</span>(<span class="ident">id</span>.<span class="ident">word</span>(), <span class="ident">subset</span>)<span class="question-mark">?</span>
+            .<span class="ident">into</span>();
+
+        <span class="kw">if</span> <span class="ident">subset</span>.<span class="ident">contains</span>(<span class="ident">InfoSubset::POS_ID</span>) {
+            <span class="kw">let</span> <span class="ident">pos_id</span> <span class="op">=</span> <span class="ident">word_info</span>.<span class="ident">pos_id</span>;
+            <span class="kw">if</span> <span class="ident">dict_id</span> <span class="op">&gt;</span> <span class="number">0</span> <span class="op">&amp;&amp;</span> <span class="ident">pos_id</span> <span class="kw">as</span> <span class="ident">usize</span> <span class="op">&gt;</span><span class="op">=</span> <span class="self">self</span>.<span class="ident">pos_offsets</span>[<span class="number">1</span>] {
+                <span class="comment">// user defined part-of-speech</span>
+                <span class="ident">word_info</span>.<span class="ident">pos_id</span> <span class="op">=</span> (<span class="ident">pos_id</span> <span class="kw">as</span> <span class="ident">usize</span> <span class="op">-</span> <span class="self">self</span>.<span class="ident">pos_offsets</span>[<span class="number">1</span>]
+                    <span class="op">+</span> <span class="self">self</span>.<span class="ident">pos_offsets</span>[<span class="ident">dict_id</span> <span class="kw">as</span> <span class="ident">usize</span>]) <span class="kw">as</span> <span class="ident">u16</span>;
+            }
         }
 
-        <span class="ident"><span class="self">Self</span>::update_dict_id</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">word_info</span>.<span class="ident">a_unit_split</span>, <span class="ident">dict_id</span>)<span class="question-mark">?</span>;
-        <span class="ident"><span class="self">Self</span>::update_dict_id</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">word_info</span>.<span class="ident">b_unit_split</span>, <span class="ident">dict_id</span>)<span class="question-mark">?</span>;
-        <span class="ident"><span class="self">Self</span>::update_dict_id</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">word_info</span>.<span class="ident">word_structure</span>, <span class="ident">dict_id</span>)<span class="question-mark">?</span>;
+        <span class="kw">if</span> <span class="ident">subset</span>.<span class="ident">contains</span>(<span class="ident">InfoSubset::SPLIT_A</span>) {
+            <span class="ident"><span class="self">Self</span>::update_dict_id</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">word_info</span>.<span class="ident">a_unit_split</span>, <span class="ident">dict_id</span>)<span class="question-mark">?</span>;
+        }
 
-        <span class="prelude-val">Ok</span>(<span class="ident">word_info</span>)
+        <span class="kw">if</span> <span class="ident">subset</span>.<span class="ident">contains</span>(<span class="ident">InfoSubset::SPLIT_B</span>) {
+            <span class="ident"><span class="self">Self</span>::update_dict_id</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">word_info</span>.<span class="ident">b_unit_split</span>, <span class="ident">dict_id</span>)<span class="question-mark">?</span>;
+        }
+
+        <span class="kw">if</span> <span class="ident">subset</span>.<span class="ident">contains</span>(<span class="ident">InfoSubset::WORD_STRUCTURE</span>) {
+            <span class="ident"><span class="self">Self</span>::update_dict_id</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">word_info</span>.<span class="ident">word_structure</span>, <span class="ident">dict_id</span>)<span class="question-mark">?</span>;
+        }
+
+        <span class="prelude-val">Ok</span>(<span class="ident">word_info</span>.<span class="ident">into</span>())
     }
 
     <span class="doccomment">/// Returns word_param for given word_id</span>

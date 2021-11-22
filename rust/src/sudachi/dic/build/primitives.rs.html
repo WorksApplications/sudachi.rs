@@ -219,6 +219,7 @@
 <span id="219">219</span>
 <span id="220">220</span>
 <span id="221">221</span>
+<span id="222">222</span>
 </pre><pre class="rust"><code><span class="comment">/*
  *  Copyright (c) 2021 Works Applications Co., Ltd.
  *
@@ -373,7 +374,8 @@
 <span class="kw">mod</span> <span class="ident">test</span> {
     <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::dic::build::error::DicWriteResult</span>;
     <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::dic::build::primitives</span>::{<span class="ident">write_u32_array</span>, <span class="ident">Utf16Writer</span>};
-    <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::dic::read</span>::{<span class="ident">u32_array_parser</span>, <span class="ident">utf16_string_parser</span>};
+    <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::dic::read::u16str::utf16_string_parser</span>;
+    <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::dic::read::u32_array_parser</span>;
     <span class="kw">use</span> <span class="ident">claim::assert_matches</span>;
 
     <span class="attribute">#[<span class="ident">test</span>]</span>

@@ -1,1 +1,1 @@
-initSidebarItems({"fn":[["string_length_parser",""],["u32_array_parser",""],["u32_wid_array_parser",""],["utf16_string_parser",""]]});
+initSidebarItems({"fn":[["skip_u32_array",""],["skip_wid_array",""],["u32_array_parser",""],["u32_parser",""],["u32_wid_array_parser",""]]});

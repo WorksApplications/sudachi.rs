@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["WordInfo",""],["WordInfos",""]]});
+initSidebarItems({"struct":[["WordInfo","WordInfo API."],["WordInfoData","Internal storage of the WordInfo. It is not accessible by default, but a WordInfo can be created from it: `let wi: WordInfo = data.into();`"],["WordInfos",""]]});
