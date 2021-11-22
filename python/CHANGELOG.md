@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   - `-d` option of `sudachipy` cli does nothing.
   - `sudachipy.Tokenizer` will ignore the provided logger.
   - Ref: [#76]
+- `Morpheme.part_of_speech` method now returns Tuple of POS components instead of a list.
 
 ## [0.6.0] - 2021/10/11
 

@@ -18,17 +18,16 @@ use std::sync::Arc;
 
 use pyo3::exceptions::{self, PyException};
 use pyo3::prelude::*;
-use pyo3::types::{PyList, PyType};
+use pyo3::types::{PyList, PyTuple, PyType};
 
 use sudachi::analysis::morpheme::MorphemeList;
 use sudachi::analysis::node::LatticeNode;
-use sudachi::dic::dictionary::JapaneseDictionary;
 
-use crate::dictionary::PyDictionary;
+use crate::dictionary::{PyDicData, PyDictionary};
 use crate::tokenizer::PySplitMode;
 use crate::word_info::PyWordInfo;
 
-type PyMorphemeList = MorphemeList<Arc<JapaneseDictionary>>;
+type PyMorphemeList = MorphemeList<Arc<PyDicData>>;
 
 /// A list of morphemes
 #[pyclass(module = "sudachipy.morphemelist", name = "MorphemeList")]
@@ -66,8 +65,8 @@ impl PyMorphemeListWrapper {
     }
 }
 
-impl From<MorphemeList<Arc<JapaneseDictionary>>> for PyMorphemeListWrapper {
-    fn from(morpheme_list: MorphemeList<Arc<JapaneseDictionary>>) -> Self {
+impl From<MorphemeList<Arc<PyDicData>>> for PyMorphemeListWrapper {
+    fn from(morpheme_list: MorphemeList<Arc<PyDicData>>) -> Self {
         Self {
             inner: Arc::new(morpheme_list),
         }
@@ -183,15 +182,9 @@ impl PyMorpheme {
 
     /// Returns the part of speech
     #[pyo3(text_signature = "($self)")]
-    fn part_of_speech(&self, py: Python) -> PyResult<Py<PyList>> {
+    fn part_of_speech<'py>(&'py self, py: Python<'py>) -> &'py PyTuple {
         let pos_id = self.part_of_speech_id();
-        let pos = self
-            .list
-            .get_grammar()
-            .pos_list
-            .get(pos_id as usize)
-            .ok_or(PyException::new_err(format!("Error pos not found")))?;
-        Ok(PyList::new(py, pos).into())
+        self.list.dic().pos_of(pos_id).as_ref(py)
     }
 
     /// Returns the id of the part of speech in the dictionary

@@ -19,12 +19,51 @@ use std::sync::Arc;
 
 use pyo3::exceptions::PyException;
 use pyo3::prelude::*;
-use pyo3::types::PyString;
+use pyo3::types::{PyString, PyTuple};
+use sudachi::analysis::stateless_tokenizer::DictionaryAccess;
 
 use sudachi::config::Config;
 use sudachi::dic::dictionary::JapaneseDictionary;
+use sudachi::dic::grammar::Grammar;
+use sudachi::dic::lexicon_set::LexiconSet;
+use sudachi::plugin::input_text::InputTextPlugin;
+use sudachi::plugin::oov::OovProviderPlugin;
+use sudachi::plugin::path_rewrite::PathRewritePlugin;
 
 use crate::tokenizer::{PySplitMode, PyTokenizer};
+
+pub(crate) struct PyDicData {
+    pub(crate) dictionary: JapaneseDictionary,
+    pub(crate) pos: Vec<Py<PyTuple>>,
+}
+
+impl DictionaryAccess for PyDicData {
+    fn grammar(&self) -> &Grammar<'_> {
+        self.dictionary.grammar()
+    }
+
+    fn lexicon(&self) -> &LexiconSet<'_> {
+        self.dictionary.lexicon()
+    }
+
+    fn input_text_plugins(&self) -> &[Box<dyn InputTextPlugin + Sync + Send>] {
+        self.dictionary.input_text_plugins()
+    }
+
+    fn oov_provider_plugins(&self) -> &[Box<dyn OovProviderPlugin + Sync + Send>] {
+        self.dictionary.oov_provider_plugins()
+    }
+
+    fn path_rewrite_plugins(&self) -> &[Box<dyn PathRewritePlugin + Sync + Send>] {
+        self.dictionary.path_rewrite_plugins()
+    }
+}
+
+impl PyDicData {
+    pub fn pos_of(&self, pos_id: u16) -> &Py<PyTuple> {
+        &self.pos[pos_id as usize]
+    }
+}
 
 /// A sudachi dictionary
 #[pyclass(module = "sudachipy.dictionary", name = "Dictionary")]
@@ -32,7 +71,7 @@ use crate::tokenizer::{PySplitMode, PyTokenizer};
 #[derive(Clone)]
 #[repr(transparent)]
 pub struct PyDictionary {
-    pub(super) dictionary: Option<Arc<JapaneseDictionary>>,
+    pub(super) dictionary: Option<Arc<PyDicData>>,
 }
 
 #[pymethods]
@@ -81,12 +120,29 @@ impl PyDictionary {
             config.system_dict = Some(find_dict_path(py, "core")?);
         }
 
-        let dictionary = Arc::new(JapaneseDictionary::from_cfg(&config).map_err(|e| {
+        let jdic = JapaneseDictionary::from_cfg(&config).map_err(|e| {
             PyException::new_err(format!(
                 "Error while constructing dictionary: {}",
                 e.to_string()
             ))
-        })?);
+        })?;
+
+        let pos_data = jdic
+            .grammar()
+            .pos_list
+            .iter()
+            .map(|pos| {
+                let tuple: Py<PyTuple> = PyTuple::new(py, pos).into_py(py);
+                tuple
+            })
+            .collect();
+
+        let dic_data = PyDicData {
+            dictionary: jdic,
+            pos: pos_data,
+        };
+
+        let dictionary = Arc::new(dic_data);
 
         Ok(Self {
             dictionary: Some(dictionary),
