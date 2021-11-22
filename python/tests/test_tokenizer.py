@@ -41,19 +41,19 @@ class TestTokenizer(unittest.TestCase):
         pid = m.part_of_speech_id()
         self.assertEqual(3, pid)
         pos = m.part_of_speech()
-        self.assertEqual(['名詞', '固有名詞', '地名', '一般', '*', '*'], pos)
+        self.assertEqual(('名詞', '固有名詞', '地名', '一般', '*', '*'), pos)
 
     def test_get_word_id(self):
         ms = self.tokenizer_obj.tokenize('京都')
         self.assertEqual(1, len(ms))
-        self.assertEqual(['名詞', '固有名詞', '地名', '一般', '*', '*'],
+        self.assertEqual(('名詞', '固有名詞', '地名', '一般', '*', '*'),
                          ms[0].part_of_speech())
 
         wid = ms[0].word_id()
         ms = self.tokenizer_obj.tokenize('ぴらる')
         self.assertEqual(1, len(ms))
         self.assertNotEqual(wid, ms[0].word_id())
-        self.assertEqual(['名詞', '普通名詞', '一般', '*', '*', '*'],
+        self.assertEqual(('名詞', '普通名詞', '一般', '*', '*', '*'),
                          ms[0].part_of_speech())
 
         ms = self.tokenizer_obj.tokenize('京')

@@ -18,11 +18,11 @@ use std::sync::Arc;
 
 use pyo3::exceptions::PyException;
 use pyo3::prelude::*;
-use sudachi::analysis::stateful_tokenizer::StatefulTokenizer;
 
-use sudachi::dic::dictionary::JapaneseDictionary;
+use sudachi::analysis::stateful_tokenizer::StatefulTokenizer;
 use sudachi::prelude::*;
 
+use crate::dictionary::PyDicData;
 use crate::morpheme::PyMorphemeListWrapper;
 
 /// Unit to split text
@@ -67,11 +67,11 @@ impl From<PySplitMode> for Mode {
 /// Tokenizer of morphelogical analysis
 #[pyclass(module = "sudachipy.tokenizer", name = "Tokenizer")]
 pub struct PyTokenizer {
-    tokenizer: StatefulTokenizer<Arc<JapaneseDictionary>>,
+    tokenizer: StatefulTokenizer<Arc<PyDicData>>,
 }
 
 impl PyTokenizer {
-    pub fn new(dict: Arc<JapaneseDictionary>, mode: Mode) -> Self {
+    pub(crate) fn new(dict: Arc<PyDicData>, mode: Mode) -> Self {
         Self {
             tokenizer: StatefulTokenizer::new(dict, mode),
         }

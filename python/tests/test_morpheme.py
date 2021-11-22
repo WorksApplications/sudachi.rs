@@ -65,8 +65,8 @@ class TestTokenizer(unittest.TestCase):
     def test_morpheme_pos(self):
         m = self.tokenizer_obj.tokenize('京都')[0]
         self.assertEqual(m.part_of_speech_id(), 3)
-        self.assertEqual(m.part_of_speech(), [
-                         '名詞', '固有名詞', '地名', '一般', '*', '*'])
+        self.assertEqual(m.part_of_speech(), (
+                         '名詞', '固有名詞', '地名', '一般', '*', '*'))
 
     def test_morpheme_forms(self):
         m = self.tokenizer_obj.tokenize('東京')[0]

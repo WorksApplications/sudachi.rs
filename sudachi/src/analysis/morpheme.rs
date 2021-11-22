@@ -149,6 +149,10 @@ impl<T> MorphemeList<T> {
         debug_assert!(index < self.path.len());
         Morpheme { list: self, index }
     }
+
+    pub fn dic(&self) -> &T {
+        &self.dict
+    }
 }
 
 /// Iterates over morpheme list
