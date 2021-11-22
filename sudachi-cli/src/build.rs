@@ -234,18 +234,18 @@ fn dump_word_info<W: Write>(lex: &LexiconSet, w: &mut W) -> SudachiResult<()> {
         let (left, right, cost) = lex.get_word_param(wid);
         let winfo = lex.get_word_info(wid)?;
         write!(w, "{},{},{},", left, right, cost)?;
-        write!(w, "{},", winfo.surface)?;
-        write!(w, "{},", winfo.head_word_length)?;
-        write!(w, "{},", winfo.normalized_form)?;
-        write!(w, "{},", winfo.dictionary_form_word_id)?;
-        write!(w, "{},", winfo.reading_form)?;
-        dump_wids(w, &winfo.a_unit_split)?;
+        write!(w, "{},", winfo.surface())?;
+        write!(w, "{},", winfo.head_word_length())?;
+        write!(w, "{},", winfo.normalized_form())?;
+        write!(w, "{},", winfo.dictionary_form_word_id())?;
+        write!(w, "{},", winfo.reading_form())?;
+        dump_wids(w, winfo.a_unit_split())?;
         w.write_all(b",")?;
-        dump_wids(w, &winfo.b_unit_split)?;
+        dump_wids(w, winfo.b_unit_split())?;
         w.write_all(b",")?;
-        dump_wids(w, &winfo.word_structure)?;
+        dump_wids(w, winfo.word_structure())?;
         w.write_all(b",")?;
-        dump_gids(w, &winfo.synonym_group_ids)?;
+        dump_gids(w, winfo.synonym_group_ids())?;
         w.write_all(b"\n")?;
     }
     Ok(())

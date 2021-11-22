@@ -17,7 +17,8 @@
 use super::*;
 use crate::dic::build::error::DicBuildError;
 use crate::dic::build::DictBuilder;
-use crate::dic::lexicon::word_infos::word_info_parser;
+use crate::dic::lexicon::word_infos::WordInfo;
+use crate::dic::read::word_info::WordInfoParser;
 use crate::error::SudachiError;
 use claim::assert_matches;
 use std::fmt::Write;
@@ -196,15 +197,14 @@ fn word_info_rw() {
         .write_word_info(&mut u16w, &mut data)
         .unwrap();
 
-    let (rest, wi) = word_info_parser(&data, 0, true).unwrap();
-    assert_eq!(rest.len(), 0);
-    assert_eq!(wi.surface, "京都");
-    assert_eq!(wi.dictionary_form, "京都");
-    assert_eq!(wi.normalized_form, "京都");
-    assert_eq!(wi.reading_form, "キョウト");
-    assert_eq!(wi.a_unit_split.len(), 0);
-    assert_eq!(wi.b_unit_split.len(), 0);
-    assert_eq!(wi.word_structure.len(), 0);
-    assert_eq!(wi.synonym_group_ids.len(), 0);
-    assert_eq!(wi.dictionary_form_word_id, -1);
+    let wi: WordInfo = WordInfoParser::default().parse(&data).unwrap().into();
+    assert_eq!(wi.surface(), "京都");
+    assert_eq!(wi.dictionary_form(), "京都");
+    assert_eq!(wi.normalized_form(), "京都");
+    assert_eq!(wi.reading_form(), "キョウト");
+    assert_eq!(wi.a_unit_split().len(), 0);
+    assert_eq!(wi.b_unit_split().len(), 0);
+    assert_eq!(wi.word_structure().len(), 0);
+    assert_eq!(wi.synonym_group_ids().len(), 0);
+    assert_eq!(wi.dictionary_form_word_id(), -1);
 }

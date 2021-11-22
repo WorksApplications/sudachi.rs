@@ -16,8 +16,9 @@
 
 use thiserror::Error;
 
-use crate::dic::lexicon::word_infos::WordInfo;
+use crate::dic::lexicon::word_infos::{WordInfo, WordInfoData};
 use crate::dic::lexicon::{Lexicon, LexiconEntry, MAX_DICTIONARIES};
+use crate::dic::subset::InfoSubset;
 use crate::dic::word_id::WordId;
 use crate::prelude::*;
 
@@ -95,22 +96,42 @@ impl LexiconSet<'_> {
             .flat_map(move |l| l.lookup(input, offset))
     }
 
-    /// Returns word_info for given word_id
+    /// Returns WordInfo for given WordId
     pub fn get_word_info(&self, id: WordId) -> SudachiResult<WordInfo> {
+        self.get_word_info_subset(id, InfoSubset::all())
+    }
+
+    /// Returns WordInfo for given WordId.
+    /// Only fills a requested subset of fields.
+    /// Rest will be of default values (0 or empty).
+    pub fn get_word_info_subset(&self, id: WordId, subset: InfoSubset) -> SudachiResult<WordInfo> {
         let dict_id = id.dic();
-        let mut word_info = self.lexicons[dict_id as usize].get_word_info(id.word())?;
-        let pos_id = word_info.pos_id;
-        if dict_id > 0 && pos_id as usize >= self.pos_offsets[1] {
-            // user defined part-of-speech
-            word_info.pos_id =
-                (pos_id as usize - self.pos_offsets[1] + self.pos_offsets[dict_id as usize]) as u16;
+        let mut word_info: WordInfoData = self.lexicons[dict_id as usize]
+            .get_word_info(id.word(), subset)?
+            .into();
+
+        if subset.contains(InfoSubset::POS_ID) {
+            let pos_id = word_info.pos_id;
+            if dict_id > 0 && pos_id as usize >= self.pos_offsets[1] {
+                // user defined part-of-speech
+                word_info.pos_id = (pos_id as usize - self.pos_offsets[1]
+                    + self.pos_offsets[dict_id as usize]) as u16;
+            }
         }
 
-        Self::update_dict_id(&mut word_info.a_unit_split, dict_id)?;
-        Self::update_dict_id(&mut word_info.b_unit_split, dict_id)?;
-        Self::update_dict_id(&mut word_info.word_structure, dict_id)?;
+        if subset.contains(InfoSubset::SPLIT_A) {
+            Self::update_dict_id(&mut word_info.a_unit_split, dict_id)?;
+        }
 
-        Ok(word_info)
+        if subset.contains(InfoSubset::SPLIT_B) {
+            Self::update_dict_id(&mut word_info.b_unit_split, dict_id)?;
+        }
+
+        if subset.contains(InfoSubset::WORD_STRUCTURE) {
+            Self::update_dict_id(&mut word_info.word_structure, dict_id)?;
+        }
+
+        Ok(word_info.into())
     }
 
     /// Returns word_param for given word_id

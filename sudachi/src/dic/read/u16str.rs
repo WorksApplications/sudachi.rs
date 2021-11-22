@@ -14,7 +14,62 @@
  *  limitations under the License.
  */
 
+use crate::error::{SudachiNomError, SudachiNomResult};
+use nom::number::complete::le_u8;
 use std::iter::FusedIterator;
+
+pub fn utf16_string_parser(input: &[u8]) -> SudachiNomResult<&[u8], String> {
+    utf16_string_data(input).and_then(|(rest, data)| {
+        if data.is_empty() {
+            Ok((rest, String::new()))
+        } else {
+            // most Japanese chars are 3-bytes in utf-8 and 2 in utf-16
+            let capacity = (data.len() + 1) * 3 / 2;
+            let mut result = String::with_capacity(capacity);
+            let iter = U16CodeUnits::new(data);
+            for c in char::decode_utf16(iter) {
+                match c {
+                    Err(_) => return Err(nom::Err::Failure(SudachiNomError::Utf16String)),
+                    Ok(c) => result.push(c),
+                }
+            }
+            Ok((rest, result))
+        }
+    })
+}
+
+pub fn skip_u16_string(input: &[u8]) -> SudachiNomResult<&[u8], String> {
+    utf16_string_data(input).map(|(rest, _)| (rest, String::new()))
+}
+
+#[inline]
+pub fn utf16_string_data(input: &[u8]) -> SudachiNomResult<&[u8], &[u8]> {
+    let (rest, length) = string_length_parser(input)?;
+    if length == 0 {
+        return Ok((rest, &[]));
+    }
+    let num_bytes = (length * 2) as usize;
+    if rest.len() < num_bytes {
+        return Err(nom::Err::Failure(SudachiNomError::Utf16String));
+    }
+
+    let (data, rest) = rest.split_at(num_bytes);
+
+    Ok((rest, data))
+}
+
+pub fn string_length_parser(input: &[u8]) -> SudachiNomResult<&[u8], u16> {
+    let (rest, length) = le_u8(input)?;
+    // word length can be 1 or 2 bytes
+    let (rest, opt_low) = nom::combinator::cond(length >= 128, le_u8)(rest)?;
+    Ok((
+        rest,
+        match opt_low {
+            Some(low) => ((length as u16 & 0x7F) << 8) | low as u16,
+            None => length as u16,
+        },
+    ))
+}
 
 /// Read UTF-16 code units from non-aligned storage
 pub struct U16CodeUnits<'a> {

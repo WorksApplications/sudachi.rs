@@ -19,11 +19,13 @@ use std::io::Write;
 use sudachi::analysis::stateful_tokenizer::StatefulTokenizer;
 use sudachi::analysis::stateless_tokenizer::DictionaryAccess;
 use sudachi::analysis::Mode;
+use sudachi::dic::subset::InfoSubset;
 use sudachi::prelude::MorphemeList;
 use sudachi::sentence_splitter::{SentenceSplitter, SplitSentences};
 
 pub trait Analysis {
     fn analyze(&mut self, input: &str, writer: &mut Writer);
+    fn set_subset(&mut self, subset: InfoSubset);
 }
 
 pub struct SplitSentencesOnly<'a> {
@@ -42,6 +44,10 @@ impl<'a> Analysis for SplitSentencesOnly<'a> {
         for (_, sent) in self.splitter.split(input) {
             writer.write_all(sent.as_bytes()).expect("write failed")
         }
+    }
+
+    fn set_subset(&mut self, _subset: InfoSubset) {
+        //noop
     }
 }
 
@@ -74,6 +80,10 @@ impl<D: DictionaryAccess, O: SudachiOutput<D>> Analysis for AnalyzeNonSplitted<D
             .write(writer, &self.morphemes)
             .expect("write result failed");
     }
+
+    fn set_subset(&mut self, subset: InfoSubset) {
+        self.analyzer.set_subset(subset);
+    }
 }
 
 pub struct AnalyzeSplitted<'a, D: DictionaryAccess + 'a, O: SudachiOutput<&'a D>> {
@@ -95,5 +105,9 @@ impl<'a, D: DictionaryAccess + 'a, O: SudachiOutput<&'a D>> Analysis for Analyze
         for (_, sent) in self.splitter.split(input) {
             self.inner.analyze(sent, writer);
         }
+    }
+
+    fn set_subset(&mut self, subset: InfoSubset) {
+        self.inner.set_subset(subset)
     }
 }

@@ -19,6 +19,7 @@ use crate::analysis::stateful_tokenizer::StatefulTokenizer;
 use crate::analysis::stateless_tokenizer::DictionaryAccess;
 use crate::dic::grammar::Grammar;
 use crate::dic::lexicon::word_infos::WordInfo;
+use crate::dic::subset::InfoSubset;
 use crate::dic::word_id::WordId;
 use crate::prelude::*;
 
@@ -27,6 +28,7 @@ pub struct MorphemeList<T> {
     dict: T,
     input_text: String,
     path: Vec<ResultNode>,
+    subset: InfoSubset,
 }
 
 impl<T: DictionaryAccess> MorphemeList<T> {
@@ -34,11 +36,13 @@ impl<T: DictionaryAccess> MorphemeList<T> {
         dict: T,
         original: String,
         path: Vec<ResultNode>,
+        subset: InfoSubset,
     ) -> SudachiResult<Self> {
         let list = Self {
             dict,
             input_text: original,
             path,
+            subset,
         };
         Ok(list)
     }
@@ -49,6 +53,7 @@ impl<T: DictionaryAccess> MorphemeList<T> {
             dict,
             input_text: String::new(),
             path: Vec::new(),
+            subset: InfoSubset::default(),
         }
     }
 
@@ -56,7 +61,7 @@ impl<T: DictionaryAccess> MorphemeList<T> {
         &mut self,
         analyzer: &mut StatefulTokenizer<U>,
     ) -> SudachiResult<()> {
-        analyzer.swap_result(&mut self.input_text, &mut self.path);
+        analyzer.swap_result(&mut self.input_text, &mut self.path, &mut self.subset);
         Ok(())
     }
 
@@ -74,13 +79,14 @@ impl<T: DictionaryAccess + Clone> MorphemeList<T> {
         let path = if num_splits <= 1 {
             vec![node.clone()]
         } else {
-            node.split(mode, self.dict.lexicon()).collect()
+            node.split(mode, self.dict.lexicon(), self.subset).collect()
         };
 
         Ok(MorphemeList {
             dict: self.dict.clone(),
             input_text: self.input_text.clone(),
             path,
+            subset: self.subset,
         })
     }
 }
@@ -223,28 +229,28 @@ impl<T> Morpheme<'_, T> {
     }
 
     pub fn part_of_speech_id(&self) -> u16 {
-        self.get_word_info().pos_id
+        self.get_word_info().pos_id()
     }
 
     /// Returns the dictionary form of morpheme
     ///
     /// "Dictionary form" means a word's lemma and "終止形" in Japanese.
     pub fn dictionary_form(&self) -> &str {
-        &self.get_word_info().dictionary_form
+        &self.get_word_info().dictionary_form()
     }
 
     /// Returns the normalized form of morpheme
     ///
     /// This method returns the form normalizing inconsistent spellings and inflected forms
     pub fn normalized_form(&self) -> &str {
-        &self.get_word_info().normalized_form
+        &self.get_word_info().normalized_form()
     }
 
     /// Returns the reading form of morpheme.
     ///
     /// Returns Japanese syllabaries 'フリガナ' in katakana.
     pub fn reading_form(&self) -> &str {
-        &self.get_word_info().reading_form
+        &self.get_word_info().reading_form()
     }
 
     /// Returns if this morpheme is out of vocabulary
@@ -270,7 +276,7 @@ impl<T> Morpheme<'_, T> {
     }
 
     pub fn synonym_group_ids(&self) -> &[u32] {
-        &self.get_word_info().synonym_group_ids
+        &self.get_word_info().synonym_group_ids()
     }
 
     pub fn get_word_info(&self) -> &WordInfo {

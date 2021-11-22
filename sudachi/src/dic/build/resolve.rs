@@ -16,6 +16,8 @@
 
 use crate::analysis::stateless_tokenizer::DictionaryAccess;
 use crate::dic::build::lexicon::{RawLexiconEntry, SplitUnitResolver};
+use crate::dic::lexicon::word_infos::WordInfoData;
+use crate::dic::subset::InfoSubset;
 use crate::dic::word_id::WordId;
 use crate::error::SudachiResult;
 use crate::util::fxhash::FxBuildHasher;
@@ -35,12 +37,17 @@ impl BinDictResolver {
             HashMap::default();
         for id in 0..size {
             let wid = WordId::new(0, id);
-            let winfo = lex.get_word_info(wid)?;
+            let winfo: WordInfoData = lex
+                .get_word_info_subset(
+                    wid,
+                    InfoSubset::SURFACE | InfoSubset::READING_FORM | InfoSubset::POS_ID,
+                )?
+                .into();
             let surface = winfo.surface;
             let reading = winfo.reading_form;
             let pos_id = winfo.pos_id;
 
-            let rdfield = if surface == reading {
+            let rdfield = if reading.is_empty() || surface == reading {
                 None
             } else {
                 Some(reading)

@@ -20,6 +20,7 @@ use std::ops::Deref;
 
 use crate::dic::grammar::Grammar;
 use crate::dic::lexicon_set::LexiconSet;
+use crate::dic::subset::InfoSubset;
 use crate::error::SudachiResult;
 use crate::plugin::input_text::InputTextPlugin;
 use crate::plugin::oov::OovProviderPlugin;
@@ -110,6 +111,7 @@ pub(super) fn split_path<T: DictionaryAccess + ?Sized>(
     dict: &T,
     path: Vec<ResultNode>,
     mode: Mode,
+    subset: InfoSubset,
 ) -> SudachiResult<Vec<ResultNode>> {
     if mode == Mode::C {
         return Ok(path);
@@ -121,7 +123,7 @@ pub(super) fn split_path<T: DictionaryAccess + ?Sized>(
         if split_len <= 1 {
             new_path.push(node);
         } else {
-            new_path.extend(node.split(mode, dict.lexicon()));
+            new_path.extend(node.split(mode, dict.lexicon(), subset));
         }
     }
 

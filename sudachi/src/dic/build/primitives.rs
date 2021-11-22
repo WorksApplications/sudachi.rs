@@ -152,7 +152,8 @@ pub(crate) fn write_u32_array<W: Write, T: ToU32>(w: &mut W, data: &[T]) -> DicW
 mod test {
     use crate::dic::build::error::DicWriteResult;
     use crate::dic::build::primitives::{write_u32_array, Utf16Writer};
-    use crate::dic::read::{u32_array_parser, utf16_string_parser};
+    use crate::dic::read::u16str::utf16_string_parser;
+    use crate::dic::read::u32_array_parser;
     use claim::assert_matches;
 
     #[test]

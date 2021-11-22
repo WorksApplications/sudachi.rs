@@ -14,13 +14,14 @@
  *  limitations under the License.
  */
 
-mod u16str;
+pub(crate) mod u16str;
+pub(crate) mod word_info;
 
 use nom::number::complete::{le_u32, le_u8};
 use nom::Parser;
 
 use crate::dic::word_id::WordId;
-use crate::error::{SudachiNomError, SudachiNomResult};
+use crate::error::SudachiNomResult;
 
 pub fn u32_array_parser(input: &[u8]) -> SudachiNomResult<&[u8], Vec<u32>> {
     let (rest, length) = le_u8(input)?;
@@ -32,36 +33,20 @@ pub fn u32_wid_array_parser(input: &[u8]) -> SudachiNomResult<&[u8], Vec<WordId>
     nom::multi::count(le_u32.map(|id| WordId::from_raw(id)), length as usize)(rest)
 }
 
-pub fn utf16_string_parser(input: &[u8]) -> SudachiNomResult<&[u8], String> {
-    let (rest, length) = string_length_parser(input)?;
-    if length == 0 {
-        return Ok((rest, String::new()));
-    }
-    let num_bytes = (length * 2) as usize;
-    if rest.len() < num_bytes {
-        return Err(nom::Err::Failure(SudachiNomError::Utf16String));
-    }
-
-    let mut result = String::with_capacity(num_bytes * 2);
-    let iter = u16str::U16CodeUnits::new(&rest[..num_bytes]);
-    for c in char::decode_utf16(iter) {
-        match c {
-            Err(_) => return Err(nom::Err::Failure(SudachiNomError::Utf16String)),
-            Ok(c) => result.push(c),
-        }
-    }
-    Ok((&rest[num_bytes..], result))
+pub fn skip_wid_array(input: &[u8]) -> SudachiNomResult<&[u8], Vec<WordId>> {
+    let (rest, length) = le_u8(input)?;
+    let num_bytes = length as usize * 4;
+    let next = &rest[num_bytes..];
+    Ok((next, Vec::new()))
 }
 
-pub fn string_length_parser(input: &[u8]) -> SudachiNomResult<&[u8], u16> {
+pub fn skip_u32_array(input: &[u8]) -> SudachiNomResult<&[u8], Vec<u32>> {
     let (rest, length) = le_u8(input)?;
-    // word length can be 1 or 2 bytes
-    let (rest, opt_low) = nom::combinator::cond(length >= 128, le_u8)(rest)?;
-    Ok((
-        rest,
-        match opt_low {
-            Some(low) => ((length as u16 & 0x7F) << 8) | low as u16,
-            None => length as u16,
-        },
-    ))
+    let num_bytes = length as usize * 4;
+    let next = &rest[num_bytes..];
+    Ok((next, Vec::new()))
+}
+
+pub fn u32_parser(input: &[u8]) -> SudachiNomResult<&[u8], u32> {
+    le_u32(input)
 }
