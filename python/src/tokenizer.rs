@@ -20,6 +20,9 @@ use pyo3::exceptions::PyException;
 use pyo3::prelude::*;
 
 use sudachi::analysis::stateful_tokenizer::StatefulTokenizer;
+
+use sudachi::dic::dictionary::JapaneseDictionary;
+use sudachi::dic::subset::InfoSubset;
 use sudachi::prelude::*;
 
 use crate::dictionary::PyDicData;
@@ -71,10 +74,12 @@ pub struct PyTokenizer {
 }
 
 impl PyTokenizer {
-    pub(crate) fn new(dict: Arc<PyDicData>, mode: Mode) -> Self {
-        Self {
+    pub(crate) fn new(dict: Arc<PyDicData>, mode: Mode, fields: InfoSubset) -> Self {
+        let mut tok = Self {
             tokenizer: StatefulTokenizer::new(dict, mode),
-        }
+        };
+        tok.tokenizer.set_subset(fields);
+        tok
     }
 }
 

@@ -1,5 +1,9 @@
-from typing import ClassVar,  Iterator, List
+from typing import ClassVar, Iterator, List, Set, Literal, Optional
+
 import sudachipy
+
+FieldSet = Optional[Set[Literal["surface", "pos", "normalized_form", "dictionary_form", "reading_form",
+                                "word_structure", "split_a", "split_b", "synonym_group_id"]]]
 
 
 class Dictionary:
@@ -23,11 +27,14 @@ class Dictionary:
         """
         ...
 
-    def create(self, mode: SplitMode = SplitMode.C) -> Tokenizer:
+    def create(self,
+               mode: SplitMode = SplitMode.C,
+               fields: FieldSet = None) -> Tokenizer:
         """
-        Creates a sudachi tokenizer.
+        Creates a Sudachi Tokenizer.
 
-        Provide mode to set tokenizer's default split mode (C by default).
+        mode: sets the analysis mode for this Tokenizer
+        fields: ask Sudachi to load only a subset of fields. See https://worksapplications.github.io/sudachi.rs/python/subsetting.html
         """
         ...
 

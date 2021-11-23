@@ -118,10 +118,17 @@ class TestTokenizer(unittest.TestCase):
 
         self.assertEqual(ms[-1].surface(), ms[1].surface())
         self.assertEqual(ms[-2].surface(), ms[0].surface())
-        with self.assertRaises(IndexError) as cm:
+        with self.assertRaises(IndexError):
             ms[2]
-        with self.assertRaises(IndexError) as cm:
+        with self.assertRaises(IndexError):
             ms[-3]
+
+    def test_tokenizer_subset(self):
+        ms1 = self.tokenizer_obj.tokenize('東京都')
+
+        tok = self.dict_.create(fields={"pos"})
+        ms2 = tok.tokenize('東京都')
+        self.assertEqual(ms1[0].part_of_speech_id(), ms2[0].part_of_speech_id())
 
 
 if __name__ == '__main__':
