@@ -18,6 +18,7 @@ import tokenizers
 from tokenizers.models import WordLevel
 
 import sudachipy
+from sudachipy import MorphemeList
 
 
 class PretokenizerTestCase(unittest.TestCase):
@@ -55,6 +56,20 @@ class PretokenizerTestCase(unittest.TestCase):
         tok.pre_tokenizer = pretok
         res = tok.encode("外国人参政権")
         self.assertEqual(res.ids, [1, 5, 2, 3])
+
+    def test_with_handler(self):
+        def _handler(index, sentence: tokenizers.NormalizedString, ml: MorphemeList):
+            return [tokenizers.NormalizedString(ml[0].part_of_speech()[0]), tokenizers.NormalizedString(str(len(ml)))]
+        pretok = self.dict.pre_tokenizer(sudachipy.SplitMode.A, handler=_handler)
+        vocab = {
+            "[UNK]": 0,
+            "名詞": 6,
+            "4": 7,
+        }
+        tok = tokenizers.Tokenizer(WordLevel(vocab, unk_token="[UNK]"))
+        tok.pre_tokenizer = pretok
+        res = tok.encode("外国人参政権")
+        self.assertEqual(res.ids, [6, 7])
 
 
 if __name__ == '__main__':

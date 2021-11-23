@@ -180,17 +180,38 @@ impl PyDictionary {
     /// Requires package `tokenizers` to be installed.
     ///
     /// mode: Use this split mode (C by default)
-    #[pyo3(
-        text_signature = "($self, mode: sudachipy.SplitMode = sudachipy.SplitMode.C) -> sudachipy.PreTokenizer"
-    )]
+    /// fields: subset of fields to use in tokenizer
+    /// handler: custom transformation function (callable)
+    #[pyo3(text_signature = "($self, mode, fields, handler) -> sudachipy.PreTokenizer")]
     #[args(mode = "None")]
     fn pre_tokenizer<'p>(
         &'p self,
         py: Python<'p>,
         mode: Option<PySplitMode>,
+        fields: Option<&PySet>,
+        handler: Option<Py<PyAny>>,
     ) -> PyResult<&'p PyAny> {
         let mode = mode.unwrap_or(PySplitMode::C).into();
-        let internal = PyPretokenizer::new(self.dictionary.as_ref().unwrap().clone(), mode);
+        let subset = parse_field_subset(fields)?;
+        if let Some(h) = handler.as_ref() {
+            if !h.as_ref(py).is_callable() {
+                return Err(PyException::new_err("handler must be callable"));
+            }
+        }
+
+        // we don't need any fields when handler is not present
+        let subset = if handler.is_none() {
+            InfoSubset::empty()
+        } else {
+            subset
+        };
+
+        let internal = PyPretokenizer::new(
+            self.dictionary.as_ref().unwrap().clone(),
+            mode,
+            subset,
+            handler,
+        );
         let internal_cell = PyCell::new(py, internal)?;
         let module = py.import("tokenizers.pre_tokenizers")?;
         module

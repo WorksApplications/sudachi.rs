@@ -39,12 +39,17 @@ impl Default for InfoSubset {
 }
 
 impl InfoSubset {
-    /// need to read surface if reading any of one of these forms
-    pub fn normalize(self) -> Self {
+    pub fn normalize(mut self) -> Self {
+        // need to read surface if reading any of one of these forms
         if self.intersects(InfoSubset::READING_FORM | InfoSubset::NORMALIZED_FORM) {
-            self | InfoSubset::SURFACE
-        } else {
-            self
+            self |= InfoSubset::SURFACE
         }
+
+        // need to have head word length when splitting
+        if self.intersects(InfoSubset::SPLIT_A | InfoSubset::SPLIT_B) {
+            self |= InfoSubset::HEAD_WORD_LENGTH;
+        }
+
+        self
     }
 }
