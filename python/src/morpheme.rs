@@ -14,6 +14,7 @@
  *  limitations under the License.
  */
 
+use std::borrow::Borrow;
 use std::sync::Arc;
 
 use pyo3::exceptions::{self, PyException};
@@ -268,5 +269,15 @@ impl PyMorpheme {
         PyErr::warn(py, cat, "Users should not touch the raw WordInfo.", 1)?;
 
         Ok(self.list.get_word_info(self.index).clone().into())
+    }
+}
+
+impl PyMorpheme {
+    pub(crate) fn list(&self) -> &PyMorphemeList {
+        self.list.borrow()
+    }
+
+    pub(crate) fn index(&self) -> usize {
+        self.index
     }
 }

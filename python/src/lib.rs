@@ -19,6 +19,7 @@ use pyo3::prelude::*;
 mod build;
 mod dictionary;
 mod morpheme;
+mod pos_matcher;
 mod tokenizer;
 mod word_info;
 

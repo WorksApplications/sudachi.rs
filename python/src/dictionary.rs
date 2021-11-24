@@ -22,6 +22,8 @@ use pyo3::prelude::*;
 use pyo3::types::{PySet, PyString, PyTuple};
 
 use sudachi::analysis::stateless_tokenizer::DictionaryAccess;
+
+use crate::pos_matcher::PyPosMatcher;
 use sudachi::config::Config;
 use sudachi::dic::dictionary::JapaneseDictionary;
 use sudachi::dic::grammar::Grammar;
@@ -162,6 +164,14 @@ impl PyDictionary {
         let fields = parse_field_subset(fields)?;
         let tok = PyTokenizer::new(self.dictionary.as_ref().unwrap().clone(), mode, fields);
         Ok(tok)
+    }
+
+    /// Creates a POS matcher object
+    ///
+    /// target can be either a callable or list of POS partial tuples
+    #[pyo3(text_signature = "($self, target")]
+    fn pos_matcher<'py>(&'py self, py: Python<'py>, target: &PyAny) -> PyResult<PyPosMatcher> {
+        PyPosMatcher::create(py, self.dictionary.as_ref().unwrap(), target)
     }
 
     /// Close this dictionary
