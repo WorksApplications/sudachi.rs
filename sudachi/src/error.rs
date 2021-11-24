@@ -120,6 +120,7 @@ pub enum SudachiNomError<I> {
     /// Failed to parse utf16 string
     Utf16String,
     Nom(I, nom::error::ErrorKind),
+    OutOfBounds(String, usize, usize),
 }
 
 impl<I> nom::error::ParseError<I> for SudachiNomError<I> {
