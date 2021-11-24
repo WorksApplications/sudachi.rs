@@ -14,7 +14,6 @@
  *  limitations under the License.
  */
 
-use std::borrow::Borrow;
 use std::sync::Arc;
 
 use pyo3::exceptions::{self, PyException};
@@ -190,7 +189,7 @@ impl PyMorpheme {
 
     /// Returns the id of the part of speech in the dictionary
     #[pyo3(text_signature = "($self)")]
-    fn part_of_speech_id(&self) -> u16 {
+    pub fn part_of_speech_id(&self) -> u16 {
         self.list.get_word_info(self.index).pos_id()
     }
 
@@ -269,15 +268,5 @@ impl PyMorpheme {
         PyErr::warn(py, cat, "Users should not touch the raw WordInfo.", 1)?;
 
         Ok(self.list.get_word_info(self.index).clone().into())
-    }
-}
-
-impl PyMorpheme {
-    pub(crate) fn list(&self) -> &PyMorphemeList {
-        self.list.borrow()
-    }
-
-    pub(crate) fn index(&self) -> usize {
-        self.index
     }
 }

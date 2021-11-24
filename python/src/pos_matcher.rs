@@ -116,9 +116,8 @@ impl PyPosMatcher {
 #[pymethods]
 impl PyPosMatcher {
     pub fn __call__(&self, m: &PyMorpheme) -> bool {
-        let list = m.list();
-        let idx = m.index();
-        self.matcher.matches_id(list.get_word_info(idx).pos_id())
+        let pos_id = m.part_of_speech_id();
+        self.matcher.matches_id(pos_id)
     }
 
     pub fn __str__(&self) -> String {
