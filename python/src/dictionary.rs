@@ -19,13 +19,14 @@ use std::sync::Arc;
 
 use pyo3::exceptions::PyException;
 use pyo3::prelude::*;
-use pyo3::types::{PyString, PyTuple};
-use sudachi::analysis::stateless_tokenizer::DictionaryAccess;
+use pyo3::types::{PySet, PyString, PyTuple};
 
+use sudachi::analysis::stateless_tokenizer::DictionaryAccess;
 use sudachi::config::Config;
 use sudachi::dic::dictionary::JapaneseDictionary;
 use sudachi::dic::grammar::Grammar;
 use sudachi::dic::lexicon_set::LexiconSet;
+use sudachi::dic::subset::InfoSubset;
 use sudachi::plugin::input_text::InputTextPlugin;
 use sudachi::plugin::oov::OovProviderPlugin;
 use sudachi::plugin::path_rewrite::PathRewritePlugin;
@@ -156,9 +157,11 @@ impl PyDictionary {
         text_signature = "($self, mode: sudachipy.SplitMode = sudachipy.SplitMode.C) -> sudachipy.Tokenizer"
     )]
     #[args(mode = "None")]
-    fn create(&self, mode: Option<PySplitMode>) -> PyTokenizer {
+    fn create(&self, mode: Option<PySplitMode>, fields: Option<&PySet>) -> PyResult<PyTokenizer> {
         let mode = mode.unwrap_or(PySplitMode::C).into();
-        PyTokenizer::new(self.dictionary.as_ref().unwrap().clone(), mode)
+        let fields = parse_field_subset(fields)?;
+        let tok = PyTokenizer::new(self.dictionary.as_ref().unwrap().clone(), mode, fields);
+        Ok(tok)
     }
 
     /// Close this dictionary
@@ -187,4 +190,33 @@ fn find_dict_path(py: Python, dict_type: &str) -> PyResult<PathBuf> {
         .cast_as::<PyString>()?
         .to_str()?;
     Ok(PathBuf::from(path))
+}
+
+fn parse_field_subset(data: Option<&PySet>) -> PyResult<InfoSubset> {
+    if data.is_none() {
+        return Ok(InfoSubset::all());
+    }
+
+    let mut subset = InfoSubset::empty();
+    for el in data.unwrap().iter() {
+        let s = el.str()?.to_str()?;
+        subset |= match s {
+            "surface" => InfoSubset::SURFACE,
+            "pos" | "pos_id" => InfoSubset::POS_ID,
+            "normalized_form" => InfoSubset::NORMALIZED_FORM,
+            "dictionary_form" => InfoSubset::DIC_FORM_WORD_ID,
+            "reading_form" => InfoSubset::READING_FORM,
+            "word_structure" => InfoSubset::WORD_STRUCTURE,
+            "split_a" => InfoSubset::SPLIT_A,
+            "split_b" => InfoSubset::SPLIT_B,
+            "synonym_group_id" => InfoSubset::SYNONYM_GROUP_ID,
+            x => {
+                return Err(PyException::new_err(format!(
+                    "Invalid WordInfo field name {}",
+                    x
+                )))
+            }
+        };
+    }
+    Ok(subset)
 }
