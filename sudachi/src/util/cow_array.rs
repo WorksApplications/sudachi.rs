@@ -30,6 +30,15 @@ impl ReadLE for i16 {
     }
 }
 
+impl ReadLE for u32 {
+    fn from_le_bytes(bytes: &[u8]) -> Result<Self, TryFromSliceError>
+    where
+        Self: Sized,
+    {
+        bytes.try_into().map(|b| Self::from_le_bytes(b))
+    }
+}
+
 /// Copy-on-write array.
 ///
 /// Is used for storing performance critical dictionary parts.
@@ -41,6 +50,19 @@ impl ReadLE for i16 {
 pub struct CowArray<'a, T> {
     slice: &'a [T],
     storage: Option<Vec<T>>,
+}
+
+impl<T: ReadLE + Clone> CowArray<'static, T> {
+    /// Creates from the owned data
+    pub fn from_owned<D: Into<Vec<T>>>(data: D) -> Self {
+        let data = data.into();
+        let slice1: &[T] = &data;
+        let slice: &'static [T] = unsafe { std::mem::transmute(slice1) };
+        Self {
+            storage: Some(data),
+            slice,
+        }
+    }
 }
 
 impl<'a, T: ReadLE + Clone> CowArray<'a, T> {

@@ -105,14 +105,13 @@ mod test {
     use crate::dic::lexicon::trie::{Trie, TrieEntry};
     use std::convert::TryInto;
 
-    fn make_trie(data: Vec<u8>) -> Trie {
+    fn make_trie(data: Vec<u8>) -> Trie<'static> {
         let mut elems: Vec<u32> = Vec::with_capacity(data.len() / 4);
         for i in (0..data.len()).step_by(4) {
             let arr: [u8; 4] = data[i..i + 4].try_into().unwrap();
             elems.push(u32::from_le_bytes(arr))
         }
-        let size = elems.len() as u32;
-        Trie::new(elems, size)
+        Trie::new_owned(elems)
     }
 
     #[test]

@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+use crate::util::cow_array::CowArray;
 use std::iter::FusedIterator;
 
 #[derive(Debug, Eq, PartialEq, Clone)]
@@ -31,9 +32,8 @@ impl TrieEntry {
     }
 }
 
-pub struct Trie {
-    array: Vec<u32>,
-    size: u32, // number of elements
+pub struct Trie<'a> {
+    array: CowArray<'a, u32>,
 }
 
 pub struct TrieEntryIter<'a> {
@@ -86,21 +86,28 @@ impl<'a> Iterator for TrieEntryIter<'a> {
 
 impl FusedIterator for TrieEntryIter<'_> {}
 
-impl Trie {
-    pub fn new(array: Vec<u32>, size: u32) -> Trie {
-        Trie { array, size }
+impl<'a> Trie<'a> {
+    pub fn new(data: &'a [u8], size: usize) -> Trie<'a> {
+        Trie {
+            array: CowArray::from_bytes(data, 0, size),
+        }
+    }
+
+    pub fn new_owned(data: Vec<u32>) -> Trie<'a> {
+        Trie {
+            array: CowArray::from_owned(data),
+        }
     }
 
     pub fn total_size(&self) -> usize {
-        4 * self.size as usize
+        4 * self.array.len() as usize
     }
 
     #[inline]
-    pub fn common_prefix_iterator<'a>(
-        &'a self,
-        input: &'a [u8],
-        offset: usize,
-    ) -> TrieEntryIter<'a> {
+    pub fn common_prefix_iterator<'b>(&'a self, input: &'b [u8], offset: usize) -> TrieEntryIter<'b>
+    where
+        'a: 'b,
+    {
         let unit: usize = self.get(0) as usize;
 
         TrieEntryIter {

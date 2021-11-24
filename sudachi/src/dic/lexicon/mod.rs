@@ -15,6 +15,7 @@
  */
 
 use std::cmp;
+use std::mem::size_of;
 
 use crate::analysis::stateful_tokenizer::StatefulTokenizer;
 use crate::analysis::stateless_tokenizer::DictionaryAccess;
@@ -44,7 +45,7 @@ pub const MAX_DICTIONARIES: usize = 15;
 ///
 /// Contains trie, word_id, word_param, word_info
 pub struct Lexicon<'a> {
-    trie: Trie,
+    trie: Trie<'a>,
     word_id_table: WordIdTable<'a>,
     word_params: WordParams<'a>,
     word_infos: WordInfos<'a>,
@@ -78,8 +79,8 @@ impl<'a> Lexicon<'a> {
 
         let (_rest, trie_size) = u32_parser_offset(buf, offset)?;
         offset += 4;
-        let (_rest, trie_array) = trie_array_parser(buf, offset, trie_size)?;
-        let trie = Trie::new(trie_array, trie_size);
+        let trie_array = trie_array_parser(buf, offset, trie_size)?;
+        let trie = Trie::new(trie_array, trie_size as usize);
         offset += trie.total_size();
 
         let (_rest, word_id_table_size) = u32_parser_offset(buf, offset)?;
@@ -174,11 +175,15 @@ fn u32_parser_offset(input: &[u8], offset: usize) -> SudachiNomResult<&[u8], u32
     nom::sequence::preceded(take(offset), le_u32)(input)
 }
 
-fn trie_array_parser(
-    input: &[u8],
-    offset: usize,
-    trie_size: u32,
-) -> SudachiNomResult<&[u8], Vec<u32>> {
-    // TODO: copied? &[u32] from bytes without copy? Java: `bytes.asIntBuffer();`
-    nom::sequence::preceded(take(offset), nom::multi::count(le_u32, trie_size as usize))(input)
+fn trie_array_parser(input: &[u8], offset: usize, trie_size: u32) -> SudachiResult<&[u8]> {
+    let trie_start = offset;
+    let trie_end = offset + (trie_size as usize) * size_of::<u32>();
+    if input.len() < trie_start {
+        return Err(SudachiError::InvalidRange(trie_start, trie_end));
+    }
+    if input.len() < trie_end {
+        return Err(SudachiError::InvalidRange(trie_start, trie_end));
+    }
+    let trie_data = &input[trie_start..trie_end];
+    Ok(trie_data)
 }
