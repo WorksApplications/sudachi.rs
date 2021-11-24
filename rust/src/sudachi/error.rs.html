@@ -139,6 +139,7 @@
 <span id="139">139</span>
 <span id="140">140</span>
 <span id="141">141</span>
+<span id="142">142</span>
 </pre><pre class="rust"><code><span class="comment">/*
  * Copyright (c) 2021 Works Applications Co., Ltd.
  *
@@ -261,6 +262,7 @@
     <span class="doccomment">/// Failed to parse utf16 string</span>
     <span class="ident">Utf16String</span>,
     <span class="ident">Nom</span>(<span class="ident">I</span>, <span class="ident">nom::error::ErrorKind</span>),
+    <span class="ident">OutOfBounds</span>(<span class="ident">String</span>, <span class="ident">usize</span>, <span class="ident">usize</span>),
 }
 
 <span class="kw">impl</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span> <span class="ident">nom::error::ParseError</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">SudachiNomError</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span> {

@@ -140,7 +140,6 @@
 <span id="140">140</span>
 <span id="141">141</span>
 <span id="142">142</span>
-<span id="143">143</span>
 </pre><pre class="rust"><code><span class="comment">/*
  *  Copyright (c) 2021 Works Applications Co., Ltd.
  *
@@ -248,14 +247,13 @@
     <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::dic::lexicon::trie</span>::{<span class="ident">Trie</span>, <span class="ident">TrieEntry</span>};
     <span class="kw">use</span> <span class="ident">std::convert::TryInto</span>;
 
-    <span class="kw">fn</span> <span class="ident">make_trie</span>(<span class="ident">data</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Trie</span> {
+    <span class="kw">fn</span> <span class="ident">make_trie</span>(<span class="ident">data</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Trie</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span><span class="op">&gt;</span> {
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">elems</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u32</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">Vec::with_capacity</span>(<span class="ident">data</span>.<span class="ident">len</span>() <span class="op">/</span> <span class="number">4</span>);
         <span class="kw">for</span> <span class="ident">i</span> <span class="kw">in</span> (<span class="number">0</span>..<span class="ident">data</span>.<span class="ident">len</span>()).<span class="ident">step_by</span>(<span class="number">4</span>) {
             <span class="kw">let</span> <span class="ident">arr</span>: [<span class="ident">u8</span>; <span class="number">4</span>] <span class="op">=</span> <span class="ident">data</span>[<span class="ident">i</span>..<span class="ident">i</span> <span class="op">+</span> <span class="number">4</span>].<span class="ident">try_into</span>().<span class="ident">unwrap</span>();
             <span class="ident">elems</span>.<span class="ident">push</span>(<span class="ident">u32::from_le_bytes</span>(<span class="ident">arr</span>))
         }
-        <span class="kw">let</span> <span class="ident">size</span> <span class="op">=</span> <span class="ident">elems</span>.<span class="ident">len</span>() <span class="kw">as</span> <span class="ident">u32</span>;
-        <span class="ident">Trie::new</span>(<span class="ident">elems</span>, <span class="ident">size</span>)
+        <span class="ident">Trie::new_owned</span>(<span class="ident">elems</span>)
     }
 
     <span class="attribute">#[<span class="ident">test</span>]</span>
