@@ -34,6 +34,7 @@ pub mod sentence_splitter;
 pub(crate) mod util;
 
 mod hash;
+pub mod pos;
 #[cfg(test)]
 pub mod test;
 

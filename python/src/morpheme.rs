@@ -189,7 +189,7 @@ impl PyMorpheme {
 
     /// Returns the id of the part of speech in the dictionary
     #[pyo3(text_signature = "($self)")]
-    fn part_of_speech_id(&self) -> u16 {
+    pub fn part_of_speech_id(&self) -> u16 {
         self.list.get_word_info(self.index).pos_id()
     }
 

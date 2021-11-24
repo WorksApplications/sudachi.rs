@@ -1,6 +1,19 @@
-from typing import ClassVar, Iterator, List, Set, Literal, Optional
+from typing import ClassVar, Iterator, List, Tuple, Union, Callable, Iterable, Optional, Literal, Set
 
 import sudachipy
+
+POS = Tuple[str, str, str, str, str, str]
+# POS element
+PE = Optional[str]
+PartialPOS = Union[
+    Tuple[PE, PE, PE, PE, PE, PE],
+    Tuple[PE, PE, PE, PE, PE],
+    Tuple[PE, PE, PE, PE],
+    Tuple[PE, PE, PE],
+    Tuple[PE, PE],
+    Tuple[PE],
+    Tuple[()],
+]
 
 FieldSet = Optional[Set[Literal["surface", "pos", "normalized_form", "dictionary_form", "reading_form",
                                 "word_structure", "split_a", "split_b", "synonym_group_id"]]]
@@ -35,6 +48,22 @@ class Dictionary:
 
         mode: sets the analysis mode for this Tokenizer
         fields: ask Sudachi to load only a subset of fields. See https://worksapplications.github.io/sudachi.rs/python/subsetting.html
+        """
+        ...
+
+    def pos_matcher(self, target: Union[Iterable[PartialPOS], Callable[[POS], bool]]) -> PosMatcher:
+        """
+        Creates a new POS matcher
+
+        If target is a function, then it must return whether a POS should match or not.
+        If target a list, it should contain partially specified POS.
+        By partially specified it means that it is possible to omit POS fields or
+        use None as a sentinel value that matches any POS.
+
+        For example, ('名詞',) will match any noun and
+        (None, None, None, None, None, '終止形') will match any word in 終止形 conjugation form.
+
+        :param target: can be either a function or a list of POS tuples.
         """
         ...
 
@@ -88,7 +117,7 @@ class Morpheme:
         """
         ...
 
-    def part_of_speech(self) -> List[str]:
+    def part_of_speech(self) -> POS:
         """
         Returns the part of speech.
         """
@@ -210,3 +239,14 @@ class WordInfo:
     @classmethod
     def __init__(self) -> None: ...
     def length(self) -> int: ...
+
+class PosMatcher:
+    def __iter__(self) -> Iterator[POS]: ...
+    def __len__(self) -> int: ...
+    def __call__(self, m: Morpheme) -> bool:
+        """
+        Checks whether a morpheme has matching POS
+        :param m: morpheme
+        :return: if morpheme has matching POS
+        """
+        ...
