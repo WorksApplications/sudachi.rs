@@ -62,7 +62,7 @@ impl<T: DictionaryAccess> SudachiOutput<T> for Wakachi {
     }
 
     fn subset(&self) -> InfoSubset {
-        InfoSubset::SURFACE
+        InfoSubset::empty()
     }
 }
 
@@ -90,7 +90,7 @@ impl<T: DictionaryAccess> SudachiOutput<T> for Simple {
     }
 
     fn subset(&self) -> InfoSubset {
-        let mut subset = InfoSubset::SURFACE | InfoSubset::POS_ID | InfoSubset::NORMALIZED_FORM;
+        let mut subset = InfoSubset::POS_ID | InfoSubset::NORMALIZED_FORM;
 
         if self.print_all {
             subset |= InfoSubset::DIC_FORM_WORD_ID

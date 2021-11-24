@@ -197,16 +197,16 @@ impl<D: DictionaryAccess> StatefulTokenizer<D> {
     fn translate_indices(&self, path: &mut Vec<ResultNode>) {
         let input = &self.input;
         for elem in path {
-            let mut char_begin = elem.begin();
-            let mut char_end = elem.end();
+            let mut mod_char_begin = elem.begin();
+            let mut mod_char_end = elem.end();
             if !self.subset.contains(InfoSubset::SURFACE) {
-                char_begin = input.ch_idx(elem.begin_bytes());
-                char_end = input.ch_idx(elem.end_bytes());
+                mod_char_begin = input.ch_idx(elem.begin_bytes());
+                mod_char_end = input.ch_idx(elem.end_bytes());
             }
-            let char_begin = input.to_orig_char_idx(char_begin);
-            let char_end = input.to_orig_char_idx(char_end);
-            let byte_begin = input.to_orig_byte_idx(char_begin);
-            let byte_end = input.to_orig_byte_idx(char_end);
+            let char_begin = input.to_orig_char_idx(mod_char_begin);
+            let char_end = input.to_orig_char_idx(mod_char_end);
+            let byte_begin = input.to_orig_byte_idx(mod_char_begin);
+            let byte_end = input.to_orig_byte_idx(mod_char_end);
             elem.set_char_range(char_begin as u16, char_end as u16);
             elem.set_bytes_range(byte_begin as u16, byte_end as u16);
         }
