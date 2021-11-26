@@ -1,6 +1,7 @@
 from typing import ClassVar, Iterator, List, Tuple, Union, Callable, Iterable, Optional, Literal, Set
 
 import sudachipy
+from sudachipy.pretokenizer import SudachiPreTokenizer
 
 POS = Tuple[str, str, str, str, str, str]
 # POS element
@@ -41,7 +42,7 @@ class Dictionary:
         ...
 
     def create(self,
-               mode: SplitMode = SplitMode.C,
+               mode: SplitMode = sudachipy.SplitMode.C,
                fields: FieldSet = None) -> Tokenizer:
         """
         Creates a Sudachi Tokenizer.
@@ -64,6 +65,23 @@ class Dictionary:
         (None, None, None, None, None, '終止形') will match any word in 終止形 conjugation form.
 
         :param target: can be either a function or a list of POS tuples.
+        """
+        ...
+
+    def pre_tokenizer(self,
+                      mode: SplitMode = sudachipy.SplitMode.C,
+                      fields: FieldSet = None,
+                      handler: Optional[Callable[[int, object, MorphemeList], list]] = None) -> SudachiPreTokenizer:
+        """
+        Creates HuggingFace Tokenizers-compatible PreTokenizer.
+        Requires package `tokenizers` to be installed.
+
+        mode: Use this split mode (C by default)
+        fields: ask Sudachi to load only a subset of fields. See https://worksapplications.github.io/sudachi.rs/python/subsetting.html
+        handler: custom callable to transform MorphemeList into list of tokens. See https://github.com/huggingface/tokenizers/blob/master/bindings/python/examples/custom_components.py
+        First two parameters are the index (int) and HuggingFace NormalizedString.
+        The handler must return a List[NormalizedString].
+        By default, just segment the tokens.
         """
         ...
 

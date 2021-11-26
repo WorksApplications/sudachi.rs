@@ -14,26 +14,20 @@
  *  limitations under the License.
  */
 
-use pyo3::prelude::*;
+use pyo3::exceptions::PyException;
+use pyo3::PyResult;
+use std::fmt::{Debug, Display};
 
-mod build;
-mod dictionary;
-mod errors;
-mod morpheme;
-mod pos_matcher;
-mod pretokenizer;
-mod tokenizer;
-mod word_info;
+pub fn wrap<T, E: Display>(v: Result<T, E>) -> PyResult<T> {
+    match v {
+        Ok(v) => Ok(v),
+        Err(e) => Err(PyException::new_err(format!("{}", e))),
+    }
+}
 
-/// module root
-#[pymodule]
-fn sudachipy(_py: Python, m: &PyModule) -> PyResult<()> {
-    m.add_class::<dictionary::PyDictionary>()?;
-    m.add_class::<tokenizer::PySplitMode>()?;
-    m.add_class::<tokenizer::PyTokenizer>()?;
-    m.add_class::<morpheme::PyMorphemeListWrapper>()?;
-    m.add_class::<morpheme::PyMorpheme>()?;
-    m.add_class::<word_info::PyWordInfo>()?;
-    build::register_functions(m)?;
-    Ok(())
+pub fn wrap_ctx<T, E: Display, C: Debug + ?Sized>(v: Result<T, E>, ctx: &C) -> PyResult<T> {
+    match v {
+        Ok(v) => Ok(v),
+        Err(e) => Err(PyException::new_err(format!("{:?}: {}", ctx, e))),
+    }
 }

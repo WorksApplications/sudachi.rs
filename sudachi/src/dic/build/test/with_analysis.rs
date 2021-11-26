@@ -14,11 +14,14 @@
  *  limitations under the License.
  */
 
+use crate::analysis::stateful_tokenizer::StatefulTokenizer;
 use crate::analysis::stateless_tokenizer::StatelessTokenizer;
 use crate::analysis::{Mode, Tokenize};
 use crate::config::Config;
 use crate::dic::build::DictBuilder;
 use crate::dic::dictionary::JapaneseDictionary;
+use crate::dic::subset::InfoSubset;
+use crate::prelude::MorphemeList;
 use std::fmt::{Debug, Write as FmtWrite};
 use std::fs::File;
 use std::io::{BufWriter, Write};
@@ -170,4 +173,25 @@ fn system_plus_user_2() {
     assert_eq!(result.len(), 3);
     assert_eq!(result.get(0).word_id().dic(), 2);
     assert_eq!(result.get(0).part_of_speech().unwrap()[0], "被子植物門");
+}
+
+#[test]
+fn split_with_subset() {
+    let mut cfgb = ConfigTestSupport::new();
+    let mut dic = DictBuilder::new_system();
+    dic.read_conn(super::MATRIX_10_10).unwrap();
+    dic.read_lexicon(SYSTEM_LEX).unwrap();
+    dic.resolve().unwrap();
+    dic.compile(&mut cfgb.make_system()).unwrap();
+
+    let jd = JapaneseDictionary::from_cfg(&cfgb.config()).unwrap();
+    let mut tok = StatefulTokenizer::new(&jd, Mode::A);
+    let mut res = MorphemeList::empty(&jd);
+    tok.set_subset(InfoSubset::empty());
+    tok.reset().push_str("東京都");
+    tok.do_tokenize().unwrap();
+    res.collect_results(&mut tok).unwrap();
+    assert_eq!(res.len(), 2);
+    //assert_eq!(res.get_end(0), 6);
+    assert_eq!(res.get_end(1), 9);
 }

@@ -23,6 +23,8 @@ use pyo3::types::{PySet, PyString, PyTuple};
 
 use sudachi::analysis::stateless_tokenizer::DictionaryAccess;
 
+use crate::pretokenizer::PyPretokenizer;
+
 use crate::pos_matcher::PyPosMatcher;
 use sudachi::config::Config;
 use sudachi::dic::dictionary::JapaneseDictionary;
@@ -172,6 +174,50 @@ impl PyDictionary {
     #[pyo3(text_signature = "($self, target")]
     fn pos_matcher<'py>(&'py self, py: Python<'py>, target: &PyAny) -> PyResult<PyPosMatcher> {
         PyPosMatcher::create(py, self.dictionary.as_ref().unwrap(), target)
+    }
+
+    /// Creates HuggingFace Tokenizers-compatible PreTokenizer.
+    /// Requires package `tokenizers` to be installed.
+    ///
+    /// mode: Use this split mode (C by default)
+    /// fields: subset of fields to use in tokenizer
+    /// handler: custom transformation function (callable)
+    #[pyo3(text_signature = "($self, mode, fields, handler) -> sudachipy.PreTokenizer")]
+    #[args(mode = "None")]
+    fn pre_tokenizer<'p>(
+        &'p self,
+        py: Python<'p>,
+        mode: Option<PySplitMode>,
+        fields: Option<&PySet>,
+        handler: Option<Py<PyAny>>,
+    ) -> PyResult<&'p PyAny> {
+        let mode = mode.unwrap_or(PySplitMode::C).into();
+        let subset = parse_field_subset(fields)?;
+        if let Some(h) = handler.as_ref() {
+            if !h.as_ref(py).is_callable() {
+                return Err(PyException::new_err("handler must be callable"));
+            }
+        }
+
+        // we don't need any fields when handler is not present
+        let subset = if handler.is_none() {
+            InfoSubset::empty()
+        } else {
+            subset
+        };
+
+        let internal = PyPretokenizer::new(
+            self.dictionary.as_ref().unwrap().clone(),
+            mode,
+            subset,
+            handler,
+        );
+        let internal_cell = PyCell::new(py, internal)?;
+        let module = py.import("tokenizers.pre_tokenizers")?;
+        module
+            .getattr("PreTokenizer")?
+            .getattr("custom")?
+            .call1(PyTuple::new(py, [internal_cell]))
     }
 
     /// Close this dictionary

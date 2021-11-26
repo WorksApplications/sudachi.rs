@@ -24,6 +24,7 @@ use crate::dic::word_id::WordId;
 use crate::prelude::*;
 
 /// A list of morphemes
+#[derive(Clone)]
 pub struct MorphemeList<T> {
     dict: T,
     input_text: String,

@@ -35,6 +35,11 @@ setup(
     entry_points={
         "console_scripts": ["sudachipy=sudachipy.command_line:main"],
     },
+    extras_require={
+        "tests": [
+            "tokenizers", "sudachidict_core"
+        ]
+    },
     # rust extensions are not zip safe, just like C-extensions.
     zip_safe=False,
 )

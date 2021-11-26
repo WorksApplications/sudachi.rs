@@ -84,12 +84,12 @@ impl<D: DictionaryAccess> StatefulTokenizer<D> {
 
     /// Analyzer will read only following WordInfo field subset
     pub fn set_subset(&mut self, subset: InfoSubset) -> InfoSubset {
-        let new_subset = subset.normalize();
         let mode_subset = match self.mode {
             Mode::A => InfoSubset::SPLIT_A,
             Mode::B => InfoSubset::SPLIT_B,
             _ => InfoSubset::empty(),
         };
+        let new_subset = (subset | mode_subset).normalize();
         std::mem::replace(&mut self.subset, new_subset | mode_subset)
     }
 
@@ -197,10 +197,16 @@ impl<D: DictionaryAccess> StatefulTokenizer<D> {
     fn translate_indices(&self, path: &mut Vec<ResultNode>) {
         let input = &self.input;
         for elem in path {
-            let char_begin = input.to_orig_char_idx(elem.begin());
-            let char_end = input.to_orig_char_idx(elem.end());
-            let byte_begin = input.to_orig_byte_idx(elem.begin());
-            let byte_end = input.to_orig_byte_idx(elem.end());
+            let mut mod_char_begin = elem.begin();
+            let mut mod_char_end = elem.end();
+            if !self.subset.contains(InfoSubset::SURFACE) {
+                mod_char_begin = input.ch_idx(elem.begin_bytes());
+                mod_char_end = input.ch_idx(elem.end_bytes());
+            }
+            let char_begin = input.to_orig_char_idx(mod_char_begin);
+            let char_end = input.to_orig_char_idx(mod_char_end);
+            let byte_begin = input.to_orig_byte_idx(mod_char_begin);
+            let byte_end = input.to_orig_byte_idx(mod_char_end);
             elem.set_char_range(char_begin as u16, char_end as u16);
             elem.set_bytes_range(byte_begin as u16, byte_end as u16);
         }

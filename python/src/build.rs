@@ -15,10 +15,9 @@
  */
 
 use crate::dictionary::get_default_resource_dir;
-use pyo3::exceptions::PyException;
+use crate::errors;
 use pyo3::prelude::*;
 use pyo3::types::{PyBytes, PyList, PyString, PyTuple, PyType};
-use std::fmt::{Debug, Display};
 use std::fs::{File, OpenOptions};
 use std::io::BufWriter;
 use std::path::Path;
@@ -31,20 +30,6 @@ pub fn register_functions(m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(build_system_dic, m)?)?;
     m.add_function(wrap_pyfunction!(build_user_dic, m)?)?;
     Ok(())
-}
-
-fn wrap<T, E: Display>(v: Result<T, E>) -> PyResult<T> {
-    match v {
-        Ok(v) => Ok(v),
-        Err(e) => Err(PyException::new_err(format!("{}", e))),
-    }
-}
-
-fn wrap_ctx<T, E: Display, C: Debug + ?Sized>(v: Result<T, E>, ctx: &C) -> PyResult<T> {
-    match v {
-        Ok(v) => Ok(v),
-        Err(e) => Err(PyException::new_err(format!("{:?}: {}", ctx, e))),
-    }
 }
 
 fn to_stats<T: DictionaryAccess>(py: Python, builder: DictBuilder<T>) -> PyResult<&PyList> {
@@ -86,18 +71,18 @@ fn build_system_dic<'p>(
     description.map(|d| builder.set_description(d));
 
     let matrix_src = as_data_source(&py, matrix)?;
-    wrap_ctx(builder.read_conn(matrix_src), matrix)?;
+    errors::wrap_ctx(builder.read_conn(matrix_src), matrix)?;
     for f in lex.iter() {
         let lex_src = as_data_source(&py, &f)?;
-        wrap_ctx(builder.read_lexicon(lex_src), &f)?;
+        errors::wrap_ctx(builder.read_lexicon(lex_src), &f)?;
     }
     let out_file = match as_data_source(&py, output)? {
-        DataSource::File(p) => wrap_ctx(create_file(p), p)?,
-        DataSource::Data(_) => return wrap(Err("can't use bytes for output")),
+        DataSource::File(p) => errors::wrap_ctx(create_file(p), p)?,
+        DataSource::Data(_) => return errors::wrap(Err("can't use bytes for output")),
     };
     let mut buf_writer = BufWriter::new(out_file);
-    wrap(builder.resolve())?;
-    wrap(builder.compile(&mut buf_writer))?;
+    errors::wrap(builder.resolve())?;
+    errors::wrap(builder.compile(&mut buf_writer))?;
 
     to_stats(py, builder)
 }
@@ -115,10 +100,10 @@ fn build_user_dic<'p>(
         DataSource::File(f) => {
             let resource_path = get_default_resource_dir(py)?;
             let cfg = Config::minimal_at(resource_path).with_system_dic(f);
-            wrap_ctx(JapaneseDictionary::from_cfg(&cfg), f)?
+            errors::wrap_ctx(JapaneseDictionary::from_cfg(&cfg), f)?
         }
         DataSource::Data(_) => {
-            return wrap(Err(
+            return errors::wrap(Err(
                 "can't load system dictionary from bytes, pass path to the file",
             ))
         }
@@ -129,15 +114,15 @@ fn build_user_dic<'p>(
 
     for f in lex.iter() {
         let lex_src = as_data_source(&py, &f)?;
-        wrap_ctx(builder.read_lexicon(lex_src), &f)?;
+        errors::wrap_ctx(builder.read_lexicon(lex_src), &f)?;
     }
     let out_file = match as_data_source(&py, output)? {
-        DataSource::File(p) => wrap_ctx(create_file(p), p)?,
-        DataSource::Data(_) => return wrap(Err("can't use bytes for output")),
+        DataSource::File(p) => errors::wrap_ctx(create_file(p), p)?,
+        DataSource::Data(_) => return errors::wrap(Err("can't use bytes for output")),
     };
     let mut buf_writer = BufWriter::new(out_file);
-    wrap(builder.resolve())?;
-    wrap(builder.compile(&mut buf_writer))?;
+    errors::wrap(builder.resolve())?;
+    errors::wrap(builder.compile(&mut buf_writer))?;
 
     to_stats(py, builder)
 }

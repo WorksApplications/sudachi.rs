@@ -47,5 +47,10 @@ jobs:
 
     - name: Check that binary works (A mode)
       run: |
-        target/debug/sudachi .github/data/input.txt -m A -o result-a.txt
+        target/debug/sudachi .github/data/input.txt --mode=A -o result-a.txt
         git diff --color=always --no-index -- result-a.txt .github/data/expected-a.txt
+
+    - name: Check that binary works (A mode / wakati)
+      run: |
+        target/debug/sudachi .github/data/input.txt --mode=A --wakati -o result-wakati-a.txt
+        git diff --color=always --no-index -- result-wakati-a.txt .github/data/expected-wakati-a.txt

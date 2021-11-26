@@ -253,9 +253,9 @@ impl Iterator for NodeSplitIterator<'_> {
             (self.char_end, self.byte_end)
         } else {
             (
-                // word_info.head_word_length is in bytes
+                // it is possible that surface is not accessible here, fixup when InputBuffer is available
                 char_start + word_info.surface().chars().count() as u16,
-                byte_start + word_info.surface().len() as u16,
+                byte_start + word_info.head_word_length() as u16,
             )
         };
 
