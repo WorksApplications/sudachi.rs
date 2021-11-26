@@ -115,6 +115,23 @@ class TestTokenizer(unittest.TestCase):
         m = self.tokenizer_obj.tokenize('東京府')[0]
         self.assertEqual(m.synonym_group_ids(), [1, 3])
 
+    def test_normalize_half_full(self):
+        m = self.tokenizer_obj.tokenize('特Ａ東京')
+        self.assertEqual(len(m), 2)
+
+        self.assertEqual(m[0].surface(), "特Ａ")
+        self.assertEqual(m[0].begin(), 0)
+        self.assertEqual(m[0].end(), 2)
+
+    def test_normalize_katakana_half_full(self):
+        m = self.tokenizer_obj.tokenize('ｶﾞ5')
+        self.assertEqual(len(m), 2)
+
+        self.assertEqual(m[0].surface(), "ｶﾞ")
+        self.assertEqual(m[0].end(), 2)
+        self.assertEqual(m[1].begin(), 2)
+        self.assertEqual(len(m[0]), 2)
+
 
 if __name__ == '__main__':
     unittest.main()

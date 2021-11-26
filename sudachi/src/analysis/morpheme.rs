@@ -21,13 +21,15 @@ use crate::dic::grammar::Grammar;
 use crate::dic::lexicon::word_infos::WordInfo;
 use crate::dic::subset::InfoSubset;
 use crate::dic::word_id::WordId;
+use crate::input_text::{InputBuffer, InputTextIndex};
 use crate::prelude::*;
+use std::sync::Arc;
 
 /// A list of morphemes
 #[derive(Clone)]
 pub struct MorphemeList<T> {
     dict: T,
-    input_text: String,
+    input_text: Arc<InputBuffer>,
     path: Vec<ResultNode>,
     subset: InfoSubset,
 }
@@ -35,13 +37,13 @@ pub struct MorphemeList<T> {
 impl<T: DictionaryAccess> MorphemeList<T> {
     pub fn from_components(
         dict: T,
-        original: String,
+        input: InputBuffer,
         path: Vec<ResultNode>,
         subset: InfoSubset,
     ) -> SudachiResult<Self> {
         let list = Self {
             dict,
-            input_text: original,
+            input_text: Arc::new(input),
             path,
             subset,
         };
@@ -50,11 +52,13 @@ impl<T: DictionaryAccess> MorphemeList<T> {
 
     /// Returns an empty morpheme list.
     pub fn empty(dict: T) -> Self {
+        let mut ml = InputBuffer::new();
+        ml.start_build().unwrap(); // will not fail
         Self {
             dict,
-            input_text: String::new(),
-            path: Vec::new(),
-            subset: InfoSubset::default(),
+            input_text: Arc::new(ml),
+            path: Default::default(),
+            subset: Default::default(),
         }
     }
 
@@ -62,7 +66,9 @@ impl<T: DictionaryAccess> MorphemeList<T> {
         &mut self,
         analyzer: &mut StatefulTokenizer<U>,
     ) -> SudachiResult<()> {
-        analyzer.swap_result(&mut self.input_text, &mut self.path, &mut self.subset);
+        // make a copy of input buffer if something else exists
+        let itext = Arc::make_mut(&mut self.input_text);
+        analyzer.swap_result(itext, &mut self.path, &mut self.subset);
         Ok(())
     }
 
@@ -80,7 +86,8 @@ impl<T: DictionaryAccess + Clone> MorphemeList<T> {
         let path = if num_splits <= 1 {
             vec![node.clone()]
         } else {
-            node.split(mode, self.dict.lexicon(), self.subset).collect()
+            node.split(mode, self.dict.lexicon(), self.subset, &self.input_text)
+                .collect()
         };
 
         Ok(MorphemeList {
@@ -102,13 +109,13 @@ impl<T> MorphemeList<T> {
 
     pub fn surface(&self) -> &str {
         if self.len() == 0 {
-            return &self.input_text;
+            return self.input_text.original();
         }
 
         // can be a slice of another list
         let begin = self.path.first().unwrap().begin_bytes();
         let end = self.path.last().unwrap().end_bytes();
-        &self.input_text[begin..end]
+        self.input_text.orig_slice(begin..end)
     }
 
     pub fn get_node(&self, index: usize) -> &ResultNode {
@@ -116,17 +123,31 @@ impl<T> MorphemeList<T> {
     }
 
     pub fn get_begin(&self, index: usize) -> usize {
-        self.path[index].begin_bytes()
+        let mod_bytes = self.path[index].begin();
+        self.input_text.to_orig_byte_idx(mod_bytes)
     }
 
     pub fn get_end(&self, index: usize) -> usize {
-        self.path[index].end_bytes()
+        let mod_bytes = self.path[index].end();
+        self.input_text.to_orig_byte_idx(mod_bytes)
+    }
+
+    /// Returns begin codepoint index in the original sentence
+    pub fn get_begin_cp(&self, index: usize) -> usize {
+        let begin_cp = self.path[index].begin();
+        self.input_text.to_orig_char_idx(begin_cp)
+    }
+
+    /// Returns end codepoint index in the original sentence
+    pub fn get_end_cp(&self, index: usize) -> usize {
+        let end_cp = self.path[index].end();
+        self.input_text.to_orig_char_idx(end_cp)
     }
 
     /// Returns a substring of the original text which corresponds to the morpheme
     pub fn get_surface(&self, index: usize) -> &str {
         let node = &self.path[index];
-        &self.input_text[node.begin_bytes()..node.end_bytes()]
+        &self.input_text.orig_slice(node.bytes_range())
     }
 
     pub fn get_word_info(&self, index: usize) -> &WordInfo {
@@ -214,12 +235,12 @@ impl<T: DictionaryAccess + Clone> Morpheme<'_, T> {
 }
 
 impl<T> Morpheme<'_, T> {
-    /// Returns the begin index of morpheme in the original text
+    /// Returns the begin index in bytes of the morpheme in the original text
     pub fn begin(&self) -> usize {
         self.list.get_begin(self.index)
     }
 
-    /// Returns the end index of morpehme in the original text
+    /// Returns the end index in bytes of the morpheme in the original text
     pub fn end(&self) -> usize {
         self.list.get_end(self.index)
     }

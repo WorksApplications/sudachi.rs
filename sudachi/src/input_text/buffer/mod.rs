@@ -34,7 +34,7 @@ const MAX_LENGTH: usize = u16::MAX as usize / 4 * 3;
 /// if the limit of the rewritten sentence is more than this number, then all bets are off
 const REALLY_MAX_LENGTH: usize = u16::MAX as usize;
 
-#[derive(Eq, PartialEq, Debug)]
+#[derive(Eq, PartialEq, Debug, Clone)]
 enum BufferState {
     Clean,
     RW,
@@ -51,7 +51,7 @@ impl Default for BufferState {
 ///
 /// By saying char we actually mean Unicode codepoint here.
 /// In the context of this struct these terms are synonyms.
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct InputBuffer {
     /// Original input data, output is done on this
     original: String,

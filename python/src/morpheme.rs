@@ -164,14 +164,14 @@ impl PyMorpheme {
     #[pyo3(text_signature = "($self)")]
     fn begin(&self) -> usize {
         // call codepoint version
-        self.list.get_node(self.index).begin()
+        self.list.get_begin_cp(self.index)
     }
 
     /// Returns the end index of this in the input text
     #[pyo3(text_signature = "($self)")]
     fn end(&self) -> usize {
         // call codepoint version
-        self.list.get_node(self.index).end()
+        self.list.get_end_cp(self.index)
     }
 
     /// Returns the surface
@@ -268,5 +268,10 @@ impl PyMorpheme {
         PyErr::warn(py, cat, "Users should not touch the raw WordInfo.", 1)?;
 
         Ok(self.list.get_word_info(self.index).clone().into())
+    }
+
+    /// Returns morpheme length in codepoints
+    pub fn __len__(&self) -> usize {
+        self.end() - self.begin()
     }
 }

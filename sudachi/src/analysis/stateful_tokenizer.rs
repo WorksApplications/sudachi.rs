@@ -144,9 +144,7 @@ impl<D: DictionaryAccess> StatefulTokenizer<D> {
             path = plugin.rewrite(&self.input, path, &self.lattice)?;
         }
 
-        path = split_path(&self.dictionary, path, self.mode, self.subset)?;
-
-        self.translate_indices(&mut path);
+        path = split_path(&self.dictionary, path, self.mode, self.subset, &self.input)?;
 
         if debug {
             println!("=== After Rewriting:");
@@ -193,33 +191,14 @@ impl<D: DictionaryAccess> StatefulTokenizer<D> {
         Ok(path)
     }
 
-    /// Translate ResultNode indices from normalized data to original data
-    fn translate_indices(&self, path: &mut Vec<ResultNode>) {
-        let input = &self.input;
-        for elem in path {
-            let mut mod_char_begin = elem.begin();
-            let mut mod_char_end = elem.end();
-            if !self.subset.contains(InfoSubset::SURFACE) {
-                mod_char_begin = input.ch_idx(elem.begin_bytes());
-                mod_char_end = input.ch_idx(elem.end_bytes());
-            }
-            let char_begin = input.to_orig_char_idx(mod_char_begin);
-            let char_end = input.to_orig_char_idx(mod_char_end);
-            let byte_begin = input.to_orig_byte_idx(mod_char_begin);
-            let byte_end = input.to_orig_byte_idx(mod_char_end);
-            elem.set_char_range(char_begin as u16, char_end as u16);
-            elem.set_bytes_range(byte_begin as u16, byte_end as u16);
-        }
-    }
-
     /// Swap result data with the current analyzer
     pub fn swap_result(
         &mut self,
-        input: &mut String,
+        input: &mut InputBuffer,
         result: &mut Vec<ResultNode>,
         subset: &mut InfoSubset,
     ) {
-        self.input.swap_original(input);
+        std::mem::swap(&mut self.input, input);
         std::mem::swap(self.top_path.as_mut().unwrap(), result);
         *subset = self.subset;
     }
@@ -304,12 +283,9 @@ impl<D: DictionaryAccess> StatefulTokenizer<D> {
     pub fn into_morpheme_list(self) -> SudachiResult<MorphemeList<D>> {
         match self.top_path {
             None => Err(SudachiError::EosBosDisconnect),
-            Some(path) => MorphemeList::from_components(
-                self.dictionary,
-                self.input.into_original(),
-                path,
-                self.subset,
-            ),
+            Some(path) => {
+                MorphemeList::from_components(self.dictionary, self.input, path, self.subset)
+            }
         }
     }
 }

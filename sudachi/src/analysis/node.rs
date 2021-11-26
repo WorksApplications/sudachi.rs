@@ -23,6 +23,7 @@ use crate::dic::lexicon::word_infos::{WordInfo, WordInfoData};
 use crate::dic::lexicon_set::LexiconSet;
 use crate::dic::subset::InfoSubset;
 use crate::dic::word_id::WordId;
+use crate::input_text::InputBuffer;
 use crate::prelude::*;
 
 /// Accessor trait for right connection id
@@ -76,7 +77,8 @@ pub trait LatticeNode: RightId {
 
 #[derive(Clone)]
 /// Full lattice node, as the result of analysis.
-/// All indices (including inner) are in the original sentence space.
+/// All indices (including inner) are in the modified sentence space
+/// Indices are converted to original sentence space when user request them.
 pub struct ResultNode {
     inner: Node,
     total_cost: i32,
@@ -181,6 +183,7 @@ impl ResultNode {
         mode: Mode,
         lexicon: &'a LexiconSet<'a>,
         subset: InfoSubset,
+        text: &'a InputBuffer,
     ) -> NodeSplitIterator<'a> {
         let splits: &[WordId] = match mode {
             Mode::A => &self.word_info.a_unit_split(),
@@ -193,6 +196,7 @@ impl ResultNode {
             index: 0,
             lexicon,
             subset,
+            text,
             byte_offset: self.begin_bytes,
             byte_end: self.end_bytes,
             char_offset: self.begin() as u16,
@@ -223,6 +227,7 @@ pub struct NodeSplitIterator<'a> {
     lexicon: &'a LexiconSet<'a>,
     index: usize,
     subset: InfoSubset,
+    text: &'a InputBuffer,
     char_offset: u16,
     byte_offset: u16,
     char_end: u16,
@@ -252,11 +257,9 @@ impl Iterator for NodeSplitIterator<'_> {
         let (char_end, byte_end) = if idx + 1 == self.splits.len() {
             (self.char_end, self.byte_end)
         } else {
-            (
-                // it is possible that surface is not accessible here, fixup when InputBuffer is available
-                char_start + word_info.surface().chars().count() as u16,
-                byte_start + word_info.head_word_length() as u16,
-            )
+            let byte_end = byte_start as usize + word_info.head_word_length();
+            let char_end = self.text.ch_idx(byte_end);
+            (char_end as u16, byte_end as u16)
         };
 
         self.char_offset = char_end;

@@ -177,6 +177,11 @@ class Morpheme:
         """
         ...
 
+    def __len__(self) -> int:
+        """
+        Returns morpheme length in codepoints
+        """
+
 
 class MorphemeList:
     """
