@@ -14,20 +14,25 @@
  * limitations under the License.
  */
 
-use std::path::{Path, PathBuf};
-
 extern crate sudachi;
-use self::sudachi::analysis::stateful_tokenizer::StatefulTokenizer;
-use self::sudachi::dic::dictionary::JapaneseDictionary;
+
 use std::fs;
 use std::fs::File;
 use std::io::Read;
+use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use std::sync::Arc;
+
+use sudachi::analysis::stateful_tokenizer::StatefulTokenizer;
 use sudachi::analysis::stateless_tokenizer::StatelessTokenizer;
 use sudachi::config::Config;
-use sudachi::dic::{grammar::Grammar, header::Header, lexicon::Lexicon};
+use sudachi::dic::dictionary::JapaneseDictionary;
+use sudachi::dic::{grammar::Grammar, header::Header, lexicon::Lexicon, DictionaryLoader};
 use sudachi::prelude::*;
+
+use lazy_static::lazy_static;
+use sudachi::dic::build::DictBuilder;
+use sudachi::dic::storage::{Storage, SudachiDicData};
 
 pub fn dictionary_bytes_from_path<P: AsRef<Path>>(dictionary_path: P) -> SudachiResult<Vec<u8>> {
     let dictionary_path = dictionary_path.as_ref();
@@ -105,18 +110,94 @@ impl TestTokenizer {
     }
 }
 
+pub struct TestTokenizerBuilder<'a> {
+    pub conn: Option<&'a [u8]>,
+    pub system: &'a [u8],
+    pub user: Vec<&'a [u8]>,
+    pub mode: Mode,
+    pub debug: bool,
+}
+
+#[allow(unused)]
+impl<'a> TestTokenizerBuilder<'a> {
+    pub fn user(mut self, data: &'a [u8]) -> Self {
+        self.user.push(data);
+        self
+    }
+
+    pub fn mode(mut self, mode: Mode) -> Self {
+        self.mode = mode;
+        self
+    }
+
+    pub fn debug(mut self, debug: bool) -> Self {
+        self.debug = debug;
+        self
+    }
+
+    pub fn build(self) -> TestStatefulTokenizer {
+        let mut sys = DictBuilder::new_system();
+        sys.read_conn(
+            self.conn
+                .unwrap_or(include_bytes!("../resources/matrix_10x10.def")),
+        )
+        .unwrap();
+        sys.read_lexicon(self.system).unwrap();
+        sys.resolve().unwrap();
+        let mut sys_bytes = Vec::new();
+        sys.compile(&mut sys_bytes).unwrap();
+
+        let mut data = SudachiDicData::new(Storage::Owned(sys_bytes));
+
+        if !self.user.is_empty() {
+            let dic =
+                DictionaryLoader::read_system_dictionary(unsafe { data.system_static_slice() })
+                    .unwrap()
+                    .to_loaded()
+                    .unwrap();
+
+            for u in self.user {
+                let mut ubld = DictBuilder::new_user(&dic);
+                ubld.read_lexicon(u).unwrap();
+                ubld.resolve().unwrap();
+                let mut user_bytes = Vec::new();
+                ubld.compile(&mut user_bytes).unwrap();
+                data.add_user(Storage::Owned(user_bytes));
+            }
+        }
+
+        let dic = JapaneseDictionary::from_cfg_storage(&TEST_CONFIG, data).unwrap();
+        let rcdic = Rc::new(dic);
+
+        TestStatefulTokenizer {
+            tok: StatefulTokenizer::create(rcdic.clone(), self.debug, self.mode),
+            result: MorphemeList::empty(rcdic),
+        }
+    }
+}
+
 pub struct TestStatefulTokenizer {
-    tok: StatefulTokenizer<Rc<JapaneseDictionary>>,
-    result: MorphemeList<Rc<JapaneseDictionary>>,
+    pub tok: StatefulTokenizer<Rc<JapaneseDictionary>>,
+    pub result: MorphemeList<Rc<JapaneseDictionary>>,
 }
 
 #[allow(unused)]
 impl TestStatefulTokenizer {
-    pub fn new(mode: Mode) -> TestStatefulTokenizer {
+    pub fn new_built(mode: Mode) -> TestStatefulTokenizer {
         let dic = Rc::new(JapaneseDictionary::from_cfg(&TEST_CONFIG).expect("works"));
         Self {
             tok: StatefulTokenizer::new(dic.clone(), mode),
             result: MorphemeList::empty(dic),
+        }
+    }
+
+    pub fn builder(system: &[u8]) -> TestTokenizerBuilder {
+        TestTokenizerBuilder {
+            system,
+            user: Vec::new(),
+            conn: None,
+            mode: Mode::C,
+            debug: false,
         }
     }
 

@@ -26,21 +26,21 @@ use crate::common::TestStatefulTokenizer as TestTokenizer;
 
 #[test]
 fn empty() {
-    let mut tok = TestTokenizer::new(Mode::C);
+    let mut tok = TestTokenizer::new_built(Mode::C);
     let ms = tok.tokenize("");
     assert_eq!(0, ms.len());
 }
 
 #[test]
 fn tokenize_small_katakana_only() {
-    let mut tok = TestTokenizer::new(Mode::C);
+    let mut tok = TestTokenizer::new_built(Mode::C);
     let ms = tok.tokenize("ァ");
     assert_eq!(1, ms.len());
 }
 
 #[test]
 fn get_word_id() {
-    let mut tok = TestTokenizer::new(Mode::C);
+    let mut tok = TestTokenizer::new_built(Mode::C);
     let ms = tok.tokenize("京都");
     assert_eq!(1, ms.len());
     let m0 = ms.get(0);
@@ -57,7 +57,7 @@ fn get_word_id() {
 
 #[test]
 fn get_dictionary_id() {
-    let mut tok = TestTokenizer::new(Mode::C);
+    let mut tok = TestTokenizer::new_built(Mode::C);
     let ms = tok.tokenize("京都");
     let ms: Vec<_> = ms.iter().collect();
     assert_eq!(1, ms.len());
@@ -76,7 +76,7 @@ fn get_dictionary_id() {
 
 #[test]
 fn get_synonym_group_id() {
-    let mut tok = TestTokenizer::new(Mode::C);
+    let mut tok = TestTokenizer::new_built(Mode::C);
     let ms = tok.tokenize("京都");
     assert_eq!(1, ms.len());
     assert_eq!([1, 5], ms.get(0).synonym_group_ids());
@@ -92,7 +92,7 @@ fn get_synonym_group_id() {
 
 #[test]
 fn tokenize_kanji_alphabet_word() {
-    let mut tok = TestTokenizer::new(Mode::C);
+    let mut tok = TestTokenizer::new_built(Mode::C);
     assert_eq!(1, tok.tokenize("特a").len());
     assert_eq!(1, tok.tokenize("ab").len());
     assert_eq!(2, tok.tokenize("特ab").len());
@@ -100,7 +100,7 @@ fn tokenize_kanji_alphabet_word() {
 
 #[test]
 fn tokenize_with_dots() {
-    let mut tok = TestTokenizer::new(Mode::C);
+    let mut tok = TestTokenizer::new_built(Mode::C);
     let ms = tok.tokenize("京都…");
     assert_eq!(4, ms.len());
     assert_eq!("…", ms.get(1).surface());
@@ -113,7 +113,7 @@ fn tokenize_with_dots() {
 
 #[test]
 fn tokenizer_morpheme_split() {
-    let mut tok = TestTokenizer::new(Mode::C);
+    let mut tok = TestTokenizer::new_built(Mode::C);
     let ms = tok.tokenize("東京都");
     assert_eq!(1, ms.len());
     assert_eq!("東京都", ms.get(0).surface());
@@ -127,7 +127,7 @@ fn tokenizer_morpheme_split() {
 
 #[test]
 fn split_middle() {
-    let mut tok = TestTokenizer::new(Mode::C);
+    let mut tok = TestTokenizer::new_built(Mode::C);
     let ms = tok.tokenize("京都東京都京都");
     assert_eq!(ms.len(), 3);
     let m = ms.get(1);
