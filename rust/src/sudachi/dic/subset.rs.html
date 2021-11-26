@@ -48,6 +48,11 @@
 <span id="48">48</span>
 <span id="49">49</span>
 <span id="50">50</span>
+<span id="51">51</span>
+<span id="52">52</span>
+<span id="53">53</span>
+<span id="54">54</span>
+<span id="55">55</span>
 </pre><pre class="rust"><code><span class="comment">/*
  *  Copyright (c) 2021 Works Applications Co., Ltd.
  *
@@ -89,13 +94,18 @@
 }
 
 <span class="kw">impl</span> <span class="ident">InfoSubset</span> {
-    <span class="doccomment">/// need to read surface if reading any of one of these forms</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">normalize</span>(<span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">normalize</span>(<span class="kw-2">mut</span> <span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
+        <span class="comment">// need to read surface if reading any of one of these forms</span>
         <span class="kw">if</span> <span class="self">self</span>.<span class="ident">intersects</span>(<span class="ident">InfoSubset::READING_FORM</span> <span class="op">|</span> <span class="ident">InfoSubset::NORMALIZED_FORM</span>) {
-            <span class="self">self</span> <span class="op">|</span> <span class="ident">InfoSubset::SURFACE</span>
-        } <span class="kw">else</span> {
-            <span class="self">self</span>
+            <span class="self">self</span> <span class="op">|</span><span class="op">=</span> <span class="ident">InfoSubset::SURFACE</span>
         }
+
+        <span class="comment">// need to have head word length when splitting</span>
+        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">intersects</span>(<span class="ident">InfoSubset::SPLIT_A</span> <span class="op">|</span> <span class="ident">InfoSubset::SPLIT_B</span>) {
+            <span class="self">self</span> <span class="op">|</span><span class="op">=</span> <span class="ident">InfoSubset::HEAD_WORD_LENGTH</span>;
+        }
+
+        <span class="self">self</span>
     }
 }
 </code></pre></div>

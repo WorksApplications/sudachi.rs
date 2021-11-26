@@ -662,9 +662,9 @@
             (<span class="self">self</span>.<span class="ident">char_end</span>, <span class="self">self</span>.<span class="ident">byte_end</span>)
         } <span class="kw">else</span> {
             (
-                <span class="comment">// word_info.head_word_length is in bytes</span>
+                <span class="comment">// it is possible that surface is not accessible here, fixup when InputBuffer is available</span>
                 <span class="ident">char_start</span> <span class="op">+</span> <span class="ident">word_info</span>.<span class="ident">surface</span>().<span class="ident">chars</span>().<span class="ident">count</span>() <span class="kw">as</span> <span class="ident">u16</span>,
-                <span class="ident">byte_start</span> <span class="op">+</span> <span class="ident">word_info</span>.<span class="ident">surface</span>().<span class="ident">len</span>() <span class="kw">as</span> <span class="ident">u16</span>,
+                <span class="ident">byte_start</span> <span class="op">+</span> <span class="ident">word_info</span>.<span class="ident">head_word_length</span>() <span class="kw">as</span> <span class="ident">u16</span>,
             )
         };
 

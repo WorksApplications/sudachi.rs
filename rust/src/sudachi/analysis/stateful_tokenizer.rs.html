@@ -307,6 +307,12 @@
 <span id="307">307</span>
 <span id="308">308</span>
 <span id="309">309</span>
+<span id="310">310</span>
+<span id="311">311</span>
+<span id="312">312</span>
+<span id="313">313</span>
+<span id="314">314</span>
+<span id="315">315</span>
 </pre><pre class="rust"><code><span class="comment">/*
  *  Copyright (c) 2021 Works Applications Co., Ltd.
  *
@@ -393,12 +399,12 @@
 
     <span class="doccomment">/// Analyzer will read only following WordInfo field subset</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">set_subset</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">subset</span>: <span class="ident">InfoSubset</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">InfoSubset</span> {
-        <span class="kw">let</span> <span class="ident">new_subset</span> <span class="op">=</span> <span class="ident">subset</span>.<span class="ident">normalize</span>();
         <span class="kw">let</span> <span class="ident">mode_subset</span> <span class="op">=</span> <span class="kw">match</span> <span class="self">self</span>.<span class="ident">mode</span> {
             <span class="ident">Mode::A</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">InfoSubset::SPLIT_A</span>,
             <span class="ident">Mode::B</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">InfoSubset::SPLIT_B</span>,
             <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">InfoSubset::empty</span>(),
         };
+        <span class="kw">let</span> <span class="ident">new_subset</span> <span class="op">=</span> (<span class="ident">subset</span> <span class="op">|</span> <span class="ident">mode_subset</span>).<span class="ident">normalize</span>();
         <span class="ident">std::mem::replace</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>.<span class="ident">subset</span>, <span class="ident">new_subset</span> <span class="op">|</span> <span class="ident">mode_subset</span>)
     }
 
@@ -506,10 +512,16 @@
     <span class="kw">fn</span> <span class="ident">translate_indices</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">path</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">ResultNode</span><span class="op">&gt;</span>) {
         <span class="kw">let</span> <span class="ident">input</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">input</span>;
         <span class="kw">for</span> <span class="ident">elem</span> <span class="kw">in</span> <span class="ident">path</span> {
-            <span class="kw">let</span> <span class="ident">char_begin</span> <span class="op">=</span> <span class="ident">input</span>.<span class="ident">to_orig_char_idx</span>(<span class="ident">elem</span>.<span class="ident">begin</span>());
-            <span class="kw">let</span> <span class="ident">char_end</span> <span class="op">=</span> <span class="ident">input</span>.<span class="ident">to_orig_char_idx</span>(<span class="ident">elem</span>.<span class="ident">end</span>());
-            <span class="kw">let</span> <span class="ident">byte_begin</span> <span class="op">=</span> <span class="ident">input</span>.<span class="ident">to_orig_byte_idx</span>(<span class="ident">elem</span>.<span class="ident">begin</span>());
-            <span class="kw">let</span> <span class="ident">byte_end</span> <span class="op">=</span> <span class="ident">input</span>.<span class="ident">to_orig_byte_idx</span>(<span class="ident">elem</span>.<span class="ident">end</span>());
+            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">mod_char_begin</span> <span class="op">=</span> <span class="ident">elem</span>.<span class="ident">begin</span>();
+            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">mod_char_end</span> <span class="op">=</span> <span class="ident">elem</span>.<span class="ident">end</span>();
+            <span class="kw">if</span> <span class="op">!</span><span class="self">self</span>.<span class="ident">subset</span>.<span class="ident">contains</span>(<span class="ident">InfoSubset::SURFACE</span>) {
+                <span class="ident">mod_char_begin</span> <span class="op">=</span> <span class="ident">input</span>.<span class="ident">ch_idx</span>(<span class="ident">elem</span>.<span class="ident">begin_bytes</span>());
+                <span class="ident">mod_char_end</span> <span class="op">=</span> <span class="ident">input</span>.<span class="ident">ch_idx</span>(<span class="ident">elem</span>.<span class="ident">end_bytes</span>());
+            }
+            <span class="kw">let</span> <span class="ident">char_begin</span> <span class="op">=</span> <span class="ident">input</span>.<span class="ident">to_orig_char_idx</span>(<span class="ident">mod_char_begin</span>);
+            <span class="kw">let</span> <span class="ident">char_end</span> <span class="op">=</span> <span class="ident">input</span>.<span class="ident">to_orig_char_idx</span>(<span class="ident">mod_char_end</span>);
+            <span class="kw">let</span> <span class="ident">byte_begin</span> <span class="op">=</span> <span class="ident">input</span>.<span class="ident">to_orig_byte_idx</span>(<span class="ident">mod_char_begin</span>);
+            <span class="kw">let</span> <span class="ident">byte_end</span> <span class="op">=</span> <span class="ident">input</span>.<span class="ident">to_orig_byte_idx</span>(<span class="ident">mod_char_end</span>);
             <span class="ident">elem</span>.<span class="ident">set_char_range</span>(<span class="ident">char_begin</span> <span class="kw">as</span> <span class="ident">u16</span>, <span class="ident">char_end</span> <span class="kw">as</span> <span class="ident">u16</span>);
             <span class="ident">elem</span>.<span class="ident">set_bytes_range</span>(<span class="ident">byte_begin</span> <span class="kw">as</span> <span class="ident">u16</span>, <span class="ident">byte_end</span> <span class="kw">as</span> <span class="ident">u16</span>);
         }
