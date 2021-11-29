@@ -289,30 +289,6 @@
 <span id="289">289</span>
 <span id="290">290</span>
 <span id="291">291</span>
-<span id="292">292</span>
-<span id="293">293</span>
-<span id="294">294</span>
-<span id="295">295</span>
-<span id="296">296</span>
-<span id="297">297</span>
-<span id="298">298</span>
-<span id="299">299</span>
-<span id="300">300</span>
-<span id="301">301</span>
-<span id="302">302</span>
-<span id="303">303</span>
-<span id="304">304</span>
-<span id="305">305</span>
-<span id="306">306</span>
-<span id="307">307</span>
-<span id="308">308</span>
-<span id="309">309</span>
-<span id="310">310</span>
-<span id="311">311</span>
-<span id="312">312</span>
-<span id="313">313</span>
-<span id="314">314</span>
-<span id="315">315</span>
 </pre><pre class="rust"><code><span class="comment">/*
  *  Copyright (c) 2021 Works Applications Co., Ltd.
  *
@@ -459,9 +435,7 @@
             <span class="ident">path</span> <span class="op">=</span> <span class="ident">plugin</span>.<span class="ident">rewrite</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">input</span>, <span class="ident">path</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">lattice</span>)<span class="question-mark">?</span>;
         }
 
-        <span class="ident">path</span> <span class="op">=</span> <span class="ident">split_path</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">dictionary</span>, <span class="ident">path</span>, <span class="self">self</span>.<span class="ident">mode</span>, <span class="self">self</span>.<span class="ident">subset</span>)<span class="question-mark">?</span>;
-
-        <span class="self">self</span>.<span class="ident">translate_indices</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">path</span>);
+        <span class="ident">path</span> <span class="op">=</span> <span class="ident">split_path</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">dictionary</span>, <span class="ident">path</span>, <span class="self">self</span>.<span class="ident">mode</span>, <span class="self">self</span>.<span class="ident">subset</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">input</span>)<span class="question-mark">?</span>;
 
         <span class="kw">if</span> <span class="ident">debug</span> {
             <span class="macro">println!</span>(<span class="string">&quot;=== After Rewriting:&quot;</span>);
@@ -508,33 +482,14 @@
         <span class="prelude-val">Ok</span>(<span class="ident">path</span>)
     }
 
-    <span class="doccomment">/// Translate ResultNode indices from normalized data to original data</span>
-    <span class="kw">fn</span> <span class="ident">translate_indices</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">path</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">ResultNode</span><span class="op">&gt;</span>) {
-        <span class="kw">let</span> <span class="ident">input</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">input</span>;
-        <span class="kw">for</span> <span class="ident">elem</span> <span class="kw">in</span> <span class="ident">path</span> {
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">mod_char_begin</span> <span class="op">=</span> <span class="ident">elem</span>.<span class="ident">begin</span>();
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">mod_char_end</span> <span class="op">=</span> <span class="ident">elem</span>.<span class="ident">end</span>();
-            <span class="kw">if</span> <span class="op">!</span><span class="self">self</span>.<span class="ident">subset</span>.<span class="ident">contains</span>(<span class="ident">InfoSubset::SURFACE</span>) {
-                <span class="ident">mod_char_begin</span> <span class="op">=</span> <span class="ident">input</span>.<span class="ident">ch_idx</span>(<span class="ident">elem</span>.<span class="ident">begin_bytes</span>());
-                <span class="ident">mod_char_end</span> <span class="op">=</span> <span class="ident">input</span>.<span class="ident">ch_idx</span>(<span class="ident">elem</span>.<span class="ident">end_bytes</span>());
-            }
-            <span class="kw">let</span> <span class="ident">char_begin</span> <span class="op">=</span> <span class="ident">input</span>.<span class="ident">to_orig_char_idx</span>(<span class="ident">mod_char_begin</span>);
-            <span class="kw">let</span> <span class="ident">char_end</span> <span class="op">=</span> <span class="ident">input</span>.<span class="ident">to_orig_char_idx</span>(<span class="ident">mod_char_end</span>);
-            <span class="kw">let</span> <span class="ident">byte_begin</span> <span class="op">=</span> <span class="ident">input</span>.<span class="ident">to_orig_byte_idx</span>(<span class="ident">mod_char_begin</span>);
-            <span class="kw">let</span> <span class="ident">byte_end</span> <span class="op">=</span> <span class="ident">input</span>.<span class="ident">to_orig_byte_idx</span>(<span class="ident">mod_char_end</span>);
-            <span class="ident">elem</span>.<span class="ident">set_char_range</span>(<span class="ident">char_begin</span> <span class="kw">as</span> <span class="ident">u16</span>, <span class="ident">char_end</span> <span class="kw">as</span> <span class="ident">u16</span>);
-            <span class="ident">elem</span>.<span class="ident">set_bytes_range</span>(<span class="ident">byte_begin</span> <span class="kw">as</span> <span class="ident">u16</span>, <span class="ident">byte_end</span> <span class="kw">as</span> <span class="ident">u16</span>);
-        }
-    }
-
     <span class="doccomment">/// Swap result data with the current analyzer</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">swap_result</span>(
         <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>,
-        <span class="ident">input</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">String</span>,
+        <span class="ident">input</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">InputBuffer</span>,
         <span class="ident">result</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">ResultNode</span><span class="op">&gt;</span>,
         <span class="ident">subset</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">InfoSubset</span>,
     ) {
-        <span class="self">self</span>.<span class="ident">input</span>.<span class="ident">swap_original</span>(<span class="ident">input</span>);
+        <span class="ident">std::mem::swap</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>.<span class="ident">input</span>, <span class="ident">input</span>);
         <span class="ident">std::mem::swap</span>(<span class="self">self</span>.<span class="ident">top_path</span>.<span class="ident">as_mut</span>().<span class="ident">unwrap</span>(), <span class="ident">result</span>);
         <span class="kw-2">*</span><span class="ident">subset</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">subset</span>;
     }
@@ -619,12 +574,9 @@
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">into_morpheme_list</span>(<span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="ident">MorphemeList</span><span class="op">&lt;</span><span class="ident">D</span><span class="op">&gt;</span><span class="op">&gt;</span> {
         <span class="kw">match</span> <span class="self">self</span>.<span class="ident">top_path</span> {
             <span class="prelude-val">None</span> <span class="op">=</span><span class="op">&gt;</span> <span class="prelude-val">Err</span>(<span class="ident">SudachiError::EosBosDisconnect</span>),
-            <span class="prelude-val">Some</span>(<span class="ident">path</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">MorphemeList::from_components</span>(
-                <span class="self">self</span>.<span class="ident">dictionary</span>,
-                <span class="self">self</span>.<span class="ident">input</span>.<span class="ident">into_original</span>(),
-                <span class="ident">path</span>,
-                <span class="self">self</span>.<span class="ident">subset</span>,
-            ),
+            <span class="prelude-val">Some</span>(<span class="ident">path</span>) <span class="op">=</span><span class="op">&gt;</span> {
+                <span class="ident">MorphemeList::from_components</span>(<span class="self">self</span>.<span class="ident">dictionary</span>, <span class="self">self</span>.<span class="ident">input</span>, <span class="ident">path</span>, <span class="self">self</span>.<span class="ident">subset</span>)
+            }
         }
     }
 }

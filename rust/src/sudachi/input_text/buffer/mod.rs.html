@@ -482,7 +482,7 @@
 <span class="doccomment">/// if the limit of the rewritten sentence is more than this number, then all bets are off</span>
 <span class="kw">const</span> <span class="ident">REALLY_MAX_LENGTH</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="ident">u16::MAX</span> <span class="kw">as</span> <span class="ident">usize</span>;
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Eq</span>, <span class="ident">PartialEq</span>, <span class="ident">Debug</span>)]</span>
+<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Eq</span>, <span class="ident">PartialEq</span>, <span class="ident">Debug</span>, <span class="ident">Clone</span>)]</span>
 <span class="kw">enum</span> <span class="ident">BufferState</span> {
     <span class="ident">Clean</span>,
     <span class="ident">RW</span>,
@@ -499,7 +499,7 @@
 <span class="doccomment">///</span>
 <span class="doccomment">/// By saying char we actually mean Unicode codepoint here.</span>
 <span class="doccomment">/// In the context of this struct these terms are synonyms.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Default</span>)]</span>
+<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Default</span>, <span class="ident">Clone</span>)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">InputBuffer</span> {
     <span class="doccomment">/// Original input data, output is done on this</span>
     <span class="ident">original</span>: <span class="ident">String</span>,

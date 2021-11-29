@@ -135,6 +135,8 @@
 <span id="135">135</span>
 <span id="136">136</span>
 <span id="137">137</span>
+<span id="138">138</span>
+<span id="139">139</span>
 </pre><pre class="rust"><code><span class="comment">/*
  *  Copyright (c) 2021 Works Applications Co., Ltd.
  *
@@ -159,6 +161,7 @@
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::dic::lexicon_set::LexiconSet</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::dic::subset::InfoSubset</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::error::SudachiResult</span>;
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::input_text::InputBuffer</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::plugin::input_text::InputTextPlugin</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::plugin::oov::OovProviderPlugin</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::plugin::path_rewrite::PathRewritePlugin</span>;
@@ -249,6 +252,7 @@
     <span class="ident">path</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">ResultNode</span><span class="op">&gt;</span>,
     <span class="ident">mode</span>: <span class="ident">Mode</span>,
     <span class="ident">subset</span>: <span class="ident">InfoSubset</span>,
+    <span class="ident">input</span>: <span class="kw-2">&amp;</span><span class="ident">InputBuffer</span>,
 ) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">ResultNode</span><span class="op">&gt;</span><span class="op">&gt;</span> {
     <span class="kw">if</span> <span class="ident">mode</span> <span class="op">=</span><span class="op">=</span> <span class="ident">Mode::C</span> {
         <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="ident">path</span>);
@@ -260,7 +264,7 @@
         <span class="kw">if</span> <span class="ident">split_len</span> <span class="op">&lt;</span><span class="op">=</span> <span class="number">1</span> {
             <span class="ident">new_path</span>.<span class="ident">push</span>(<span class="ident">node</span>);
         } <span class="kw">else</span> {
-            <span class="ident">new_path</span>.<span class="ident">extend</span>(<span class="ident">node</span>.<span class="ident">split</span>(<span class="ident">mode</span>, <span class="ident">dict</span>.<span class="ident">lexicon</span>(), <span class="ident">subset</span>));
+            <span class="ident">new_path</span>.<span class="ident">extend</span>(<span class="ident">node</span>.<span class="ident">split</span>(<span class="ident">mode</span>, <span class="ident">dict</span>.<span class="ident">lexicon</span>(), <span class="ident">subset</span>, <span class="ident">input</span>));
         }
     }
 

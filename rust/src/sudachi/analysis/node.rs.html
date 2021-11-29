@@ -407,6 +407,9 @@
 <span id="407">407</span>
 <span id="408">408</span>
 <span id="409">409</span>
+<span id="410">410</span>
+<span id="411">411</span>
+<span id="412">412</span>
 </pre><pre class="rust"><code><span class="comment">/*
  *  Copyright (c) 2021 Works Applications Co., Ltd.
  *
@@ -432,6 +435,7 @@
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::dic::lexicon_set::LexiconSet</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::dic::subset::InfoSubset</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::dic::word_id::WordId</span>;
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::input_text::InputBuffer</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::prelude</span>::<span class="kw-2">*</span>;
 
 <span class="doccomment">/// Accessor trait for right connection id</span>
@@ -485,7 +489,8 @@
 
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Clone</span>)]</span>
 <span class="doccomment">/// Full lattice node, as the result of analysis.</span>
-<span class="doccomment">/// All indices (including inner) are in the original sentence space.</span>
+<span class="doccomment">/// All indices (including inner) are in the modified sentence space</span>
+<span class="doccomment">/// Indices are converted to original sentence space when user request them.</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">ResultNode</span> {
     <span class="ident">inner</span>: <span class="ident">Node</span>,
     <span class="ident">total_cost</span>: <span class="ident">i32</span>,
@@ -590,6 +595,7 @@
         <span class="ident">mode</span>: <span class="ident">Mode</span>,
         <span class="ident">lexicon</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">LexiconSet</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>,
         <span class="ident">subset</span>: <span class="ident">InfoSubset</span>,
+        <span class="ident">text</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">InputBuffer</span>,
     ) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">NodeSplitIterator</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
         <span class="kw">let</span> <span class="ident">splits</span>: <span class="kw-2">&amp;</span>[<span class="ident">WordId</span>] <span class="op">=</span> <span class="kw">match</span> <span class="ident">mode</span> {
             <span class="ident">Mode::A</span> <span class="op">=</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">word_info</span>.<span class="ident">a_unit_split</span>(),
@@ -602,6 +608,7 @@
             <span class="ident">index</span>: <span class="number">0</span>,
             <span class="ident">lexicon</span>,
             <span class="ident">subset</span>,
+            <span class="ident">text</span>,
             <span class="ident">byte_offset</span>: <span class="self">self</span>.<span class="ident">begin_bytes</span>,
             <span class="ident">byte_end</span>: <span class="self">self</span>.<span class="ident">end_bytes</span>,
             <span class="ident">char_offset</span>: <span class="self">self</span>.<span class="ident">begin</span>() <span class="kw">as</span> <span class="ident">u16</span>,
@@ -632,6 +639,7 @@
     <span class="ident">lexicon</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">LexiconSet</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>,
     <span class="ident">index</span>: <span class="ident">usize</span>,
     <span class="ident">subset</span>: <span class="ident">InfoSubset</span>,
+    <span class="ident">text</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">InputBuffer</span>,
     <span class="ident">char_offset</span>: <span class="ident">u16</span>,
     <span class="ident">byte_offset</span>: <span class="ident">u16</span>,
     <span class="ident">char_end</span>: <span class="ident">u16</span>,
@@ -661,11 +669,9 @@
         <span class="kw">let</span> (<span class="ident">char_end</span>, <span class="ident">byte_end</span>) <span class="op">=</span> <span class="kw">if</span> <span class="ident">idx</span> <span class="op">+</span> <span class="number">1</span> <span class="op">=</span><span class="op">=</span> <span class="self">self</span>.<span class="ident">splits</span>.<span class="ident">len</span>() {
             (<span class="self">self</span>.<span class="ident">char_end</span>, <span class="self">self</span>.<span class="ident">byte_end</span>)
         } <span class="kw">else</span> {
-            (
-                <span class="comment">// it is possible that surface is not accessible here, fixup when InputBuffer is available</span>
-                <span class="ident">char_start</span> <span class="op">+</span> <span class="ident">word_info</span>.<span class="ident">surface</span>().<span class="ident">chars</span>().<span class="ident">count</span>() <span class="kw">as</span> <span class="ident">u16</span>,
-                <span class="ident">byte_start</span> <span class="op">+</span> <span class="ident">word_info</span>.<span class="ident">head_word_length</span>() <span class="kw">as</span> <span class="ident">u16</span>,
-            )
+            <span class="kw">let</span> <span class="ident">byte_end</span> <span class="op">=</span> <span class="ident">byte_start</span> <span class="kw">as</span> <span class="ident">usize</span> <span class="op">+</span> <span class="ident">word_info</span>.<span class="ident">head_word_length</span>();
+            <span class="kw">let</span> <span class="ident">char_end</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">text</span>.<span class="ident">ch_idx</span>(<span class="ident">byte_end</span>);
+            (<span class="ident">char_end</span> <span class="kw">as</span> <span class="ident">u16</span>, <span class="ident">byte_end</span> <span class="kw">as</span> <span class="ident">u16</span>)
         };
 
         <span class="self">self</span>.<span class="ident">char_offset</span> <span class="op">=</span> <span class="ident">char_end</span>;

@@ -300,6 +300,27 @@
 <span id="300">300</span>
 <span id="301">301</span>
 <span id="302">302</span>
+<span id="303">303</span>
+<span id="304">304</span>
+<span id="305">305</span>
+<span id="306">306</span>
+<span id="307">307</span>
+<span id="308">308</span>
+<span id="309">309</span>
+<span id="310">310</span>
+<span id="311">311</span>
+<span id="312">312</span>
+<span id="313">313</span>
+<span id="314">314</span>
+<span id="315">315</span>
+<span id="316">316</span>
+<span id="317">317</span>
+<span id="318">318</span>
+<span id="319">319</span>
+<span id="320">320</span>
+<span id="321">321</span>
+<span id="322">322</span>
+<span id="323">323</span>
 </pre><pre class="rust"><code><span class="comment">/*
  *  Copyright (c) 2021 Works Applications Co., Ltd.
  *
@@ -323,13 +344,15 @@
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::dic::lexicon::word_infos::WordInfo</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::dic::subset::InfoSubset</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::dic::word_id::WordId</span>;
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::input_text</span>::{<span class="ident">InputBuffer</span>, <span class="ident">InputTextIndex</span>};
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::prelude</span>::<span class="kw-2">*</span>;
+<span class="kw">use</span> <span class="ident">std::sync::Arc</span>;
 
 <span class="doccomment">/// A list of morphemes</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Clone</span>)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">MorphemeList</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
     <span class="ident">dict</span>: <span class="ident">T</span>,
-    <span class="ident">input_text</span>: <span class="ident">String</span>,
+    <span class="ident">input_text</span>: <span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">InputBuffer</span><span class="op">&gt;</span>,
     <span class="ident">path</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">ResultNode</span><span class="op">&gt;</span>,
     <span class="ident">subset</span>: <span class="ident">InfoSubset</span>,
 }
@@ -337,13 +360,13 @@
 <span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">DictionaryAccess</span><span class="op">&gt;</span> <span class="ident">MorphemeList</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">from_components</span>(
         <span class="ident">dict</span>: <span class="ident">T</span>,
-        <span class="ident">original</span>: <span class="ident">String</span>,
+        <span class="ident">input</span>: <span class="ident">InputBuffer</span>,
         <span class="ident">path</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">ResultNode</span><span class="op">&gt;</span>,
         <span class="ident">subset</span>: <span class="ident">InfoSubset</span>,
     ) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span> {
         <span class="kw">let</span> <span class="ident">list</span> <span class="op">=</span> <span class="self">Self</span> {
             <span class="ident">dict</span>,
-            <span class="ident">input_text</span>: <span class="ident">original</span>,
+            <span class="ident">input_text</span>: <span class="ident">Arc::new</span>(<span class="ident">input</span>),
             <span class="ident">path</span>,
             <span class="ident">subset</span>,
         };
@@ -352,11 +375,13 @@
 
     <span class="doccomment">/// Returns an empty morpheme list.</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">empty</span>(<span class="ident">dict</span>: <span class="ident">T</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">ml</span> <span class="op">=</span> <span class="ident">InputBuffer::new</span>();
+        <span class="ident">ml</span>.<span class="ident">start_build</span>().<span class="ident">unwrap</span>(); <span class="comment">// will not fail</span>
         <span class="self">Self</span> {
             <span class="ident">dict</span>,
-            <span class="ident">input_text</span>: <span class="ident">String::new</span>(),
-            <span class="ident">path</span>: <span class="ident">Vec::new</span>(),
-            <span class="ident">subset</span>: <span class="ident">InfoSubset::default</span>(),
+            <span class="ident">input_text</span>: <span class="ident">Arc::new</span>(<span class="ident">ml</span>),
+            <span class="ident">path</span>: <span class="ident">Default::default</span>(),
+            <span class="ident">subset</span>: <span class="ident">Default::default</span>(),
         }
     }
 
@@ -364,7 +389,9 @@
         <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>,
         <span class="ident">analyzer</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">StatefulTokenizer</span><span class="op">&lt;</span><span class="ident">U</span><span class="op">&gt;</span>,
     ) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">SudachiResult</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">analyzer</span>.<span class="ident">swap_result</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>.<span class="ident">input_text</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>.<span class="ident">path</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>.<span class="ident">subset</span>);
+        <span class="comment">// make a copy of input buffer if something else exists</span>
+        <span class="kw">let</span> <span class="ident">itext</span> <span class="op">=</span> <span class="ident">Arc::make_mut</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>.<span class="ident">input_text</span>);
+        <span class="ident">analyzer</span>.<span class="ident">swap_result</span>(<span class="ident">itext</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>.<span class="ident">path</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>.<span class="ident">subset</span>);
         <span class="prelude-val">Ok</span>(())
     }
 
@@ -382,7 +409,8 @@
         <span class="kw">let</span> <span class="ident">path</span> <span class="op">=</span> <span class="kw">if</span> <span class="ident">num_splits</span> <span class="op">&lt;</span><span class="op">=</span> <span class="number">1</span> {
             <span class="macro">vec!</span>[<span class="ident">node</span>.<span class="ident">clone</span>()]
         } <span class="kw">else</span> {
-            <span class="ident">node</span>.<span class="ident">split</span>(<span class="ident">mode</span>, <span class="self">self</span>.<span class="ident">dict</span>.<span class="ident">lexicon</span>(), <span class="self">self</span>.<span class="ident">subset</span>).<span class="ident">collect</span>()
+            <span class="ident">node</span>.<span class="ident">split</span>(<span class="ident">mode</span>, <span class="self">self</span>.<span class="ident">dict</span>.<span class="ident">lexicon</span>(), <span class="self">self</span>.<span class="ident">subset</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">input_text</span>)
+                .<span class="ident">collect</span>()
         };
 
         <span class="prelude-val">Ok</span>(<span class="ident">MorphemeList</span> {
@@ -404,13 +432,13 @@
 
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">surface</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span><span class="ident">str</span> {
         <span class="kw">if</span> <span class="self">self</span>.<span class="ident">len</span>() <span class="op">=</span><span class="op">=</span> <span class="number">0</span> {
-            <span class="kw">return</span> <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">input_text</span>;
+            <span class="kw">return</span> <span class="self">self</span>.<span class="ident">input_text</span>.<span class="ident">original</span>();
         }
 
         <span class="comment">// can be a slice of another list</span>
         <span class="kw">let</span> <span class="ident">begin</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">path</span>.<span class="ident">first</span>().<span class="ident">unwrap</span>().<span class="ident">begin_bytes</span>();
         <span class="kw">let</span> <span class="ident">end</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">path</span>.<span class="ident">last</span>().<span class="ident">unwrap</span>().<span class="ident">end_bytes</span>();
-        <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">input_text</span>[<span class="ident">begin</span>..<span class="ident">end</span>]
+        <span class="self">self</span>.<span class="ident">input_text</span>.<span class="ident">orig_slice</span>(<span class="ident">begin</span>..<span class="ident">end</span>)
     }
 
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_node</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">index</span>: <span class="ident">usize</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span><span class="ident">ResultNode</span> {
@@ -418,17 +446,31 @@
     }
 
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_begin</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">index</span>: <span class="ident">usize</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">usize</span> {
-        <span class="self">self</span>.<span class="ident">path</span>[<span class="ident">index</span>].<span class="ident">begin_bytes</span>()
+        <span class="kw">let</span> <span class="ident">mod_bytes</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">path</span>[<span class="ident">index</span>].<span class="ident">begin</span>();
+        <span class="self">self</span>.<span class="ident">input_text</span>.<span class="ident">to_orig_byte_idx</span>(<span class="ident">mod_bytes</span>)
     }
 
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_end</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">index</span>: <span class="ident">usize</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">usize</span> {
-        <span class="self">self</span>.<span class="ident">path</span>[<span class="ident">index</span>].<span class="ident">end_bytes</span>()
+        <span class="kw">let</span> <span class="ident">mod_bytes</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">path</span>[<span class="ident">index</span>].<span class="ident">end</span>();
+        <span class="self">self</span>.<span class="ident">input_text</span>.<span class="ident">to_orig_byte_idx</span>(<span class="ident">mod_bytes</span>)
+    }
+
+    <span class="doccomment">/// Returns begin codepoint index in the original sentence</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_begin_cp</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">index</span>: <span class="ident">usize</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">usize</span> {
+        <span class="kw">let</span> <span class="ident">begin_cp</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">path</span>[<span class="ident">index</span>].<span class="ident">begin</span>();
+        <span class="self">self</span>.<span class="ident">input_text</span>.<span class="ident">to_orig_char_idx</span>(<span class="ident">begin_cp</span>)
+    }
+
+    <span class="doccomment">/// Returns end codepoint index in the original sentence</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_end_cp</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">index</span>: <span class="ident">usize</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">usize</span> {
+        <span class="kw">let</span> <span class="ident">end_cp</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">path</span>[<span class="ident">index</span>].<span class="ident">end</span>();
+        <span class="self">self</span>.<span class="ident">input_text</span>.<span class="ident">to_orig_char_idx</span>(<span class="ident">end_cp</span>)
     }
 
     <span class="doccomment">/// Returns a substring of the original text which corresponds to the morpheme</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_surface</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">index</span>: <span class="ident">usize</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span><span class="ident">str</span> {
         <span class="kw">let</span> <span class="ident">node</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">path</span>[<span class="ident">index</span>];
-        <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">input_text</span>[<span class="ident">node</span>.<span class="ident">begin_bytes</span>()..<span class="ident">node</span>.<span class="ident">end_bytes</span>()]
+        <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">input_text</span>.<span class="ident">orig_slice</span>(<span class="ident">node</span>.<span class="ident">bytes_range</span>())
     }
 
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_word_info</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">index</span>: <span class="ident">usize</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span><span class="ident">WordInfo</span> {
@@ -516,12 +558,12 @@
 }
 
 <span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="ident">Morpheme</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span>, <span class="ident">T</span><span class="op">&gt;</span> {
-    <span class="doccomment">/// Returns the begin index of morpheme in the original text</span>
+    <span class="doccomment">/// Returns the begin index in bytes of the morpheme in the original text</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">begin</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">usize</span> {
         <span class="self">self</span>.<span class="ident">list</span>.<span class="ident">get_begin</span>(<span class="self">self</span>.<span class="ident">index</span>)
     }
 
-    <span class="doccomment">/// Returns the end index of morpehme in the original text</span>
+    <span class="doccomment">/// Returns the end index in bytes of the morpheme in the original text</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">end</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">usize</span> {
         <span class="self">self</span>.<span class="ident">list</span>.<span class="ident">get_end</span>(<span class="self">self</span>.<span class="ident">index</span>)
     }
