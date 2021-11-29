@@ -38,6 +38,7 @@ pub mod header;
 pub mod lexicon;
 pub mod lexicon_set;
 pub mod read;
+pub mod storage;
 pub mod subset;
 pub mod word_id;
 

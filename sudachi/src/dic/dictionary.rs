@@ -24,6 +24,7 @@ use crate::config::Config;
 use crate::config::ConfigError::MissingArgument;
 use crate::dic::grammar::Grammar;
 use crate::dic::lexicon_set::LexiconSet;
+use crate::dic::storage::{Storage, SudachiDicData};
 use crate::dic::{DictionaryLoader, LoadedDictionary};
 use crate::error::SudachiError::ConfigError;
 use crate::error::{SudachiError, SudachiResult};
@@ -31,56 +32,6 @@ use crate::plugin::input_text::InputTextPlugin;
 use crate::plugin::oov::OovProviderPlugin;
 use crate::plugin::path_rewrite::PathRewritePlugin;
 use crate::plugin::Plugins;
-
-// Mmap stores file handle, so file field may not be needed
-// but let it be here for the time being
-struct FileMapping {
-    #[allow(unused)]
-    file: File,
-    mapping: Mmap,
-}
-
-impl FileMapping {
-    // super unsafe, but we don't leak static lifetime outside of dictionary
-    // this is used only for construction of dictionary parts
-    unsafe fn as_static_slice(&self) -> &'static [u8] {
-        let slice: &[u8] = self.mapping.as_ref();
-        std::mem::transmute(slice)
-    }
-}
-
-enum StorageBackend {
-    FileSystem {
-        #[allow(unused)] // This is for ownership, this is not used by code
-        system: FileMapping,
-        user: Vec<FileMapping>,
-    },
-    // Remove when fixing https://github.com/WorksApplications/sudachi.rs/issues/35
-    #[allow(unused)]
-    InMemory {},
-}
-
-impl StorageBackend {
-    pub(crate) fn user_dicts_iter(&self) -> impl Iterator<Item = &'static [u8]> + '_ {
-        match self {
-            StorageBackend::FileSystem { user: u, .. } => {
-                u.iter().map(|m| unsafe { m.as_static_slice() })
-            }
-            _ => panic!("Not implemented"),
-        }
-    }
-}
-
-impl Drop for StorageBackend {
-    fn drop(&mut self) {
-        match self {
-            StorageBackend::FileSystem { user: u, .. } => {
-                u.clear();
-            }
-            _ => panic!("Not implemented"),
-        }
-    }
-}
 
 // It is self-referential struct with 'static lifetime as a workaround
 // for the impossibility to specify the correct lifetime for
@@ -92,7 +43,7 @@ impl Drop for StorageBackend {
 // This structure is always read only after creation and is safe to share
 // between threads.
 pub struct JapaneseDictionary {
-    backend: StorageBackend,
+    storage: SudachiDicData,
     plugins: Plugins,
     //'static is a a lie, lifetime is the same with StorageBackend
     _grammar: Grammar<'static>,
@@ -100,30 +51,38 @@ pub struct JapaneseDictionary {
     _lexicon: LexiconSet<'static>,
 }
 
-fn map_file(path: &Path) -> SudachiResult<FileMapping> {
+fn map_file(path: &Path) -> SudachiResult<Storage> {
     let file = File::open(path)?;
     let mapping = unsafe { Mmap::map(&file) }?;
-    Ok(FileMapping { file, mapping })
+    Ok(Storage::File(mapping))
 }
 
-fn load_system_dic(cfg: &Config) -> SudachiResult<FileMapping> {
+fn load_system_dic(cfg: &Config) -> SudachiResult<Storage> {
     match &cfg.system_dict {
         Some(p) => map_file(p),
         None => return Err(ConfigError(MissingArgument(String::from("system_dict")))),
     }
 }
-
-fn load_user_dics(cfg: &Config) -> SudachiResult<Vec<FileMapping>> {
-    cfg.user_dicts.iter().map(|p| map_file(p)).collect()
-}
-
 impl JapaneseDictionary {
+    /// Creates a dictionary from the specified configuration
+    /// Dictionaries will be read from disk
     pub fn from_cfg(cfg: &Config) -> SudachiResult<JapaneseDictionary> {
-        let sys_dic = load_system_dic(cfg)?;
-        let user_dics = load_user_dics(cfg)?;
+        let mut sb = SudachiDicData::new(load_system_dic(cfg)?);
 
+        for udic in cfg.user_dicts.iter() {
+            sb.add_user(map_file(udic.as_path())?)
+        }
+
+        Self::from_cfg_storage(cfg, sb)
+    }
+
+    /// Creats a dictionary from the specified configuration and storage
+    pub fn from_cfg_storage(
+        cfg: &Config,
+        storage: SudachiDicData,
+    ) -> SudachiResult<JapaneseDictionary> {
         let mut basic_dict = LoadedDictionary::from_system_dictionary(
-            unsafe { sys_dic.as_static_slice() },
+            unsafe { storage.system_static_slice() },
             &cfg.character_definition_file,
         )?;
 
@@ -138,17 +97,14 @@ impl JapaneseDictionary {
         }
 
         let mut dic = JapaneseDictionary {
-            backend: StorageBackend::FileSystem {
-                system: sys_dic,
-                user: user_dics,
-            },
-            plugins: plugins,
+            storage,
+            plugins,
             _grammar: basic_dict.grammar,
             _lexicon: basic_dict.lexicon_set,
         };
 
         // this Vec is needed to prevent double borrowing of dic
-        let user_dicts: Vec<_> = dic.backend.user_dicts_iter().collect();
+        let user_dicts: Vec<_> = dic.storage.user_static_slice();
         for udic in user_dicts {
             dic = dic.merge_user_dictionary(udic)?;
         }

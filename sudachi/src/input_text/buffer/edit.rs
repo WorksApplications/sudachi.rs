@@ -17,11 +17,13 @@
 use crate::input_text::buffer::REALLY_MAX_LENGTH;
 use std::ops::Range;
 
+#[derive(Clone)]
 pub struct ReplaceOp<'a> {
     what: Range<usize>,
     with: ReplaceTgt<'a>,
 }
 
+#[derive(Clone)]
 enum ReplaceTgt<'a> {
     Ref(&'a str),
     Char(char),
