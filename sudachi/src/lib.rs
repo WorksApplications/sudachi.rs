@@ -40,9 +40,7 @@ pub mod test;
 
 pub mod prelude {
     pub use crate::{
-        analysis::morpheme::MorphemeList,
-        analysis::{Mode, Tokenize},
-        error::SudachiError,
-        error::SudachiResult,
+        analysis::mlist::MorphemeList, analysis::morpheme::Morpheme, analysis::Mode,
+        error::SudachiError, error::SudachiResult,
     };
 }

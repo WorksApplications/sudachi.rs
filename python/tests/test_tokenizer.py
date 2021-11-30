@@ -130,6 +130,15 @@ class TestTokenizer(unittest.TestCase):
         ms2 = tok.tokenize('東京都')
         self.assertEqual(ms1[0].part_of_speech_id(), ms2[0].part_of_speech_id())
 
+    def test_tokenizer_out_param(self):
+        ms1 = self.tokenizer_obj.tokenize('東京都東京府')
+        m = ms1[0]
+        self.assertEqual(m.surface(), '東京都')
+
+        ms2 = self.tokenizer_obj.tokenize('すだち', out=ms1)
+        self.assertEqual(id(ms1), id(ms2))
+        self.assertEqual(m.surface(), 'すだち')
+
 
 if __name__ == '__main__':
     unittest.main()

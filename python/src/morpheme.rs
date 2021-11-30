@@ -14,14 +14,14 @@
  *  limitations under the License.
  */
 
+use std::ops::Deref;
 use std::sync::Arc;
 
 use pyo3::exceptions::{self, PyException};
 use pyo3::prelude::*;
-use pyo3::types::{PyList, PyTuple, PyType};
+use pyo3::types::{PyList, PyString, PyTuple, PyType};
 
-use sudachi::analysis::morpheme::MorphemeList;
-use sudachi::analysis::node::LatticeNode;
+use sudachi::prelude::{Morpheme, MorphemeList};
 
 use crate::dictionary::{PyDicData, PyDictionary};
 use crate::tokenizer::PySplitMode;
@@ -33,9 +33,31 @@ type PyMorphemeList = MorphemeList<Arc<PyDicData>>;
 #[pyclass(module = "sudachipy.morphemelist", name = "MorphemeList")]
 #[repr(transparent)]
 pub struct PyMorphemeListWrapper {
-    inner: Arc<PyMorphemeList>,
+    inner: PyMorphemeList,
 }
 
+// this can be used only when GIL is active, so it is safe
+unsafe impl Sync for PyMorphemeListWrapper {}
+unsafe impl Send for PyMorphemeListWrapper {}
+
+impl PyMorphemeListWrapper {
+    pub(crate) fn new(dict: Arc<PyDicData>) -> Self {
+        Self {
+            inner: PyMorphemeList::empty(dict),
+        }
+    }
+    pub(crate) fn internal_mut(&mut self) -> &mut PyMorphemeList {
+        &mut self.inner
+    }
+    pub(crate) fn internal(&self) -> &PyMorphemeList {
+        &self.inner
+    }
+    pub(crate) fn empty_clone(&self) -> Self {
+        Self {
+            inner: self.inner.empty_clone(),
+        }
+    }
+}
 #[pymethods]
 impl PyMorphemeListWrapper {
     /// Returns an empty morpheme list with dictionary
@@ -46,9 +68,7 @@ impl PyMorphemeListWrapper {
         PyErr::warn(py, cat, "Users should not generate MorphemeList by themselves. Use Tokenizer.tokenize(\"\") if you need.", 1)?;
 
         Ok(Self {
-            inner: Arc::new(PyMorphemeList::empty(
-                dict.dictionary.as_ref().unwrap().clone(),
-            )),
+            inner: PyMorphemeList::empty(dict.dictionary.as_ref().unwrap().clone()),
         })
     }
 
@@ -63,190 +83,239 @@ impl PyMorphemeListWrapper {
     fn size(&self) -> usize {
         self.inner.len()
     }
+
+    fn __len__(&self) -> usize {
+        self.size()
+    }
+
+    fn __getitem__(slf: &PyCell<PyMorphemeListWrapper>, mut idx: isize) -> PyResult<PyMorpheme> {
+        let list = slf.borrow();
+        let len = list.__len__() as isize;
+
+        if idx < 0 {
+            // negative indexing
+            idx += len;
+        }
+
+        if idx < 0 || len <= idx {
+            return Err(PyErr::new::<exceptions::PyIndexError, _>(format!(
+                "morphemelist index out of range: the len is {} but the index is {}",
+                list.__len__(),
+                idx
+            )));
+        }
+
+        let py_list: Py<PyMorphemeListWrapper> = slf.into();
+
+        Ok(PyMorpheme {
+            list: py_list,
+            index: idx as usize,
+        })
+    }
+
+    fn __str__<'py>(&'py self, py: Python<'py>) -> &PyString {
+        PyString::new(py, self.inner.surface().deref())
+    }
+
+    fn __iter__(slf: Py<Self>) -> PyMorphemeIter {
+        PyMorphemeIter {
+            list: slf,
+            index: 0,
+        }
+    }
+
+    fn __bool__(&self) -> bool {
+        self.inner.len() != 0
+    }
 }
 
 impl From<MorphemeList<Arc<PyDicData>>> for PyMorphemeListWrapper {
     fn from(morpheme_list: MorphemeList<Arc<PyDicData>>) -> Self {
         Self {
-            inner: Arc::new(morpheme_list),
+            inner: morpheme_list,
         }
-    }
-}
-
-#[pyproto]
-impl pyo3::basic::PyObjectProtocol for PyMorphemeListWrapper {
-    fn __str__(&self) -> &str {
-        self.inner.surface()
-    }
-}
-
-#[pyproto]
-impl pyo3::sequence::PySequenceProtocol for PyMorphemeListWrapper {
-    fn __len__(&self) -> usize {
-        self.size()
-    }
-
-    fn __getitem__(&self, idx: isize) -> PyResult<PyMorpheme> {
-        // pyo3 automatically adds len when a negative idx is given
-        let len = self.__len__() as isize;
-        if idx < 0 || len <= idx {
-            return Err(PyErr::new::<exceptions::PyIndexError, _>(format!(
-                "morphemelist index out of range: the len is {} but the index is {}",
-                self.__len__(),
-                idx
-            )));
-        }
-
-        Ok(PyMorpheme {
-            list: self.inner.clone(),
-            index: idx as usize,
-        })
-    }
-}
-
-#[pyproto]
-impl pyo3::iter::PyIterProtocol for PyMorphemeListWrapper {
-    fn __iter__(slf: PyRef<Self>) -> PyResult<Py<PyMorphemeIter>> {
-        Py::new(
-            slf.py(),
-            PyMorphemeIter {
-                list: slf.inner.clone(),
-                index: 0,
-            },
-        )
     }
 }
 
 /// A morpheme (basic semantic unit of language).
 #[pyclass(module = "sudachipy.morphemelist", name = "MorphemeIter")]
 pub struct PyMorphemeIter {
-    list: Arc<PyMorphemeList>,
+    list: Py<PyMorphemeListWrapper>,
     index: usize,
 }
 
-#[pyproto]
-impl pyo3::iter::PyIterProtocol for PyMorphemeIter {
+#[pymethods]
+impl PyMorphemeIter {
     fn __iter__(slf: PyRef<Self>) -> PyRef<Self> {
         slf
     }
 
-    fn __next__(mut slf: PyRefMut<Self>) -> Option<PyMorpheme> {
-        if slf.index >= slf.list.len() {
+    fn __next__(&mut self, py: Python) -> Option<PyMorpheme> {
+        if self.index >= self.list.borrow(py).size() {
             return None;
         }
 
         let morpheme = PyMorpheme {
-            list: slf.list.clone(),
-            index: slf.index,
+            list: self.list.clone(),
+            index: self.index,
         };
 
-        slf.index += 1;
+        self.index += 1;
         Some(morpheme)
+    }
+}
+
+/// It is a syntax sugar for accessing Morpheme reference
+/// Without it binding implementations become much less readable
+struct MorphemeRef<'py> {
+    #[allow(unused)]
+    list: PyRef<'py, PyMorphemeListWrapper>,
+    morph: Morpheme<'py, Arc<PyDicData>>,
+}
+
+impl<'py> Deref for MorphemeRef<'py> {
+    type Target = Morpheme<'py, Arc<PyDicData>>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.morph
     }
 }
 
 #[pyclass(module = "sudachipy.morpheme", name = "Morpheme")]
 pub struct PyMorpheme {
-    list: Arc<PyMorphemeList>,
+    list: Py<PyMorphemeListWrapper>,
     index: usize,
 }
 
-#[pyproto]
-impl pyo3::basic::PyObjectProtocol for PyMorpheme {
-    fn __str__(&self) -> &str {
-        self.surface()
+impl PyMorpheme {
+    fn list<'py>(&'py self, py: Python<'py>) -> PyRef<'py, PyMorphemeListWrapper> {
+        self.list.borrow(py)
+    }
+
+    fn morph<'py>(&'py self, py: Python<'py>) -> MorphemeRef<'py> {
+        let list = self.list(py);
+        // workaround for self-referential structs
+        let morph = unsafe { std::mem::transmute(list.internal().get(self.index)) };
+        MorphemeRef { list, morph }
     }
 }
 
 #[pymethods]
 impl PyMorpheme {
+    fn __str__<'py>(&'py self, py: Python<'py>) -> PyObject {
+        self.surface(py)
+    }
+
     /// Returns the begin index of this in the input text
     #[pyo3(text_signature = "($self)")]
-    fn begin(&self) -> usize {
+    fn begin(&self, py: Python) -> usize {
         // call codepoint version
-        self.list.get_begin_cp(self.index)
+        self.morph(py).begin_c()
     }
 
     /// Returns the end index of this in the input text
     #[pyo3(text_signature = "($self)")]
-    fn end(&self) -> usize {
+    fn end(&self, py: Python) -> usize {
         // call codepoint version
-        self.list.get_end_cp(self.index)
+        self.morph(py).end_c()
     }
 
     /// Returns the surface
     #[pyo3(text_signature = "($self)")]
-    fn surface(&self) -> &str {
-        self.list.get_surface(self.index)
+    fn surface<'py>(&'py self, py: Python<'py>) -> PyObject {
+        self.morph(py).surface().deref().into_py(py)
     }
 
     /// Returns the part of speech
     #[pyo3(text_signature = "($self)")]
-    fn part_of_speech<'py>(&'py self, py: Python<'py>) -> &'py PyTuple {
-        let pos_id = self.part_of_speech_id();
-        self.list.dic().pos_of(pos_id).as_ref(py)
+    fn part_of_speech<'py>(&'py self, py: Python<'py>) -> Py<PyTuple> {
+        let pos_id = self.part_of_speech_id(py);
+        self.list(py).internal().dict().pos_of(pos_id).clone_ref(py)
     }
 
     /// Returns the id of the part of speech in the dictionary
     #[pyo3(text_signature = "($self)")]
-    pub fn part_of_speech_id(&self) -> u16 {
-        self.list.get_word_info(self.index).pos_id()
+    pub fn part_of_speech_id(&self, py: Python) -> u16 {
+        self.morph(py).part_of_speech_id()
     }
 
     /// Returns the dictionary form
     #[pyo3(text_signature = "($self)")]
-    fn dictionary_form(&self) -> &str {
-        self.list.get_word_info(self.index).dictionary_form()
+    fn dictionary_form<'py>(&'py self, py: Python<'py>) -> PyObject {
+        self.morph(py).get_word_info().dictionary_form().into_py(py)
     }
 
     /// Returns the normalized form
     #[pyo3(text_signature = "($self)")]
-    fn normalized_form(&self) -> &str {
-        self.list.get_word_info(self.index).normalized_form()
+    fn normalized_form<'py>(&'py self, py: Python<'py>) -> PyObject {
+        self.morph(py).get_word_info().normalized_form().into_py(py)
     }
 
     /// Returns the reading form
     #[pyo3(text_signature = "($self)")]
-    fn reading_form(&self) -> &str {
-        self.list.get_word_info(self.index).reading_form()
+    fn reading_form<'py>(&'py self, py: Python<'py>) -> PyObject {
+        self.morph(py).get_word_info().reading_form().into_py(py)
     }
 
     /// Returns a list of morphemes splitting itself with given split mode
-    #[pyo3(text_signature = "($self, mode: sudachipy.SplitMode) -> sudachipy.MorphemeList")]
-    fn split(&self, py: Python, mode: PySplitMode) -> PyResult<PyMorphemeListWrapper> {
-        let cat = PyModule::import(py, "builtins")?.getattr("DeprecationWarning")?;
-        PyErr::warn(
-            py,
-            cat,
-            "API around this functionality will change. See github issue #92 for more.",
-            1,
-        )?;
+    #[pyo3(
+        text_signature = "($self, mode: sudachipy.SplitMode, out = None) -> sudachipy.MorphemeList"
+    )]
+    fn split<'py>(
+        &'py self,
+        py: Python<'py>,
+        mode: PySplitMode,
+        out: Option<&'py PyCell<PyMorphemeListWrapper>>,
+        add_single: Option<bool>,
+    ) -> PyResult<&'py PyCell<PyMorphemeListWrapper>> {
+        let list = self.list(py);
 
-        Ok(self
-            .list
-            .split(mode.into(), self.index)
+        let out_cell = match out {
+            None => {
+                let list = list.empty_clone();
+                PyCell::new(py, list)?
+            }
+            Some(r) => r,
+        };
+
+        let mut borrow = out_cell.try_borrow_mut();
+        let out_ref = match borrow {
+            Ok(ref mut v) => v.internal_mut(),
+            Err(_) => return Err(PyException::new_err("out was used twice")),
+        };
+
+        out_ref.clear();
+        let splitted = list
+            .internal()
+            .split_into(mode.into(), self.index, out_ref)
             .map_err(|e| {
                 PyException::new_err(format!("Error while splitting morpheme: {}", e.to_string()))
-            })?
-            .into())
+            })?;
+
+        if add_single.unwrap_or(true) && !splitted {
+            list.internal()
+                .copy_slice(self.index, self.index + 1, out_ref);
+        }
+
+        Ok(out_cell)
     }
 
     /// Returns whether if this is out of vocabulary word
     #[pyo3(text_signature = "($self)")]
-    fn is_oov(&self) -> bool {
-        self.list.is_oov(self.index)
+    fn is_oov(&self, py: Python) -> bool {
+        self.morph(py).is_oov()
     }
 
     /// Returns word id of this word in the dictionary
     #[pyo3(text_signature = "($self)")]
-    fn word_id(&self) -> u32 {
-        self.list.get_node(self.index).word_id().as_raw()
+    fn word_id(&self, py: Python) -> u32 {
+        self.morph(py).word_id().as_raw()
     }
 
     /// Returns the dictionary id which this word belongs
     #[pyo3(text_signature = "($self)")]
-    fn dictionary_id(&self) -> i32 {
-        let word_id = self.list.get_node(self.index).word_id();
+    fn dictionary_id(&self, py: Python) -> i32 {
+        let word_id = self.morph(py).word_id();
         if word_id.is_oov() {
             -1
         } else {
@@ -256,9 +325,10 @@ impl PyMorpheme {
 
     /// Returns the list of synonym group ids
     #[pyo3(text_signature = "($self)")]
-    fn synonym_group_ids(&self, py: Python) -> Py<PyList> {
-        let ids = self.list.get_word_info(self.index).synonym_group_ids();
-        PyList::new(py, ids).into()
+    fn synonym_group_ids<'py>(&'py self, py: Python<'py>) -> &'py PyList {
+        let mref = self.morph(py);
+        let ids = mref.get_word_info().synonym_group_ids();
+        PyList::new(py, ids)
     }
 
     /// Returns the word info
@@ -267,11 +337,12 @@ impl PyMorpheme {
         let cat = PyModule::import(py, "builtins")?.getattr("DeprecationWarning")?;
         PyErr::warn(py, cat, "Users should not touch the raw WordInfo.", 1)?;
 
-        Ok(self.list.get_word_info(self.index).clone().into())
+        Ok(self.morph(py).get_word_info().clone().into())
     }
 
     /// Returns morpheme length in codepoints
-    pub fn __len__(&self) -> usize {
-        self.end() - self.begin()
+    pub fn __len__(&self, py: Python) -> usize {
+        let m = self.morph(py);
+        m.end_c() - m.begin_c()
     }
 }

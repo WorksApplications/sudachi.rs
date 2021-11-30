@@ -17,12 +17,13 @@
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 
-use morpheme::MorphemeList;
+use mlist::MorphemeList;
 
 use crate::error::SudachiResult;
 
 mod inner;
 pub mod lattice;
+pub mod mlist;
 pub mod morpheme;
 pub mod node;
 pub mod stateful_tokenizer;

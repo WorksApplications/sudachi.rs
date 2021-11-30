@@ -24,6 +24,7 @@ use nom::{
     bytes::complete::take,
     number::complete::{le_i16, le_u16},
 };
+use std::ops::Index;
 
 /// Dictionary grammar
 ///
@@ -115,6 +116,12 @@ impl<'a> Grammar<'a> {
             }
         }
         None
+    }
+
+    /// Gets POS components for POS ID.
+    /// Panics if out of bounds.
+    pub fn pos_components(&self, pos_id: u16) -> &[String] {
+        self.pos_list.index(pos_id as usize)
     }
 
     /// Merge a another grammar into this grammar

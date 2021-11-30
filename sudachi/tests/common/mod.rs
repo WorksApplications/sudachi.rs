@@ -31,6 +31,7 @@ use sudachi::dic::{grammar::Grammar, header::Header, lexicon::Lexicon, Dictionar
 use sudachi::prelude::*;
 
 use lazy_static::lazy_static;
+use sudachi::analysis::Tokenize;
 use sudachi::dic::build::DictBuilder;
 use sudachi::dic::storage::{Storage, SudachiDicData};
 

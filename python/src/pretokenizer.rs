@@ -21,17 +21,17 @@ use pyo3::prelude::*;
 use pyo3::types::{PyList, PySlice, PyTuple};
 use std::cell::RefCell;
 use std::sync::Arc;
-use sudachi::analysis::node::LatticeNode;
+
 use sudachi::analysis::stateful_tokenizer::StatefulTokenizer;
 use sudachi::dic::subset::InfoSubset;
-use sudachi::prelude::{Mode, MorphemeList};
+use sudachi::prelude::Mode;
 use thread_local::ThreadLocal;
 
 /// This struct perform actual tokenization
 /// There should be at most one instance per thread of execution
 struct PerThreadPreTokenizer {
     tokenizer: StatefulTokenizer<Arc<PyDicData>>,
-    morphemes: MorphemeList<Arc<PyDicData>>,
+    morphemes: Option<Py<PyMorphemeListWrapper>>,
 }
 
 impl PerThreadPreTokenizer {
@@ -40,19 +40,36 @@ impl PerThreadPreTokenizer {
         tok.set_subset(subset);
         Self {
             tokenizer: tok,
-            morphemes: MorphemeList::empty(dict.clone()),
+            morphemes: None,
         }
     }
 
     pub fn tokenize(&mut self, data: &str) -> PyResult<()> {
         self.tokenizer.reset().push_str(data);
         wrap(self.tokenizer.do_tokenize())?;
-        self.morphemes.collect_results(&mut self.tokenizer).unwrap();
         Ok(())
     }
 
-    pub fn result(&self) -> &MorphemeList<Arc<PyDicData>> {
-        &self.morphemes
+    pub fn collect_results(&mut self, py: Python) -> PyResult<()> {
+        let mut mlist = match self.morphemes.as_mut() {
+            None => {
+                self.morphemes = Some(Py::new(
+                    py,
+                    PyMorphemeListWrapper::new(self.tokenizer.dict_clone()),
+                )?);
+                self.morphemes.as_mut().unwrap().borrow_mut(py)
+            }
+            Some(ms) => ms.borrow_mut(py),
+        };
+        mlist
+            .internal_mut()
+            .collect_results(&mut self.tokenizer)
+            .unwrap();
+        Ok(())
+    }
+
+    pub fn result(&self) -> &Py<PyMorphemeListWrapper> {
+        self.morphemes.as_ref().unwrap()
     }
 }
 
@@ -113,14 +130,17 @@ impl PyPretokenizer {
         // tokenization itself should work without GIL, we have thread-local tokenizers here
         py.allow_threads(|| self.tokenizer_cell().borrow_mut().tokenize(input_data))?;
         // then prepare results with GIL
+        self.tokenizer_cell().borrow_mut().collect_results(py)?;
         let cell = self.tokenizer_cell().borrow();
         let morphs = cell.result();
         match self.handler.as_ref() {
             None => {
                 let result = PyList::empty(py);
+                let py_ref = morphs.borrow(py);
+                let morphs = py_ref.internal();
                 for idx in 0..morphs.len() {
-                    let node = morphs.get_node(idx);
-                    let slice = PySlice::new(py, node.begin() as isize, node.end() as isize, 1);
+                    let node = morphs.get(idx);
+                    let slice = PySlice::new(py, node.begin_c() as isize, node.end_c() as isize, 1);
                     let args = PyTuple::new(py, [slice]);
                     let substring = string.call_method1("slice", args)?;
                     result.append(substring)?;
@@ -128,9 +148,8 @@ impl PyPretokenizer {
                 Ok(result)
             }
             Some(h) => {
-                let mlist = PyMorphemeListWrapper::from(morphs.clone());
-                let mlist = PyCell::new(py, mlist)?;
-                let args = PyTuple::new(py, &[index, string, mlist]);
+                let mrp: &PyAny = morphs.as_ref(py);
+                let args = PyTuple::new(py, &[index, string, mrp]);
                 h.as_ref(py).call1(args)
             }
         }

@@ -172,7 +172,7 @@ fn system_plus_user_2() {
     let result = tok.tokenize("かぼすにいく", Mode::C, false).unwrap();
     assert_eq!(result.len(), 3);
     assert_eq!(result.get(0).word_id().dic(), 2);
-    assert_eq!(result.get(0).part_of_speech().unwrap()[0], "被子植物門");
+    assert_eq!(result.get(0).part_of_speech()[0], "被子植物門");
 }
 
 #[test]
@@ -193,5 +193,5 @@ fn split_with_subset() {
     res.collect_results(&mut tok).unwrap();
     assert_eq!(res.len(), 2);
     //assert_eq!(res.get_end(0), 6);
-    assert_eq!(res.get_end(1), 9);
+    assert_eq!(res.get(1).end(), 9);
 }

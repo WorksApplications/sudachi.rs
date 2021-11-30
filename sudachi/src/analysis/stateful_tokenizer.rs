@@ -283,9 +283,12 @@ impl<D: DictionaryAccess> StatefulTokenizer<D> {
     pub fn into_morpheme_list(self) -> SudachiResult<MorphemeList<D>> {
         match self.top_path {
             None => Err(SudachiError::EosBosDisconnect),
-            Some(path) => {
-                MorphemeList::from_components(self.dictionary, self.input, path, self.subset)
-            }
+            Some(path) => Ok(MorphemeList::from_components(
+                self.dictionary,
+                self.input,
+                path,
+                self.subset,
+            )),
         }
     }
 }

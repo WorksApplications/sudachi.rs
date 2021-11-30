@@ -17,6 +17,7 @@
 extern crate lazy_static;
 extern crate sudachi;
 
+use std::ops::Deref;
 use sudachi::prelude::Mode;
 
 mod common;
@@ -35,14 +36,14 @@ fn get_word_id() {
     let ms = tok.tokenize("京都", Mode::C);
     let ms: Vec<_> = ms.iter().collect();
     assert_eq!(1, ms.len());
-    let pos = ms[0].part_of_speech().expect("failed to get pos");
+    let pos = ms[0].part_of_speech();
     assert_eq!(["名詞", "固有名詞", "地名", "一般", "*", "*"], &pos[..]);
 
     // we do not have word_id field in Morpheme and skip testing.
     let ms = tok.tokenize("ぴらる", Mode::C);
     let ms: Vec<_> = ms.iter().collect();
     assert_eq!(1, ms.len());
-    let pos = ms[0].part_of_speech().expect("failed to get pos");
+    let pos = ms[0].part_of_speech();
     assert_eq!(["名詞", "普通名詞", "一般", "*", "*", "*"], &pos[..]);
 }
 
@@ -50,19 +51,16 @@ fn get_word_id() {
 fn get_dictionary_id() {
     let tok = TestTokenizer::new();
     let ms = tok.tokenize("京都", Mode::C);
-    let ms: Vec<_> = ms.iter().collect();
     assert_eq!(1, ms.len());
-    assert_eq!(0, ms[0].dictionary_id());
+    assert_eq!(0, ms.get(0).dictionary_id());
 
     let ms = tok.tokenize("ぴらる", Mode::C);
-    let ms: Vec<_> = ms.iter().collect();
     assert_eq!(1, ms.len());
-    assert_eq!(1, ms[0].dictionary_id());
+    assert_eq!(1, ms.get(0).dictionary_id());
 
     let ms = tok.tokenize("京", Mode::C);
-    let ms: Vec<_> = ms.iter().collect();
     assert_eq!(1, ms.len());
-    assert!(ms[0].dictionary_id() < 0);
+    assert!(ms.get(0).dictionary_id() < 0);
 }
 
 #[test]
@@ -98,11 +96,11 @@ fn tokenize_with_dots() {
     let ms = tok.tokenize("京都…", Mode::C);
     let ms: Vec<_> = ms.iter().collect();
     assert_eq!(4, ms.len());
-    assert_eq!("…", ms[1].surface());
+    assert_eq!("…", ms[1].surface().deref());
     assert_eq!(".", ms[1].normalized_form());
-    assert_eq!("", ms[2].surface());
+    assert_eq!("", ms[2].surface().deref());
     assert_eq!(".", ms[2].normalized_form());
-    assert_eq!("", ms[3].surface());
+    assert_eq!("", ms[3].surface().deref());
     assert_eq!(".", ms[3].normalized_form());
 }
 
@@ -112,11 +110,11 @@ fn tokenizer_morpheme_split() {
     let ms = tok.tokenize("東京都", Mode::C);
     let ms: Vec<_> = ms.iter().collect();
     assert_eq!(1, ms.len());
-    assert_eq!("東京都", ms[0].surface());
+    assert_eq!("東京都", ms[0].surface().deref());
 
     let ms = tok.tokenize("東京都", Mode::A);
     let ms: Vec<_> = ms.iter().collect();
     assert_eq!(2, ms.len());
-    assert_eq!("東京", ms[0].surface());
-    assert_eq!("都", ms[1].surface());
+    assert_eq!("東京", ms[0].surface().deref());
+    assert_eq!("都", ms[1].surface().deref());
 }

@@ -115,8 +115,8 @@ impl PyPosMatcher {
 
 #[pymethods]
 impl PyPosMatcher {
-    pub fn __call__(&self, m: &PyMorpheme) -> bool {
-        let pos_id = m.part_of_speech_id();
+    pub fn __call__<'py>(&'py self, py: Python<'py>, m: &'py PyMorpheme) -> bool {
+        let pos_id = m.part_of_speech_id(py);
         self.matcher.matches_id(pos_id)
     }
 

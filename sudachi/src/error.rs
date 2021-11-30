@@ -110,6 +110,9 @@ pub enum SudachiError {
 
     #[error(transparent)]
     DictionaryCompilationError(#[from] DicBuildError),
+
+    #[error("MorphemeList is borrowed, make sure that all Ref<> are dropped")]
+    MorphemeListBorrowed,
 }
 
 pub type SudachiNomResult<I, O> = nom::IResult<I, O, SudachiNomError<I>>;
