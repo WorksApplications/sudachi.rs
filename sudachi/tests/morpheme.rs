@@ -36,25 +36,26 @@ fn empty_morpheme_list() {
 fn morpheme_attributes() {
     let tok = TestTokenizer::new();
     let ms = tok.tokenize("京都", Mode::C);
-    let ms: Vec<_> = ms.iter().collect();
 
-    assert_eq!(0, ms[0].begin());
-    assert_eq!(6, ms[0].end());
-    assert_eq!("京都", ms[0].surface().deref());
+    assert_eq!(0, ms.get(0).begin());
+    assert_eq!(6, ms.get(0).end());
+    assert_eq!("京都", ms.get(0).surface().deref());
 
-    let pos = ms[0].part_of_speech();
-    assert_eq!(["名詞", "固有名詞", "地名", "一般", "*", "*"], &pos[..]);
-    assert_eq!(3, ms[0].part_of_speech_id());
+    assert_eq!(
+        ["名詞", "固有名詞", "地名", "一般", "*", "*"],
+        ms.get(0).part_of_speech()
+    );
+    assert_eq!(3, ms.get(0).part_of_speech_id());
 
-    assert_eq!("京都", ms[0].dictionary_form());
-    assert_eq!("京都", ms[0].normalized_form());
-    assert_eq!("キョウト", ms[0].reading_form());
+    assert_eq!("京都", ms.get(0).dictionary_form());
+    assert_eq!("京都", ms.get(0).normalized_form());
+    assert_eq!("キョウト", ms.get(0).reading_form());
 
-    assert_eq!(false, ms[0].is_oov());
+    assert_eq!(false, ms.get(0).is_oov());
 
-    assert_eq!(3, ms[0].word_id().word());
-    assert_eq!(0, ms[0].dictionary_id());
-    assert_eq!([1, 5], ms[0].synonym_group_ids());
+    assert_eq!(3, ms.get(0).word_id().word());
+    assert_eq!(0, ms.get(0).dictionary_id());
+    assert_eq!([1, 5], ms.get(0).synonym_group_ids());
 }
 
 #[test]

@@ -34,17 +34,19 @@ fn tokenize_small_katakana_only() {
 fn get_word_id() {
     let tok = TestTokenizer::new();
     let ms = tok.tokenize("京都", Mode::C);
-    let ms: Vec<_> = ms.iter().collect();
     assert_eq!(1, ms.len());
-    let pos = ms[0].part_of_speech();
-    assert_eq!(["名詞", "固有名詞", "地名", "一般", "*", "*"], &pos[..]);
+    let m = ms.get(0);
+    let pos = m.part_of_speech();
+    assert_eq!(["名詞", "固有名詞", "地名", "一般", "*", "*"], pos);
 
     // we do not have word_id field in Morpheme and skip testing.
     let ms = tok.tokenize("ぴらる", Mode::C);
-    let ms: Vec<_> = ms.iter().collect();
     assert_eq!(1, ms.len());
-    let pos = ms[0].part_of_speech();
-    assert_eq!(["名詞", "普通名詞", "一般", "*", "*", "*"], &pos[..]);
+    let m = ms.get(0);
+    assert_eq!(
+        ["名詞", "普通名詞", "一般", "*", "*", "*"],
+        m.part_of_speech()
+    );
 }
 
 #[test]
@@ -67,19 +69,16 @@ fn get_dictionary_id() {
 fn get_synonym_group_id() {
     let tok = TestTokenizer::new();
     let ms = tok.tokenize("京都", Mode::C);
-    let ms: Vec<_> = ms.iter().collect();
     assert_eq!(1, ms.len());
-    assert_eq!([1, 5], ms[0].synonym_group_ids());
+    assert_eq!([1, 5], ms.get(0).synonym_group_ids());
 
     let ms = tok.tokenize("ぴらる", Mode::C);
-    let ms: Vec<_> = ms.iter().collect();
     assert_eq!(1, ms.len());
-    assert!(ms[0].synonym_group_ids().is_empty());
+    assert!(ms.get(0).synonym_group_ids().is_empty());
 
     let ms = tok.tokenize("東京府", Mode::C);
-    let ms: Vec<_> = ms.iter().collect();
     assert_eq!(1, ms.len());
-    assert_eq!([1, 3], ms[0].synonym_group_ids());
+    assert_eq!([1, 3], ms.get(0).synonym_group_ids());
 }
 
 #[test]
@@ -94,27 +93,24 @@ fn tokenize_kanji_alphabet_word() {
 fn tokenize_with_dots() {
     let tok = TestTokenizer::new();
     let ms = tok.tokenize("京都…", Mode::C);
-    let ms: Vec<_> = ms.iter().collect();
     assert_eq!(4, ms.len());
-    assert_eq!("…", ms[1].surface().deref());
-    assert_eq!(".", ms[1].normalized_form());
-    assert_eq!("", ms[2].surface().deref());
-    assert_eq!(".", ms[2].normalized_form());
-    assert_eq!("", ms[3].surface().deref());
-    assert_eq!(".", ms[3].normalized_form());
+    assert_eq!("…", ms.get(1).surface().deref());
+    assert_eq!(".", ms.get(1).normalized_form());
+    assert_eq!("", ms.get(2).surface().deref());
+    assert_eq!(".", ms.get(2).normalized_form());
+    assert_eq!("", ms.get(3).surface().deref());
+    assert_eq!(".", ms.get(3).normalized_form());
 }
 
 #[test]
 fn tokenizer_morpheme_split() {
     let tok = TestTokenizer::new();
     let ms = tok.tokenize("東京都", Mode::C);
-    let ms: Vec<_> = ms.iter().collect();
     assert_eq!(1, ms.len());
-    assert_eq!("東京都", ms[0].surface().deref());
+    assert_eq!("東京都", ms.get(0).surface().deref());
 
     let ms = tok.tokenize("東京都", Mode::A);
-    let ms: Vec<_> = ms.iter().collect();
     assert_eq!(2, ms.len());
-    assert_eq!("東京", ms[0].surface().deref());
-    assert_eq!("都", ms[1].surface().deref());
+    assert_eq!("東京", ms.get(0).surface().deref());
+    assert_eq!("都", ms.get(1).surface().deref());
 }

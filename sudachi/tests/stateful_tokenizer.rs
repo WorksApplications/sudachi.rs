@@ -58,19 +58,16 @@ fn get_word_id() {
 fn get_dictionary_id() {
     let mut tok = TestTokenizer::new_built(Mode::C);
     let ms = tok.tokenize("京都");
-    let ms: Vec<_> = ms.iter().collect();
     assert_eq!(1, ms.len());
-    assert_eq!(0, ms[0].dictionary_id());
+    assert_eq!(0, ms.get(0).dictionary_id());
 
     let ms = tok.tokenize("ぴらる");
-    let ms: Vec<_> = ms.iter().collect();
     assert_eq!(1, ms.len());
-    assert_eq!(1, ms[0].dictionary_id());
+    assert_eq!(1, ms.get(0).dictionary_id());
 
     let ms = tok.tokenize("京");
-    let ms: Vec<_> = ms.iter().collect();
     assert_eq!(1, ms.len());
-    assert!(ms[0].dictionary_id() < 0);
+    assert!(ms.get(0).dictionary_id() < 0);
 }
 
 #[test]
@@ -130,7 +127,7 @@ fn split_middle() {
     let ms = tok.tokenize("京都東京都京都");
     assert_eq!(ms.len(), 3);
     let m = ms.get(1);
-    assert_eq!(m.surface().deref().deref(), "東京都");
+    assert_eq!(m.surface().deref(), "東京都");
 
     let mut ms_a = ms.empty_clone();
     assert!(m.split_into(Mode::A, &mut ms_a).expect("works"));
