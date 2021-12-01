@@ -33,6 +33,7 @@ type PyMorphemeList = MorphemeList<Arc<PyDicData>>;
 #[pyclass(module = "sudachipy.morphemelist", name = "MorphemeList")]
 #[repr(transparent)]
 pub struct PyMorphemeListWrapper {
+    /// use `internal()` function instead
     inner: PyMorphemeList,
 }
 
@@ -81,23 +82,24 @@ impl PyMorphemeListWrapper {
 
     /// Returns the total cost of the path
     #[pyo3(text_signature = "($self)")]
-    fn get_internal_cost(&self) -> i32 {
-        self.inner.get_internal_cost()
+    fn get_internal_cost(&self, py: Python) -> i32 {
+        self.internal(py).get_internal_cost()
     }
 
     /// Returns the number of morpheme in this list.
     #[pyo3(text_signature = "($self)")]
-    fn size(&self) -> usize {
-        self.inner.len()
+    fn size(&self, py: Python) -> usize {
+        self.internal(py).len()
     }
 
-    fn __len__(&self) -> usize {
-        self.size()
+    fn __len__(&self, py: Python) -> usize {
+        self.size(py)
     }
 
     fn __getitem__(slf: &PyCell<PyMorphemeListWrapper>, mut idx: isize) -> PyResult<PyMorpheme> {
         let list = slf.borrow();
-        let len = list.__len__() as isize;
+        let py = slf.py();
+        let len = list.size(py) as isize;
 
         if idx < 0 {
             // negative indexing
@@ -107,7 +109,7 @@ impl PyMorphemeListWrapper {
         if idx < 0 || len <= idx {
             return Err(PyErr::new::<exceptions::PyIndexError, _>(format!(
                 "morphemelist index out of range: the len is {} but the index is {}",
-                list.__len__(),
+                list.size(py),
                 idx
             )));
         }
@@ -121,7 +123,7 @@ impl PyMorphemeListWrapper {
     }
 
     fn __str__<'py>(&'py self, py: Python<'py>) -> &PyString {
-        PyString::new(py, self.inner.surface().deref())
+        PyString::new(py, self.internal(py).surface().deref())
     }
 
     fn __iter__(slf: Py<Self>) -> PyMorphemeIter {
@@ -131,8 +133,8 @@ impl PyMorphemeListWrapper {
         }
     }
 
-    fn __bool__(&self) -> bool {
-        self.inner.len() != 0
+    fn __bool__(&self, py: Python) -> bool {
+        self.internal(py).len() != 0
     }
 }
 
@@ -158,7 +160,7 @@ impl PyMorphemeIter {
     }
 
     fn __next__(&mut self, py: Python) -> Option<PyMorpheme> {
-        if self.index >= self.list.borrow(py).size() {
+        if self.index >= self.list.borrow(py).size(py) {
             return None;
         }
 
