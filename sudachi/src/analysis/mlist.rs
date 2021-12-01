@@ -25,7 +25,7 @@ use crate::input_text::InputBuffer;
 use std::cell::{Ref, RefCell};
 use std::iter::FusedIterator;
 use std::ops::{Deref, DerefMut, Index};
-use std::sync::Arc;
+use std::rc::Rc;
 
 struct InputPart {
     input: InputBuffer,
@@ -56,7 +56,7 @@ impl Nodes {
 
 pub struct MorphemeList<T> {
     dict: T,
-    input: Arc<RefCell<InputPart>>,
+    input: Rc<RefCell<InputPart>>,
     nodes: Nodes,
 }
 
@@ -66,7 +66,7 @@ impl<T: DictionaryAccess> MorphemeList<T> {
         let input = Default::default();
         Self {
             dict,
-            input: Arc::new(RefCell::new(input)),
+            input: Rc::new(RefCell::new(input)),
             nodes: Default::default(),
         }
     }
@@ -81,7 +81,7 @@ impl<T: DictionaryAccess> MorphemeList<T> {
         let input = InputPart { input, subset };
         Self {
             dict,
-            input: Arc::new(RefCell::new(input)),
+            input: Rc::new(RefCell::new(input)),
             nodes: Nodes { data: path },
         }
     }
