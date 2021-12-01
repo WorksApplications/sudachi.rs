@@ -62,7 +62,7 @@ impl PerThreadPreTokenizer {
             Some(ms) => ms.borrow_mut(py),
         };
         mlist
-            .internal_mut()
+            .internal_mut(py)
             .collect_results(&mut self.tokenizer)
             .unwrap();
         Ok(())
@@ -137,7 +137,7 @@ impl PyPretokenizer {
             None => {
                 let result = PyList::empty(py);
                 let py_ref = morphs.borrow(py);
-                let morphs = py_ref.internal();
+                let morphs = py_ref.internal(py);
                 for idx in 0..morphs.len() {
                     let node = morphs.get(idx);
                     let slice = PySlice::new(py, node.begin_c() as isize, node.end_c() as isize, 1);

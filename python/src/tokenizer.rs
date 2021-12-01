@@ -126,7 +126,7 @@ impl PyTokenizer {
 
         let mut borrow = out_list.try_borrow_mut();
         let morphemes = match borrow {
-            Ok(ref mut ms) => ms.internal_mut(),
+            Ok(ref mut ms) => ms.internal_mut(py),
             Err(e) => return Err(PyException::new_err("out was used twice at the same time")),
         };
 

@@ -36,7 +36,8 @@ pub struct PyMorphemeListWrapper {
     inner: PyMorphemeList,
 }
 
-// this can be used only when GIL is active, so it is safe
+// PyMorphemeListWrapper is used only when GIL is active,
+// all associated functions take GIL token as a parameter
 unsafe impl Sync for PyMorphemeListWrapper {}
 unsafe impl Send for PyMorphemeListWrapper {}
 
@@ -46,13 +47,19 @@ impl PyMorphemeListWrapper {
             inner: PyMorphemeList::empty(dict),
         }
     }
-    pub(crate) fn internal_mut(&mut self) -> &mut PyMorphemeList {
+
+    /// Borrow internals mutable. GIL token proves access.
+    pub(crate) fn internal_mut(&mut self, _py: Python) -> &mut PyMorphemeList {
         &mut self.inner
     }
-    pub(crate) fn internal(&self) -> &PyMorphemeList {
+
+    /// Borrow internals immutable. GIL token proves access.
+    pub(crate) fn internal(&self, _py: Python) -> &PyMorphemeList {
         &self.inner
     }
-    pub(crate) fn empty_clone(&self) -> Self {
+
+    /// Create a copy with empty list of Nodes. GIL token proves access.
+    pub(crate) fn empty_clone(&self, _py: Python) -> Self {
         Self {
             inner: self.inner.empty_clone(),
         }
@@ -168,7 +175,7 @@ impl PyMorphemeIter {
 /// It is a syntax sugar for accessing Morpheme reference
 /// Without it binding implementations become much less readable
 struct MorphemeRef<'py> {
-    #[allow(unused)]
+    #[allow(unused)] // need to keep this around for correct reference count
     list: PyRef<'py, PyMorphemeListWrapper>,
     morph: Morpheme<'py, Arc<PyDicData>>,
 }
@@ -195,7 +202,7 @@ impl PyMorpheme {
     fn morph<'py>(&'py self, py: Python<'py>) -> MorphemeRef<'py> {
         let list = self.list(py);
         // workaround for self-referential structs
-        let morph = unsafe { std::mem::transmute(list.internal().get(self.index)) };
+        let morph = unsafe { std::mem::transmute(list.internal(py).get(self.index)) };
         MorphemeRef { list, morph }
     }
 }
@@ -230,7 +237,11 @@ impl PyMorpheme {
     #[pyo3(text_signature = "($self)")]
     fn part_of_speech<'py>(&'py self, py: Python<'py>) -> Py<PyTuple> {
         let pos_id = self.part_of_speech_id(py);
-        self.list(py).internal().dict().pos_of(pos_id).clone_ref(py)
+        self.list(py)
+            .internal(py)
+            .dict()
+            .pos_of(pos_id)
+            .clone_ref(py)
     }
 
     /// Returns the id of the part of speech in the dictionary
@@ -272,7 +283,7 @@ impl PyMorpheme {
 
         let out_cell = match out {
             None => {
-                let list = list.empty_clone();
+                let list = list.empty_clone(py);
                 PyCell::new(py, list)?
             }
             Some(r) => r,
@@ -280,20 +291,20 @@ impl PyMorpheme {
 
         let mut borrow = out_cell.try_borrow_mut();
         let out_ref = match borrow {
-            Ok(ref mut v) => v.internal_mut(),
+            Ok(ref mut v) => v.internal_mut(py),
             Err(_) => return Err(PyException::new_err("out was used twice")),
         };
 
         out_ref.clear();
         let splitted = list
-            .internal()
+            .internal(py)
             .split_into(mode.into(), self.index, out_ref)
             .map_err(|e| {
                 PyException::new_err(format!("Error while splitting morpheme: {}", e.to_string()))
             })?;
 
         if add_single.unwrap_or(true) && !splitted {
-            list.internal()
+            list.internal(py)
                 .copy_slice(self.index, self.index + 1, out_ref);
         }
 
