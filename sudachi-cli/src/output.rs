@@ -109,7 +109,7 @@ fn write_morpheme_basic<T: DictionaryAccess>(
 ) -> SudachiResult<()> {
     writer.write_all(morpheme.surface().as_bytes())?;
     writer.write_all(b"\t")?;
-    let all_pos = morpheme.part_of_speech()?;
+    let all_pos = morpheme.part_of_speech();
     for (idx, pos) in all_pos.iter().enumerate() {
         writer.write_all(pos.as_bytes())?;
         if idx + 1 != all_pos.len() {

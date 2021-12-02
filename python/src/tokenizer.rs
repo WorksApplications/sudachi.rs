@@ -95,37 +95,48 @@ impl PyTokenizer {
     /// By default tokenizer's split mode is used.
     /// The logger provided is ignored.
     #[pyo3(
-        text_signature = "($self, text: str, mode: SplitMode = None, logger = None) -> sudachipy.MorphemeList"
+        text_signature = "($self, text: str, mode: SplitMode = None, logger = None, out = None) -> sudachipy.MorphemeList"
     )]
     #[args(text, mode = "None", logger = "None")]
     #[allow(unused_variables)]
-    fn tokenize(
-        &mut self,
-        text: &str,
+    fn tokenize<'py>(
+        &'py mut self,
+        py: Python<'py>,
+        text: &'py str,
         mode: Option<PySplitMode>,
         logger: Option<PyObject>,
-    ) -> PyResult<PyMorphemeListWrapper> {
+        out: Option<&'py PyCell<PyMorphemeListWrapper>>,
+    ) -> PyResult<&'py PyCell<PyMorphemeListWrapper>> {
         // keep default mode to restore later
         let default_mode = mode.map(|m| self.tokenizer.set_mode(m.into()));
 
         self.tokenizer.reset().push_str(text);
-        self.tokenizer.do_tokenize().map_err(|e| {
-            PyException::new_err(format!("Error while tokenization: {}", e.to_string()))
-        })?;
+        self.tokenizer
+            .do_tokenize()
+            .map_err(|e| PyException::new_err(format!("Tokenization error: {}", e.to_string())))?;
 
-        let mut morphemes = MorphemeList::empty(self.tokenizer.dict_clone());
+        let out_list = match out {
+            None => {
+                let morphemes = MorphemeList::empty(self.tokenizer.dict_clone());
+                let wrapper = PyMorphemeListWrapper::from(morphemes);
+                PyCell::new(py, wrapper)?
+            }
+            Some(list) => list,
+        };
+
+        let mut borrow = out_list.try_borrow_mut();
+        let morphemes = match borrow {
+            Ok(ref mut ms) => ms.internal_mut(py),
+            Err(e) => return Err(PyException::new_err("out was used twice at the same time")),
+        };
 
         morphemes
             .collect_results(&mut self.tokenizer)
-            .map_err(|e| {
-                PyException::new_err(format!("Error while tokenization: {}", e.to_string()))
-            })?;
+            .map_err(|e| PyException::new_err(format!("Tokenization error: {}", e.to_string())))?;
 
         // restore default mode
         default_mode.map(|m| self.tokenizer.set_mode(m));
 
-        let wrapper = PyMorphemeListWrapper::from(morphemes);
-
-        Ok(wrapper)
+        Ok(out_list)
     }
 }

@@ -132,6 +132,22 @@ class TestTokenizer(unittest.TestCase):
         self.assertEqual(m[1].begin(), 2)
         self.assertEqual(len(m[0]), 2)
 
+    def test_morpheme_split_out(self):
+        ms = self.tokenizer_obj.tokenize('東京都', SplitMode.C)
+        self.assertEqual(1, ms.size())
+        self.assertEqual(ms[0].surface(), '東京都')
+
+        ms_a = ms[0].split(SplitMode.A, out=None)
+        self.assertEqual(2, ms_a.size())
+        self.assertEqual(ms_a[0].surface(), '東京')
+        self.assertEqual(ms_a[1].surface(), '都')
+
+        ms = self.tokenizer_obj.tokenize("京都東京都京都", SplitMode.C)
+        ms_b = ms[1].split(SplitMode.A, out=ms_a)
+        self.assertEqual(id(ms_a), id(ms_b))
+        self.assertEqual(ms_a[0].surface(), '東京')
+        self.assertEqual(ms_a[1].surface(), '都')
+
 
 if __name__ == '__main__':
     unittest.main()

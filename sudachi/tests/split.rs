@@ -15,6 +15,7 @@
  */
 
 use crate::common::TestStatefulTokenizer;
+use std::ops::Deref;
 use sudachi::prelude::Mode;
 
 mod common;
@@ -26,8 +27,8 @@ fn split_at_analysis_time() {
     let mut tok = TestStatefulTokenizer::builder(AB_DIC).mode(Mode::A).build();
     let res = tok.tokenize("ＡＢ");
     assert_eq!(res.len(), 2);
-    assert_eq!(res.get(0).surface(), "Ａ");
-    assert_eq!(res.get(1).surface(), "Ｂ");
+    assert_eq!(res.get(0).surface().deref(), "Ａ");
+    assert_eq!(res.get(1).surface().deref(), "Ｂ");
 }
 
 #[test]
@@ -35,7 +36,8 @@ fn split_after_analysis() {
     let mut tok = TestStatefulTokenizer::builder(AB_DIC).build();
     let res = tok.tokenize("ＡＢ");
     assert_eq!(res.len(), 1);
-    let res2 = res.get(0).split(Mode::A).unwrap();
-    assert_eq!(res2.get(0).surface(), "Ａ");
-    assert_eq!(res2.get(1).surface(), "Ｂ");
+    let mut res2 = res.empty_clone();
+    assert!(res.get(0).split_into(Mode::A, &mut res2).unwrap());
+    assert_eq!(res2.get(0).surface().deref(), "Ａ");
+    assert_eq!(res2.get(1).surface().deref(), "Ｂ");
 }

@@ -17,7 +17,7 @@
 extern crate lazy_static;
 extern crate sudachi;
 
-use sudachi::analysis::node::LatticeNode;
+use std::ops::Deref;
 use sudachi::prelude::Mode;
 
 mod common;
@@ -43,14 +43,14 @@ fn get_word_id() {
     let ms = tok.tokenize("京都");
     assert_eq!(1, ms.len());
     let m0 = ms.get(0);
-    let pos = m0.part_of_speech().expect("failed to get pos");
+    let pos = m0.part_of_speech();
     assert_eq!(&["名詞", "固有名詞", "地名", "一般", "*", "*"], pos);
 
     // we do not have word_id field in Morpheme and skip testing.
     let ms = tok.tokenize("ぴらる");
     assert_eq!(1, ms.len());
     let m0 = ms.get(0);
-    let pos = m0.part_of_speech().expect("failed to get pos");
+    let pos = m0.part_of_speech();
     assert_eq!(&["名詞", "普通名詞", "一般", "*", "*", "*"], pos);
 }
 
@@ -58,19 +58,16 @@ fn get_word_id() {
 fn get_dictionary_id() {
     let mut tok = TestTokenizer::new_built(Mode::C);
     let ms = tok.tokenize("京都");
-    let ms: Vec<_> = ms.iter().collect();
     assert_eq!(1, ms.len());
-    assert_eq!(0, ms[0].dictionary_id());
+    assert_eq!(0, ms.get(0).dictionary_id());
 
     let ms = tok.tokenize("ぴらる");
-    let ms: Vec<_> = ms.iter().collect();
     assert_eq!(1, ms.len());
-    assert_eq!(1, ms[0].dictionary_id());
+    assert_eq!(1, ms.get(0).dictionary_id());
 
     let ms = tok.tokenize("京");
-    let ms: Vec<_> = ms.iter().collect();
     assert_eq!(1, ms.len());
-    assert!(ms[0].dictionary_id() < 0);
+    assert!(ms.get(0).dictionary_id() < 0);
 }
 
 #[test]
@@ -102,11 +99,11 @@ fn tokenize_with_dots() {
     let mut tok = TestTokenizer::new_built(Mode::C);
     let ms = tok.tokenize("京都…");
     assert_eq!(4, ms.len());
-    assert_eq!("…", ms.get(1).surface());
+    assert_eq!("…", ms.get(1).surface().deref());
     assert_eq!(".", ms.get(1).normalized_form());
-    assert_eq!("", ms.get(2).surface());
+    assert_eq!("", ms.get(2).surface().deref());
     assert_eq!(".", ms.get(2).normalized_form());
-    assert_eq!("", ms.get(3).surface());
+    assert_eq!("", ms.get(3).surface().deref());
     assert_eq!(".", ms.get(3).normalized_form());
 }
 
@@ -115,13 +112,13 @@ fn tokenizer_morpheme_split() {
     let mut tok = TestTokenizer::new_built(Mode::C);
     let ms = tok.tokenize("東京都");
     assert_eq!(1, ms.len());
-    assert_eq!("東京都", ms.get(0).surface());
+    assert_eq!("東京都", ms.get(0).surface().deref());
 
     tok.set_mode(Mode::A);
     let ms = tok.tokenize("東京都");
     assert_eq!(2, ms.len());
-    assert_eq!("東京", ms.get(0).surface());
-    assert_eq!("都", ms.get(1).surface());
+    assert_eq!("東京", ms.get(0).surface().deref());
+    assert_eq!("都", ms.get(1).surface().deref());
 }
 
 #[test]
@@ -130,18 +127,19 @@ fn split_middle() {
     let ms = tok.tokenize("京都東京都京都");
     assert_eq!(ms.len(), 3);
     let m = ms.get(1);
-    assert_eq!(m.surface(), "東京都");
+    assert_eq!(m.surface().deref(), "東京都");
 
-    let ms_a = m.split(Mode::A).expect("works");
+    let mut ms_a = ms.empty_clone();
+    assert!(m.split_into(Mode::A, &mut ms_a).expect("works"));
     assert_eq!(ms_a.len(), 2);
-    assert_eq!(ms_a.get(0).surface(), "東京");
-    assert_eq!(ms_a.get_node(0).begin(), 2);
-    assert_eq!(ms_a.get_node(0).end(), 4);
+    assert_eq!(ms_a.get(0).surface().deref(), "東京");
+    assert_eq!(ms_a.get(0).begin_c(), 2);
+    assert_eq!(ms_a.get(0).end_c(), 4);
     assert_eq!(ms_a.get(0).begin(), 6);
     assert_eq!(ms_a.get(0).end(), 12);
-    assert_eq!(ms_a.get(1).surface(), "都");
-    assert_eq!(ms_a.get_node(1).begin(), 4);
-    assert_eq!(ms_a.get_node(1).end(), 5);
+    assert_eq!(ms_a.get(1).surface().deref(), "都");
+    assert_eq!(ms_a.get(1).begin_c(), 4);
+    assert_eq!(ms_a.get(1).end_c(), 5);
     assert_eq!(ms_a.get(1).begin(), 12);
     assert_eq!(ms_a.get(1).end(), 15);
 }

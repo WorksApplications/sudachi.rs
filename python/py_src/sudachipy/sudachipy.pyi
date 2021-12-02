@@ -153,7 +153,7 @@ class Morpheme:
         """
         ...
 
-    def split(self, mode: SplitMode) -> MorphemeList:
+    def split(self, mode: SplitMode, out: Optional[MorphemeList] = None) -> MorphemeList:
         """
         Returns a list of morphemes splitting itself with given split mode.
         """
@@ -229,15 +229,17 @@ class SplitMode:
     B: ClassVar[SplitMode] = ...
     C: ClassVar[SplitMode] = ...
     @classmethod
-    def __init__(self) -> None: ...
+    def __init__(cls) -> None: ...
 
 
 class Tokenizer:
     SplitMode: ClassVar[sudachipy.SplitMode] = ...
     @classmethod
-    def __init__(self) -> None: ...
+    def __init__(cls) -> None: ...
 
-    def tokenize(self, text: str, mode: sudachipy.SplitMode = ...) -> MorphemeList:
+    def tokenize(self, text: str,
+                 mode: sudachipy.SplitMode = ...,
+                 out: Optional[MorphemeList] = None) -> MorphemeList:
         """
         Break text into morphemes.
 

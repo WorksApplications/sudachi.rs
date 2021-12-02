@@ -27,7 +27,7 @@ use crate::plugin::input_text::InputTextPlugin;
 use crate::plugin::oov::OovProviderPlugin;
 use crate::plugin::path_rewrite::PathRewritePlugin;
 
-use super::morpheme::MorphemeList;
+use super::mlist::MorphemeList;
 use super::{Mode, Tokenize};
 
 /// Provides access to dictionary data
