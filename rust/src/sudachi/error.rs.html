@@ -140,6 +140,9 @@
 <span id="140">140</span>
 <span id="141">141</span>
 <span id="142">142</span>
+<span id="143">143</span>
+<span id="144">144</span>
+<span id="145">145</span>
 </pre><pre class="rust"><code><span class="comment">/*
  * Copyright (c) 2021 Works Applications Co., Ltd.
  *
@@ -252,6 +255,9 @@
 
     <span class="attribute">#[<span class="ident">error</span>(<span class="ident">transparent</span>)]</span>
     <span class="ident">DictionaryCompilationError</span>(<span class="attribute">#[<span class="ident">from</span>]</span> <span class="ident">DicBuildError</span>),
+
+    <span class="attribute">#[<span class="ident">error</span>(<span class="string">&quot;MorphemeList is borrowed, make sure that all Ref&lt;&gt; are dropped&quot;</span>)]</span>
+    <span class="ident">MorphemeListBorrowed</span>,
 }
 
 <span class="kw">pub</span> <span class="kw">type</span> <span class="ident">SudachiNomResult</span><span class="op">&lt;</span><span class="ident">I</span>, <span class="ident">O</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">nom::IResult</span><span class="op">&lt;</span><span class="ident">I</span>, <span class="ident">O</span>, <span class="ident">SudachiNomError</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span><span class="op">&gt;</span>;

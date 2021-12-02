@@ -101,6 +101,7 @@
 <span id="101">101</span>
 <span id="102">102</span>
 <span id="103">103</span>
+<span id="104">104</span>
 </pre><pre class="rust"><code><span class="comment">/*
  *  Copyright (c) 2021 Works Applications Co., Ltd.
  *
@@ -120,12 +121,13 @@
 <span class="kw">use</span> <span class="ident">std::fmt</span>::{<span class="ident">Display</span>, <span class="ident">Formatter</span>};
 <span class="kw">use</span> <span class="ident">std::str::FromStr</span>;
 
-<span class="kw">use</span> <span class="ident">morpheme::MorphemeList</span>;
+<span class="kw">use</span> <span class="ident">mlist::MorphemeList</span>;
 
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::error::SudachiResult</span>;
 
 <span class="kw">mod</span> <span class="ident">inner</span>;
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">lattice</span>;
+<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">mlist</span>;
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">morpheme</span>;
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">node</span>;
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">stateful_tokenizer</span>;
