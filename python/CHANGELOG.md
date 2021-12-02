@@ -9,6 +9,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   - `sudachipy.Tokenizer` will ignore the provided logger.
   - Ref: [#76]
 - `Morpheme.part_of_speech` method now returns Tuple of POS components instead of a list.
+- `Morpheme`/`MorphemeList` now have readable `__repr__` and `__str__`
+  - https://github.com/WorksApplications/sudachi.rs/pull/187
 
 ## [0.6.0] - 2021/10/11
 
