@@ -66,7 +66,7 @@ impl From<PySplitMode> for Mode {
     }
 }
 
-/// Tokenizer of morphelogical analysis
+/// Sudachi Tokenizer, Python version
 #[pyclass(module = "sudachipy.tokenizer", name = "Tokenizer")]
 pub struct PyTokenizer {
     tokenizer: StatefulTokenizer<Arc<PyDicData>>,
@@ -90,10 +90,20 @@ impl PyTokenizer {
         PySplitMode::C
     }
 
-    /// Break text into morphemes
+    /// Break text into morphemes.
     ///
-    /// By default tokenizer's split mode is used.
-    /// The logger provided is ignored.
+    /// SudachiPy 0.5.* had logger parameter, it is accepted, but ignored.
+    ///
+    /// :param text: text to analyze
+    /// :param mode: analysis mode.
+    ///    This parameter is deprecated.
+    ///    Pass the analysis mode at the Tokenizer creation time and create different tokenizers for different modes.
+    ///    If you need multi-level splitting, prefer using :py:meth:`Morpheme.split` method instead.
+    /// :param out: tokenization results will be written into this MorphemeList, a new one will be created instead.
+    ///    See https://worksapplications.github.io/sudachi.rs/python/topics/out_param.html for details.
+    /// :type text: str
+    /// :type mode: sudachipy.SplitMode
+    /// :type out: sudachipy.MorphemeList
     #[pyo3(
         text_signature = "($self, text: str, mode: SplitMode = None, logger = None, out = None) -> sudachipy.MorphemeList"
     )]
