@@ -51,26 +51,37 @@ def _set_default_subparser(self, name, args=None):
 argparse.ArgumentParser.set_default_subparser = _set_default_subparser
 
 
-def run(tokenizer, mode, input_, output, logger, print_all, enable_dump):
+def run(tokenizer, input_, output, print_all, morphs, is_stdout):
     for line in input_:
         line = line.rstrip('\n')
         # Note: Current version of the tokenizer ignores logger
-        for m in tokenizer.tokenize(line, mode, logger if enable_dump else None):
-            list_info = [
-                m.surface(),
-                ",".join(m.part_of_speech()),
-                m.normalized_form()]
+        mlist = tokenizer.tokenize("")
+        for m in tokenizer.tokenize(line, out=mlist):
+            output.write(m.surface())
+            output.write("\t")
+            output.write(morphs[m.part_of_speech_id()])
+            output.write("\t")
+            output.write(m.normalized_form())
             if print_all:
-                list_info += [
-                    m.dictionary_form(),
-                    m.reading_form(),
-                    str(m.dictionary_id()),
-                    '[{}]'.format(','.join([str(synonym_group_id) for synonym_group_id in m.synonym_group_ids()]))]
+                output.write("\t")
+                output.write(m.dictionary_form())
+                output.write("\t")
+                output.write(m.reading_form())
+                output.write("\t")
+                output.write(str(m.dictionary_id()))
+                output.write("\t")
+                group_ids = m.synonym_group_ids()
+                group_ids_len = len(group_ids)
+                for idx, gi in enumerate(group_ids):
+                    output.write(str(gi))
+                    if idx + 1 != group_ids_len:
+                        output.write(",")
                 if m.is_oov():
-                    list_info.append("(OOV)")
-            output.write("\t".join(list_info))
+                    output.write("\t(OOV)")
             output.write("\n")
         output.write("EOS\n")
+        if is_stdout:
+            output.flush()
 
 
 def _input_files_checker(args, print_usage):
@@ -108,16 +119,19 @@ def _command_tokenize(args, print_usage):
     stdout_logger.propagate = False
 
     print_all = args.a
-    enable_dump = args.d
 
     try:
         dict_ = Dictionary(config_path=args.fpath_setting,
                            dict_type=args.system_dict_type)
-        tokenizer_obj = dict_.create()
+        # empty matcher - get all POS tags
+        all_morphs = dict_.pos_matcher([()])
+        # precompute output POS strings
+        morphs = [",".join(ms) for ms in all_morphs]
+
+        tokenizer_obj = dict_.create(mode=mode)
         input_ = fileinput.input(
             args.in_files, openhook=fileinput.hook_encoded("utf-8"))
-        run(tokenizer_obj, mode, input_, output,
-            stdout_logger, print_all, enable_dump)
+        run(tokenizer_obj, input_, output, print_all, morphs, is_stdout=args.fpath_out is None)
     finally:
         if args.fpath_out:
             output.close()
