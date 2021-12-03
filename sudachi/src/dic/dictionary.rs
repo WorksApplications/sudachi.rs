@@ -59,7 +59,7 @@ fn map_file(path: &Path) -> SudachiResult<Storage> {
 
 fn load_system_dic(cfg: &Config) -> SudachiResult<Storage> {
     match &cfg.system_dict {
-        Some(p) => map_file(p),
+        Some(p) => map_file(p).map_err(|e| e.with_context(p.as_os_str().to_string_lossy())),
         None => return Err(ConfigError(MissingArgument(String::from("system_dict")))),
     }
 }
@@ -70,7 +70,10 @@ impl JapaneseDictionary {
         let mut sb = SudachiDicData::new(load_system_dic(cfg)?);
 
         for udic in cfg.user_dicts.iter() {
-            sb.add_user(map_file(udic.as_path())?)
+            sb.add_user(
+                map_file(udic.as_path())
+                    .map_err(|e| e.with_context(udic.as_os_str().to_string_lossy()))?,
+            )
         }
 
         Self::from_cfg_storage(cfg, sb)

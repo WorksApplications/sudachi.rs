@@ -127,7 +127,8 @@ impl<'a, T: PluginCategory + ?Sized> PluginLoader<'a, T> {
                 self.load_plugin_from_dso(&candidates)?
             };
 
-        <T as PluginCategory>::do_setup(&mut plugin, plugin_cfg, &self.cfg, &self.grammar)?;
+        <T as PluginCategory>::do_setup(&mut plugin, plugin_cfg, &self.cfg, &self.grammar)
+            .map_err(|e| e.with_context(format!("plugin {} setup", name)))?;
         self.plugins.push(plugin);
         Ok(())
     }
@@ -143,7 +144,7 @@ impl<'a, T: PluginCategory + ?Sized> PluginLoader<'a, T> {
         resolved
     }
 
-    fn try_load_library_from(candidates: &[String]) -> SudachiResult<Library> {
+    fn try_load_library_from(candidates: &[String]) -> SudachiResult<(Library, &str)> {
         if candidates.is_empty() {
             return Err(SudachiError::PluginError(PluginError::InvalidDataFormat(
                 "No candidates to load library".to_owned(),
@@ -153,7 +154,7 @@ impl<'a, T: PluginCategory + ?Sized> PluginLoader<'a, T> {
         let mut last_error = libloading::Error::IncompatibleSize;
         for p in candidates.iter() {
             match unsafe { Library::new(p.as_str()) } {
-                Ok(lib) => return Ok(lib),
+                Ok(lib) => return Ok((lib, p.as_str())),
                 Err(e) => last_error = e,
             }
         }
@@ -167,9 +168,12 @@ impl<'a, T: PluginCategory + ?Sized> PluginLoader<'a, T> {
         &mut self,
         candidates: &[String],
     ) -> SudachiResult<<T as PluginCategory>::BoxType> {
-        let lib = Self::try_load_library_from(candidates)?;
+        let (lib, path) = Self::try_load_library_from(candidates)?;
         let load_fn: Symbol<fn() -> SudachiResult<<T as PluginCategory>::BoxType>> =
-            unsafe { lib.get(b"load_plugin")? };
+            unsafe { lib.get(b"load_plugin") }.map_err(|e| PluginError::Libloading {
+                source: e,
+                message: format!("no load_plugin symbol in {}", path),
+            })?;
         let plugin = load_fn();
         self.libraries.push(lib);
         plugin
@@ -179,9 +183,9 @@ impl<'a, T: PluginCategory + ?Sized> PluginLoader<'a, T> {
 fn extract_plugin_class(val: &Value) -> SudachiResult<&str> {
     let obj = match val {
         Value::Object(v) => v,
-        _ => {
+        o => {
             return Err(SudachiError::ConfigError(ConfigError::InvalidFormat(
-                "plugin config must be an object".to_owned(),
+                format!("plugin config must be an object, was {}", o),
             )));
         }
     };

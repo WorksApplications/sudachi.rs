@@ -15,6 +15,7 @@
  */
 
 use std::fmt::Debug;
+use std::io::Error;
 use thiserror::Error;
 
 use crate::config::ConfigError;
@@ -30,8 +31,17 @@ pub type SudachiResult<T> = Result<T, SudachiError>;
 #[derive(Error, Debug)]
 #[non_exhaustive]
 pub enum SudachiError {
-    #[error("IO Error: {0}")]
-    Io(#[from] std::io::Error),
+    #[error("{context}: {cause}")]
+    ErrWithContext {
+        context: String,
+        cause: Box<SudachiError>,
+    },
+
+    #[error("{context}: {cause}")]
+    Io {
+        cause: std::io::Error,
+        context: String,
+    },
 
     #[error("Parse Int Error")]
     ParseIntError(#[from] std::num::ParseIntError),
@@ -41,9 +51,6 @@ pub enum SudachiError {
 
     #[error("Regex error")]
     RegexError(#[from] fancy_regex::Error),
-
-    #[error("Libloading Error: {0}")]
-    Libloading(#[from] libloading::Error),
 
     #[error("Error from nom {0}")]
     NomParseError(String),
@@ -87,21 +94,6 @@ pub enum SudachiError {
     #[error("Invalid range: {0}..{1}")]
     InvalidRange(usize, usize),
 
-    #[error("Missing dictionary trie")]
-    MissingDictionaryTrie,
-
-    #[error("Missing latice path")]
-    MissingLaticePath,
-
-    #[error("Missing part of speech")]
-    MissingPartOfSpeech,
-
-    #[error("Missing word_id")]
-    MissingWordId,
-
-    #[error("Missing word_info")]
-    MissingWordInfo,
-
     #[error("No out of vocabulary plugin provided")]
     NoOOVPluginProvided,
 
@@ -113,6 +105,30 @@ pub enum SudachiError {
 
     #[error("MorphemeList is borrowed, make sure that all Ref<> are dropped")]
     MorphemeListBorrowed,
+}
+
+impl From<std::io::Error> for SudachiError {
+    fn from(e: Error) -> Self {
+        SudachiError::Io {
+            cause: e,
+            context: String::from("IO Error"),
+        }
+    }
+}
+
+impl SudachiError {
+    pub fn with_context<S: Into<String>>(self, ctx: S) -> Self {
+        match self {
+            SudachiError::Io { cause, .. } => SudachiError::Io {
+                cause,
+                context: ctx.into(),
+            },
+            cause => SudachiError::ErrWithContext {
+                cause: Box::new(cause),
+                context: ctx.into(),
+            },
+        }
+    }
 }
 
 pub type SudachiNomResult<I, O> = nom::IResult<I, O, SudachiNomError<I>>;

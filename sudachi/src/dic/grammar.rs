@@ -53,8 +53,8 @@ impl<'a> Grammar<'a> {
     /// buf: reference to the dictionary bytes
     /// offset: offset to the grammar section in the buf
     pub fn parse(buf: &[u8], offset: usize) -> SudachiResult<Grammar> {
-        let (rest, (pos_list, left_id_size, right_id_size)) =
-            grammar_parser(buf, offset).map_err(|_| SudachiError::InvalidDictionaryGrammar)?;
+        let (rest, (pos_list, left_id_size, right_id_size)) = grammar_parser(buf, offset)
+            .map_err(|e| SudachiError::InvalidDictionaryGrammar.with_context(e.to_string()))?;
 
         let connect_table_offset = buf.len() - rest.len();
         let storage_size =
