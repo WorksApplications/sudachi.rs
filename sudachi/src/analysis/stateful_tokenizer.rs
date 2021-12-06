@@ -220,16 +220,13 @@ impl<D: DictionaryAccess> StatefulTokenizer<D> {
         lattice.reset(input.current_chars().len());
 
         for (ch_off, &byte_off) in input.curr_byte_offsets().iter().enumerate() {
-            if !input.can_bow(byte_off) {
-                continue;
-            }
-
             if !lattice.has_previous_node(ch_off) {
                 continue;
             }
 
             let mut has_word = false;
             for e in dict.lexicon().lookup(input_bytes, byte_off) {
+                // do we really need input.can_bow condition?
                 if (e.end < input_bytes.len()) && !input.can_bow(e.end) {
                     continue;
                 }
@@ -248,7 +245,10 @@ impl<D: DictionaryAccess> StatefulTokenizer<D> {
             }
 
             // OOV
-            if !input.cat_at_char(ch_off).contains(CategoryType::NOOOVBOW) {
+            if !input
+                .cat_at_char(ch_off)
+                .intersects(CategoryType::NOOOVBOW | CategoryType::NOOOVBOW2)
+            {
                 for oov_provider in dict.oov_provider_plugins() {
                     oov_provider.get_oov(&input, ch_off, has_word, oovs)?;
                 }

@@ -21,7 +21,7 @@ use std::ops::Deref;
 use sudachi::prelude::Mode;
 
 mod common;
-use crate::common::TestStatefulTokenizer as TestTokenizer;
+use crate::common::{TestStatefulTokenizer as TestTokenizer, LEX_CSV};
 
 #[test]
 fn empty() {
@@ -142,4 +142,22 @@ fn split_middle() {
     assert_eq!(ms_a.get(1).end_c(), 5);
     assert_eq!(ms_a.get(1).begin(), 12);
     assert_eq!(ms_a.get(1).end(), 15);
+}
+
+const OOV_CFG: &[u8] = include_bytes!("resources/sudachi.oov.json");
+
+#[test]
+fn istanbul_is_not_splitted() {
+    let mut tok = TestTokenizer::builder(LEX_CSV).config(OOV_CFG).build();
+    let ms = tok.tokenize("İstanbul");
+    assert_eq!(ms.len(), 1);
+}
+
+#[test]
+fn emoji_are_not_splitted() {
+    let mut tok = TestTokenizer::builder(LEX_CSV).config(OOV_CFG).build();
+    assert_eq!(tok.tokenize("⏸").len(), 1);
+    assert_eq!(tok.tokenize("🦹‍♂️").len(), 1);
+    assert_eq!(tok.tokenize("🎅🏾").len(), 1);
+    assert_eq!(tok.tokenize("👳🏽‍♂").len(), 1);
 }

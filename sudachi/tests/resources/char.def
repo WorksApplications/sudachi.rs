@@ -1,3 +1,6 @@
+DEFAULT         0 1 0  # DEFAULT is a mandatory category!
+ALPHA           1 1 0
+
 0x0030..0x0039 NUMERIC  #0-9
 0x0041..0x005A ALPHA    #A-Z
 0x0061..0x007A ALPHA    #a-z
@@ -18,3 +21,16 @@
 0xFF10..0xFF19 NUMERIC
 0xFF21..0xFF3A ALPHA
 0xFF41..0xFF5A ALPHA
+
+# Unicode combining symbols 2021/12/03
+# from https://en.wikipedia.org/wiki/Combining_character
+0x0300..0x036F ALL NOOOVBOW # Combining Diacritical Marks
+0x1AB0..0x1AFF ALL NOOOVBOW # Combining Diacritical Marks Extended
+0x1DC0..0x1DFF ALL NOOOVBOW # Combining Diacritical Marks Supplement
+0x20D0..0x20FF ALL NOOOVBOW # Combining Diacritical Marks for Symbols
+0xFE20..0xFE2F ALL NOOOVBOW # Combining Half Marks
+0xFE00..0xFE0F ALL NOOOVBOW # https://codepoints.net/variation_selectors
+0x1F3FB..0x1F3FE ALL NOOOVBOW # emoji skin tone modifiers https://codepoints.net/U+1F3FF
+
+# Combination marks
+0x200C..0x200D ALL NOOOVBOW2 # Zero Width Non-Joiner/Joiner
