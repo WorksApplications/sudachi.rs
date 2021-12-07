@@ -148,6 +148,16 @@ class TestTokenizer(unittest.TestCase):
         self.assertEqual(ms_a[0].surface(), '東京')
         self.assertEqual(ms_a[1].surface(), '都')
 
+    def test_morpheme_str_repr(self):
+        ms = self.tokenizer_obj.tokenize('東京都', SplitMode.A)
+        self.assertEqual(2, ms.size())
+        self.assertEqual(str(ms), '東京 都')
+        self.assertEqual(repr(ms), '<MorphemeList[\n  <Morpheme(東京, 0:2, (0, 5))>,\n  <Morpheme(都, 2:3, (0, 9))>,\n]>')
+        self.assertEqual(str(ms[0]), '東京')
+        self.assertEqual(str(ms[1]), '都')
+        self.assertEqual(repr(ms[0]), '<Morpheme(東京, 0:2, (0, 5))>')
+        self.assertEqual(repr(ms[1]), '<Morpheme(都, 2:3, (0, 9))>')
+
 
 if __name__ == '__main__':
     unittest.main()

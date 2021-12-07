@@ -14,10 +14,11 @@
  *  limitations under the License.
  */
 
+use std::fmt::Write;
 use std::ops::Deref;
 use std::sync::Arc;
 
-use pyo3::exceptions::{self, PyException};
+use pyo3::exceptions::{self, PyException, PyIndexError};
 use pyo3::prelude::*;
 use pyo3::types::{PyList, PyString, PyTuple, PyType};
 
@@ -107,8 +108,8 @@ impl PyMorphemeListWrapper {
         }
 
         if idx < 0 || len <= idx {
-            return Err(PyErr::new::<exceptions::PyIndexError, _>(format!(
-                "morphemelist index out of range: the len is {} but the index is {}",
+            return Err(PyIndexError::new_err(format!(
+                "MorphemeList index out of range: the len is {} but the index is {}",
                 list.size(py),
                 idx
             )));
@@ -123,7 +124,38 @@ impl PyMorphemeListWrapper {
     }
 
     fn __str__<'py>(&'py self, py: Python<'py>) -> &PyString {
-        PyString::new(py, self.internal(py).surface().deref())
+        // do a simple tokenization __str__
+        let list = self.internal(py);
+        let mut result = String::with_capacity(list.surface().len() * 2);
+        let nmorphs = list.len();
+        for (i, m) in list.iter().enumerate() {
+            result.push_str(m.surface().deref());
+            if i + 1 != nmorphs {
+                result.push_str(" ");
+            }
+        }
+        PyString::new(py, result.as_str())
+    }
+
+    fn __repr__(slf: Py<PyMorphemeListWrapper>, py: Python) -> PyResult<&PyString> {
+        let self_ref = slf.borrow(py);
+        let list = self_ref.internal(py);
+        let mut result = String::with_capacity(list.surface().len() * 10);
+        result.push_str("<MorphemeList[\n");
+        let nmorphs = list.len();
+        for i in 0..nmorphs {
+            result.push_str("  ");
+            let pymorph = PyMorpheme {
+                list: slf.clone_ref(py),
+                index: i,
+            };
+            pymorph
+                .write_repr(py, &mut result)
+                .map_err(|_| PyException::new_err("format failed"))?;
+            result.push_str(",\n");
+        }
+        result.push_str("]>");
+        Ok(PyString::new(py, result.as_str()))
     }
 
     fn __iter__(slf: Py<Self>) -> PyMorphemeIter {
@@ -207,14 +239,24 @@ impl PyMorpheme {
         let morph = unsafe { std::mem::transmute(list.internal(py).get(self.index)) };
         MorphemeRef { list, morph }
     }
+
+    fn write_repr<'py, W: Write>(&'py self, py: Python<'py>, out: &mut W) -> std::fmt::Result {
+        // per https://github.com/WorksApplications/SudachiPy/pull/166#issuecomment-932043063
+        let mrp = self.morph(py);
+        let surf = mrp.surface();
+        write!(
+            out,
+            "<Morpheme({}, {}:{}, {})>",
+            surf.deref(),
+            mrp.begin_c(),
+            mrp.end_c(),
+            mrp.word_id()
+        )
+    }
 }
 
 #[pymethods]
 impl PyMorpheme {
-    fn __str__<'py>(&'py self, py: Python<'py>) -> PyObject {
-        self.surface(py)
-    }
-
     /// Returns the begin index of this in the input text
     #[pyo3(text_signature = "($self)")]
     fn begin(&self, py: Python) -> usize {
@@ -357,5 +399,16 @@ impl PyMorpheme {
     pub fn __len__(&self, py: Python) -> usize {
         let m = self.morph(py);
         m.end_c() - m.begin_c()
+    }
+
+    pub fn __str__<'py>(&'py self, py: Python<'py>) -> PyObject {
+        self.surface(py)
+    }
+
+    pub fn __repr__<'py>(&'py self, py: Python<'py>) -> PyResult<String> {
+        let mut result = String::new();
+        self.write_repr(py, &mut result)
+            .map_err(|_| PyException::new_err("failed to format repr"))?;
+        Ok(result)
     }
 }

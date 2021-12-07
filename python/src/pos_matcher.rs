@@ -121,7 +121,7 @@ impl PyPosMatcher {
     }
 
     pub fn __str__(&self) -> String {
-        format!("PosMatcher<{} pos>", self.matcher.num_entries())
+        format!("<PosMatcher:{} pos>", self.matcher.num_entries())
     }
 
     pub fn __iter__(&self) -> PyPosIter {
