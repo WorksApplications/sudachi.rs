@@ -59,7 +59,7 @@ def run(tokenizer, input_, output, print_all, morphs, is_stdout):
         for m in tokenizer.tokenize(line, out=mlist):
              list_info = [
                 m.surface(),
-                ",".join(m.part_of_speech()),
+                ",".join(morphs[m.part_of_speech_id()]),
                 m.normalized_form()]
             if print_all:
                 list_info += [
