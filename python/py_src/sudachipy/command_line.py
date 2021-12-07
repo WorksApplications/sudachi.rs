@@ -57,21 +57,19 @@ def run(tokenizer, input_, output, print_all, morphs, is_stdout):
         # Note: Current version of the tokenizer ignores logger
         mlist = tokenizer.tokenize("")
         for m in tokenizer.tokenize(line, out=mlist):
-            result = [
+             list_info = [
                 m.surface(),
-                morphs[m.part_of_speech_id()],
-                m.normalized_form()
-            ]
+                ",".join(m.part_of_speech()),
+                m.normalized_form()]
             if print_all:
-                result += m.dictionary_form()
-                result += m.dictionary_form()
-                result += m.reading_form()
-                result += str(m.dictionary_id())
-
-                result += ",".join(str(gid) for gid in m.synonym_group_ids())
+                list_info += [
+                    m.dictionary_form(),
+                    m.reading_form(),
+                    str(m.dictionary_id()),
+                    '[{}]'.format(','.join([str(synonym_group_id) for synonym_group_id in m.synonym_group_ids()]))]
                 if m.is_oov():
-                    result += "(OOV)"
-            output.write("\t".join(result))
+                    list_info.append("(OOV)")
+            output.write("\t".join(list_info))
             output.write("\n")
         output.write("EOS\n")
         if is_stdout:
