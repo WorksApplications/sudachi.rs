@@ -19,8 +19,8 @@ import os
 import sys
 from pathlib import Path
 
-from . import __version__
 from . import Dictionary, SplitMode
+from . import __version__
 from . import sudachipy
 
 
@@ -55,9 +55,10 @@ def run(tokenizer, input_, output, print_all, morphs, is_stdout):
     for line in input_:
         line = line.rstrip('\n')
         # Note: Current version of the tokenizer ignores logger
+        # use out parameter to reuse MorphemeList allocated memory
         mlist = tokenizer.tokenize("")
         for m in tokenizer.tokenize(line, out=mlist):
-             list_info = [
+            list_info = [
                 m.surface(),
                 ",".join(morphs[m.part_of_speech_id()]),
                 m.normalized_form()]
