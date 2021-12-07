@@ -34,7 +34,7 @@ impl<'a> ConnectionMatrix<'a> {
 
         let end = offset + size;
         if end > data.len() {
-            return Err(SudachiError::InvalidDictionaryGrammar);
+            return Err(SudachiError::InvalidDictionaryGrammar.with_context("connection matrix"));
         }
 
         Ok(ConnectionMatrix {

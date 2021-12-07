@@ -261,7 +261,7 @@ impl<D: DictionaryAccess> StatefulTokenizer<D> {
             if !has_word {
                 dict.oov_provider_plugins()
                     .last()
-                    .unwrap()
+                    .unwrap() // JapaneseDictionary
                     .get_oov(&input, ch_off, has_word, oovs)?;
                 // use last oov_provider as default
                 for node in oovs.drain(..) {
@@ -271,7 +271,7 @@ impl<D: DictionaryAccess> StatefulTokenizer<D> {
             }
 
             if !has_word {
-                panic!("no morpheme found at {}", byte_off);
+                return Err(SudachiError::EosBosDisconnect);
             }
         }
         lattice.connect_eos(dict.grammar().conn_matrix())?;
