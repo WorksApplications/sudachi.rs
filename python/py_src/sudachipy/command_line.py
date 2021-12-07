@@ -52,11 +52,11 @@ argparse.ArgumentParser.set_default_subparser = _set_default_subparser
 
 
 def run(tokenizer, input_, output, print_all, morphs, is_stdout):
+    # get an empty MorphemeList for memory reuse
+    mlist = tokenizer.tokenize("")
     for line in input_:
         line = line.rstrip('\n')
-        # Note: Current version of the tokenizer ignores logger
-        # use out parameter to reuse MorphemeList allocated memory
-        mlist = tokenizer.tokenize("")
+        # out parameter means we are reusing memory here
         for m in tokenizer.tokenize(line, out=mlist):
             list_info = [
                 m.surface(),
