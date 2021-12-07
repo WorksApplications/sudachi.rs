@@ -246,6 +246,57 @@
 <span id="246">246</span>
 <span id="247">247</span>
 <span id="248">248</span>
+<span id="249">249</span>
+<span id="250">250</span>
+<span id="251">251</span>
+<span id="252">252</span>
+<span id="253">253</span>
+<span id="254">254</span>
+<span id="255">255</span>
+<span id="256">256</span>
+<span id="257">257</span>
+<span id="258">258</span>
+<span id="259">259</span>
+<span id="260">260</span>
+<span id="261">261</span>
+<span id="262">262</span>
+<span id="263">263</span>
+<span id="264">264</span>
+<span id="265">265</span>
+<span id="266">266</span>
+<span id="267">267</span>
+<span id="268">268</span>
+<span id="269">269</span>
+<span id="270">270</span>
+<span id="271">271</span>
+<span id="272">272</span>
+<span id="273">273</span>
+<span id="274">274</span>
+<span id="275">275</span>
+<span id="276">276</span>
+<span id="277">277</span>
+<span id="278">278</span>
+<span id="279">279</span>
+<span id="280">280</span>
+<span id="281">281</span>
+<span id="282">282</span>
+<span id="283">283</span>
+<span id="284">284</span>
+<span id="285">285</span>
+<span id="286">286</span>
+<span id="287">287</span>
+<span id="288">288</span>
+<span id="289">289</span>
+<span id="290">290</span>
+<span id="291">291</span>
+<span id="292">292</span>
+<span id="293">293</span>
+<span id="294">294</span>
+<span id="295">295</span>
+<span id="296">296</span>
+<span id="297">297</span>
+<span id="298">298</span>
+<span id="299">299</span>
 </pre><pre class="rust"><code><span class="comment">/*
  * Copyright (c) 2021 Works Applications Co., Ltd.
  *
@@ -265,7 +316,7 @@
 <span class="kw">use</span> <span class="ident">std::env::current_exe</span>;
 <span class="kw">use</span> <span class="ident">std::fs::File</span>;
 <span class="kw">use</span> <span class="ident">std::io::BufReader</span>;
-<span class="kw">use</span> <span class="ident">std::path::PathBuf</span>;
+<span class="kw">use</span> <span class="ident">std::path</span>::{<span class="ident">Path</span>, <span class="ident">PathBuf</span>};
 
 <span class="kw">use</span> <span class="ident">lazy_static::lazy_static</span>;
 <span class="kw">use</span> <span class="ident">serde::Deserialize</span>;
@@ -296,7 +347,7 @@
 }
 
 <span class="doccomment">/// Setting data loaded from config file</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Default</span>)]</span>
+<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Default</span>, <span class="ident">Clone</span>)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Config</span> {
     <span class="kw">pub</span> <span class="ident">resource_dir</span>: <span class="ident">PathBuf</span>,
     <span class="kw">pub</span> <span class="ident">system_dict</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">PathBuf</span><span class="op">&gt;</span>,
@@ -314,7 +365,7 @@
 <span class="doccomment">/// For plugins, refer to each plugin.</span>
 <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">non_snake_case</span>)]</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Deserialize</span>, <span class="ident">Debug</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">RawConfig</span> {
+<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">ConfigBuilder</span> {
     <span class="ident">resourcePath</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">PathBuf</span><span class="op">&gt;</span>,
     <span class="ident">systemDict</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">PathBuf</span><span class="op">&gt;</span>,
     <span class="ident">userDict</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">PathBuf</span><span class="op">&gt;</span><span class="op">&gt;</span>,
@@ -324,6 +375,81 @@
     <span class="ident">inputTextPlugin</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Value</span><span class="op">&gt;</span><span class="op">&gt;</span>,
     <span class="ident">oovProviderPlugin</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Value</span><span class="op">&gt;</span><span class="op">&gt;</span>,
     <span class="ident">pathRewritePlugin</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Value</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+}
+
+<span class="kw">impl</span> <span class="ident">ConfigBuilder</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">from_file</span>(<span class="ident">config_file</span>: <span class="kw-2">&amp;</span><span class="ident">Path</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">ConfigError</span><span class="op">&gt;</span> {
+        <span class="kw">let</span> <span class="ident">file</span> <span class="op">=</span> <span class="ident">File::open</span>(<span class="ident">config_file</span>)<span class="question-mark">?</span>;
+        <span class="kw">let</span> <span class="ident">reader</span> <span class="op">=</span> <span class="ident">BufReader::new</span>(<span class="ident">file</span>);
+        <span class="ident">serde_json::from_reader</span>(<span class="ident">reader</span>).<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">e</span>.<span class="ident">into</span>())
+    }
+
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">from_bytes</span>(<span class="ident">data</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>]) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">ConfigError</span><span class="op">&gt;</span> {
+        <span class="ident">serde_json::from_slice</span>(<span class="ident">data</span>).<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">e</span>.<span class="ident">into</span>())
+    }
+
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">empty</span>() <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
+        <span class="ident">serde_json::from_slice</span>(<span class="string">b&quot;{}&quot;</span>).<span class="ident">unwrap</span>()
+    }
+
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">system_dict</span>(<span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">dict</span>: <span class="kw">impl</span> <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">PathBuf</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
+        <span class="self">self</span>.<span class="ident">systemDict</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="ident">dict</span>.<span class="ident">into</span>());
+        <span class="self">self</span>
+    }
+
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">user_dict</span>(<span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">dict</span>: <span class="kw">impl</span> <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">PathBuf</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
+        <span class="kw">let</span> <span class="ident">dicts</span> <span class="op">=</span> <span class="kw">match</span> <span class="self">self</span>.<span class="ident">userDict</span>.<span class="ident">as_mut</span>() {
+            <span class="prelude-val">None</span> <span class="op">=</span><span class="op">&gt;</span> {
+                <span class="self">self</span>.<span class="ident">userDict</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="ident">Default::default</span>());
+                <span class="self">self</span>.<span class="ident">userDict</span>.<span class="ident">as_mut</span>().<span class="ident">unwrap</span>()
+            }
+            <span class="prelude-val">Some</span>(<span class="ident">dicts</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">dicts</span>,
+        };
+        <span class="ident">dicts</span>.<span class="ident">push</span>(<span class="ident">dict</span>.<span class="ident">into</span>());
+        <span class="self">self</span>
+    }
+
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">resource_path</span>(<span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">path</span>: <span class="kw">impl</span> <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">PathBuf</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
+        <span class="self">self</span>.<span class="ident">resourcePath</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="ident">path</span>.<span class="ident">into</span>());
+        <span class="self">self</span>
+    }
+
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">build</span>(<span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Config</span> {
+        <span class="kw">let</span> <span class="ident">src_root_path</span> <span class="op">=</span> <span class="ident">PathBuf::from</span>(<span class="macro">env!</span>(<span class="string">&quot;CARGO_MANIFEST_DIR&quot;</span>));
+        <span class="kw">let</span> <span class="ident">default_resource_dir_path</span> <span class="op">=</span> <span class="ident">src_root_path</span>.<span class="ident">join</span>(<span class="string">&quot;..&quot;</span>).<span class="ident">join</span>(<span class="ident">DEFAULT_RESOURCE_DIR</span>);
+
+        <span class="kw">let</span> <span class="ident">resource_dir</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">resourcePath</span>.<span class="ident">unwrap_or</span>(<span class="ident">default_resource_dir_path</span>);
+
+        <span class="kw">let</span> <span class="ident">system_dict</span> <span class="op">=</span> <span class="self">self</span>
+            .<span class="ident">systemDict</span>
+            .<span class="ident">clone</span>()
+            .<span class="ident">map</span>(<span class="op">|</span><span class="ident">p</span><span class="op">|</span> <span class="ident">Config::join_if_relative</span>(<span class="kw-2">&amp;</span><span class="ident">resource_dir</span>, <span class="ident">p</span>));
+
+        <span class="kw">let</span> <span class="ident">user_dicts</span> <span class="op">=</span> <span class="self">self</span>
+            .<span class="ident">userDict</span>
+            .<span class="ident">unwrap_or</span>(<span class="ident">Vec::new</span>())
+            .<span class="ident">into_iter</span>()
+            .<span class="ident">map</span>(<span class="op">|</span><span class="ident">p</span><span class="op">|</span> <span class="ident">Config::join_if_relative</span>(<span class="kw-2">&amp;</span><span class="ident">resource_dir</span>, <span class="ident">p</span>))
+            .<span class="ident">collect</span>();
+
+        <span class="kw">let</span> <span class="ident">character_definition_file</span> <span class="op">=</span> <span class="ident">Config::join_if_relative</span>(
+            <span class="kw-2">&amp;</span><span class="ident">resource_dir</span>,
+            <span class="self">self</span>.<span class="ident">characterDefinitionFile</span>
+                .<span class="ident">unwrap_or</span>(<span class="ident">PathBuf::from</span>(<span class="ident">DEFAULT_CHAR_DEF_FILE</span>)),
+        );
+
+        <span class="ident">Config</span> {
+            <span class="ident">resource_dir</span>,
+            <span class="ident">system_dict</span>,
+            <span class="ident">user_dicts</span>,
+            <span class="ident">character_definition_file</span>,
+
+            <span class="ident">connection_cost_plugins</span>: <span class="self">self</span>.<span class="ident">connectionCostPlugin</span>.<span class="ident">unwrap_or</span>(<span class="ident">Vec::new</span>()),
+            <span class="ident">input_text_plugins</span>: <span class="self">self</span>.<span class="ident">inputTextPlugin</span>.<span class="ident">unwrap_or</span>(<span class="ident">Vec::new</span>()),
+            <span class="ident">oov_provider_plugins</span>: <span class="self">self</span>.<span class="ident">oovProviderPlugin</span>.<span class="ident">unwrap_or</span>(<span class="ident">Vec::new</span>()),
+            <span class="ident">path_rewrite_plugins</span>: <span class="self">self</span>.<span class="ident">pathRewritePlugin</span>.<span class="ident">unwrap_or</span>(<span class="ident">Vec::new</span>()),
+        }
+    }
 }
 
 <span class="kw">impl</span> <span class="ident">Config</span> {
@@ -340,46 +466,22 @@
             <span class="prelude-val">Some</span>(<span class="ident">v</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">v</span>,
             <span class="prelude-val">None</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">default_resource_dir_path</span>.<span class="ident">join</span>(<span class="ident">DEFAULT_SETTING_FILE</span>),
         };
-        <span class="kw">let</span> <span class="ident">file</span> <span class="op">=</span> <span class="ident">File::open</span>(<span class="ident">config_file</span>)<span class="question-mark">?</span>;
-        <span class="kw">let</span> <span class="ident">reader</span> <span class="op">=</span> <span class="ident">BufReader::new</span>(<span class="ident">file</span>);
-        <span class="kw">let</span> <span class="ident">raw_config</span>: <span class="ident">RawConfig</span> <span class="op">=</span> <span class="ident">serde_json::from_reader</span>(<span class="ident">reader</span>)<span class="question-mark">?</span>;
 
-        <span class="comment">// prioritize arg (cli option) &gt; config file &gt; default</span>
-        <span class="kw">let</span> <span class="ident">resource_dir</span> <span class="op">=</span> <span class="ident">resource_dir</span>
-            .<span class="ident">or_else</span>(<span class="op">|</span><span class="op">|</span> <span class="ident">raw_config</span>.<span class="ident">resourcePath</span>.<span class="ident">clone</span>())
-            .<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="op">|</span> <span class="ident">default_resource_dir_path</span>);
+        <span class="kw">let</span> <span class="ident">raw_config</span> <span class="op">=</span> <span class="ident">ConfigBuilder::from_file</span>(<span class="kw-2">&amp;</span><span class="ident">config_file</span>)<span class="question-mark">?</span>;
 
         <span class="comment">// prioritize arg (cli option) &gt; config file</span>
-        <span class="kw">let</span> <span class="ident">system_dict</span> <span class="op">=</span> <span class="ident">dictionary_path</span>.<span class="ident">or_else</span>(<span class="op">|</span><span class="op">|</span> {
-            <span class="ident">raw_config</span>
-                .<span class="ident">systemDict</span>
-                .<span class="ident">clone</span>()
-                .<span class="ident">map</span>(<span class="op">|</span><span class="ident">p</span><span class="op">|</span> <span class="ident">Config::join_if_relative</span>(<span class="kw-2">&amp;</span><span class="ident">resource_dir</span>, <span class="ident">p</span>))
-        });
-        <span class="kw">let</span> <span class="ident">user_dicts</span> <span class="op">=</span> <span class="ident">raw_config</span>
-            .<span class="ident">userDict</span>
-            .<span class="ident">unwrap_or</span>(<span class="ident">Vec::new</span>())
-            .<span class="ident">into_iter</span>()
-            .<span class="ident">map</span>(<span class="op">|</span><span class="ident">p</span><span class="op">|</span> <span class="ident">Config::join_if_relative</span>(<span class="kw-2">&amp;</span><span class="ident">resource_dir</span>, <span class="ident">p</span>))
-            .<span class="ident">collect</span>();
-        <span class="kw">let</span> <span class="ident">character_definition_file</span> <span class="op">=</span> <span class="ident">Config::join_if_relative</span>(
-            <span class="kw-2">&amp;</span><span class="ident">resource_dir</span>,
-            <span class="ident">raw_config</span>
-                .<span class="ident">characterDefinitionFile</span>
-                .<span class="ident">unwrap_or</span>(<span class="ident">PathBuf::from</span>(<span class="ident">DEFAULT_CHAR_DEF_FILE</span>)),
-        );
+        <span class="kw">let</span> <span class="ident">raw_config</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">resource_dir</span> {
+            <span class="prelude-val">None</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">raw_config</span>,
+            <span class="prelude-val">Some</span>(<span class="ident">p</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">raw_config</span>.<span class="ident">resource_path</span>(<span class="ident">p</span>),
+        };
 
-        <span class="prelude-val">Ok</span>(<span class="ident">Config</span> {
-            <span class="ident">resource_dir</span>,
-            <span class="ident">system_dict</span>,
-            <span class="ident">user_dicts</span>,
-            <span class="ident">character_definition_file</span>,
+        <span class="comment">// prioritize arg (cli option) &gt; config file</span>
+        <span class="kw">let</span> <span class="ident">raw_config</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">dictionary_path</span> {
+            <span class="prelude-val">None</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">raw_config</span>,
+            <span class="prelude-val">Some</span>(<span class="ident">p</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">raw_config</span>.<span class="ident">system_dict</span>(<span class="ident">p</span>),
+        };
 
-            <span class="ident">connection_cost_plugins</span>: <span class="ident">raw_config</span>.<span class="ident">connectionCostPlugin</span>.<span class="ident">unwrap_or</span>(<span class="ident">Vec::new</span>()),
-            <span class="ident">input_text_plugins</span>: <span class="ident">raw_config</span>.<span class="ident">inputTextPlugin</span>.<span class="ident">unwrap_or</span>(<span class="ident">Vec::new</span>()),
-            <span class="ident">oov_provider_plugins</span>: <span class="ident">raw_config</span>.<span class="ident">oovProviderPlugin</span>.<span class="ident">unwrap_or</span>(<span class="ident">Vec::new</span>()),
-            <span class="ident">path_rewrite_plugins</span>: <span class="ident">raw_config</span>.<span class="ident">pathRewritePlugin</span>.<span class="ident">unwrap_or</span>(<span class="ident">Vec::new</span>()),
-        })
+        <span class="prelude-val">Ok</span>(<span class="ident">raw_config</span>.<span class="ident">build</span>())
     }
 
     <span class="doccomment">/// Creates a minimal config with the provided resource directory</span>
