@@ -19,8 +19,8 @@ import os
 import sys
 from pathlib import Path
 
-from . import __version__
 from . import Dictionary, SplitMode
+from . import __version__
 from . import sudachipy
 
 
@@ -51,14 +51,16 @@ def _set_default_subparser(self, name, args=None):
 argparse.ArgumentParser.set_default_subparser = _set_default_subparser
 
 
-def run(tokenizer, mode, input_, output, logger, print_all, enable_dump):
+def run(tokenizer, input_, output, print_all, morphs, is_stdout):
+    # get an empty MorphemeList for memory reuse
+    mlist = tokenizer.tokenize("")
     for line in input_:
         line = line.rstrip('\n')
-        # Note: Current version of the tokenizer ignores logger
-        for m in tokenizer.tokenize(line, mode, logger if enable_dump else None):
+        # out parameter means we are reusing memory here
+        for m in tokenizer.tokenize(line, out=mlist):
             list_info = [
                 m.surface(),
-                ",".join(m.part_of_speech()),
+                ",".join(morphs[m.part_of_speech_id()]),
                 m.normalized_form()]
             if print_all:
                 list_info += [
@@ -71,6 +73,8 @@ def run(tokenizer, mode, input_, output, logger, print_all, enable_dump):
             output.write("\t".join(list_info))
             output.write("\n")
         output.write("EOS\n")
+        if is_stdout:
+            output.flush()
 
 
 def _input_files_checker(args, print_usage):
@@ -108,16 +112,19 @@ def _command_tokenize(args, print_usage):
     stdout_logger.propagate = False
 
     print_all = args.a
-    enable_dump = args.d
 
     try:
         dict_ = Dictionary(config_path=args.fpath_setting,
                            dict_type=args.system_dict_type)
-        tokenizer_obj = dict_.create()
+        # empty matcher - get all POS tags
+        all_morphs = dict_.pos_matcher([()])
+        # precompute output POS strings
+        morphs = [",".join(ms) for ms in all_morphs]
+
+        tokenizer_obj = dict_.create(mode=mode)
         input_ = fileinput.input(
             args.in_files, openhook=fileinput.hook_encoded("utf-8"))
-        run(tokenizer_obj, mode, input_, output,
-            stdout_logger, print_all, enable_dump)
+        run(tokenizer_obj, input_, output, print_all, morphs, is_stdout=args.fpath_out is None)
     finally:
         if args.fpath_out:
             output.close()
