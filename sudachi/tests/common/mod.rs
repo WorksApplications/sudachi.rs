@@ -25,7 +25,7 @@ use std::sync::Arc;
 
 use sudachi::analysis::stateful_tokenizer::StatefulTokenizer;
 use sudachi::analysis::stateless_tokenizer::StatelessTokenizer;
-use sudachi::config::Config;
+use sudachi::config::{Config, ConfigBuilder};
 use sudachi::dic::dictionary::JapaneseDictionary;
 use sudachi::dic::{grammar::Grammar, header::Header, lexicon::Lexicon, DictionaryLoader};
 use sudachi::prelude::*;
@@ -44,6 +44,8 @@ pub fn dictionary_bytes_from_path<P: AsRef<Path>>(dictionary_path: P) -> Sudachi
 
     Ok(dictionary_bytes)
 }
+
+pub const LEX_CSV: &[u8] = include_bytes!("../resources/lex.csv");
 
 lazy_static! {
     pub static ref TEST_CONFIG: Config = {
@@ -117,6 +119,7 @@ pub struct TestTokenizerBuilder<'a> {
     pub user: Vec<&'a [u8]>,
     pub mode: Mode,
     pub debug: bool,
+    pub config: Option<&'a [u8]>,
 }
 
 #[allow(unused)]
@@ -133,6 +136,11 @@ impl<'a> TestTokenizerBuilder<'a> {
 
     pub fn debug(mut self, debug: bool) -> Self {
         self.debug = debug;
+        self
+    }
+
+    pub fn config(mut self, data: &'static [u8]) -> Self {
+        self.config = Some(data);
         self
     }
 
@@ -167,7 +175,12 @@ impl<'a> TestTokenizerBuilder<'a> {
             }
         }
 
-        let dic = JapaneseDictionary::from_cfg_storage(&TEST_CONFIG, data).unwrap();
+        let config = match self.config {
+            None => TEST_CONFIG.clone(),
+            Some(data) => ConfigBuilder::from_bytes(data).unwrap().build(),
+        };
+
+        let dic = JapaneseDictionary::from_cfg_storage(&config, data).unwrap();
         let rcdic = Rc::new(dic);
 
         TestStatefulTokenizer {
@@ -199,6 +212,7 @@ impl TestStatefulTokenizer {
             conn: None,
             mode: Mode::C,
             debug: false,
+            config: None,
         }
     }
 

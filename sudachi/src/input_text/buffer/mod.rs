@@ -144,6 +144,7 @@ impl InputBuffer {
         let non_starting = CategoryType::ALPHA | CategoryType::GREEK | CategoryType::CYRILLIC;
         let mut prev_cat = CategoryType::empty();
         self.mod_bow.resize(self.modified.len(), false);
+        let mut next_bow = true;
 
         for (chidx, (bidx, ch)) in self.modified.char_indices().enumerate() {
             self.mod_chars.push(ch);
@@ -155,12 +156,26 @@ impl InputBuffer {
             last_offset = bidx;
             last_chidx = chidx;
 
-            // BOW logic: for special cases check if the previous char is compatible
-            self.mod_bow[bidx] = if cat.intersects(non_starting) {
+            let can_bow = if !next_bow {
+                // this char was forbidden by the previous one
+                next_bow = true;
+                false
+            } else if cat.intersects(CategoryType::NOOOVBOW2) {
+                // this rule is stronger than the next one and must come before
+                // this and next are forbidden
+                next_bow = false;
+                false
+            } else if cat.intersects(CategoryType::NOOOVBOW) {
+                // this char is forbidden
+                false
+            } else if cat.intersects(non_starting) {
+                // the previous char is compatible
                 !cat.intersects(prev_cat)
             } else {
                 true
             };
+
+            self.mod_bow[bidx] = can_bow;
             prev_cat = cat;
         }
         // trailing indices for the last codepoint

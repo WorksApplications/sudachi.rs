@@ -54,11 +54,13 @@ bitflags! {
         const USER3 = (1 << 13);
         /** User defined category. */
         const USER4 = (1 << 14);
-        /** Characters that cannot be the beginning of word */
-        const NOOOVBOW = (1 << 31);
+        /** This character cannot be the beginning of an OOV word */
+        const NOOOVBOW = (1 << 30);
+        /** This and next characters cannot be the beginning of an OOV word */
+        const NOOOVBOW2 = (1 << 31);
 
-        /** All categories at once except NOOOVBOW */
-        const ALL = !(1 << 31);
+        /** All categories at once except NOOOVBOW/2 */
+        const ALL = 0b00111111_11111111_11111111_11111111;
     }
 }
 
@@ -122,6 +124,7 @@ impl FromStr for CategoryType {
             "USER3" => Ok(Self::USER3),
             "USER4" => Ok(Self::USER4),
             "NOOOVBOW" => Ok(Self::NOOOVBOW),
+            "NOOOVBOW2" => Ok(Self::NOOOVBOW2),
             "ALL" => Ok(Self::ALL),
             _ => Err(SudachiError::InvalidCharacterCategoryType(String::from(s))),
         }

@@ -133,7 +133,6 @@ CYRILLIC        1 1 0
 0x2000..0x206F  SYMBOL # General Punctuation
 0x2070..0x209F  NUMERIC # Superscripts and Subscripts
 0x20A0..0x20CF  SYMBOL # Currency Symbols
-0x20D0..0x20FF  SYMBOL # Combining Diaritical Marks for Symbols
 0x2100..0x214F  SYMBOL # Letterlike Symbols
 0x2150..0x218F  NUMERIC # Number forms
 0x2100..0x214B  SYMBOL # Letterlike Symbols
@@ -163,5 +162,18 @@ CYRILLIC        1 1 0
 
 # added 2018/11/30
 0x309b..0x309c HIRAGANA KATAKANA # voiced/semi-voiced sound marks
+
+# Unicode combining symbols 2021/12/03
+# from https://en.wikipedia.org/wiki/Combining_character
+0x0300..0x036F ALL NOOOVBOW # Combining Diacritical Marks
+0x1AB0..0x1AFF ALL NOOOVBOW # Combining Diacritical Marks Extended
+0x1DC0..0x1DFF ALL NOOOVBOW # Combining Diacritical Marks Supplement
+0x20D0..0x20FF ALL NOOOVBOW # Combining Diacritical Marks for Symbols
+0xFE20..0xFE2F ALL NOOOVBOW # Combining Half Marks
+0xFE00..0xFE0F ALL NOOOVBOW # https://codepoints.net/variation_selectors
+0x1F3FB..0x1F3FE ALL NOOOVBOW # emoji skin tone modifiers https://codepoints.net/U+1F3FF
+
+# Combination marks
+0x200C..0x200D ALL NOOOVBOW2 # Zero Width Non-Joiner/Joiner
 
 # END OF TABLE

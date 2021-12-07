@@ -17,7 +17,7 @@
 use std::env::current_exe;
 use std::fs::File;
 use std::io::BufReader;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use lazy_static::lazy_static;
 use serde::Deserialize;
@@ -48,7 +48,7 @@ pub enum ConfigError {
 }
 
 /// Setting data loaded from config file
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct Config {
     pub resource_dir: PathBuf,
     pub system_dict: Option<PathBuf>,
@@ -66,7 +66,7 @@ pub struct Config {
 /// For plugins, refer to each plugin.
 #[allow(non_snake_case)]
 #[derive(Deserialize, Debug)]
-pub struct RawConfig {
+pub struct ConfigBuilder {
     resourcePath: Option<PathBuf>,
     systemDict: Option<PathBuf>,
     userDict: Option<Vec<PathBuf>>,
@@ -76,6 +76,81 @@ pub struct RawConfig {
     inputTextPlugin: Option<Vec<Value>>,
     oovProviderPlugin: Option<Vec<Value>>,
     pathRewritePlugin: Option<Vec<Value>>,
+}
+
+impl ConfigBuilder {
+    pub fn from_file(config_file: &Path) -> Result<Self, ConfigError> {
+        let file = File::open(config_file)?;
+        let reader = BufReader::new(file);
+        serde_json::from_reader(reader).map_err(|e| e.into())
+    }
+
+    pub fn from_bytes(data: &[u8]) -> Result<Self, ConfigError> {
+        serde_json::from_slice(data).map_err(|e| e.into())
+    }
+
+    pub fn empty() -> Self {
+        serde_json::from_slice(b"{}").unwrap()
+    }
+
+    pub fn system_dict(mut self, dict: impl Into<PathBuf>) -> Self {
+        self.systemDict = Some(dict.into());
+        self
+    }
+
+    pub fn user_dict(mut self, dict: impl Into<PathBuf>) -> Self {
+        let dicts = match self.userDict.as_mut() {
+            None => {
+                self.userDict = Some(Default::default());
+                self.userDict.as_mut().unwrap()
+            }
+            Some(dicts) => dicts,
+        };
+        dicts.push(dict.into());
+        self
+    }
+
+    pub fn resource_path(mut self, path: impl Into<PathBuf>) -> Self {
+        self.resourcePath = Some(path.into());
+        self
+    }
+
+    pub fn build(self) -> Config {
+        let src_root_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let default_resource_dir_path = src_root_path.join("..").join(DEFAULT_RESOURCE_DIR);
+
+        let resource_dir = self.resourcePath.unwrap_or(default_resource_dir_path);
+
+        let system_dict = self
+            .systemDict
+            .clone()
+            .map(|p| Config::join_if_relative(&resource_dir, p));
+
+        let user_dicts = self
+            .userDict
+            .unwrap_or(Vec::new())
+            .into_iter()
+            .map(|p| Config::join_if_relative(&resource_dir, p))
+            .collect();
+
+        let character_definition_file = Config::join_if_relative(
+            &resource_dir,
+            self.characterDefinitionFile
+                .unwrap_or(PathBuf::from(DEFAULT_CHAR_DEF_FILE)),
+        );
+
+        Config {
+            resource_dir,
+            system_dict,
+            user_dicts,
+            character_definition_file,
+
+            connection_cost_plugins: self.connectionCostPlugin.unwrap_or(Vec::new()),
+            input_text_plugins: self.inputTextPlugin.unwrap_or(Vec::new()),
+            oov_provider_plugins: self.oovProviderPlugin.unwrap_or(Vec::new()),
+            path_rewrite_plugins: self.pathRewritePlugin.unwrap_or(Vec::new()),
+        }
+    }
 }
 
 impl Config {
@@ -92,46 +167,22 @@ impl Config {
             Some(v) => v,
             None => default_resource_dir_path.join(DEFAULT_SETTING_FILE),
         };
-        let file = File::open(config_file)?;
-        let reader = BufReader::new(file);
-        let raw_config: RawConfig = serde_json::from_reader(reader)?;
 
-        // prioritize arg (cli option) > config file > default
-        let resource_dir = resource_dir
-            .or_else(|| raw_config.resourcePath.clone())
-            .unwrap_or_else(|| default_resource_dir_path);
+        let raw_config = ConfigBuilder::from_file(&config_file)?;
 
         // prioritize arg (cli option) > config file
-        let system_dict = dictionary_path.or_else(|| {
-            raw_config
-                .systemDict
-                .clone()
-                .map(|p| Config::join_if_relative(&resource_dir, p))
-        });
-        let user_dicts = raw_config
-            .userDict
-            .unwrap_or(Vec::new())
-            .into_iter()
-            .map(|p| Config::join_if_relative(&resource_dir, p))
-            .collect();
-        let character_definition_file = Config::join_if_relative(
-            &resource_dir,
-            raw_config
-                .characterDefinitionFile
-                .unwrap_or(PathBuf::from(DEFAULT_CHAR_DEF_FILE)),
-        );
+        let raw_config = match resource_dir {
+            None => raw_config,
+            Some(p) => raw_config.resource_path(p),
+        };
 
-        Ok(Config {
-            resource_dir,
-            system_dict,
-            user_dicts,
-            character_definition_file,
+        // prioritize arg (cli option) > config file
+        let raw_config = match dictionary_path {
+            None => raw_config,
+            Some(p) => raw_config.system_dict(p),
+        };
 
-            connection_cost_plugins: raw_config.connectionCostPlugin.unwrap_or(Vec::new()),
-            input_text_plugins: raw_config.inputTextPlugin.unwrap_or(Vec::new()),
-            oov_provider_plugins: raw_config.oovProviderPlugin.unwrap_or(Vec::new()),
-            path_rewrite_plugins: raw_config.pathRewritePlugin.unwrap_or(Vec::new()),
-        })
+        Ok(raw_config.build())
     }
 
     /// Creates a minimal config with the provided resource directory
