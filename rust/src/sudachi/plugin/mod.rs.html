@@ -77,6 +77,8 @@
 <span id="77">77</span>
 <span id="78">78</span>
 <span id="79">79</span>
+<span id="80">80</span>
+<span id="81">81</span>
 </pre><pre class="rust"><code><span class="comment">/*
  * Copyright (c) 2021 Works Applications Co., Ltd.
  *
@@ -148,10 +150,12 @@
 <span class="kw">impl</span> <span class="ident">Plugins</span> {
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">load</span>(<span class="ident">cfg</span>: <span class="kw-2">&amp;</span><span class="ident">Config</span>, <span class="ident">grammar</span>: <span class="kw-2">&amp;</span><span class="ident">Grammar</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="ident">Plugins</span><span class="op">&gt;</span> {
         <span class="kw">let</span> <span class="ident">plugins</span> <span class="op">=</span> <span class="ident">Plugins</span> {
-            <span class="ident">connect_cost</span>: <span class="ident">load_plugins_of</span>(<span class="ident">cfg</span>, <span class="ident">grammar</span>)<span class="question-mark">?</span>,
-            <span class="ident">input_text</span>: <span class="ident">load_plugins_of</span>(<span class="ident">cfg</span>, <span class="ident">grammar</span>)<span class="question-mark">?</span>,
-            <span class="ident">oov</span>: <span class="ident">load_plugins_of</span>(<span class="ident">cfg</span>, <span class="ident">grammar</span>)<span class="question-mark">?</span>,
-            <span class="ident">path_rewrite</span>: <span class="ident">load_plugins_of</span>(<span class="ident">cfg</span>, <span class="ident">grammar</span>)<span class="question-mark">?</span>,
+            <span class="ident">connect_cost</span>: <span class="ident">load_plugins_of</span>(<span class="ident">cfg</span>, <span class="ident">grammar</span>)
+                .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">e</span>.<span class="ident">with_context</span>(<span class="string">&quot;connect_cost&quot;</span>))<span class="question-mark">?</span>,
+            <span class="ident">input_text</span>: <span class="ident">load_plugins_of</span>(<span class="ident">cfg</span>, <span class="ident">grammar</span>).<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">e</span>.<span class="ident">with_context</span>(<span class="string">&quot;input_text&quot;</span>))<span class="question-mark">?</span>,
+            <span class="ident">oov</span>: <span class="ident">load_plugins_of</span>(<span class="ident">cfg</span>, <span class="ident">grammar</span>).<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">e</span>.<span class="ident">with_context</span>(<span class="string">&quot;oov&quot;</span>))<span class="question-mark">?</span>,
+            <span class="ident">path_rewrite</span>: <span class="ident">load_plugins_of</span>(<span class="ident">cfg</span>, <span class="ident">grammar</span>)
+                .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">e</span>.<span class="ident">with_context</span>(<span class="string">&quot;path_rewrite&quot;</span>))<span class="question-mark">?</span>,
         };
         <span class="prelude-val">Ok</span>(<span class="ident">plugins</span>)
     }

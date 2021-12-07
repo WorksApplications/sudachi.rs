@@ -235,6 +235,10 @@
 <span id="235">235</span>
 <span id="236">236</span>
 <span id="237">237</span>
+<span id="238">238</span>
+<span id="239">239</span>
+<span id="240">240</span>
+<span id="241">241</span>
 </pre><pre class="rust"><code><span class="comment">/*
  *  Copyright (c) 2021 Works Applications Co., Ltd.
  *
@@ -364,7 +368,8 @@
                 <span class="self">self</span>.<span class="ident">load_plugin_from_dso</span>(<span class="kw-2">&amp;</span><span class="ident">candidates</span>)<span class="question-mark">?</span>
             };
 
-        <span class="op">&lt;</span><span class="ident">T</span> <span class="kw">as</span> <span class="ident">PluginCategory</span><span class="op">&gt;</span><span class="ident">::do_setup</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">plugin</span>, <span class="ident">plugin_cfg</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">cfg</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">grammar</span>)<span class="question-mark">?</span>;
+        <span class="op">&lt;</span><span class="ident">T</span> <span class="kw">as</span> <span class="ident">PluginCategory</span><span class="op">&gt;</span><span class="ident">::do_setup</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">plugin</span>, <span class="ident">plugin_cfg</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">cfg</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">grammar</span>)
+            .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">e</span>.<span class="ident">with_context</span>(<span class="macro">format!</span>(<span class="string">&quot;plugin {} setup&quot;</span>, <span class="ident">name</span>)))<span class="question-mark">?</span>;
         <span class="self">self</span>.<span class="ident">plugins</span>.<span class="ident">push</span>(<span class="ident">plugin</span>);
         <span class="prelude-val">Ok</span>(())
     }
@@ -380,7 +385,7 @@
         <span class="ident">resolved</span>
     }
 
-    <span class="kw">fn</span> <span class="ident">try_load_library_from</span>(<span class="ident">candidates</span>: <span class="kw-2">&amp;</span>[<span class="ident">String</span>]) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="ident">Library</span><span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">try_load_library_from</span>(<span class="ident">candidates</span>: <span class="kw-2">&amp;</span>[<span class="ident">String</span>]) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">SudachiResult</span><span class="op">&lt;</span>(<span class="ident">Library</span>, <span class="kw-2">&amp;</span><span class="ident">str</span>)<span class="op">&gt;</span> {
         <span class="kw">if</span> <span class="ident">candidates</span>.<span class="ident">is_empty</span>() {
             <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">SudachiError::PluginError</span>(<span class="ident">PluginError::InvalidDataFormat</span>(
                 <span class="string">&quot;No candidates to load library&quot;</span>.<span class="ident">to_owned</span>(),
@@ -390,7 +395,7 @@
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">last_error</span> <span class="op">=</span> <span class="ident">libloading::Error::IncompatibleSize</span>;
         <span class="kw">for</span> <span class="ident">p</span> <span class="kw">in</span> <span class="ident">candidates</span>.<span class="ident">iter</span>() {
             <span class="kw">match</span> <span class="kw">unsafe</span> { <span class="ident">Library::new</span>(<span class="ident">p</span>.<span class="ident">as_str</span>()) } {
-                <span class="prelude-val">Ok</span>(<span class="ident">lib</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="ident">lib</span>),
+                <span class="prelude-val">Ok</span>(<span class="ident">lib</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="kw">return</span> <span class="prelude-val">Ok</span>((<span class="ident">lib</span>, <span class="ident">p</span>.<span class="ident">as_str</span>())),
                 <span class="prelude-val">Err</span>(<span class="ident">e</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">last_error</span> <span class="op">=</span> <span class="ident">e</span>,
             }
         }
@@ -404,9 +409,12 @@
         <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>,
         <span class="ident">candidates</span>: <span class="kw-2">&amp;</span>[<span class="ident">String</span>],
     ) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="op">&lt;</span><span class="ident">T</span> <span class="kw">as</span> <span class="ident">PluginCategory</span><span class="op">&gt;</span><span class="ident">::BoxType</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">lib</span> <span class="op">=</span> <span class="ident"><span class="self">Self</span>::try_load_library_from</span>(<span class="ident">candidates</span>)<span class="question-mark">?</span>;
+        <span class="kw">let</span> (<span class="ident">lib</span>, <span class="ident">path</span>) <span class="op">=</span> <span class="ident"><span class="self">Self</span>::try_load_library_from</span>(<span class="ident">candidates</span>)<span class="question-mark">?</span>;
         <span class="kw">let</span> <span class="ident">load_fn</span>: <span class="ident">Symbol</span><span class="op">&lt;</span><span class="kw">fn</span>() <span class="op">-</span><span class="op">&gt;</span> <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="op">&lt;</span><span class="ident">T</span> <span class="kw">as</span> <span class="ident">PluginCategory</span><span class="op">&gt;</span><span class="ident">::BoxType</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="op">=</span>
-            <span class="kw">unsafe</span> { <span class="ident">lib</span>.<span class="ident">get</span>(<span class="string">b&quot;load_plugin&quot;</span>)<span class="question-mark">?</span> };
+            <span class="kw">unsafe</span> { <span class="ident">lib</span>.<span class="ident">get</span>(<span class="string">b&quot;load_plugin&quot;</span>) }.<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">PluginError::Libloading</span> {
+                <span class="ident">source</span>: <span class="ident">e</span>,
+                <span class="ident">message</span>: <span class="macro">format!</span>(<span class="string">&quot;no load_plugin symbol in {}&quot;</span>, <span class="ident">path</span>),
+            })<span class="question-mark">?</span>;
         <span class="kw">let</span> <span class="ident">plugin</span> <span class="op">=</span> <span class="ident">load_fn</span>();
         <span class="self">self</span>.<span class="ident">libraries</span>.<span class="ident">push</span>(<span class="ident">lib</span>);
         <span class="ident">plugin</span>
@@ -416,9 +424,9 @@
 <span class="kw">fn</span> <span class="ident">extract_plugin_class</span>(<span class="ident">val</span>: <span class="kw-2">&amp;</span><span class="ident">Value</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">str</span><span class="op">&gt;</span> {
     <span class="kw">let</span> <span class="ident">obj</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">val</span> {
         <span class="ident">Value::Object</span>(<span class="ident">v</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">v</span>,
-        <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> {
+        <span class="ident">o</span> <span class="op">=</span><span class="op">&gt;</span> {
             <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">SudachiError::ConfigError</span>(<span class="ident">ConfigError::InvalidFormat</span>(
-                <span class="string">&quot;plugin config must be an object&quot;</span>.<span class="ident">to_owned</span>(),
+                <span class="macro">format!</span>(<span class="string">&quot;plugin config must be an object, was {}&quot;</span>, <span class="ident">o</span>),
             )));
         }
     };
