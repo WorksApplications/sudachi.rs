@@ -140,7 +140,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install our module from TestPyPi
-        run: python -m pip install --pre -U -i https://test.pypi.org/simple/ sudachipy[test]
+        run: python -m pip install --pre -U -i https://test.pypi.org/simple/ sudachipy[tests]
 
       - name: Install dependencies
         run: python -m pip install sudachidict_core

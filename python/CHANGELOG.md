@@ -8,25 +8,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   - `-d` option of `sudachipy` cli does nothing.
   - `sudachipy.Tokenizer` will ignore the provided logger.
   - Ref: [#76]
-- `Morpheme.part_of_speech` method now returns Tuple of POS components instead of a list.
+
+## [0.6.1] - 2021/12/08
+
+- [`Morpheme.part_of_speech`](https://worksapplications.github.io/sudachi.rs/python/api/sudachipy.html#sudachipy.Morpheme.part_of_speech) method now returns Tuple of POS components instead of a list.
 - [Partial Dictionary Read](https://worksapplications.github.io/sudachi.rs/python/topics/subsetting.html)
   - It is possible to ask for a subset of morpheme fields instead of all fields
-  - Supported API: `Dictionary.create()`, `Dictionary.pre_tokenizer()`
+  - Supported API: [`Dictionary.create()`](https://worksapplications.github.io/sudachi.rs/python/api/sudachipy.html#sudachipy.Dictionary.create), [`Dictionary.pre_tokenizer()`](https://worksapplications.github.io/sudachi.rs/python/api/sudachipy.html#sudachipy.Dictionary.pre_tokenizer)
 - HuggingFace PreTokenizer support
   - We provide a built-in HuggingFace-compatible pre-tokenizer
-  - API: `Dictionary.pre_tokenizer()`
+  - API: [`Dictionary.pre_tokenizer()`](https://worksapplications.github.io/sudachi.rs/python/api/sudachipy.html#sudachipy.Dictionary.pre_tokenizer)
   - It is multithreading-compatible and supports customization
-- Memory allocation reuse
+- [Memory allocation reuse](https://worksapplications.github.io/sudachi.rs/python/topics/out_param.html)
   - It is possible to reduce re-allocation overhead by using `out` parameters which accept `MorphemeList`s
-  - Supported API: `Tokenizer.tokenize()`, `Morpheme.split()`
-  - It is now a recommended way to use both those APIs 
-- PosMatcher
+  - Supported API: [`Tokenizer.tokenize()`](https://worksapplications.github.io/sudachi.rs/python/api/sudachipy.html#sudachipy.Tokenizer.tokenize), [`Morpheme.split()`](https://worksapplications.github.io/sudachi.rs/python/api/sudachipy.html#sudachipy.Morpheme.split)
+  - It is now a recommended way to use both those APIs
+- [PosMatcher](https://worksapplications.github.io/sudachi.rs/python/api/sudachipy.html#sudachipy.Dictionary.pos_matcher)
   - New API for checking if a morpheme has a POS tag from a set
   - Strongly prefer using it instead of string comparison of POS components
 - Performance
   - Greatly decreased cost of accessing POS components
 - `len(Morpheme)` now returns the length of the morpheme in Unicode codepoints. Use it instead of `len(m.surface())`
-- `Morpheme.split()` has new `add_single` parameter, which can be used to check whether the split has produced anything
+- [`Morpheme.split()`](https://worksapplications.github.io/sudachi.rs/python/api/sudachipy.html#sudachipy.Morpheme.split) has new `add_single` parameter, which can be used to check whether the split has produced anything
   - E.g. with `if m.split(SplitMode.A, out=res, add_single=False): handle_splits(res)`
   - `add_single=True`, returning the list with the current morpheme is the current behavior
 - `Morpheme`/`MorphemeList` now have readable `__repr__` and `__str__`
