@@ -74,7 +74,12 @@ impl PyMorphemeListWrapper {
     #[pyo3(text_signature = "(dict: sudachipy.Dictionary) -> sudachipy.MorphemeList")]
     fn empty(_cls: &PyType, py: Python, dict: &PyDictionary) -> PyResult<Self> {
         let cat = PyModule::import(py, "builtins")?.getattr("DeprecationWarning")?;
-        PyErr::warn(py, cat, "Users should not generate MorphemeList by themselves. Use Tokenizer.tokenize(\"\") if you need.", 1)?;
+        PyErr::warn(
+            py,
+            cat,
+            "Use Tokenizer.tokenize(\"\") if you need an empty MorphemeList.",
+            1,
+        )?;
 
         Ok(Self {
             inner: PyMorphemeList::empty(dict.dictionary.as_ref().unwrap().clone()),

@@ -28,9 +28,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - `len(Morpheme)` now returns the length of the morpheme in Unicode codepoints. Use it instead of `len(m.surface())`
 - `Morpheme.split()` has new `add_single` parameter, which can be used to check whether the split has produced anything
   - E.g. with `if m.split(SplitMode.A, out=res, add_single=False): handle_splits(res)`
-  - `add_split=True`, returning the list with the current morpheme is the current behavior
+  - `add_single=True`, returning the list with the current morpheme is the current behavior
 - `Morpheme`/`MorphemeList` now have readable `__repr__` and `__str__`
   - https://github.com/WorksApplications/sudachi.rs/pull/187
+
+### Deprecated
+* `dict_type` parameter of `Dictionary()` constructor. Use `dict` instead which is a complete alias.
+
+### Note
+* Do not use `mode` parameter of `Tokenizer.tokenize()` method if you always tokenize with a single mode.
+  * Use the mode parameter of `Dictionary.create()` method instead.
 
 ## [0.6.0] - 2021/10/11
 

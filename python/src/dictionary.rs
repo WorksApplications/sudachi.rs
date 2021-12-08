@@ -85,18 +85,20 @@ impl PyDictionary {
     ///
     /// If both config.systemDict and dict_type are not given, `sudachidict_core` is used.
     /// If both config.systemDict and dict_type are given, dict_type is used.
-    /// If dict_type is an absolute path to a file, it is used as a dictionary
+    /// If dict is an absolute path to a file, it is used as a dictionary
     ///
     /// :param config_path: path to the configuration JSON file
     /// :param resource_dir: path to the resource directory folder
-    /// :param dict_type: type of pre-packaged dictionary, referring to sudachidict_<dict_type> packages on PyPI: https://pypi.org/search/?q=sudachidict.
+    /// :param dict: type of pre-packaged dictionary, referring to sudachidict_<dict_type> packages on PyPI: https://pypi.org/search/?q=sudachidict.
     ///     Also, can be an _absolute_ path to a compiled dictionary file.
+    /// :param dict_type: deprecated alias to dict
     #[new]
     #[args(config_path = "None", resource_dir = "None", dict_type = "None")]
     fn new(
         py: Python,
         config_path: Option<PathBuf>,
         resource_dir: Option<PathBuf>,
+        dict: Option<&str>,
         dict_type: Option<&str>,
     ) -> PyResult<Self> {
         let config_path = match config_path {
@@ -107,7 +109,7 @@ impl PyDictionary {
             None => Some(get_default_resource_dir(py)?),
             Some(v) => Some(v),
         };
-        let dict_path = match dict_type {
+        let dict_path = match dict.or(dict_type) {
             None => None,
             Some(dt) => {
                 let path = Path::new(dt);
@@ -118,6 +120,16 @@ impl PyDictionary {
                 }
             }
         };
+
+        if dict_type.is_some() {
+            let cat = PyModule::import(py, "builtins")?.getattr("DeprecationWarning")?;
+            PyErr::warn(
+                py,
+                cat,
+                "Parameter dict_type of Dictionary() is deprecated, use dict instead",
+                1,
+            )?;
+        }
 
         let mut config = Config::new(config_path, resource_dir, dict_path).map_err(|e| {
             PyException::new_err(format!("Error loading config: {}", e.to_string()))

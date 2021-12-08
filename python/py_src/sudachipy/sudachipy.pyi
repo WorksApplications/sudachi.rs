@@ -26,7 +26,7 @@ class Dictionary:
     """
 
     @classmethod
-    def __init__(cls, config_path: Optional[str] = ..., resource_dir: Optional[str] = ..., dict_type: Optional[str] = None) -> None:
+    def __init__(cls, config_path: Optional[str] = ..., resource_dir: Optional[str] = ..., dict: Optional[str] = None, *, dict_type: Optional[str] = None) -> None:
         """
         Creates a sudachi dictionary.
 
@@ -35,9 +35,9 @@ class Dictionary:
 
         :param config_path: path to the configuration JSON file
         :param resource_dir: path to the resource directory folder
-        :param dict_type: type of pre-packaged dictionary, referring to sudachidict_<dict_type> packages on PyPI: https://pypi.org/search/?q=sudachidict.
+        :param dict: type of pre-packaged dictionary, referring to sudachidict_<dict> packages on PyPI: https://pypi.org/search/?q=sudachidict.
             Also, can be an _absolute_ path to a compiled dictionary file.
-
+        :param dict_type: deprecated alias to dict
         """
         ...
 
