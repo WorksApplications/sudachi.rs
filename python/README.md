@@ -1,17 +1,18 @@
 # SudachiPy
 [![PyPi version](https://img.shields.io/pypi/v/sudachipy.svg)](https://pypi.python.org/pypi/sudachipy/)
 [![](https://img.shields.io/badge/python-3.6+-blue.svg)](https://www.python.org/downloads/release/python-360/)
+[Documentation](https://worksapplications.github.io/sudachi.rs/python)
 
 SudachiPy is a Python version of [Sudachi](https://github.com/WorksApplications/Sudachi), a Japanese morphological analyzer.
 
-This is not a pure Python implementation, but bindings for the 
+This is not a pure Python implementation, but bindings for the
 [Sudachi.rs](https://github.com/WorksApplications/sudachi.rs).
 
 ## Binary wheels
 
 We provide binary builds for macOS (10.14+), Windows and Linux only for x86_64 architecture.
 x86 32-bit architecture is not supported and is not tested.
-MacOS source builds seem to work on ARM-based (Aarch64) Macs, 
+MacOS source builds seem to work on ARM-based (Aarch64) Macs,
 but this architecture also is not tested and require installing Rust toolchain and Cargo.
 
 More information [here](https://worksapplications.github.io/sudachi.rs/python/wheels.html).
@@ -206,7 +207,7 @@ tokenizer_obj.tokenize("シュミレーション", mode)[0].normalized_form()
 
 There are three editions of Sudachi Dictionary, namely, `small`, `core`, and `full`. See [WorksApplications/SudachiDict](https://github.com/WorksApplications/SudachiDict) for the detail.
 
-SudachiPy uses `sudachidict_core` by default. 
+SudachiPy uses `sudachidict_core` by default.
 
 Dictionaries are installed as Python packages `sudachidict_small`, `sudachidict_core`, and `sudachidict_full`.
 
@@ -251,10 +252,10 @@ class Dictionary(config_path=None, resource_dir=None, dict_type=None)
 from sudachipy import Dictionary
 
 # default: sudachidict_core
-tokenizer_obj = Dictionary().create()  
+tokenizer_obj = Dictionary().create()
 
 # The dictionary given by the `systemDict` key in the config file (/path/to/sudachi.json) will be used
-tokenizer_obj = Dictionary(config_path="/path/to/sudachi.json").create()  
+tokenizer_obj = Dictionary(config_path="/path/to/sudachi.json").create()
 
 # The dictionary specified by `dict_type` will be set.
 tokenizer_obj = Dictionary(dict_type="core").create()  # sudachidict_core (same as default)
@@ -262,8 +263,8 @@ tokenizer_obj = Dictionary(dict_type="small").create()  # sudachidict_small
 tokenizer_obj = Dictionary(dict_type="full").create()  # sudachidict_full
 
 # The dictionary specified by `dict_type` overrides those defined in the config path.
-# In the following code, `sudachidict_full` will be used regardless of a dictionary defined in the config file. 
-tokenizer_obj = Dictionary(config_path="/path/to/sudachi.json", dict_type="full").create()  
+# In the following code, `sudachidict_full` will be used regardless of a dictionary defined in the config file.
+tokenizer_obj = Dictionary(config_path="/path/to/sudachi.json", dict_type="full").create()
 ```
 
 
@@ -282,7 +283,7 @@ The default setting file is [sudachi.json](https://github.com/WorksApplications/
 
 ```bash
 $ sudachipy -r path/to/sudachi.json
-``` 
+```
 
 
 ## User Dictionary
@@ -300,7 +301,7 @@ Then specify your `sudachi.json` with the `-r` option.
 
 ```bash
 $ sudachipy -r path/to/sudachi.json
-``` 
+```
 
 
 You can build a user dictionary with the subcommand `ubuild`.
@@ -358,7 +359,7 @@ Then specify your `sudachi.json` with the `-r` option.
 
 ```bash
 $ sudachipy -r path/to/sudachi.json
-``` 
+```
 
 
 ## For Developers

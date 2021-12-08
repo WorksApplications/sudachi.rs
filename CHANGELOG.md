@@ -1,3 +1,18 @@
+# [0.6.1](https://github.com/WorksApplications/sudachi.rs/releases/tag/v0.6.1) (2020-12-08)
+
+## Highlights
+* Added Fuzzing (see `sudachi-fuzz` subdirectory), Sudachi.rs seems to be pretty robust towards arbitrary inputs (no crashes and panics)
+  * Issues like https://github.com/WorksApplications/sudachi.rs/issues/182 should never occur more
+* ~5% analysis speed improvement over 0.6.0
+* Added support for Unicode combining symbols, now Sudachi.rs/py should be much better with emoji (🎅🏾) and more complex Unicode (İstanbul)
+
+## Rust
+* Added partial dictionary read functionality, it is now possible to skip reading certain fields if they are not needed
+* Improved startup times, especially for debug builds
+
+## Python
+* See [Python changelog](./python/CHANGELOG.md)
+
 # [0.6.0](https://github.com/WorksApplications/sudachi.rs/releases/tag/v0.6.0) (2020-11-11)
 ## Highlights
 * Full feature parity with Java version
@@ -16,7 +31,7 @@
   * Report on build times and dictionary part sizes can differ from the original SudachiPy
 
 
-# [0.6.0-rc1](https://github.com/WorksApplications/sudachi.rs/releases/tag/v0.6.0-rc1) (2021-10-26) 
+# [0.6.0-rc1](https://github.com/WorksApplications/sudachi.rs/releases/tag/v0.6.0-rc1) (2021-10-26)
 ## Highlights
 
 * First release of Sudachi.rs
@@ -24,7 +39,7 @@
 * ~30x speed improvement over original SudachiPy
 * Dictionary build mode will be done before 0.6.0 final (See #13)
 
-## Rust 
+## Rust
 
 * Analysis: feature parity with Python and Java version
 * Dictionary build is not supported in rc1
