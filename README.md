@@ -2,11 +2,11 @@
 
 [![Rust](https://github.com/WorksApplications/sudachi.rs/actions/workflows/rust.yml/badge.svg)](https://github.com/WorksApplications/sudachi.rs/actions/workflows/rust.yml)
 
-**2021-11-11 UPDATE**: [First release of SudachiPy-compatible bindings](https://github.com/WorksApplications/sudachi.rs/releases/tag/v0.6.0)
+**2021-12-08 UPDATE**: [0.6.1 Release](https://github.com/WorksApplications/sudachi.rs/releases/tag/v0.6.1)
 
 Try it:
 ```shell
-pip install --update 'sudachipy>=0.6.0'
+pip install --update 'sudachipy>=0.6.1'
 ```
 
 
@@ -14,7 +14,7 @@ pip install --update 'sudachipy>=0.6.0'
 
 sudachi.rs is a Rust implementation of [Sudachi](https://github.com/WorksApplications/Sudachi), a Japanese morphological analyzer.
 
-[日本語 README](README.ja.md)
+[日本語 README](README.ja.md) [SudachiPy Documentation](https://worksapplications.github.io/sudachi.rs/python)
 
 ## TL;DR
 
