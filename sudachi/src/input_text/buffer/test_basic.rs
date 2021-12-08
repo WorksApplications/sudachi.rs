@@ -53,3 +53,27 @@ fn char_distance() {
     // this returns result to last character if out of bounds
     assert_eq!(3, buffer.char_distance(0, 4));
 }
+
+#[test]
+fn allows_0_chars_start() {
+    let mut buffer = InputBuffer::from("\0宇宙人");
+    let g = zero_grammar();
+    buffer.build(&g).expect("failed");
+    assert_eq!(buffer.modified, "\0宇宙人")
+}
+
+#[test]
+fn allows_0_chars_mid() {
+    let mut buffer = InputBuffer::from("宇宙\0人");
+    let g = zero_grammar();
+    buffer.build(&g).expect("failed");
+    assert_eq!(buffer.modified, "宇宙\0人")
+}
+
+#[test]
+fn allows_0_chars_end() {
+    let mut buffer = InputBuffer::from("宇宙人\0");
+    let g = zero_grammar();
+    buffer.build(&g).expect("failed");
+    assert_eq!(buffer.modified, "宇宙人\0")
+}
