@@ -161,3 +161,19 @@ fn emoji_are_not_splitted() {
     assert_eq!(tok.tokenize("🎅🏾").len(), 1);
     assert_eq!(tok.tokenize("👳🏽‍♂").len(), 1);
 }
+
+#[test]
+fn zeros_are_accepted() {
+    let mut tok = TestTokenizer::builder(LEX_CSV).config(OOV_CFG).build();
+    let ms = tok.tokenize("京都\0いく");
+    assert_eq!(ms.len(), 3);
+    assert_eq!(ms.get(0).surface().deref(), "京都");
+    assert_eq!(ms.get(1).surface().deref(), "\0");
+    assert_eq!(ms.get(2).surface().deref(), "いく");
+
+    let ms = tok.tokenize("\0京都いく");
+    assert_eq!(ms.len(), 3);
+    assert_eq!(ms.get(0).surface().deref(), "\0");
+    assert_eq!(ms.get(1).surface().deref(), "京都");
+    assert_eq!(ms.get(2).surface().deref(), "いく");
+}
