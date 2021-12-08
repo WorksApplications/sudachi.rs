@@ -145,7 +145,7 @@ impl<T: DictionaryAccess> MorphemeList<T> {
 
     pub fn surface(&self) -> Ref<str> {
         let inp = self.input();
-        Ref::map(inp, |i| i.current())
+        Ref::map(inp, |i| i.original())
     }
 
     pub fn iter(&self) -> MorphemeIter<T> {

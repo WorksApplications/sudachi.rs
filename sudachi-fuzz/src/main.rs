@@ -53,7 +53,7 @@ fn consume_mlist<'a, 'b: 'a>(
         for j in 0..mlist2.len() {
             let m1 = mlist2.get(j);
             let s1 = m1.surface();
-            assert_eq!(&surf.deref()[m1.begin()..m1.end()], s1.deref());
+            assert_eq!(&mlist.surface()[m1.begin()..m1.end()], s1.deref());
             mlen += (m1.end() - m1.begin());
             black_box(m1.begin());
             black_box(m1.begin_c());
@@ -86,10 +86,15 @@ struct SudachiInput<'a> {
 
 impl<'a> Arbitrary<'a> for SudachiInput<'a> {
     fn arbitrary(u: &mut arbitrary::Unstructured<'a>) -> arbitrary::Result<Self> {
-        Ok(SudachiInput {
+        let input = SudachiInput {
             subset: InfoSubset::from_bits_truncate(u.arbitrary()?),
             input: u.arbitrary()?,
-        })
+        };
+        if u.is_empty() {
+            Ok(input)
+        } else {
+            Err(arbitrary::Error::IncorrectFormat)
+        }
     }
 }
 
@@ -104,7 +109,8 @@ fn main() {
     let mut surf = String::new();
 
     if cfg!(not(fuzzing)) {
-        st.reset().push_str("㍿=============");
+        st.reset().push_str("#\0M㍿");
+        st.set_subset(InfoSubset::from_bits_truncate(599));
         st.do_tokenize().unwrap();
         mlist.collect_results(&mut st).unwrap();
         consume_mlist(&mlist, &mut mlist2, &mut surf);
