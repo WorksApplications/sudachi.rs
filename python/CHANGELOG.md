@@ -9,8 +9,35 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   - `sudachipy.Tokenizer` will ignore the provided logger.
   - Ref: [#76]
 - `Morpheme.part_of_speech` method now returns Tuple of POS components instead of a list.
+- [Partial Dictionary Read](https://worksapplications.github.io/sudachi.rs/python/topics/subsetting.html)
+  - It is possible to ask for a subset of morpheme fields instead of all fields
+  - Supported API: `Dictionary.create()`, `Dictionary.pre_tokenizer()`
+- HuggingFace PreTokenizer support
+  - We provide a built-in HuggingFace-compatible pre-tokenizer
+  - API: `Dictionary.pre_tokenizer()`
+  - It is multithreading-compatible and supports customization
+- Memory allocation reuse
+  - It is possible to reduce re-allocation overhead by using `out` parameters which accept `MorphemeList`s
+  - Supported API: `Tokenizer.tokenize()`, `Morpheme.split()`
+  - It is now a recommended way to use both those APIs 
+- PosMatcher
+  - New API for checking if a morpheme has a POS tag from a set
+  - Strongly prefer using it instead of string comparison of POS components
+- Performance
+  - Greatly decreased cost of accessing POS components
+- `len(Morpheme)` now returns the length of the morpheme in Unicode codepoints. Use it instead of `len(m.surface())`
+- `Morpheme.split()` has new `add_single` parameter, which can be used to check whether the split has produced anything
+  - E.g. with `if m.split(SplitMode.A, out=res, add_single=False): handle_splits(res)`
+  - `add_single=True`, returning the list with the current morpheme is the current behavior
 - `Morpheme`/`MorphemeList` now have readable `__repr__` and `__str__`
   - https://github.com/WorksApplications/sudachi.rs/pull/187
+
+### Deprecated
+* `dict_type` parameter of `Dictionary()` constructor. Use `dict` instead which is a complete alias.
+
+### Note
+* Do not use `mode` parameter of `Tokenizer.tokenize()` method if you always tokenize with a single mode.
+  * Use the mode parameter of `Dictionary.create()` method instead.
 
 ## [0.6.0] - 2021/10/11
 

@@ -26,12 +26,18 @@ class Dictionary:
     """
 
     @classmethod
-    def __init__(self, config_path: str = ..., resource_dir: str = ..., dict_type: str = None) -> None:
+    def __init__(cls, config_path: Optional[str] = ..., resource_dir: Optional[str] = ..., dict: Optional[str] = None, *, dict_type: Optional[str] = None) -> None:
         """
         Creates a sudachi dictionary.
 
         If both config.systemDict and dict_type are not given, `sudachidict_core` is used.
         If both config.systemDict and dict_type are given, dict_type is used.
+
+        :param config_path: path to the configuration JSON file
+        :param resource_dir: path to the resource directory folder
+        :param dict: type of pre-packaged dictionary, referring to sudachidict_<dict> packages on PyPI: https://pypi.org/search/?q=sudachidict.
+            Also, can be an _absolute_ path to a compiled dictionary file.
+        :param dict_type: deprecated alias to dict
         """
         ...
 
@@ -47,8 +53,9 @@ class Dictionary:
         """
         Creates a Sudachi Tokenizer.
 
-        mode: sets the analysis mode for this Tokenizer
-        fields: ask Sudachi to load only a subset of fields. See https://worksapplications.github.io/sudachi.rs/python/subsetting.html
+        :param mode: sets the analysis mode for this Tokenizer
+        :param fields: load only a subset of fields.
+            See https://worksapplications.github.io/sudachi.rs/python/topics/subsetting.html
         """
         ...
 
@@ -76,12 +83,11 @@ class Dictionary:
         Creates HuggingFace Tokenizers-compatible PreTokenizer.
         Requires package `tokenizers` to be installed.
 
-        mode: Use this split mode (C by default)
-        fields: ask Sudachi to load only a subset of fields. See https://worksapplications.github.io/sudachi.rs/python/subsetting.html
-        handler: custom callable to transform MorphemeList into list of tokens. See https://github.com/huggingface/tokenizers/blob/master/bindings/python/examples/custom_components.py
+        :param mode: Use this split mode (C by default)
+        :param fields: ask Sudachi to load only a subset of fields. See https://worksapplications.github.io/sudachi.rs/python/topics/subsetting.html
+        :param handler: custom callable to transform MorphemeList into list of tokens. See https://github.com/huggingface/tokenizers/blob/master/bindings/python/examples/custom_components.py
         First two parameters are the index (int) and HuggingFace NormalizedString.
-        The handler must return a List[NormalizedString].
-        By default, just segment the tokens.
+        The handler must return a List[NormalizedString]. By default, just segment the tokens.
         """
         ...
 
@@ -153,9 +159,17 @@ class Morpheme:
         """
         ...
 
-    def split(self, mode: SplitMode, out: Optional[MorphemeList] = None) -> MorphemeList:
+    def split(self, mode: SplitMode, out: Optional[MorphemeList] = None, add_single: bool = True) -> MorphemeList:
         """
-        Returns a list of morphemes splitting itself with given split mode.
+        Returns sub-morphemes in the provided split mode.
+
+        :param mode: mode of new split
+        :param out: write results to this MorhpemeList instead of creating new one
+            See https://worksapplications.github.io/sudachi.rs/python/topics/out_param.html for
+            more information on output parameters.
+            Returned MorphemeList will be invalidated if this MorphemeList is used as an output parameter.
+        :param add_single: return lists with the current morpheme if the split hasn't produced any elements.
+            When False is passed, empty lists are returned instead.
         """
         ...
 
@@ -243,8 +257,15 @@ class Tokenizer:
         """
         Break text into morphemes.
 
-        By default tokenizer's split mode is used.
-        The logger provided is ignored.
+        SudachiPy 0.5.* had logger parameter, it is accepted, but ignored.
+
+        :param text: text to analyze
+        :param mode: analysis mode.
+            This parameter is deprecated.
+            Pass the analysis mode at the Tokenizer creation time and create different tokenizers for different modes.
+            If you need multi-level splitting, prefer using :py:meth:`Morpheme.split` method instead.
+        :param out: tokenization results will be written into this MorphemeList, a new one will be created instead.
+            See https://worksapplications.github.io/sudachi.rs/python/topics/out_param.html for details.
         """
         ...
 

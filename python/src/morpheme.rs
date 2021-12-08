@@ -74,7 +74,12 @@ impl PyMorphemeListWrapper {
     #[pyo3(text_signature = "(dict: sudachipy.Dictionary) -> sudachipy.MorphemeList")]
     fn empty(_cls: &PyType, py: Python, dict: &PyDictionary) -> PyResult<Self> {
         let cat = PyModule::import(py, "builtins")?.getattr("DeprecationWarning")?;
-        PyErr::warn(py, cat, "Users should not generate MorphemeList by themselves. Use Tokenizer.tokenize(\"\") if you need.", 1)?;
+        PyErr::warn(
+            py,
+            cat,
+            "Use Tokenizer.tokenize(\"\") if you need an empty MorphemeList.",
+            1,
+        )?;
 
         Ok(Self {
             inner: PyMorphemeList::empty(dict.dictionary.as_ref().unwrap().clone()),
@@ -82,13 +87,13 @@ impl PyMorphemeListWrapper {
     }
 
     /// Returns the total cost of the path
-    #[pyo3(text_signature = "($self)")]
+    #[pyo3(text_signature = "($self) -> int")]
     fn get_internal_cost(&self, py: Python) -> i32 {
         self.internal(py).get_internal_cost()
     }
 
     /// Returns the number of morpheme in this list.
-    #[pyo3(text_signature = "($self)")]
+    #[pyo3(text_signature = "($self) -> int")]
     fn size(&self, py: Python) -> usize {
         self.internal(py).len()
     }
@@ -258,26 +263,27 @@ impl PyMorpheme {
 #[pymethods]
 impl PyMorpheme {
     /// Returns the begin index of this in the input text
-    #[pyo3(text_signature = "($self)")]
+    #[pyo3(text_signature = "($self) -> int")]
     fn begin(&self, py: Python) -> usize {
         // call codepoint version
         self.morph(py).begin_c()
     }
 
     /// Returns the end index of this in the input text
-    #[pyo3(text_signature = "($self)")]
+    #[pyo3(text_signature = "($self) -> int")]
     fn end(&self, py: Python) -> usize {
         // call codepoint version
         self.morph(py).end_c()
     }
 
-    /// Returns the surface
-    #[pyo3(text_signature = "($self)")]
+    /// Returns the substring of input text corresponding to the morpheme
+    #[pyo3(text_signature = "($self) -> str")]
     fn surface<'py>(&'py self, py: Python<'py>) -> PyObject {
         self.morph(py).surface().deref().into_py(py)
     }
 
-    /// Returns the part of speech
+    /// Returns the part of speech as a six-element tuple.
+    /// Tuple elements are four POS levels, conjugation type and conjugation form.    
     #[pyo3(text_signature = "($self)")]
     fn part_of_speech<'py>(&'py self, py: Python<'py>) -> Py<PyTuple> {
         let pos_id = self.part_of_speech_id(py);
@@ -289,32 +295,43 @@ impl PyMorpheme {
     }
 
     /// Returns the id of the part of speech in the dictionary
-    #[pyo3(text_signature = "($self)")]
+    #[pyo3(text_signature = "($self) -> int")]
     pub fn part_of_speech_id(&self, py: Python) -> u16 {
         self.morph(py).part_of_speech_id()
     }
 
     /// Returns the dictionary form
-    #[pyo3(text_signature = "($self)")]
+    #[pyo3(text_signature = "($self) -> str")]
     fn dictionary_form<'py>(&'py self, py: Python<'py>) -> PyObject {
         self.morph(py).get_word_info().dictionary_form().into_py(py)
     }
 
     /// Returns the normalized form
-    #[pyo3(text_signature = "($self)")]
+    #[pyo3(text_signature = "($self) -> str")]
     fn normalized_form<'py>(&'py self, py: Python<'py>) -> PyObject {
         self.morph(py).get_word_info().normalized_form().into_py(py)
     }
 
     /// Returns the reading form
-    #[pyo3(text_signature = "($self)")]
+    #[pyo3(text_signature = "($self) -> str")]
     fn reading_form<'py>(&'py self, py: Python<'py>) -> PyObject {
         self.morph(py).get_word_info().reading_form().into_py(py)
     }
 
-    /// Returns a list of morphemes splitting itself with given split mode
+    /// Returns sub-morphemes in the provided split mode.
+    ///
+    /// :param mode: mode of new split
+    /// :param out: write results to this MorhpemeList instead of creating new one
+    ///     See https://worksapplications.github.io/sudachi.rs/python/topics/out_param.html for
+    ///     more information on output parameters.
+    ///     Returned MorphemeList will be invalidated if this MorphemeList is used as an output parameter.
+    /// :param add_single: return lists with the current morpheme if the split hasn't produced any elements.
+    ///     When False is passed, empty lists are returned instead.
+    /// :type mode: sudachipy.SplitMode    
+    /// :type out: Optional[sudachipy.MorphemeList]
+    /// :type add_single: bool
     #[pyo3(
-        text_signature = "($self, mode: sudachipy.SplitMode, out = None) -> sudachipy.MorphemeList"
+        text_signature = "($self, mode, out = None, add_single = False) -> sudachipy.MorphemeList"
     )]
     fn split<'py>(
         &'py self,
@@ -356,19 +373,19 @@ impl PyMorpheme {
     }
 
     /// Returns whether if this is out of vocabulary word
-    #[pyo3(text_signature = "($self)")]
+    #[pyo3(text_signature = "($self) -> bool")]
     fn is_oov(&self, py: Python) -> bool {
         self.morph(py).is_oov()
     }
 
     /// Returns word id of this word in the dictionary
-    #[pyo3(text_signature = "($self)")]
+    #[pyo3(text_signature = "($self) -> int")]
     fn word_id(&self, py: Python) -> u32 {
         self.morph(py).word_id().as_raw()
     }
 
     /// Returns the dictionary id which this word belongs
-    #[pyo3(text_signature = "($self)")]
+    #[pyo3(text_signature = "($self) -> int")]
     fn dictionary_id(&self, py: Python) -> i32 {
         let word_id = self.morph(py).word_id();
         if word_id.is_oov() {
@@ -379,7 +396,7 @@ impl PyMorpheme {
     }
 
     /// Returns the list of synonym group ids
-    #[pyo3(text_signature = "($self)")]
+    #[pyo3(text_signature = "($self) -> List[int]")]
     fn synonym_group_ids<'py>(&'py self, py: Python<'py>) -> &'py PyList {
         let mref = self.morph(py);
         let ids = mref.get_word_info().synonym_group_ids();
@@ -395,7 +412,7 @@ impl PyMorpheme {
         Ok(self.morph(py).get_word_info().clone().into())
     }
 
-    /// Returns morpheme length in codepoints
+    /// Returns morpheme length in codepoints    
     pub fn __len__(&self, py: Python) -> usize {
         let m = self.morph(py);
         m.end_c() - m.begin_c()

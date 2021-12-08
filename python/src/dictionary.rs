@@ -85,13 +85,20 @@ impl PyDictionary {
     ///
     /// If both config.systemDict and dict_type are not given, `sudachidict_core` is used.
     /// If both config.systemDict and dict_type are given, dict_type is used.
-    /// If dict_type is an absolute path to a file, it is used as a dictionary
+    /// If dict is an absolute path to a file, it is used as a dictionary
+    ///
+    /// :param config_path: path to the configuration JSON file
+    /// :param resource_dir: path to the resource directory folder
+    /// :param dict: type of pre-packaged dictionary, referring to sudachidict_<dict_type> packages on PyPI: https://pypi.org/search/?q=sudachidict.
+    ///     Also, can be an _absolute_ path to a compiled dictionary file.
+    /// :param dict_type: deprecated alias to dict
     #[new]
     #[args(config_path = "None", resource_dir = "None", dict_type = "None")]
     fn new(
         py: Python,
         config_path: Option<PathBuf>,
         resource_dir: Option<PathBuf>,
+        dict: Option<&str>,
         dict_type: Option<&str>,
     ) -> PyResult<Self> {
         let config_path = match config_path {
@@ -102,7 +109,7 @@ impl PyDictionary {
             None => Some(get_default_resource_dir(py)?),
             Some(v) => Some(v),
         };
-        let dict_path = match dict_type {
+        let dict_path = match dict.or(dict_type) {
             None => None,
             Some(dt) => {
                 let path = Path::new(dt);
@@ -113,6 +120,16 @@ impl PyDictionary {
                 }
             }
         };
+
+        if dict_type.is_some() {
+            let cat = PyModule::import(py, "builtins")?.getattr("DeprecationWarning")?;
+            PyErr::warn(
+                py,
+                cat,
+                "Parameter dict_type of Dictionary() is deprecated, use dict instead",
+                1,
+            )?;
+        }
 
         let mut config = Config::new(config_path, resource_dir, dict_path).map_err(|e| {
             PyException::new_err(format!("Error loading config: {}", e.to_string()))
@@ -156,7 +173,9 @@ impl PyDictionary {
 
     /// Creates a sudachi tokenizer.
     ///
-    /// Provide mode to set tokenizer's default split mode (C by default).
+    /// :param mode: tokenizer's default split mode (C by default).
+    /// :param fields: load only a subset of fields.
+    ///     See https://worksapplications.github.io/sudachi.rs/python/topics/subsetting.html
     #[pyo3(
         text_signature = "($self, mode: sudachipy.SplitMode = sudachipy.SplitMode.C) -> sudachipy.Tokenizer"
     )]
@@ -170,19 +189,33 @@ impl PyDictionary {
 
     /// Creates a POS matcher object
     ///
-    /// target can be either a callable or list of POS partial tuples
-    #[pyo3(text_signature = "($self, target")]
+    /// If target is a function, then it must return whether a POS should match or not.
+    /// If target a list, it should contain partially specified POS.
+    /// By partially specified it means that it is possible to omit POS fields or
+    /// use None as a sentinel value that matches any POS.
+    ///
+    /// For example, ('名詞',) will match any noun and
+    /// (None, None, None, None, None, '終止形‐一般') will match any word in 終止形‐一般 conjugation form.
+    ///
+    /// :param target: can be either a callable or list of POS partial tuples
+    #[pyo3(text_signature = "($self, target)")]
     fn pos_matcher<'py>(&'py self, py: Python<'py>, target: &PyAny) -> PyResult<PyPosMatcher> {
         PyPosMatcher::create(py, self.dictionary.as_ref().unwrap(), target)
     }
 
     /// Creates HuggingFace Tokenizers-compatible PreTokenizer.
-    /// Requires package `tokenizers` to be installed.
+    /// Requires package `tokenizers` to be installed.     
     ///
-    /// mode: Use this split mode (C by default)
-    /// fields: subset of fields to use in tokenizer
-    /// handler: custom transformation function (callable)
-    #[pyo3(text_signature = "($self, mode, fields, handler) -> sudachipy.PreTokenizer")]
+    /// :param mode: Use this split mode (C by default)
+    /// :param fields: ask Sudachi to load only a subset of fields.
+    ///     See https://worksapplications.github.io/sudachi.rs/python/topics/subsetting.html
+    /// :param handler: a custom callable to transform MorphemeList into list of tokens.
+    ///     It should be should be a function(index: int, original: NormalizedString, morphemes: MorphemeList) -> List[NormalizedString].
+    ///     See https://github.com/huggingface/tokenizers/blob/master/bindings/python/examples/custom_components.py
+    ///     If nothing was passed, simply use surface as token representations.
+    /// :type mode: sudachipy.SplitMode
+    /// :type fields: Set[str]
+    #[pyo3(text_signature = "($self, mode, fields, handler) -> tokenizers.PreTokenizer")]
     #[args(mode = "None")]
     fn pre_tokenizer<'p>(
         &'p self,
