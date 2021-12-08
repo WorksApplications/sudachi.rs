@@ -397,7 +397,7 @@
 
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">surface</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Ref</span><span class="op">&lt;</span><span class="ident">str</span><span class="op">&gt;</span> {
         <span class="kw">let</span> <span class="ident">inp</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">input</span>();
-        <span class="ident">Ref::map</span>(<span class="ident">inp</span>, <span class="op">|</span><span class="ident">i</span><span class="op">|</span> <span class="ident">i</span>.<span class="ident">current</span>())
+        <span class="ident">Ref::map</span>(<span class="ident">inp</span>, <span class="op">|</span><span class="ident">i</span><span class="op">|</span> <span class="ident">i</span>.<span class="ident">original</span>())
     }
 
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">iter</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">MorphemeIter</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
