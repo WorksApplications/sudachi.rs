@@ -21,7 +21,7 @@ fn consume_mlist<'a, 'b: 'a>(
         return;
     }
 
-    //mlist.get_internal_cost() as isize;
+    // mlist.get_internal_cost() as isize;
     // use black_box function to forbit optimizing accesses to API functions
     // this is important for fuzzing, we want to trigger any possible panics that can happen
     for i in 0..mlist.len() {
