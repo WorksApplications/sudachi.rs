@@ -1,6 +1,4 @@
 use std::ops::Deref;
-use std::path::PathBuf;
-use std::str::FromStr;
 
 use criterion::black_box;
 #[cfg(fuzzing)]
@@ -91,15 +89,7 @@ impl<'a> Arbitrary<'a> for SudachiInput<'a> {
 
 #[allow(unused)]
 fn main() {
-    let cfg = Config::new(
-        Some(
-            PathBuf::from_str("/home/arseny/work/sudachi/sudachi.rs/resources/sudachi.json")
-                .unwrap(),
-        ),
-        Some(PathBuf::from_str("/home/arseny/work/sudachi/sudachi.rs/resources").unwrap()),
-        None,
-    )
-    .unwrap();
+    let cfg = Config::new(None, None, None).unwrap();
     let ana = JapaneseDictionary::from_cfg(&cfg).unwrap();
 
     let mut st = StatefulTokenizer::create(&ana, false, Mode::C);
