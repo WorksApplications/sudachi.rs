@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WordInfo subsetting &mdash; SudachiPy 0.6.1-a1 documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Wheel Status" href="wheels.html" />
+    <link rel="prev" title="Output Parameters and Memory Reuse" href="out_param.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> SudachiPy
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Topics</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="out_param.html">Output Parameters and Memory Reuse</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">WordInfo subsetting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="wheels.html">Wheel Status</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../api/sudachipy.html">sudachipy package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/sudachipy.dictionary.html">sudachipy.dictionary package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/sudachipy.tokenizer.html">sudachipy.tokenizer package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/sudachipy.morphemelist.html">sudachipy.morphemelist package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/sudachipy.morpheme.html">sudachipy.morpheme package</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">SudachiPy</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>WordInfo subsetting</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/topics/subsetting.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="wordinfo-subsetting">
+<h1>WordInfo subsetting<a class="headerlink" href="#wordinfo-subsetting" title="Permalink to this headline"></a></h1>
+<p>It is possible to ask Suachi to return only a subset of fields in the WordInfo.
+To do that, you can use the <code class="docutils literal notranslate"><span class="pre">fields</span></code> parameter of the <a class="reference internal" href="../api/sudachipy.html#sudachipy.Dictionary.create" title="sudachipy.Dictionary.create"><code class="xref py py-meth docutils literal notranslate"><span class="pre">sudachipy.Dictionary.create()</span></code></a> method.
+The parameter accepts a set of strings, each one representing a field to be returned.
+By default, all fields are returned.</p>
+<p>Allowed values:</p>
+<ul class="simple">
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">surface</span></code>: in-dictionary surface word form.</dt><dd><p><a class="reference internal" href="../api/sudachipy.html#sudachipy.Morpheme.surface" title="sudachipy.Morpheme.surface"><code class="xref py py-meth docutils literal notranslate"><span class="pre">sudachipy.Morpheme.surface()</span></code></a> method returns the slice of the input text and is not affected by that flag.</p>
+</dd>
+</dl>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">pos</span></code> or <code class="docutils literal notranslate"><span class="pre">pos_id</span></code>: part-of-speech tag.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">normalized_form</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">dictionary_form</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reading_form</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">word_structure</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">synonym_group_id</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">splits_a</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">splits_b</span></code></p></li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If you want only tokenization (e.g. use only <a class="reference internal" href="../api/sudachipy.html#sudachipy.Morpheme.surface" title="sudachipy.Morpheme.surface"><code class="xref py py-meth docutils literal notranslate"><span class="pre">sudachipy.Morpheme.surface()</span></code></a>,
+passing empty set is allowed.</p>
+</div>
+<p>You need to load splits if you want to use <a class="reference internal" href="../api/sudachipy.html#sudachipy.Morpheme.split" title="sudachipy.Morpheme.split"><code class="xref py py-meth docutils literal notranslate"><span class="pre">sudachipy.Morpheme.split()</span></code></a> method.
+If performing the tokenization with non-default mode, the required splits will be loaded automatically and can be omitted.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">dic</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">SplitMode</span><span class="o">.</span><span class="n">B</span><span class="p">,</span> <span class="n">fields</span><span class="o">=</span><span class="p">{})</span> <span class="c1"># implicitly becomes fields={&#39;splits_b&#39;}</span>
+</pre></div>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Using a field not included in the passed subset will produce an incorrect result without any warning.
+Use tests to ensure that the needed fields are loaded when using this parameter.</p>
+</div>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="out_param.html" class="btn btn-neutral float-left" title="Output Parameters and Memory Reuse" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="wheels.html" class="btn btn-neutral float-right" title="Wheel Status" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2021, Works Applications.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

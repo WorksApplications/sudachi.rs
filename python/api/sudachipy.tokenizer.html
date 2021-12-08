@@ -5,19 +5,19 @@
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>sudachipy.tokenizer package &mdash; SudachiPy 0.6.1-a1 documentation</title>
-      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
-    <script src="_static/js/html5shiv.min.js"></script>
+    <script src="../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-        <script src="_static/jquery.js"></script>
-        <script src="_static/underscore.js"></script>
-        <script src="_static/doctools.js"></script>
-    <script src="_static/js/theme.js"></script>
-    <link rel="index" title="Index" href="genindex.html" />
-    <link rel="search" title="Search" href="search.html" />
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="sudachipy.morphemelist package" href="sudachipy.morphemelist.html" />
     <link rel="prev" title="sudachipy.dictionary package" href="sudachipy.dictionary.html" /> 
 </head>
@@ -27,17 +27,23 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="index.html" class="icon icon-home"> SudachiPy
+            <a href="../index.html" class="icon icon-home"> SudachiPy
           </a>
 <div role="search">
-  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p class="caption" role="heading"><span class="caption-text">API Reference:</span></p>
+              <p class="caption" role="heading"><span class="caption-text">Topics</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../topics/out_param.html">Output Parameters and Memory Reuse</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../topics/subsetting.html">WordInfo subsetting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../topics/wheels.html">Wheel Status</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="sudachipy.html">sudachipy package</a></li>
 <li class="toctree-l1"><a class="reference internal" href="sudachipy.dictionary.html">sudachipy.dictionary package</a></li>
@@ -48,8 +54,6 @@
 </li>
 <li class="toctree-l1"><a class="reference internal" href="sudachipy.morphemelist.html">sudachipy.morphemelist package</a></li>
 <li class="toctree-l1"><a class="reference internal" href="sudachipy.morpheme.html">sudachipy.morpheme package</a></li>
-<li class="toctree-l1"><a class="reference internal" href="subsetting.html">WordInfo subsetting</a></li>
-<li class="toctree-l1"><a class="reference internal" href="wheels.html">Wheel Status</a></li>
 </ul>
 
         </div>
@@ -58,17 +62,17 @@
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="index.html">SudachiPy</a>
+          <a href="../index.html">SudachiPy</a>
       </nav>
 
       <div class="wy-nav-content">
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
       <li>sudachipy.tokenizer package</li>
       <li class="wy-breadcrumbs-aside">
-            <a href="_sources/sudachipy.tokenizer.rst.txt" rel="nofollow"> View page source</a>
+            <a href="../_sources/api/sudachipy.tokenizer.rst.txt" rel="nofollow"> View page source</a>
       </li>
   </ul>
   <hr/>
@@ -96,7 +100,7 @@
 <dl class="py class">
 <dt class="sig sig-object py" id="sudachipy.tokenizer.Tokenizer">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">sudachipy.tokenizer.</span></span><span class="sig-name descname"><span class="pre">Tokenizer</span></span><a class="headerlink" href="#sudachipy.tokenizer.Tokenizer" title="Permalink to this definition"></a></dt>
-<dd><p>Tokenizer of morphelogical analysis</p>
+<dd><p>Sudachi Tokenizer, Python version</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="sudachipy.tokenizer.Tokenizer.SplitMode">
 <span class="sig-name descname"><span class="pre">SplitMode</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;sudachipy.tokenizer.SplitMode</span> <span class="pre">object&gt;</span></em><a class="headerlink" href="#sudachipy.tokenizer.Tokenizer.SplitMode" title="Permalink to this definition"></a></dt>
@@ -106,9 +110,21 @@
 <dt class="sig sig-object py" id="sudachipy.tokenizer.Tokenizer.tokenize">
 <span class="sig-name descname"><span class="pre">tokenize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">$self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">text:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode:</span> <span class="pre">SplitMode</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out</span> <span class="pre">=</span> <span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="sudachipy.html#sudachipy.MorphemeList" title="sudachipy.MorphemeList"><span class="pre">sudachipy.MorphemeList</span></a></span></span><a class="headerlink" href="#sudachipy.tokenizer.Tokenizer.tokenize" title="Permalink to this definition"></a></dt>
 <dd><p>–</p>
-<p>Break text into morphemes</p>
-<p>By default tokenizer’s split mode is used.
-The logger provided is ignored.</p>
+<p>Break text into morphemes.</p>
+<p>SudachiPy 0.5.* had logger parameter, it is accepted, but ignored.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>text</strong> (<em>str</em>) – text to analyze</p></li>
+<li><p><strong>mode</strong> (<a class="reference internal" href="sudachipy.html#sudachipy.SplitMode" title="sudachipy.SplitMode"><em>sudachipy.SplitMode</em></a>) – analysis mode.
+This parameter is deprecated.
+Pass the analysis mode at the Tokenizer creation time and create different tokenizers for different modes.
+If you need multi-level splitting, prefer using <code class="xref py py-meth docutils literal notranslate"><span class="pre">Morpheme.split()</span></code> method instead.</p></li>
+<li><p><strong>out</strong> (<a class="reference internal" href="sudachipy.html#sudachipy.MorphemeList" title="sudachipy.MorphemeList"><em>sudachipy.MorphemeList</em></a>) – tokenization results will be written into this MorphemeList, a new one will be created instead.
+See <a class="reference external" href="https://worksapplications.github.io/sudachi.rs/python/topics/out_param.html">https://worksapplications.github.io/sudachi.rs/python/topics/out_param.html</a> for details.</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 </dd></dl>
