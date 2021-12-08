@@ -1,0 +1,13 @@
+[package]
+name = "sudachi-fuzz"
+version = "0.0.1"
+authors = ["Works Applications <sudachi@worksap.co.jp>"]
+edition = "2021"
+description = "Rust version of Sudachi, the Japanese Morphological Analyzer"
+
+[dependencies]
+sudachi = { path = "../sudachi" }
+criterion = "0.3"
+
+[target.'cfg(unix)'.dependencies]
+honggfuzz = "0.5"
