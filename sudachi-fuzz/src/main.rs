@@ -8,7 +8,10 @@ use honggfuzz::fuzz;
 use sudachi::analysis::stateful_tokenizer::StatefulTokenizer;
 use sudachi::config::Config;
 use sudachi::dic::dictionary::JapaneseDictionary;
+use sudachi::dic::subset::InfoSubset;
 use sudachi::prelude::*;
+
+use arbitrary::{self, Arbitrary};
 
 #[allow(unused)]
 fn consume_mlist<'a, 'b: 'a>(
@@ -48,7 +51,7 @@ fn consume_mlist<'a, 'b: 'a>(
             return;
         }
         for j in 0..mlist2.len() {
-            let m = mlist.get(j);
+            let m = mlist2.get(j);
             let surf = m.surface();
             black_box(surf.deref());
             black_box(m.begin());
@@ -72,6 +75,21 @@ fn consume_mlist<'a, 'b: 'a>(
 }
 
 #[allow(unused)]
+struct SudachiInput<'a> {
+    subset: InfoSubset,
+    input: &'a str,
+}
+
+impl<'a> Arbitrary<'a> for SudachiInput<'a> {
+    fn arbitrary(u: &mut arbitrary::Unstructured<'a>) -> arbitrary::Result<Self> {
+        Ok(SudachiInput {
+            subset: InfoSubset::from_bits_truncate(u.arbitrary()?),
+            input: u.arbitrary()?,
+        })
+    }
+}
+
+#[allow(unused)]
 fn main() {
     let cfg = Config::new(
         Some(
@@ -84,7 +102,7 @@ fn main() {
     .unwrap();
     let ana = JapaneseDictionary::from_cfg(&cfg).unwrap();
 
-    let mut st = StatefulTokenizer::create(&ana, false, Mode::A);
+    let mut st = StatefulTokenizer::create(&ana, false, Mode::C);
     let mut mlist = MorphemeList::empty(&ana);
     let mut mlist2 = MorphemeList::empty(&ana);
 
@@ -97,8 +115,9 @@ fn main() {
 
     #[cfg(fuzzing)]
     loop {
-        fuzz!(|data: &str| {
-            st.reset().push_str(data);
+        fuzz!(|i: SudachiInput| {
+            st.set_subset(i.subset);
+            st.reset().push_str(i.input);
 
             if st.do_tokenize().is_err() {
                 return;

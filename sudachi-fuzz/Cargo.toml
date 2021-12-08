@@ -8,6 +8,7 @@ description = "Rust version of Sudachi, the Japanese Morphological Analyzer"
 [dependencies]
 sudachi = { path = "../sudachi" }
 criterion = "0.3"
+arbitrary = "1"
 
 [target.'cfg(unix)'.dependencies]
 honggfuzz = "0.5"

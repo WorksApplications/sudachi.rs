@@ -941,6 +941,7 @@ dependencies = [
 name = "sudachi-fuzz"
 version = "0.0.1"
 dependencies = [
+ "arbitrary",
  "criterion",
  "honggfuzz",
  "sudachi",
