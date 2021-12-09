@@ -10,7 +10,7 @@ sudachi.rs は日本語形態素解析器 [Sudachi](https://github.com/WorksAppl
 
 SudachiPyとして使うには
 ```bash
-$ pip install --update 'sudachipy>=0.6.1'
+$ pip install --update 'sudachipy>=0.6.2'
 ```
 
 ```bash
