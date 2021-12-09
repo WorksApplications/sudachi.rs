@@ -251,10 +251,10 @@ impl<D: DictionaryAccess> StatefulTokenizer<D> {
             {
                 for oov_provider in dict.oov_provider_plugins() {
                     oov_provider.get_oov(&input, ch_off, has_word, oovs)?;
-                }
-                for node in oovs.drain(..) {
-                    has_word = true;
-                    lattice.insert(node, dict.grammar().conn_matrix());
+                    for node in oovs.drain(..) {
+                        has_word = true;
+                        lattice.insert(node, dict.grammar().conn_matrix());
+                    }
                 }
             }
 
