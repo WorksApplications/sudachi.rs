@@ -545,10 +545,10 @@
             {
                 <span class="kw">for</span> <span class="ident">oov_provider</span> <span class="kw">in</span> <span class="ident">dict</span>.<span class="ident">oov_provider_plugins</span>() {
                     <span class="ident">oov_provider</span>.<span class="ident">get_oov</span>(<span class="kw-2">&amp;</span><span class="ident">input</span>, <span class="ident">ch_off</span>, <span class="ident">has_word</span>, <span class="ident">oovs</span>)<span class="question-mark">?</span>;
-                }
-                <span class="kw">for</span> <span class="ident">node</span> <span class="kw">in</span> <span class="ident">oovs</span>.<span class="ident">drain</span>(..) {
-                    <span class="ident">has_word</span> <span class="op">=</span> <span class="bool-val">true</span>;
-                    <span class="ident">lattice</span>.<span class="ident">insert</span>(<span class="ident">node</span>, <span class="ident">dict</span>.<span class="ident">grammar</span>().<span class="ident">conn_matrix</span>());
+                    <span class="kw">for</span> <span class="ident">node</span> <span class="kw">in</span> <span class="ident">oovs</span>.<span class="ident">drain</span>(..) {
+                        <span class="ident">has_word</span> <span class="op">=</span> <span class="bool-val">true</span>;
+                        <span class="ident">lattice</span>.<span class="ident">insert</span>(<span class="ident">node</span>, <span class="ident">dict</span>.<span class="ident">grammar</span>().<span class="ident">conn_matrix</span>());
+                    }
                 }
             }
 
