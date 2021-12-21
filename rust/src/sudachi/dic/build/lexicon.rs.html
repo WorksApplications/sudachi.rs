@@ -731,27 +731,27 @@
 }
 
 <span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="ident">Borrow</span><span class="op">&lt;</span>[<span class="ident">Cow</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">str</span><span class="op">&gt;</span>; <span class="ident">POS_DEPTH</span>]<span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">StrPosEntry</span> {
-    <span class="kw">fn</span> <span class="ident">borrow</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span>[<span class="ident">Cow</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">str</span><span class="op">&gt;</span>; <span class="ident">POS_DEPTH</span>] {
+    <span class="kw">fn</span> <span class="ident">borrow</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[<span class="ident">Cow</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">str</span><span class="op">&gt;</span>; <span class="ident">POS_DEPTH</span>] {
         <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">data</span>
     }
 }
 
 <span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="ident">Equivalent</span><span class="op">&lt;</span>[<span class="ident">Cow</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">str</span><span class="op">&gt;</span>; <span class="ident">POS_DEPTH</span>]<span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">StrPosEntry</span> {
-    <span class="kw">fn</span> <span class="ident">equivalent</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">key</span>: <span class="kw-2">&amp;</span>[<span class="ident">Cow</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span>, <span class="ident">str</span><span class="op">&gt;</span>; <span class="ident">POS_DEPTH</span>]) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">bool</span> {
+    <span class="kw">fn</span> <span class="ident">equivalent</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">key</span>: <span class="kw-2">&amp;</span>[<span class="ident">Cow</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span>, <span class="ident">str</span><span class="op">&gt;</span>; <span class="ident">POS_DEPTH</span>]) -&gt; <span class="ident">bool</span> {
         <span class="self">self</span>.<span class="ident">data</span>.<span class="ident">eq</span>(<span class="ident">key</span>)
     }
 }
 
 <span class="kw">impl</span> <span class="ident">StrPosEntry</span> {
     <span class="doccomment">/// owning means &#39;static</span>
-    <span class="kw">fn</span> <span class="ident">rewrap</span>(<span class="ident">data</span>: <span class="ident">Cow</span><span class="op">&lt;</span><span class="ident">str</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Cow</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span>, <span class="ident">str</span><span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">rewrap</span>(<span class="ident">data</span>: <span class="ident">Cow</span><span class="op">&lt;</span><span class="ident">str</span><span class="op">&gt;</span>) -&gt; <span class="ident">Cow</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span>, <span class="ident">str</span><span class="op">&gt;</span> {
         <span class="kw">match</span> <span class="ident">data</span> {
-            <span class="ident">Cow::Borrowed</span>(<span class="ident">b</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">Cow::Owned</span>(<span class="ident">b</span>.<span class="ident">to_owned</span>()),
-            <span class="ident">Cow::Owned</span>(<span class="ident">s</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">Cow::Owned</span>(<span class="ident">s</span>),
+            <span class="ident">Cow::Borrowed</span>(<span class="ident">b</span>) =&gt; <span class="ident">Cow::Owned</span>(<span class="ident">b</span>.<span class="ident">to_owned</span>()),
+            <span class="ident">Cow::Owned</span>(<span class="ident">s</span>) =&gt; <span class="ident">Cow::Owned</span>(<span class="ident">s</span>),
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">data</span>: [<span class="ident">Cow</span><span class="op">&lt;</span><span class="ident">str</span><span class="op">&gt;</span>; <span class="ident">POS_DEPTH</span>]) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">data</span>: [<span class="ident">Cow</span><span class="op">&lt;</span><span class="ident">str</span><span class="op">&gt;</span>; <span class="ident">POS_DEPTH</span>]) -&gt; <span class="self">Self</span> {
         <span class="kw">let</span> [<span class="ident">d1</span>, <span class="ident">d2</span>, <span class="ident">d3</span>, <span class="ident">d4</span>, <span class="ident">d5</span>, <span class="ident">d6</span>] <span class="op">=</span> <span class="ident">data</span>;
         <span class="kw">let</span> <span class="ident">owned</span>: [<span class="ident">Cow</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span>, <span class="ident">str</span><span class="op">&gt;</span>; <span class="ident">POS_DEPTH</span>] <span class="op">=</span> [
             <span class="ident"><span class="self">Self</span>::rewrap</span>(<span class="ident">d1</span>),
@@ -764,7 +764,7 @@
         <span class="self">Self</span> { <span class="ident">data</span>: <span class="ident">owned</span> }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">from_built_pos</span>(<span class="ident">data</span>: <span class="kw-2">&amp;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">from_built_pos</span>(<span class="ident">data</span>: <span class="kw-2">&amp;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span>) -&gt; <span class="self">Self</span> {
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">iter</span> <span class="op">=</span> <span class="ident">data</span>.<span class="ident">iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">x</span>.<span class="ident">as_str</span>());
         <span class="kw">let</span> <span class="ident">p1</span> <span class="op">=</span> <span class="ident">Cow::Borrowed</span>(<span class="ident">iter</span>.<span class="ident">next</span>().<span class="ident">unwrap</span>());
         <span class="kw">let</span> <span class="ident">p2</span> <span class="op">=</span> <span class="ident">Cow::Borrowed</span>(<span class="ident">iter</span>.<span class="ident">next</span>().<span class="ident">unwrap</span>());
@@ -775,13 +775,13 @@
         <span class="ident"><span class="self">Self</span>::new</span>([<span class="ident">p1</span>, <span class="ident">p2</span>, <span class="ident">p3</span>, <span class="ident">p4</span>, <span class="ident">p5</span>, <span class="ident">p6</span>])
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">fields</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span>[<span class="ident">Cow</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span>, <span class="ident">str</span><span class="op">&gt;</span>; <span class="number">6</span>] {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">fields</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[<span class="ident">Cow</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span>, <span class="ident">str</span><span class="op">&gt;</span>; <span class="number">6</span>] {
         <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">data</span>
     }
 }
 
 <span class="kw">impl</span> <span class="ident">Debug</span> <span class="kw">for</span> <span class="ident">StrPosEntry</span> {
-    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Formatter</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">std::fmt::Result</span> {
+    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Formatter</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) -&gt; <span class="ident">std::fmt::Result</span> {
         <span class="macro">write!</span>(
             <span class="ident">f</span>,
             <span class="string">&quot;{},{},{},{},{},{}&quot;</span>,
@@ -801,14 +801,14 @@
 }
 
 <span class="kw">impl</span> <span class="ident">SplitUnit</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">format</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">lexicon</span>: <span class="kw-2">&amp;</span><span class="ident">LexiconReader</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">String</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">format</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">lexicon</span>: <span class="kw-2">&amp;</span><span class="ident">LexiconReader</span>) -&gt; <span class="ident">String</span> {
         <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">SplitUnit::Ref</span>(<span class="ident">id</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">id</span>.<span class="ident">as_raw</span>().<span class="ident">to_string</span>(),
+            <span class="ident">SplitUnit::Ref</span>(<span class="ident">id</span>) =&gt; <span class="ident">id</span>.<span class="ident">as_raw</span>().<span class="ident">to_string</span>(),
             <span class="ident">SplitUnit::Inline</span> {
                 <span class="ident">surface</span>,
                 <span class="ident">pos</span>,
                 <span class="ident">reading</span>,
-            } <span class="op">=</span><span class="op">&gt;</span> <span class="macro">format!</span>(
+            } =&gt; <span class="macro">format!</span>(
                 <span class="string">&quot;{},{:?},{}&quot;</span>,
                 <span class="ident">surface</span>,
                 <span class="ident">lexicon</span>.<span class="ident">pos_obj</span>(<span class="kw-2">*</span><span class="ident">pos</span>).<span class="ident">unwrap</span>(),
@@ -819,18 +819,18 @@
 }
 
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">trait</span> <span class="ident">SplitUnitResolver</span> {
-    <span class="kw">fn</span> <span class="ident">resolve</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">unit</span>: <span class="kw-2">&amp;</span><span class="ident">SplitUnit</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">WordId</span><span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">resolve</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">unit</span>: <span class="kw-2">&amp;</span><span class="ident">SplitUnit</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">WordId</span><span class="op">&gt;</span> {
         <span class="kw">match</span> <span class="ident">unit</span> {
-            <span class="ident">SplitUnit::Ref</span>(<span class="ident">wid</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="prelude-val">Some</span>(<span class="kw-2">*</span><span class="ident">wid</span>),
+            <span class="ident">SplitUnit::Ref</span>(<span class="ident">wid</span>) =&gt; <span class="prelude-val">Some</span>(<span class="kw-2">*</span><span class="ident">wid</span>),
             <span class="ident">SplitUnit::Inline</span> {
                 <span class="ident">surface</span>,
                 <span class="ident">pos</span>,
                 <span class="ident">reading</span>,
-            } <span class="op">=</span><span class="op">&gt;</span> <span class="self">self</span>.<span class="ident">resolve_inline</span>(<span class="kw-2">&amp;</span><span class="ident">surface</span>, <span class="kw-2">*</span><span class="ident">pos</span>, <span class="ident">reading</span>.<span class="ident">as_deref</span>()),
+            } =&gt; <span class="self">self</span>.<span class="ident">resolve_inline</span>(<span class="kw-2">&amp;</span><span class="ident">surface</span>, <span class="kw-2">*</span><span class="ident">pos</span>, <span class="ident">reading</span>.<span class="ident">as_deref</span>()),
         }
     }
 
-    <span class="kw">fn</span> <span class="ident">resolve_inline</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">surface</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>, <span class="ident">pos</span>: <span class="ident">u16</span>, <span class="ident">reading</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">str</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">WordId</span><span class="op">&gt;</span>;
+    <span class="kw">fn</span> <span class="ident">resolve_inline</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">surface</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>, <span class="ident">pos</span>: <span class="ident">u16</span>, <span class="ident">reading</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">str</span><span class="op">&gt;</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">WordId</span><span class="op">&gt;</span>;
 }
 
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct</span> <span class="ident">RawLexiconEntry</span> {
@@ -852,27 +852,27 @@
 }
 
 <span class="kw">impl</span> <span class="ident">RawLexiconEntry</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">surface</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span><span class="ident">str</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">surface</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">str</span> {
         <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">surface</span>
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">headword</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span><span class="ident">str</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">headword</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">str</span> {
         <span class="self">self</span>.<span class="ident">headword</span>.<span class="ident">as_deref</span>().<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="op">|</span> <span class="self">self</span>.<span class="ident">surface</span>())
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">norm_form</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span><span class="ident">str</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">norm_form</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">str</span> {
         <span class="self">self</span>.<span class="ident">norm_form</span>.<span class="ident">as_deref</span>().<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="op">|</span> <span class="self">self</span>.<span class="ident">headword</span>())
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">reading</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span><span class="ident">str</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">reading</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">str</span> {
         <span class="self">self</span>.<span class="ident">reading</span>.<span class="ident">as_deref</span>().<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="op">|</span> <span class="self">self</span>.<span class="ident">headword</span>())
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">should_index</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">bool</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">should_index</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
         <span class="self">self</span>.<span class="ident">left_id</span> <span class="op">&gt;</span><span class="op">=</span> <span class="number">0</span>
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">write_params</span><span class="op">&lt;</span><span class="ident">W</span>: <span class="ident">Write</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">w</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">W</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">DicWriteResult</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">write_params</span><span class="op">&lt;</span><span class="ident">W</span>: <span class="ident">Write</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">w</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">W</span>) -&gt; <span class="ident">DicWriteResult</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span> {
         <span class="ident">w</span>.<span class="ident">write_all</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">left_id</span>.<span class="ident">to_le_bytes</span>())<span class="question-mark">?</span>;
         <span class="ident">w</span>.<span class="ident">write_all</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">right_id</span>.<span class="ident">to_le_bytes</span>())<span class="question-mark">?</span>;
         <span class="ident">w</span>.<span class="ident">write_all</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">cost</span>.<span class="ident">to_le_bytes</span>())<span class="question-mark">?</span>;
@@ -883,7 +883,7 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         <span class="ident">u16w</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Utf16Writer</span>,
         <span class="ident">w</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">W</span>,
-    ) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">DicWriteResult</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span> {
+    ) -&gt; <span class="ident">DicWriteResult</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span> {
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">size</span> <span class="op">=</span> <span class="number">0</span>;
 
         <span class="ident">size</span> <span class="op">+</span><span class="op">=</span> <span class="ident">u16w</span>.<span class="ident">write</span>(<span class="ident">w</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">headword</span>())<span class="question-mark">?</span>; <span class="comment">// surface of WordInfo</span>
@@ -915,7 +915,7 @@
 }
 
 <span class="kw">impl</span> <span class="ident">LexiconReader</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>() <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>() -&gt; <span class="self">Self</span> {
         <span class="self">Self</span> {
             <span class="ident">pos</span>: <span class="ident">IndexMap::new</span>(),
             <span class="ident">ctx</span>: <span class="ident">DicCompilationCtx::default</span>(),
@@ -928,11 +928,11 @@
         }
     }
 
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">entries</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span>[<span class="ident">RawLexiconEntry</span>] {
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">entries</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[<span class="ident">RawLexiconEntry</span>] {
         <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">entries</span>
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">needs_split_resolution</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">bool</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">needs_split_resolution</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
         <span class="self">self</span>.<span class="ident">unresolved</span> <span class="op">&gt;</span> <span class="number">0</span>
     }
 
@@ -954,14 +954,14 @@
         <span class="self">self</span>.<span class="ident">start_pos</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">pos</span>.<span class="ident">len</span>();
     }
 
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">pos_obj</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">pos_id</span>: <span class="ident">u16</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">StrPosEntry</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">pos_obj</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">pos_id</span>: <span class="ident">u16</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">StrPosEntry</span><span class="op">&gt;</span> {
         <span class="self">self</span>.<span class="ident">pos</span>.<span class="ident">get_index</span>(<span class="ident">pos_id</span> <span class="kw">as</span> <span class="ident">usize</span>).<span class="ident">map</span>(<span class="op">|</span>(<span class="ident">k</span>, <span class="ident">v</span>)<span class="op">|</span> {
             <span class="macro">assert_eq!</span>(<span class="ident">v</span>, <span class="kw-2">&amp;</span><span class="ident">pos_id</span>);
             <span class="ident">k</span>
         })
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">read_file</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">path</span>: <span class="kw-2">&amp;</span><span class="ident">Path</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">read_file</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">path</span>: <span class="kw-2">&amp;</span><span class="ident">Path</span>) -&gt; <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span> {
         <span class="kw">let</span> <span class="ident">file</span> <span class="op">=</span> <span class="ident">File::open</span>(<span class="ident">path</span>)<span class="question-mark">?</span>;
         <span class="kw">let</span> <span class="ident">map</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="ident">Mmap::map</span>(<span class="kw-2">&amp;</span><span class="ident">file</span>) }<span class="question-mark">?</span>;
         <span class="kw">let</span> <span class="ident">filename</span> <span class="op">=</span> <span class="ident">path</span>.<span class="ident">to_str</span>().<span class="ident">unwrap_or</span>(<span class="string">&quot;&lt;invalid-utf8&gt;&quot;</span>).<span class="ident">to_owned</span>();
@@ -971,7 +971,7 @@
         <span class="ident">res</span>
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">read_bytes</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">data</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>]) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">read_bytes</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">data</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>]) -&gt; <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span> {
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">reader</span> <span class="op">=</span> <span class="ident">csv::ReaderBuilder::new</span>()
             .<span class="ident">has_headers</span>(<span class="bool-val">false</span>)
             .<span class="ident">trim</span>(<span class="ident">Trim::None</span>)
@@ -992,11 +992,11 @@
         <span class="prelude-val">Ok</span>(<span class="ident">nread</span>)
     }
 
-    <span class="kw">fn</span> <span class="ident">read_record</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">data</span>: <span class="kw-2">&amp;</span><span class="ident">StringRecord</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">SudachiResult</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">read_record</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">data</span>: <span class="kw-2">&amp;</span><span class="ident">StringRecord</span>) -&gt; <span class="ident">SudachiResult</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
         <span class="self">self</span>.<span class="ident">parse_record</span>(<span class="ident">data</span>).<span class="ident">map</span>(<span class="op">|</span><span class="ident">r</span><span class="op">|</span> <span class="self">self</span>.<span class="ident">entries</span>.<span class="ident">push</span>(<span class="ident">r</span>))
     }
 
-    <span class="kw">fn</span> <span class="ident">parse_record</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">data</span>: <span class="kw-2">&amp;</span><span class="ident">StringRecord</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="ident">RawLexiconEntry</span><span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">parse_record</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">data</span>: <span class="kw-2">&amp;</span><span class="ident">StringRecord</span>) -&gt; <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="ident">RawLexiconEntry</span><span class="op">&gt;</span> {
         <span class="kw">let</span> <span class="ident">ctx</span> <span class="op">=</span> <span class="ident">std::mem::take</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>.<span class="ident">ctx</span>);
         <span class="kw">let</span> <span class="ident">rec</span> <span class="op">=</span> <span class="ident">RecordWrapper</span> { <span class="ident">record</span>: <span class="ident">data</span>, <span class="ident">ctx</span> };
         <span class="kw">let</span> <span class="ident">surface</span> <span class="op">=</span> <span class="ident">rec</span>.<span class="ident">get</span>(<span class="number">0</span>, <span class="string">&quot;(0) surface&quot;</span>, <span class="ident">unescape</span>)<span class="question-mark">?</span>;
@@ -1024,7 +1024,7 @@
 
         <span class="kw">let</span> <span class="ident">pos</span> <span class="op">=</span> <span class="ident">rec</span>.<span class="ident">ctx</span>.<span class="ident">transform</span>(<span class="self">self</span>.<span class="ident">pos_of</span>([<span class="ident">p1</span>, <span class="ident">p2</span>, <span class="ident">p3</span>, <span class="ident">p4</span>, <span class="ident">p5</span>, <span class="ident">p6</span>]))<span class="question-mark">?</span>;
 
-        <span class="kw">if</span> <span class="ident">splitting</span> <span class="op">=</span><span class="op">=</span> <span class="ident">Mode::A</span> {
+        <span class="kw">if</span> <span class="ident">splitting</span> <span class="op">==</span> <span class="ident">Mode::A</span> {
             <span class="kw">if</span> <span class="op">!</span><span class="ident">split_a</span>.<span class="ident">is_empty</span>() <span class="op">|</span><span class="op">|</span> <span class="op">!</span><span class="ident">split_b</span>.<span class="ident">is_empty</span>() {
                 <span class="kw">return</span> <span class="ident">rec</span>.<span class="ident">ctx</span>.<span class="ident">err</span>(<span class="ident">BuildFailure::InvalidSplit</span>(
                     <span class="string">&quot;A-mode tokens can&#39;t have splits&quot;</span>.<span class="ident">to_owned</span>(),
@@ -1060,10 +1060,10 @@
         <span class="prelude-val">Ok</span>(<span class="ident">entry</span>)
     }
 
-    <span class="kw">fn</span> <span class="ident">pos_of</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">data</span>: [<span class="ident">Cow</span><span class="op">&lt;</span><span class="ident">str</span><span class="op">&gt;</span>; <span class="ident">POS_DEPTH</span>]) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">DicWriteResult</span><span class="op">&lt;</span><span class="ident">u16</span><span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">pos_of</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">data</span>: [<span class="ident">Cow</span><span class="op">&lt;</span><span class="ident">str</span><span class="op">&gt;</span>; <span class="ident">POS_DEPTH</span>]) -&gt; <span class="ident">DicWriteResult</span><span class="op">&lt;</span><span class="ident">u16</span><span class="op">&gt;</span> {
         <span class="kw">match</span> <span class="self">self</span>.<span class="ident">pos</span>.<span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="ident">data</span>) {
-            <span class="prelude-val">Some</span>(<span class="ident">pos</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="prelude-val">Ok</span>(<span class="kw-2">*</span><span class="ident">pos</span>),
-            <span class="prelude-val">None</span> <span class="op">=</span><span class="op">&gt;</span> {
+            <span class="prelude-val">Some</span>(<span class="ident">pos</span>) =&gt; <span class="prelude-val">Ok</span>(<span class="kw-2">*</span><span class="ident">pos</span>),
+            <span class="prelude-val">None</span> =&gt; {
                 <span class="kw">let</span> <span class="ident">key</span> <span class="op">=</span> <span class="ident">StrPosEntry::new</span>(<span class="ident">data</span>);
                 <span class="kw">let</span> <span class="ident">pos_id</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">pos</span>.<span class="ident">len</span>();
                 <span class="kw">if</span> <span class="ident">pos_id</span> <span class="op">&gt;</span> <span class="ident">MAX_POS_IDS</span> {
@@ -1077,15 +1077,15 @@
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">validate_entries</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">SudachiResult</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">validate_entries</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">SudachiResult</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">ctx</span> <span class="op">=</span> <span class="ident">DicCompilationCtx::default</span>();
         <span class="ident">ctx</span>.<span class="ident">set_filename</span>(<span class="string">&quot;&lt;entry id&gt;&quot;</span>.<span class="ident">to_owned</span>());
         <span class="ident">ctx</span>.<span class="ident">set_line</span>(<span class="number">0</span>);
         <span class="kw">let</span> (<span class="ident">max_0</span>, <span class="ident">max_1</span>) <span class="op">=</span> <span class="kw">match</span> <span class="self">self</span>.<span class="ident">num_system</span> {
             <span class="comment">// means that we compile system dictionary, there must not be user words</span>
-            <span class="ident">usize::MAX</span> <span class="op">=</span><span class="op">&gt;</span> (<span class="self">self</span>.<span class="ident">entries</span>.<span class="ident">len</span>(), <span class="number">0</span>),
+            <span class="ident">usize::MAX</span> =&gt; (<span class="self">self</span>.<span class="ident">entries</span>.<span class="ident">len</span>(), <span class="number">0</span>),
             <span class="comment">// compiling user dictionary</span>
-            <span class="ident">x</span> <span class="op">=</span><span class="op">&gt;</span> (<span class="ident">x</span>, <span class="self">self</span>.<span class="ident">entries</span>.<span class="ident">len</span>()),
+            <span class="ident">x</span> =&gt; (<span class="ident">x</span>, <span class="self">self</span>.<span class="ident">entries</span>.<span class="ident">len</span>()),
         };
         <span class="kw">for</span> <span class="ident">e</span> <span class="kw">in</span> <span class="self">self</span>.<span class="ident">entries</span>.<span class="ident">iter</span>() {
             <span class="kw">if</span> <span class="ident">e</span>.<span class="ident">left_id</span> <span class="op">&gt;</span><span class="op">=</span> <span class="self">self</span>.<span class="ident">max_left</span> {
@@ -1110,19 +1110,19 @@
 
             <span class="kw">for</span> <span class="ident">s</span> <span class="kw">in</span> <span class="ident">e</span>.<span class="ident">splits_a</span>.<span class="ident">iter</span>() {
                 <span class="kw">match</span> <span class="ident">s</span> {
-                    <span class="ident">SplitUnit::Ref</span>(<span class="ident">wid</span>) <span class="op">=</span><span class="op">&gt;</span> {
+                    <span class="ident">SplitUnit::Ref</span>(<span class="ident">wid</span>) =&gt; {
                         <span class="ident">ctx</span>.<span class="ident">transform</span>(<span class="ident"><span class="self">Self</span>::validate_wid</span>(<span class="kw-2">*</span><span class="ident">wid</span>, <span class="ident">max_0</span>, <span class="ident">max_1</span>, <span class="string">&quot;splits_a&quot;</span>))<span class="question-mark">?</span>;
                     }
-                    <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro">panic!</span>(<span class="string">&quot;at this point there must not be unresolved splits&quot;</span>),
+                    <span class="kw">_</span> =&gt; <span class="macro">panic!</span>(<span class="string">&quot;at this point there must not be unresolved splits&quot;</span>),
                 }
             }
 
             <span class="kw">for</span> <span class="ident">s</span> <span class="kw">in</span> <span class="ident">e</span>.<span class="ident">splits_b</span>.<span class="ident">iter</span>() {
                 <span class="kw">match</span> <span class="ident">s</span> {
-                    <span class="ident">SplitUnit::Ref</span>(<span class="ident">wid</span>) <span class="op">=</span><span class="op">&gt;</span> {
+                    <span class="ident">SplitUnit::Ref</span>(<span class="ident">wid</span>) =&gt; {
                         <span class="ident">ctx</span>.<span class="ident">transform</span>(<span class="ident"><span class="self">Self</span>::validate_wid</span>(<span class="kw-2">*</span><span class="ident">wid</span>, <span class="ident">max_0</span>, <span class="ident">max_1</span>, <span class="string">&quot;splits_b&quot;</span>))<span class="question-mark">?</span>;
                     }
-                    <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro">panic!</span>(<span class="string">&quot;at this point there must not be unresolved splits&quot;</span>),
+                    <span class="kw">_</span> =&gt; <span class="macro">panic!</span>(<span class="string">&quot;at this point there must not be unresolved splits&quot;</span>),
                 }
             }
 
@@ -1140,11 +1140,11 @@
         <span class="ident">dic0_max</span>: <span class="ident">usize</span>,
         <span class="ident">dic1_max</span>: <span class="ident">usize</span>,
         <span class="ident">label</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="ident">str</span>,
-    ) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">DicWriteResult</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
+    ) -&gt; <span class="ident">DicWriteResult</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
         <span class="kw">let</span> <span class="ident">max</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">wid</span>.<span class="ident">dic</span>() {
-            <span class="number">0</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">dic0_max</span>,
-            <span class="number">1</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">dic1_max</span>,
-            <span class="ident">x</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro">panic!</span>(<span class="string">&quot;invalid dictionary ID={}, should not happen&quot;</span>, <span class="ident">x</span>),
+            <span class="number">0</span> =&gt; <span class="ident">dic0_max</span>,
+            <span class="number">1</span> =&gt; <span class="ident">dic1_max</span>,
+            <span class="ident">x</span> =&gt; <span class="macro">panic!</span>(<span class="string">&quot;invalid dictionary ID={}, should not happen&quot;</span>, <span class="ident">x</span>),
         };
         <span class="kw">if</span> <span class="ident">wid</span>.<span class="ident">word</span>() <span class="op">&gt;</span><span class="op">=</span> <span class="ident">max</span> <span class="kw">as</span> <span class="ident">u32</span> {
             <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">BuildFailure::InvalidFieldSize</span> {
@@ -1156,8 +1156,8 @@
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="kw">fn</span> <span class="ident">parse_splits</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">data</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">DicWriteResult</span><span class="op">&lt;</span>(<span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">SplitUnit</span><span class="op">&gt;</span>, <span class="ident">usize</span>)<span class="op">&gt;</span> {
-        <span class="kw">if</span> <span class="ident">data</span>.<span class="ident">is_empty</span>() <span class="op">|</span><span class="op">|</span> <span class="ident">data</span> <span class="op">=</span><span class="op">=</span> <span class="string">&quot;*&quot;</span> {
+    <span class="kw">fn</span> <span class="ident">parse_splits</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">data</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>) -&gt; <span class="ident">DicWriteResult</span><span class="op">&lt;</span>(<span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">SplitUnit</span><span class="op">&gt;</span>, <span class="ident">usize</span>)<span class="op">&gt;</span> {
+        <span class="kw">if</span> <span class="ident">data</span>.<span class="ident">is_empty</span>() <span class="op">|</span><span class="op">|</span> <span class="ident">data</span> <span class="op">==</span> <span class="string">&quot;*&quot;</span> {
             <span class="kw">return</span> <span class="prelude-val">Ok</span>((<span class="ident">Vec::new</span>(), <span class="number">0</span>));
         }
 
@@ -1165,15 +1165,15 @@
             <span class="kw">let</span> <span class="ident">unresolved</span> <span class="op">=</span> <span class="ident">splits</span>
                 .<span class="ident">iter</span>()
                 .<span class="ident">map</span>(<span class="op">|</span><span class="ident">s</span><span class="op">|</span> <span class="kw">match</span> <span class="ident">s</span> {
-                    <span class="ident">SplitUnit::Inline</span> { .. } <span class="op">=</span><span class="op">&gt;</span> <span class="number">1</span>,
-                    <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> <span class="number">0</span>,
+                    <span class="ident">SplitUnit::Inline</span> { .. } =&gt; <span class="number">1</span>,
+                    <span class="kw">_</span> =&gt; <span class="number">0</span>,
                 })
                 .<span class="ident">sum</span>();
             (<span class="ident">splits</span>, <span class="ident">unresolved</span>)
         })
     }
 
-    <span class="kw">fn</span> <span class="ident">parse_split</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">data</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">DicWriteResult</span><span class="op">&lt;</span><span class="ident">SplitUnit</span><span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">parse_split</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">data</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>) -&gt; <span class="ident">DicWriteResult</span><span class="op">&lt;</span><span class="ident">SplitUnit</span><span class="op">&gt;</span> {
         <span class="kw">if</span> <span class="ident">WORD_ID_LITERAL</span>.<span class="ident">is_match</span>(<span class="ident">data</span>) {
             <span class="prelude-val">Ok</span>(<span class="ident">SplitUnit::Ref</span>(<span class="ident">parse_wordid</span>(<span class="ident">data</span>)<span class="question-mark">?</span>))
         } <span class="kw">else</span> {
@@ -1196,7 +1196,7 @@
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">write_pos_table</span><span class="op">&lt;</span><span class="ident">W</span>: <span class="ident">Write</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">w</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">W</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">write_pos_table</span><span class="op">&lt;</span><span class="ident">W</span>: <span class="ident">Write</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">w</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">W</span>) -&gt; <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span> {
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">u16w</span> <span class="op">=</span> <span class="ident">Utf16Writer::new</span>();
         <span class="kw">let</span> <span class="ident">real_count</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">pos</span>.<span class="ident">len</span>() <span class="op">-</span> <span class="self">self</span>.<span class="ident">start_pos</span>;
         <span class="ident">w</span>.<span class="ident">write_all</span>(<span class="kw-2">&amp;</span><span class="ident">u16::to_le_bytes</span>(<span class="ident">real_count</span> <span class="kw">as</span> <span class="ident">u16</span>))<span class="question-mark">?</span>;
@@ -1219,14 +1219,14 @@
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">resolve_splits</span><span class="op">&lt;</span><span class="ident">R</span>: <span class="ident">SplitUnitResolver</span><span class="op">&gt;</span>(
         <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>,
         <span class="ident">resolver</span>: <span class="kw-2">&amp;</span><span class="ident">R</span>,
-    ) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">usize</span>, (<span class="ident">String</span>, <span class="ident">usize</span>)<span class="op">&gt;</span> {
+    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">usize</span>, (<span class="ident">String</span>, <span class="ident">usize</span>)<span class="op">&gt;</span> {
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">total</span> <span class="op">=</span> <span class="number">0</span>;
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">line</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="number">0</span>;
         <span class="kw">for</span> <span class="ident">e</span> <span class="kw">in</span> <span class="self">self</span>.<span class="ident">entries</span>.<span class="ident">iter_mut</span>() {
             <span class="kw">for</span> <span class="ident">s</span> <span class="kw">in</span> <span class="ident">e</span>.<span class="ident">splits_a</span>.<span class="ident">iter_mut</span>() {
                 <span class="kw">match</span> <span class="ident"><span class="self">Self</span>::resolve_split</span>(<span class="ident">s</span>, <span class="ident">resolver</span>) {
-                    <span class="prelude-val">Some</span>(<span class="ident">val</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">total</span> <span class="op">+</span><span class="op">=</span> <span class="ident">val</span>,
-                    <span class="prelude-val">None</span> <span class="op">=</span><span class="op">&gt;</span> {
+                    <span class="prelude-val">Some</span>(<span class="ident">val</span>) =&gt; <span class="ident">total</span> <span class="op">+</span><span class="op">=</span> <span class="ident">val</span>,
+                    <span class="prelude-val">None</span> =&gt; {
                         <span class="comment">// at this point s is a read only borrow,</span>
                         <span class="comment">// but borrow checker does not allow to do this cleanly</span>
                         <span class="comment">// self conflicts with splits_a borrow</span>
@@ -1238,8 +1238,8 @@
             }
             <span class="kw">for</span> <span class="ident">s</span> <span class="kw">in</span> <span class="ident">e</span>.<span class="ident">splits_b</span>.<span class="ident">iter_mut</span>() {
                 <span class="kw">match</span> <span class="ident"><span class="self">Self</span>::resolve_split</span>(<span class="ident">s</span>, <span class="ident">resolver</span>) {
-                    <span class="prelude-val">Some</span>(<span class="ident">val</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">total</span> <span class="op">+</span><span class="op">=</span> <span class="ident">val</span>,
-                    <span class="prelude-val">None</span> <span class="op">=</span><span class="op">&gt;</span> {
+                    <span class="prelude-val">Some</span>(<span class="ident">val</span>) =&gt; <span class="ident">total</span> <span class="op">+</span><span class="op">=</span> <span class="ident">val</span>,
+                    <span class="prelude-val">None</span> =&gt; {
                         <span class="comment">// at this point s is a read only borrow,</span>
                         <span class="comment">// but borrow checker does not allow to do this cleanly</span>
                         <span class="comment">// self conflicts with splits_b borrow</span>
@@ -1254,10 +1254,10 @@
         <span class="prelude-val">Ok</span>(<span class="ident">total</span>)
     }
 
-    <span class="kw">fn</span> <span class="ident">resolve_split</span><span class="op">&lt;</span><span class="ident">R</span>: <span class="ident">SplitUnitResolver</span><span class="op">&gt;</span>(<span class="ident">unit</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">SplitUnit</span>, <span class="ident">resolver</span>: <span class="kw-2">&amp;</span><span class="ident">R</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">resolve_split</span><span class="op">&lt;</span><span class="ident">R</span>: <span class="ident">SplitUnitResolver</span><span class="op">&gt;</span>(<span class="ident">unit</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">SplitUnit</span>, <span class="ident">resolver</span>: <span class="kw-2">&amp;</span><span class="ident">R</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span> {
         <span class="kw">match</span> <span class="ident">unit</span> {
-            <span class="ident">SplitUnit::Ref</span>(<span class="kw">_</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="prelude-val">Some</span>(<span class="number">0</span>),
-            <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> {
+            <span class="ident">SplitUnit::Ref</span>(<span class="kw">_</span>) =&gt; <span class="prelude-val">Some</span>(<span class="number">0</span>),
+            <span class="kw">_</span> =&gt; {
                 <span class="kw">let</span> <span class="ident">wid</span> <span class="op">=</span> <span class="ident">resolver</span>.<span class="ident">resolve</span>(<span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="ident">unit</span>)<span class="question-mark">?</span>;
                 <span class="kw-2">*</span><span class="ident">unit</span> <span class="op">=</span> <span class="ident">SplitUnit::Ref</span>(<span class="ident">wid</span>);
                 <span class="prelude-val">Some</span>(<span class="number">1</span>)
@@ -1273,25 +1273,25 @@
 
 <span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="ident">RecordWrapper</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
     <span class="attribute">#[<span class="ident">inline</span>(<span class="ident">always</span>)]</span>
-    <span class="kw">fn</span> <span class="ident">get</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">F</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">idx</span>: <span class="ident">usize</span>, <span class="ident">name</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="ident">str</span>, <span class="ident">f</span>: <span class="ident">F</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>
+    <span class="kw">fn</span> <span class="ident">get</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">F</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">idx</span>: <span class="ident">usize</span>, <span class="ident">name</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="ident">str</span>, <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>
     <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">FnOnce</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">str</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">DicWriteResult</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
+        <span class="ident">F</span>: <span class="ident">FnOnce</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">str</span>) -&gt; <span class="ident">DicWriteResult</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
     {
         <span class="kw">match</span> <span class="self">self</span>.<span class="ident">record</span>.<span class="ident">get</span>(<span class="ident">idx</span>) {
-            <span class="prelude-val">Some</span>(<span class="ident">s</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="self">self</span>.<span class="ident">ctx</span>.<span class="ident">transform</span>(<span class="ident">f</span>(<span class="ident">s</span>)),
-            <span class="prelude-val">None</span> <span class="op">=</span><span class="op">&gt;</span> <span class="self">self</span>.<span class="ident">ctx</span>.<span class="ident">err</span>(<span class="ident">BuildFailure::NoRawField</span>(<span class="ident">name</span>)),
+            <span class="prelude-val">Some</span>(<span class="ident">s</span>) =&gt; <span class="self">self</span>.<span class="ident">ctx</span>.<span class="ident">transform</span>(<span class="ident">f</span>(<span class="ident">s</span>)),
+            <span class="prelude-val">None</span> =&gt; <span class="self">self</span>.<span class="ident">ctx</span>.<span class="ident">err</span>(<span class="ident">BuildFailure::NoRawField</span>(<span class="ident">name</span>)),
         }
     }
 
     <span class="attribute">#[<span class="ident">inline</span>(<span class="ident">always</span>)]</span>
-    <span class="kw">fn</span> <span class="ident">get_or_default</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">F</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">idx</span>: <span class="ident">usize</span>, <span class="ident">_name</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="ident">str</span>, <span class="ident">f</span>: <span class="ident">F</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>
+    <span class="kw">fn</span> <span class="ident">get_or_default</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">F</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">idx</span>: <span class="ident">usize</span>, <span class="ident">_name</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="ident">str</span>, <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>
     <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">FnOnce</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">str</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">DicWriteResult</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
+        <span class="ident">F</span>: <span class="ident">FnOnce</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">str</span>) -&gt; <span class="ident">DicWriteResult</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
         <span class="ident">T</span>: <span class="ident">Default</span>,
     {
         <span class="kw">match</span> <span class="self">self</span>.<span class="ident">record</span>.<span class="ident">get</span>(<span class="ident">idx</span>) {
-            <span class="prelude-val">Some</span>(<span class="ident">s</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="self">self</span>.<span class="ident">ctx</span>.<span class="ident">transform</span>(<span class="ident">f</span>(<span class="ident">s</span>)),
-            <span class="prelude-val">None</span> <span class="op">=</span><span class="op">&gt;</span> <span class="prelude-val">Ok</span>(<span class="op">&lt;</span><span class="ident">T</span> <span class="kw">as</span> <span class="ident">Default</span><span class="op">&gt;</span><span class="ident">::default</span>()),
+            <span class="prelude-val">Some</span>(<span class="ident">s</span>) =&gt; <span class="self">self</span>.<span class="ident">ctx</span>.<span class="ident">transform</span>(<span class="ident">f</span>(<span class="ident">s</span>)),
+            <span class="prelude-val">None</span> =&gt; <span class="prelude-val">Ok</span>(<span class="op">&lt;</span><span class="ident">T</span> <span class="kw">as</span> <span class="ident">Default</span><span class="op">&gt;</span><span class="ident">::default</span>()),
         }
     }
 }
@@ -1309,7 +1309,7 @@
         <span class="ident">entries</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">RawLexiconEntry</span>],
         <span class="ident">offset</span>: <span class="ident">usize</span>,
         <span class="ident">reporter</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">Reporter</span>,
-    ) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
+    ) -&gt; <span class="self">Self</span> {
         <span class="self">Self</span> {
             <span class="ident">buffer</span>: <span class="ident">Vec::with_capacity</span>(<span class="ident">entries</span>.<span class="ident">len</span>() <span class="op">*</span> <span class="number">32</span>),
             <span class="ident">entries</span>,
@@ -1319,7 +1319,7 @@
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">write</span><span class="op">&lt;</span><span class="ident">W</span>: <span class="ident">Write</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">w</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">W</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">write</span><span class="op">&lt;</span><span class="ident">W</span>: <span class="ident">Write</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">w</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">W</span>) -&gt; <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span> {
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">ctx</span> <span class="op">=</span> <span class="ident">DicCompilationCtx::memory</span>();
         <span class="ident">ctx</span>.<span class="ident">set_filename</span>(<span class="string">&quot;&lt;write entries&gt;&quot;</span>.<span class="ident">to_owned</span>());
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">total</span> <span class="op">=</span> <span class="number">4</span>;

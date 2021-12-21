@@ -184,13 +184,13 @@
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">RoMu</span> {}
 
 <span class="kw">impl</span> <span class="ident">RoMu</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>() <span class="op">-</span><span class="op">&gt;</span> <span class="ident">RoMu</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>() -&gt; <span class="ident">RoMu</span> {
         <span class="ident">RoMu</span> {}
     }
 }
 
 <span class="kw">impl</span> <span class="ident">Default</span> <span class="kw">for</span> <span class="ident">RoMu</span> {
-    <span class="kw">fn</span> <span class="ident">default</span>() <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
+    <span class="kw">fn</span> <span class="ident">default</span>() -&gt; <span class="self">Self</span> {
         <span class="ident">RoMu::new</span>()
     }
 }
@@ -199,7 +199,7 @@
     <span class="kw">type</span> <span class="ident">Hasher</span> <span class="op">=</span> <span class="ident">RoMuHash</span>;
 
     <span class="attribute">#[<span class="ident">inline</span>(<span class="ident">always</span>)]</span>
-    <span class="kw">fn</span> <span class="ident">build_hasher</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident"><span class="self">Self</span>::Hasher</span> {
+    <span class="kw">fn</span> <span class="ident">build_hasher</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident"><span class="self">Self</span>::Hasher</span> {
         <span class="ident">RoMuHash::new</span>()
     }
 }
@@ -212,7 +212,7 @@
 <span class="comment">// It is very fast (xor+mul+rot) for extremely small values (e.g. 1 field)</span>
 <span class="kw">impl</span> <span class="ident">RoMuHash</span> {
     <span class="attribute">#[<span class="ident">inline</span>(<span class="ident">always</span>)]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>() <span class="op">-</span><span class="op">&gt;</span> <span class="ident">RoMuHash</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>() -&gt; <span class="ident">RoMuHash</span> {
         <span class="ident">RoMuHash</span> { <span class="ident">state</span>: <span class="ident">SEED</span> }
     }
 
@@ -226,7 +226,7 @@
 
 <span class="kw">impl</span> <span class="ident">Hasher</span> <span class="kw">for</span> <span class="ident">RoMuHash</span> {
     <span class="attribute">#[<span class="ident">inline</span>(<span class="ident">always</span>)]</span>
-    <span class="kw">fn</span> <span class="ident">finish</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">u64</span> {
+    <span class="kw">fn</span> <span class="ident">finish</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">u64</span> {
         <span class="self">self</span>.<span class="ident">state</span>
     }
 

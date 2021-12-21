@@ -243,8 +243,8 @@
 <span class="kw">impl</span> <span class="ident">Iterator</span> <span class="kw">for</span> <span class="ident">CategoryTypeIter</span> {
     <span class="kw">type</span> <span class="ident">Item</span> <span class="op">=</span> <span class="ident">CategoryType</span>;
 
-    <span class="kw">fn</span> <span class="ident">next</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident"><span class="self">Self</span>::Item</span><span class="op">&gt;</span> {
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">values</span> <span class="op">=</span><span class="op">=</span> <span class="number">0</span> {
+    <span class="kw">fn</span> <span class="ident">next</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident"><span class="self">Self</span>::Item</span><span class="op">&gt;</span> {
+        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">values</span> <span class="op">==</span> <span class="number">0</span> {
             <span class="kw">return</span> <span class="prelude-val">None</span>;
         }
 
@@ -258,17 +258,17 @@
 }
 
 <span class="kw">impl</span> <span class="ident">CategoryType</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">iter</span>(<span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="kw">impl</span> <span class="ident">Iterator</span><span class="op">&lt;</span><span class="ident">Item</span> <span class="op">=</span> <span class="ident">CategoryType</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">iter</span>(<span class="self">self</span>) -&gt; <span class="kw">impl</span> <span class="ident">Iterator</span><span class="op">&lt;</span><span class="ident">Item</span> <span class="op">=</span> <span class="ident">CategoryType</span><span class="op">&gt;</span> {
         <span class="ident">CategoryTypeIter</span> { <span class="ident">values</span>: <span class="self">self</span>.<span class="ident">bits</span> }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">count</span>(<span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">u32</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">count</span>(<span class="self">self</span>) -&gt; <span class="ident">u32</span> {
         <span class="self">self</span>.<span class="ident">bits</span>.<span class="ident">count_ones</span>()
     }
 }
 
 <span class="kw">impl</span> <span class="ident">Default</span> <span class="kw">for</span> <span class="ident">CategoryType</span> {
-    <span class="kw">fn</span> <span class="ident">default</span>() <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
+    <span class="kw">fn</span> <span class="ident">default</span>() -&gt; <span class="self">Self</span> {
         <span class="ident"><span class="self">Self</span>::DEFAULT</span>
     }
 }
@@ -276,27 +276,27 @@
 <span class="kw">impl</span> <span class="ident">FromStr</span> <span class="kw">for</span> <span class="ident">CategoryType</span> {
     <span class="kw">type</span> <span class="prelude-val">Err</span> <span class="op">=</span> <span class="ident">SudachiError</span>;
 
-    <span class="kw">fn</span> <span class="ident">from_str</span>(<span class="ident">s</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident"><span class="self">Self</span>::Err</span><span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">from_str</span>(<span class="ident">s</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident"><span class="self">Self</span>::Err</span><span class="op">&gt;</span> {
         <span class="kw">match</span> <span class="ident">s</span>.<span class="ident">to_uppercase</span>().<span class="ident">as_str</span>() {
-            <span class="string">&quot;DEFAULT&quot;</span> <span class="op">=</span><span class="op">&gt;</span> <span class="prelude-val">Ok</span>(<span class="ident"><span class="self">Self</span>::DEFAULT</span>),
-            <span class="string">&quot;SPACE&quot;</span> <span class="op">=</span><span class="op">&gt;</span> <span class="prelude-val">Ok</span>(<span class="ident"><span class="self">Self</span>::SPACE</span>),
-            <span class="string">&quot;KANJI&quot;</span> <span class="op">=</span><span class="op">&gt;</span> <span class="prelude-val">Ok</span>(<span class="ident"><span class="self">Self</span>::KANJI</span>),
-            <span class="string">&quot;SYMBOL&quot;</span> <span class="op">=</span><span class="op">&gt;</span> <span class="prelude-val">Ok</span>(<span class="ident"><span class="self">Self</span>::SYMBOL</span>),
-            <span class="string">&quot;NUMERIC&quot;</span> <span class="op">=</span><span class="op">&gt;</span> <span class="prelude-val">Ok</span>(<span class="ident"><span class="self">Self</span>::NUMERIC</span>),
-            <span class="string">&quot;ALPHA&quot;</span> <span class="op">=</span><span class="op">&gt;</span> <span class="prelude-val">Ok</span>(<span class="ident"><span class="self">Self</span>::ALPHA</span>),
-            <span class="string">&quot;HIRAGANA&quot;</span> <span class="op">=</span><span class="op">&gt;</span> <span class="prelude-val">Ok</span>(<span class="ident"><span class="self">Self</span>::HIRAGANA</span>),
-            <span class="string">&quot;KATAKANA&quot;</span> <span class="op">=</span><span class="op">&gt;</span> <span class="prelude-val">Ok</span>(<span class="ident"><span class="self">Self</span>::KATAKANA</span>),
-            <span class="string">&quot;KANJINUMERIC&quot;</span> <span class="op">=</span><span class="op">&gt;</span> <span class="prelude-val">Ok</span>(<span class="ident"><span class="self">Self</span>::KANJINUMERIC</span>),
-            <span class="string">&quot;GREEK&quot;</span> <span class="op">=</span><span class="op">&gt;</span> <span class="prelude-val">Ok</span>(<span class="ident"><span class="self">Self</span>::GREEK</span>),
-            <span class="string">&quot;CYRILLIC&quot;</span> <span class="op">=</span><span class="op">&gt;</span> <span class="prelude-val">Ok</span>(<span class="ident"><span class="self">Self</span>::CYRILLIC</span>),
-            <span class="string">&quot;USER1&quot;</span> <span class="op">=</span><span class="op">&gt;</span> <span class="prelude-val">Ok</span>(<span class="ident"><span class="self">Self</span>::USER1</span>),
-            <span class="string">&quot;USER2&quot;</span> <span class="op">=</span><span class="op">&gt;</span> <span class="prelude-val">Ok</span>(<span class="ident"><span class="self">Self</span>::USER2</span>),
-            <span class="string">&quot;USER3&quot;</span> <span class="op">=</span><span class="op">&gt;</span> <span class="prelude-val">Ok</span>(<span class="ident"><span class="self">Self</span>::USER3</span>),
-            <span class="string">&quot;USER4&quot;</span> <span class="op">=</span><span class="op">&gt;</span> <span class="prelude-val">Ok</span>(<span class="ident"><span class="self">Self</span>::USER4</span>),
-            <span class="string">&quot;NOOOVBOW&quot;</span> <span class="op">=</span><span class="op">&gt;</span> <span class="prelude-val">Ok</span>(<span class="ident"><span class="self">Self</span>::NOOOVBOW</span>),
-            <span class="string">&quot;NOOOVBOW2&quot;</span> <span class="op">=</span><span class="op">&gt;</span> <span class="prelude-val">Ok</span>(<span class="ident"><span class="self">Self</span>::NOOOVBOW2</span>),
-            <span class="string">&quot;ALL&quot;</span> <span class="op">=</span><span class="op">&gt;</span> <span class="prelude-val">Ok</span>(<span class="ident"><span class="self">Self</span>::ALL</span>),
-            <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> <span class="prelude-val">Err</span>(<span class="ident">SudachiError::InvalidCharacterCategoryType</span>(<span class="ident">String::from</span>(<span class="ident">s</span>))),
+            <span class="string">&quot;DEFAULT&quot;</span> =&gt; <span class="prelude-val">Ok</span>(<span class="ident"><span class="self">Self</span>::DEFAULT</span>),
+            <span class="string">&quot;SPACE&quot;</span> =&gt; <span class="prelude-val">Ok</span>(<span class="ident"><span class="self">Self</span>::SPACE</span>),
+            <span class="string">&quot;KANJI&quot;</span> =&gt; <span class="prelude-val">Ok</span>(<span class="ident"><span class="self">Self</span>::KANJI</span>),
+            <span class="string">&quot;SYMBOL&quot;</span> =&gt; <span class="prelude-val">Ok</span>(<span class="ident"><span class="self">Self</span>::SYMBOL</span>),
+            <span class="string">&quot;NUMERIC&quot;</span> =&gt; <span class="prelude-val">Ok</span>(<span class="ident"><span class="self">Self</span>::NUMERIC</span>),
+            <span class="string">&quot;ALPHA&quot;</span> =&gt; <span class="prelude-val">Ok</span>(<span class="ident"><span class="self">Self</span>::ALPHA</span>),
+            <span class="string">&quot;HIRAGANA&quot;</span> =&gt; <span class="prelude-val">Ok</span>(<span class="ident"><span class="self">Self</span>::HIRAGANA</span>),
+            <span class="string">&quot;KATAKANA&quot;</span> =&gt; <span class="prelude-val">Ok</span>(<span class="ident"><span class="self">Self</span>::KATAKANA</span>),
+            <span class="string">&quot;KANJINUMERIC&quot;</span> =&gt; <span class="prelude-val">Ok</span>(<span class="ident"><span class="self">Self</span>::KANJINUMERIC</span>),
+            <span class="string">&quot;GREEK&quot;</span> =&gt; <span class="prelude-val">Ok</span>(<span class="ident"><span class="self">Self</span>::GREEK</span>),
+            <span class="string">&quot;CYRILLIC&quot;</span> =&gt; <span class="prelude-val">Ok</span>(<span class="ident"><span class="self">Self</span>::CYRILLIC</span>),
+            <span class="string">&quot;USER1&quot;</span> =&gt; <span class="prelude-val">Ok</span>(<span class="ident"><span class="self">Self</span>::USER1</span>),
+            <span class="string">&quot;USER2&quot;</span> =&gt; <span class="prelude-val">Ok</span>(<span class="ident"><span class="self">Self</span>::USER2</span>),
+            <span class="string">&quot;USER3&quot;</span> =&gt; <span class="prelude-val">Ok</span>(<span class="ident"><span class="self">Self</span>::USER3</span>),
+            <span class="string">&quot;USER4&quot;</span> =&gt; <span class="prelude-val">Ok</span>(<span class="ident"><span class="self">Self</span>::USER4</span>),
+            <span class="string">&quot;NOOOVBOW&quot;</span> =&gt; <span class="prelude-val">Ok</span>(<span class="ident"><span class="self">Self</span>::NOOOVBOW</span>),
+            <span class="string">&quot;NOOOVBOW2&quot;</span> =&gt; <span class="prelude-val">Ok</span>(<span class="ident"><span class="self">Self</span>::NOOOVBOW2</span>),
+            <span class="string">&quot;ALL&quot;</span> =&gt; <span class="prelude-val">Ok</span>(<span class="ident"><span class="self">Self</span>::ALL</span>),
+            <span class="kw">_</span> =&gt; <span class="prelude-val">Err</span>(<span class="ident">SudachiError::InvalidCharacterCategoryType</span>(<span class="ident">String::from</span>(<span class="ident">s</span>))),
         }
     }
 }

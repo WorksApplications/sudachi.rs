@@ -224,7 +224,7 @@
 }
 
 <span class="macro">macro_rules!</span> <span class="ident">impl_hash_word</span> {
-    ($(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">ty</span>:<span class="ident">ty</span> <span class="op">=</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">key</span>:<span class="ident">ident</span>),<span class="op">*</span> $(,)<span class="kw-2">*</span>) <span class="op">=</span><span class="op">&gt;</span> (
+    ($(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">ty</span>:<span class="ident">ty</span> <span class="op">=</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">key</span>:<span class="ident">ident</span>),<span class="op">*</span> $(,)<span class="kw-2">*</span>) =&gt; (
         $(
             <span class="kw">impl</span> <span class="ident">HashWord</span> <span class="kw">for</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">ty</span> {
                 <span class="attribute">#[<span class="ident">inline</span>(<span class="ident">always</span>)]</span>
@@ -239,7 +239,7 @@
 <span class="macro">impl_hash_word!</span>(<span class="ident">usize</span> <span class="op">=</span> <span class="ident">SEED</span>, <span class="ident">u32</span> <span class="op">=</span> <span class="ident">SEED32</span>, <span class="ident">u64</span> <span class="op">=</span> <span class="ident">SEED64</span>);
 
 <span class="attribute">#[<span class="ident">inline</span>]</span>
-<span class="kw">fn</span> <span class="ident">write64</span>(<span class="kw-2">mut</span> <span class="ident">hash</span>: <span class="ident">u64</span>, <span class="kw-2">mut</span> <span class="ident">bytes</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>]) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">u64</span> {
+<span class="kw">fn</span> <span class="ident">write64</span>(<span class="kw-2">mut</span> <span class="ident">hash</span>: <span class="ident">u64</span>, <span class="kw-2">mut</span> <span class="ident">bytes</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>]) -&gt; <span class="ident">u64</span> {
     <span class="kw">while</span> <span class="ident">bytes</span>.<span class="ident">len</span>() <span class="op">&gt;</span><span class="op">=</span> <span class="number">8</span> {
         <span class="kw">let</span> (<span class="ident">data</span>, <span class="ident">rem</span>) <span class="op">=</span> <span class="ident">bytes</span>.<span class="ident">split_at</span>(<span class="number">8</span>);
         <span class="ident">hash</span>.<span class="ident">hash_word</span>(<span class="ident">u64::from_ne_bytes</span>(<span class="ident">data</span>.<span class="ident">try_into</span>().<span class="ident">unwrap</span>()));
@@ -279,14 +279,14 @@
 
 <span class="kw">impl</span> <span class="ident">Default</span> <span class="kw">for</span> <span class="ident">FxHasher64</span> {
     <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">default</span>() <span class="op">-</span><span class="op">&gt;</span> <span class="ident">FxHasher64</span> {
+    <span class="kw">fn</span> <span class="ident">default</span>() -&gt; <span class="ident">FxHasher64</span> {
         <span class="ident">FxHasher64</span> { <span class="ident">hash</span>: <span class="number">0</span> }
     }
 }
 
 <span class="kw">impl</span> <span class="ident">Hasher</span> <span class="kw">for</span> <span class="ident">FxHasher64</span> {
     <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">finish</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">u64</span> {
+    <span class="kw">fn</span> <span class="ident">finish</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">u64</span> {
         <span class="self">self</span>.<span class="ident">hash</span>
     }
 

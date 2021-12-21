@@ -399,46 +399,46 @@
 }
 
 <span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">AsDataSource</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
-    <span class="kw">fn</span> <span class="ident">convert</span>(<span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">DataSource</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>;
-    <span class="kw">fn</span> <span class="ident">name</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">String</span>;
+    <span class="kw">fn</span> <span class="ident">convert</span>(<span class="self">self</span>) -&gt; <span class="ident">DataSource</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>;
+    <span class="kw">fn</span> <span class="ident">name</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">String</span>;
 }
 
 <span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="ident">AsDataSource</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">DataSource</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
-    <span class="kw">fn</span> <span class="ident">convert</span>(<span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">DataSource</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">convert</span>(<span class="self">self</span>) -&gt; <span class="ident">DataSource</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
         <span class="self">self</span>
     }
 
-    <span class="kw">fn</span> <span class="ident">name</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">String</span> {
+    <span class="kw">fn</span> <span class="ident">name</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">String</span> {
         <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">DataSource::File</span>(<span class="ident">p</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">p</span>.<span class="ident">to_str</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">s</span><span class="op">|</span> <span class="ident">s</span>.<span class="ident">to_owned</span>()).<span class="ident">unwrap_or_default</span>(),
-            <span class="ident">DataSource::Data</span>(<span class="ident">d</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="macro">format!</span>(<span class="string">&quot;memory ({} bytes)&quot;</span>, <span class="ident">d</span>.<span class="ident">len</span>()),
+            <span class="ident">DataSource::File</span>(<span class="ident">p</span>) =&gt; <span class="ident">p</span>.<span class="ident">to_str</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">s</span><span class="op">|</span> <span class="ident">s</span>.<span class="ident">to_owned</span>()).<span class="ident">unwrap_or_default</span>(),
+            <span class="ident">DataSource::Data</span>(<span class="ident">d</span>) =&gt; <span class="macro">format!</span>(<span class="string">&quot;memory ({} bytes)&quot;</span>, <span class="ident">d</span>.<span class="ident">len</span>()),
         }
     }
 }
 
 <span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="ident">AsDataSource</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">Path</span> {
-    <span class="kw">fn</span> <span class="ident">convert</span>(<span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">DataSource</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">convert</span>(<span class="self">self</span>) -&gt; <span class="ident">DataSource</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
         <span class="ident">DataSource::File</span>(<span class="self">self</span>)
     }
-    <span class="kw">fn</span> <span class="ident">name</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">String</span> {
+    <span class="kw">fn</span> <span class="ident">name</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">String</span> {
         <span class="self">self</span>.<span class="ident">to_str</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">s</span><span class="op">|</span> <span class="ident">s</span>.<span class="ident">to_owned</span>()).<span class="ident">unwrap_or_default</span>()
     }
 }
 
 <span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="ident">AsDataSource</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">u8</span>] {
-    <span class="kw">fn</span> <span class="ident">convert</span>(<span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">DataSource</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">convert</span>(<span class="self">self</span>) -&gt; <span class="ident">DataSource</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
         <span class="ident">DataSource::Data</span>(<span class="self">self</span>)
     }
-    <span class="kw">fn</span> <span class="ident">name</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">String</span> {
+    <span class="kw">fn</span> <span class="ident">name</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">String</span> {
         <span class="macro">format!</span>(<span class="string">&quot;memory ({} bytes)&quot;</span>, <span class="self">self</span>.<span class="ident">len</span>())
     }
 }
 
 <span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="kw">const</span> <span class="ident">N</span>: <span class="ident">usize</span><span class="op">&gt;</span> <span class="ident">AsDataSource</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">u8</span>; <span class="ident">N</span>] {
-    <span class="kw">fn</span> <span class="ident">convert</span>(<span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">DataSource</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">convert</span>(<span class="self">self</span>) -&gt; <span class="ident">DataSource</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
         <span class="ident">DataSource::Data</span>(<span class="kw-2">&amp;</span><span class="self">self</span>[..])
     }
-    <span class="kw">fn</span> <span class="ident">name</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">String</span> {
+    <span class="kw">fn</span> <span class="ident">name</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">String</span> {
         <span class="macro">format!</span>(<span class="string">&quot;memory ({} bytes)&quot;</span>, <span class="self">self</span>.<span class="ident">len</span>())
     }
 }
@@ -446,23 +446,23 @@
 <span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">NoDic</span> {}
 
 <span class="kw">impl</span> <span class="ident">DictionaryAccess</span> <span class="kw">for</span> <span class="ident">NoDic</span> {
-    <span class="kw">fn</span> <span class="ident">grammar</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span><span class="ident">Grammar</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">grammar</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">Grammar</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span> {
         <span class="macro">panic!</span>(<span class="string">&quot;there is no grammar here&quot;</span>)
     }
 
-    <span class="kw">fn</span> <span class="ident">lexicon</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span><span class="ident">LexiconSet</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">lexicon</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">LexiconSet</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span> {
         <span class="macro">panic!</span>(<span class="string">&quot;there is no lexicon here&quot;</span>)
     }
 
-    <span class="kw">fn</span> <span class="ident">input_text_plugins</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span>[<span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">InputTextPlugin</span> <span class="op">+</span> <span class="ident">Sync</span> <span class="op">+</span> <span class="ident">Send</span><span class="op">&gt;</span>] {
+    <span class="kw">fn</span> <span class="ident">input_text_plugins</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[<span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">InputTextPlugin</span> <span class="op">+</span> <span class="ident">Sync</span> <span class="op">+</span> <span class="ident">Send</span><span class="op">&gt;</span>] {
         <span class="kw">return</span> <span class="kw-2">&amp;</span>[];
     }
 
-    <span class="kw">fn</span> <span class="ident">oov_provider_plugins</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span>[<span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">OovProviderPlugin</span> <span class="op">+</span> <span class="ident">Sync</span> <span class="op">+</span> <span class="ident">Send</span><span class="op">&gt;</span>] {
+    <span class="kw">fn</span> <span class="ident">oov_provider_plugins</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[<span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">OovProviderPlugin</span> <span class="op">+</span> <span class="ident">Sync</span> <span class="op">+</span> <span class="ident">Send</span><span class="op">&gt;</span>] {
         <span class="kw">return</span> <span class="kw-2">&amp;</span>[];
     }
 
-    <span class="kw">fn</span> <span class="ident">path_rewrite_plugins</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span>[<span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">PathRewritePlugin</span> <span class="op">+</span> <span class="ident">Sync</span> <span class="op">+</span> <span class="ident">Send</span><span class="op">&gt;</span>] {
+    <span class="kw">fn</span> <span class="ident">path_rewrite_plugins</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[<span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">PathRewritePlugin</span> <span class="op">+</span> <span class="ident">Sync</span> <span class="op">+</span> <span class="ident">Send</span><span class="op">&gt;</span>] {
         <span class="kw">return</span> <span class="kw-2">&amp;</span>[];
     }
 }
@@ -481,13 +481,13 @@
 
 <span class="kw">impl</span> <span class="ident">DictBuilder</span><span class="op">&lt;</span><span class="ident">NoDic</span><span class="op">&gt;</span> {
     <span class="doccomment">/// Creates a new builder for system dictionary</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new_system</span>() <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new_system</span>() -&gt; <span class="self">Self</span> {
         <span class="ident"><span class="self">Self</span>::new_empty</span>()
     }
 }
 
 <span class="kw">impl</span><span class="op">&lt;</span><span class="ident">D</span>: <span class="ident">DictionaryAccess</span><span class="op">&gt;</span> <span class="ident">DictBuilder</span><span class="op">&lt;</span><span class="ident">D</span><span class="op">&gt;</span> {
-    <span class="kw">fn</span> <span class="ident">new_empty</span>() <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
+    <span class="kw">fn</span> <span class="ident">new_empty</span>() -&gt; <span class="self">Self</span> {
         <span class="self">Self</span> {
             <span class="ident">user</span>: <span class="bool-val">false</span>,
             <span class="ident">lexicon</span>: <span class="ident">lexicon::LexiconReader::new</span>(),
@@ -501,7 +501,7 @@
     }
 
     <span class="doccomment">/// Creates a new builder for user dictionary</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new_user</span>(<span class="ident">system</span>: <span class="ident">D</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new_user</span>(<span class="ident">system</span>: <span class="ident">D</span>) -&gt; <span class="self">Self</span> {
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">bldr</span> <span class="op">=</span> <span class="ident"><span class="self">Self</span>::new_empty</span>();
         <span class="ident">bldr</span>.<span class="ident">set_user</span>(<span class="bool-val">true</span>);
         <span class="ident">bldr</span>.<span class="ident">lexicon</span>.<span class="ident">preload_pos</span>(<span class="ident">system</span>.<span class="ident">grammar</span>());
@@ -519,7 +519,7 @@
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">set_compile_time</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">std::time::SystemTime</span><span class="op">&gt;</span><span class="op">&gt;</span>(
         <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>,
         <span class="ident">time</span>: <span class="ident">T</span>,
-    ) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">std::time::SystemTime</span> {
+    ) -&gt; <span class="ident">std::time::SystemTime</span> {
         <span class="self">self</span>.<span class="ident">header</span>.<span class="ident">set_time</span>(<span class="ident">time</span>.<span class="ident">into</span>())
     }
 
@@ -529,21 +529,21 @@
     }
 
     <span class="doccomment">/// Read the csv lexicon from either a file or an in-memory buffer</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">read_lexicon</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">T</span>: <span class="ident">AsDataSource</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="op">+</span> <span class="lifetime">&#39;a</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">data</span>: <span class="ident">T</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">read_lexicon</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">T</span>: <span class="ident">AsDataSource</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="op">+</span> <span class="lifetime">&#39;a</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">data</span>: <span class="ident">T</span>) -&gt; <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span> {
         <span class="kw">let</span> <span class="ident">report</span> <span class="op">=</span> <span class="ident">ReportBuilder::new</span>(<span class="ident">data</span>.<span class="ident">name</span>()).<span class="ident">read</span>();
         <span class="kw">let</span> <span class="ident">result</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">data</span>.<span class="ident">convert</span>() {
-            <span class="ident">DataSource::File</span>(<span class="ident">p</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="self">self</span>.<span class="ident">lexicon</span>.<span class="ident">read_file</span>(<span class="ident">p</span>),
-            <span class="ident">DataSource::Data</span>(<span class="ident">d</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="self">self</span>.<span class="ident">lexicon</span>.<span class="ident">read_bytes</span>(<span class="ident">d</span>),
+            <span class="ident">DataSource::File</span>(<span class="ident">p</span>) =&gt; <span class="self">self</span>.<span class="ident">lexicon</span>.<span class="ident">read_file</span>(<span class="ident">p</span>),
+            <span class="ident">DataSource::Data</span>(<span class="ident">d</span>) =&gt; <span class="self">self</span>.<span class="ident">lexicon</span>.<span class="ident">read_bytes</span>(<span class="ident">d</span>),
         };
         <span class="self">self</span>.<span class="ident">reporter</span>.<span class="ident">collect_r</span>(<span class="ident">result</span>, <span class="ident">report</span>)
     }
 
     <span class="doccomment">/// Read the connection matrix from either a file or an in-memory buffer</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">read_conn</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">T</span>: <span class="ident">AsDataSource</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="op">+</span> <span class="lifetime">&#39;a</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">data</span>: <span class="ident">T</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">SudachiResult</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">read_conn</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">T</span>: <span class="ident">AsDataSource</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="op">+</span> <span class="lifetime">&#39;a</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">data</span>: <span class="ident">T</span>) -&gt; <span class="ident">SudachiResult</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
         <span class="kw">let</span> <span class="ident">report</span> <span class="op">=</span> <span class="ident">ReportBuilder::new</span>(<span class="ident">data</span>.<span class="ident">name</span>()).<span class="ident">read</span>();
         <span class="kw">match</span> <span class="ident">data</span>.<span class="ident">convert</span>() {
-            <span class="ident">DataSource::File</span>(<span class="ident">p</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="self">self</span>.<span class="ident">conn</span>.<span class="ident">read_file</span>(<span class="ident">p</span>),
-            <span class="ident">DataSource::Data</span>(<span class="ident">d</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="self">self</span>.<span class="ident">conn</span>.<span class="ident">read</span>(<span class="ident">d</span>),
+            <span class="ident">DataSource::File</span>(<span class="ident">p</span>) =&gt; <span class="self">self</span>.<span class="ident">conn</span>.<span class="ident">read_file</span>(<span class="ident">p</span>),
+            <span class="ident">DataSource::Data</span>(<span class="ident">d</span>) =&gt; <span class="self">self</span>.<span class="ident">conn</span>.<span class="ident">read</span>(<span class="ident">d</span>),
         }<span class="question-mark">?</span>;
         <span class="self">self</span>.<span class="ident">lexicon</span>
             .<span class="ident">set_max_conn_sizes</span>(<span class="self">self</span>.<span class="ident">conn</span>.<span class="ident">left</span>(), <span class="self">self</span>.<span class="ident">conn</span>.<span class="ident">right</span>());
@@ -555,7 +555,7 @@
     }
 
     <span class="doccomment">/// Compile the binary dictionary and write it to the specified sink</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">compile</span><span class="op">&lt;</span><span class="ident">W</span>: <span class="ident">Write</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">w</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">W</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">SudachiResult</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">compile</span><span class="op">&lt;</span><span class="ident">W</span>: <span class="ident">Write</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">w</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">W</span>) -&gt; <span class="ident">SudachiResult</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
         <span class="self">self</span>.<span class="ident">check_if_resolved</span>()<span class="question-mark">?</span>;
         <span class="kw">let</span> <span class="ident">report</span> <span class="op">=</span> <span class="ident">ReportBuilder::new</span>(<span class="string">&quot;validate&quot;</span>).<span class="ident">read</span>();
         <span class="self">self</span>.<span class="ident">lexicon</span>.<span class="ident">validate_entries</span>()<span class="question-mark">?</span>;
@@ -569,12 +569,12 @@
     <span class="doccomment">/// Resolve the dictionary references.</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// Returns the number of resolved entries</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">resolve</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">resolve</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>) -&gt; <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span> {
         <span class="self">self</span>.<span class="ident">resolve_impl</span>()
     }
 
     <span class="doccomment">/// Return dictionary build report</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">report</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span>[<span class="ident">DictPartReport</span>] {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">report</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[<span class="ident">DictPartReport</span>] {
         <span class="self">self</span>.<span class="ident">reporter</span>.<span class="ident">reports</span>()
     }
 }
@@ -590,7 +590,7 @@
         <span class="self">self</span>.<span class="ident">user</span> <span class="op">=</span> <span class="ident">user</span>;
     }
 
-    <span class="kw">fn</span> <span class="ident">write_grammar</span><span class="op">&lt;</span><span class="ident">W</span>: <span class="ident">Write</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">w</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">W</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">write_grammar</span><span class="op">&lt;</span><span class="ident">W</span>: <span class="ident">Write</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">w</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">W</span>) -&gt; <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span> {
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">size</span> <span class="op">=</span> <span class="number">0</span>;
         <span class="kw">let</span> <span class="ident">r1</span> <span class="op">=</span> <span class="ident">ReportBuilder::new</span>(<span class="string">&quot;pos_table&quot;</span>);
         <span class="ident">size</span> <span class="op">+</span><span class="op">=</span> <span class="self">self</span>.<span class="ident">lexicon</span>.<span class="ident">write_pos_table</span>(<span class="ident">w</span>)<span class="question-mark">?</span>;
@@ -601,7 +601,7 @@
         <span class="prelude-val">Ok</span>(<span class="ident">size</span>)
     }
 
-    <span class="kw">fn</span> <span class="ident">write_index</span><span class="op">&lt;</span><span class="ident">W</span>: <span class="ident">Write</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">w</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">W</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">write_index</span><span class="op">&lt;</span><span class="ident">W</span>: <span class="ident">Write</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">w</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">W</span>) -&gt; <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span> {
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">size</span> <span class="op">=</span> <span class="number">0</span>;
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">index</span> <span class="op">=</span> <span class="ident">IndexBuilder::new</span>();
         <span class="kw">for</span> (<span class="ident">i</span>, <span class="ident">e</span>) <span class="kw">in</span> <span class="self">self</span>.<span class="ident">lexicon</span>.<span class="ident">entries</span>().<span class="ident">iter</span>().<span class="ident">enumerate</span>() {
@@ -634,7 +634,7 @@
         <span class="prelude-val">Ok</span>(<span class="ident">size</span>)
     }
 
-    <span class="kw">fn</span> <span class="ident">write_lexicon</span><span class="op">&lt;</span><span class="ident">W</span>: <span class="ident">Write</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">w</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">W</span>, <span class="ident">offset</span>: <span class="ident">usize</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">write_lexicon</span><span class="op">&lt;</span><span class="ident">W</span>: <span class="ident">Write</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">w</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">W</span>, <span class="ident">offset</span>: <span class="ident">usize</span>) -&gt; <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span> {
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">size</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">write_index</span>(<span class="ident">w</span>)<span class="question-mark">?</span>;
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">writer</span> <span class="op">=</span>
             <span class="ident">LexiconWriter::new</span>(<span class="self">self</span>.<span class="ident">lexicon</span>.<span class="ident">entries</span>(), <span class="ident">offset</span> <span class="op">+</span> <span class="ident">size</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>.<span class="ident">reporter</span>);
@@ -642,7 +642,7 @@
         <span class="prelude-val">Ok</span>(<span class="ident">size</span>)
     }
 
-    <span class="kw">fn</span> <span class="ident">check_if_resolved</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">SudachiResult</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">check_if_resolved</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">SudachiResult</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
         <span class="kw">if</span> <span class="self">self</span>.<span class="ident">lexicon</span>.<span class="ident">needs_split_resolution</span>() <span class="op">&amp;&amp;</span> <span class="op">!</span><span class="self">self</span>.<span class="ident">resolved</span> {
             <span class="kw">return</span> <span class="self">self</span>.<span class="ident">ctx</span>.<span class="ident">err</span>(<span class="ident">BuildFailure::UnresolvedSplits</span>);
         }
@@ -651,14 +651,14 @@
     }
 
     <span class="doccomment">/// this function must only be used in resolve_impl</span>
-    <span class="kw">fn</span> <span class="ident">unsafe_make_resolver</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="lifetime">&#39;b</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">RawDictResolver</span><span class="op">&lt;</span><span class="lifetime">&#39;b</span><span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">unsafe_make_resolver</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="lifetime">&#39;b</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="self">self</span>) -&gt; <span class="ident">RawDictResolver</span><span class="op">&lt;</span><span class="lifetime">&#39;b</span><span class="op">&gt;</span> {
         <span class="kw">let</span> <span class="ident">resolver</span> <span class="op">=</span> <span class="ident">RawDictResolver::new</span>(<span class="self">self</span>.<span class="ident">lexicon</span>.<span class="ident">entries</span>(), <span class="self">self</span>.<span class="ident">user</span>);
         <span class="comment">// resolver borrows parts of entries, but it does not touch splits</span>
         <span class="comment">// resolve function only modifies splits</span>
         <span class="kw">unsafe</span> { <span class="ident">std::mem::transmute</span>(<span class="ident">resolver</span>) }
     }
 
-    <span class="kw">fn</span> <span class="ident">resolve_impl</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">resolve_impl</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>) -&gt; <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span> {
         <span class="kw">if</span> <span class="op">!</span><span class="self">self</span>.<span class="ident">lexicon</span>.<span class="ident">needs_split_resolution</span>() {
             <span class="self">self</span>.<span class="ident">resolved</span> <span class="op">=</span> <span class="bool-val">true</span>;
             <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="number">0</span>);
@@ -668,20 +668,20 @@
         <span class="kw">let</span> <span class="ident">report</span> <span class="op">=</span> <span class="ident">ReportBuilder::new</span>(<span class="string">&quot;resolve&quot;</span>);
 
         <span class="kw">let</span> <span class="ident">cnt</span> <span class="op">=</span> <span class="kw">match</span> <span class="self">self</span>.<span class="ident">prebuilt</span>.<span class="ident">as_ref</span>() {
-            <span class="prelude-val">Some</span>(<span class="ident">d</span>) <span class="op">=</span><span class="op">&gt;</span> {
+            <span class="prelude-val">Some</span>(<span class="ident">d</span>) =&gt; {
                 <span class="kw">let</span> <span class="ident">built_resolver</span> <span class="op">=</span> <span class="ident">BinDictResolver::new</span>(<span class="ident">d</span>)<span class="question-mark">?</span>;
                 <span class="kw">let</span> <span class="ident">chained</span> <span class="op">=</span> <span class="ident">ChainedResolver::new</span>(<span class="ident">this_resolver</span>, <span class="ident">built_resolver</span>);
                 <span class="self">self</span>.<span class="ident">lexicon</span>.<span class="ident">resolve_splits</span>(<span class="kw-2">&amp;</span><span class="ident">chained</span>)
             }
-            <span class="prelude-val">None</span> <span class="op">=</span><span class="op">&gt;</span> <span class="self">self</span>.<span class="ident">lexicon</span>.<span class="ident">resolve_splits</span>(<span class="kw-2">&amp;</span><span class="ident">this_resolver</span>),
+            <span class="prelude-val">None</span> =&gt; <span class="self">self</span>.<span class="ident">lexicon</span>.<span class="ident">resolve_splits</span>(<span class="kw-2">&amp;</span><span class="ident">this_resolver</span>),
         };
         <span class="kw">let</span> <span class="ident">cnt</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">reporter</span>.<span class="ident">collect_r</span>(<span class="ident">cnt</span>, <span class="ident">report</span>);
         <span class="kw">match</span> <span class="ident">cnt</span> {
-            <span class="prelude-val">Ok</span>(<span class="ident">cnt</span>) <span class="op">=</span><span class="op">&gt;</span> {
+            <span class="prelude-val">Ok</span>(<span class="ident">cnt</span>) =&gt; {
                 <span class="self">self</span>.<span class="ident">resolved</span> <span class="op">=</span> <span class="bool-val">true</span>;
                 <span class="prelude-val">Ok</span>(<span class="ident">cnt</span>)
             }
-            <span class="prelude-val">Err</span>((<span class="ident">split_info</span>, <span class="ident">line</span>)) <span class="op">=</span><span class="op">&gt;</span> <span class="prelude-val">Err</span>(<span class="ident">DicBuildError</span> {
+            <span class="prelude-val">Err</span>((<span class="ident">split_info</span>, <span class="ident">line</span>)) =&gt; <span class="prelude-val">Err</span>(<span class="ident">DicBuildError</span> {
                 <span class="ident">file</span>: <span class="string">&quot;&lt;entries&gt;&quot;</span>.<span class="ident">to_owned</span>(),
                 <span class="ident">line</span>,
                 <span class="ident">cause</span>: <span class="ident">BuildFailure::InvalidSplitWordReference</span>(<span class="ident">split_info</span>),

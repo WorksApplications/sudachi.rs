@@ -276,7 +276,7 @@
 }
 
 <span class="kw">impl</span> <span class="ident">Default</span> <span class="kw">for</span> <span class="ident">DicCompilationCtx</span> {
-    <span class="kw">fn</span> <span class="ident">default</span>() <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
+    <span class="kw">fn</span> <span class="ident">default</span>() -&gt; <span class="self">Self</span> {
         <span class="ident">DicCompilationCtx</span> {
             <span class="ident">name</span>: <span class="ident">Default::default</span>(),
             <span class="ident">line</span>: <span class="ident">Default::default</span>(),
@@ -285,7 +285,7 @@
 }
 
 <span class="kw">impl</span> <span class="ident">DicCompilationCtx</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">memory</span>() <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">memory</span>() -&gt; <span class="self">Self</span> {
         <span class="ident">DicCompilationCtx</span> {
             <span class="ident">name</span>: <span class="string">&quot;&lt;memory&gt;&quot;</span>.<span class="ident">to_owned</span>(),
             <span class="ident">line</span>: <span class="number">0</span>,
@@ -293,15 +293,15 @@
     }
 
     <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">err</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">E</span>: <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">BuildFailure</span><span class="op">&gt;</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">reason</span>: <span class="ident">E</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">err</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">E</span>: <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">BuildFailure</span><span class="op">&gt;</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">reason</span>: <span class="ident">E</span>) -&gt; <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
         <span class="prelude-val">Err</span>(<span class="self">self</span>.<span class="ident">to_sudachi_err</span>(<span class="ident">reason</span>))
     }
 
     <span class="attribute">#[<span class="ident">inline</span>(<span class="ident">always</span>)]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">to_sudachi_err</span><span class="op">&lt;</span><span class="ident">E</span>: <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">BuildFailure</span><span class="op">&gt;</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">reason</span>: <span class="ident">E</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">SudachiError</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">to_sudachi_err</span><span class="op">&lt;</span><span class="ident">E</span>: <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">BuildFailure</span><span class="op">&gt;</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">reason</span>: <span class="ident">E</span>) -&gt; <span class="ident">SudachiError</span> {
         <span class="kw">match</span> <span class="ident">reason</span>.<span class="ident">into</span>() {
-            <span class="ident">BuildFailure::Io</span>(<span class="ident">e</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">e</span>.<span class="ident">into</span>(),
-            <span class="ident">reason</span> <span class="op">=</span><span class="op">&gt;</span> {
+            <span class="ident">BuildFailure::Io</span>(<span class="ident">e</span>) =&gt; <span class="ident">e</span>.<span class="ident">into</span>(),
+            <span class="ident">reason</span> =&gt; {
                 <span class="kw">let</span> <span class="ident">err</span> <span class="op">=</span> <span class="ident">DicBuildError</span> {
                     <span class="ident">file</span>: <span class="self">self</span>.<span class="ident">name</span>.<span class="ident">clone</span>(),
                     <span class="ident">line</span>: <span class="self">self</span>.<span class="ident">line</span>,
@@ -314,27 +314,27 @@
 
     <span class="attribute">#[<span class="ident">inline</span>(<span class="ident">never</span>)]</span>
     <span class="attribute">#[<span class="ident">cold</span>]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">to_sudachi_err_cold</span><span class="op">&lt;</span><span class="ident">E</span>: <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">BuildFailure</span><span class="op">&gt;</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">reason</span>: <span class="ident">E</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">SudachiError</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">to_sudachi_err_cold</span><span class="op">&lt;</span><span class="ident">E</span>: <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">BuildFailure</span><span class="op">&gt;</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">reason</span>: <span class="ident">E</span>) -&gt; <span class="ident">SudachiError</span> {
         <span class="self">self</span>.<span class="ident">to_sudachi_err</span>(<span class="ident">reason</span>)
     }
 
     <span class="attribute">#[<span class="ident">inline</span>(<span class="ident">always</span>)]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">transform</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">result</span>: <span class="ident">DicWriteResult</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">transform</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">result</span>: <span class="ident">DicWriteResult</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>) -&gt; <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
         <span class="kw">match</span> <span class="ident">result</span> {
-            <span class="prelude-val">Ok</span>(<span class="ident">v</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="prelude-val">Ok</span>(<span class="ident">v</span>),
-            <span class="prelude-val">Err</span>(<span class="ident">e</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="prelude-val">Err</span>(<span class="self">self</span>.<span class="ident">to_sudachi_err_cold</span>(<span class="ident">e</span>)),
+            <span class="prelude-val">Ok</span>(<span class="ident">v</span>) =&gt; <span class="prelude-val">Ok</span>(<span class="ident">v</span>),
+            <span class="prelude-val">Err</span>(<span class="ident">e</span>) =&gt; <span class="prelude-val">Err</span>(<span class="self">self</span>.<span class="ident">to_sudachi_err_cold</span>(<span class="ident">e</span>)),
         }
     }
 
     <span class="attribute">#[<span class="ident">inline</span>(<span class="ident">always</span>)]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">apply</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">F</span>: <span class="ident">FnOnce</span>() <span class="op">-</span><span class="op">&gt;</span> <span class="ident">DicWriteResult</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">apply</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">F</span>: <span class="ident">FnOnce</span>() -&gt; <span class="ident">DicWriteResult</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
         <span class="kw">match</span> <span class="ident">f</span>() {
-            <span class="prelude-val">Ok</span>(<span class="ident">v</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="prelude-val">Ok</span>(<span class="ident">v</span>),
-            <span class="prelude-val">Err</span>(<span class="ident">e</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="prelude-val">Err</span>(<span class="self">self</span>.<span class="ident">to_sudachi_err_cold</span>(<span class="ident">e</span>)),
+            <span class="prelude-val">Ok</span>(<span class="ident">v</span>) =&gt; <span class="prelude-val">Ok</span>(<span class="ident">v</span>),
+            <span class="prelude-val">Err</span>(<span class="ident">e</span>) =&gt; <span class="prelude-val">Err</span>(<span class="self">self</span>.<span class="ident">to_sudachi_err_cold</span>(<span class="ident">e</span>)),
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">set_filename</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">new_name</span>: <span class="ident">String</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">String</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">set_filename</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">new_name</span>: <span class="ident">String</span>) -&gt; <span class="ident">String</span> {
         <span class="ident">std::mem::replace</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>.<span class="ident">name</span>, <span class="ident">new_name</span>)
     }
 
@@ -342,7 +342,7 @@
         <span class="self">self</span>.<span class="ident">line</span> <span class="op">+</span><span class="op">=</span> <span class="ident">offset</span>;
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">set_line</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">line</span>: <span class="ident">usize</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">usize</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">set_line</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">line</span>: <span class="ident">usize</span>) -&gt; <span class="ident">usize</span> {
         <span class="ident">std::mem::replace</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>.<span class="ident">line</span>, <span class="ident">line</span>)
     }
 }

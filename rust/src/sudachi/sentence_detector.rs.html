@@ -333,7 +333,7 @@
     <span class="kw">pub</span> <span class="ident">bos</span>: <span class="ident">usize</span>,
 }
 <span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="ident">NonBreakChecker</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">lexicon</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">LexiconSet</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">lexicon</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">LexiconSet</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>) -&gt; <span class="self">Self</span> {
         <span class="ident">NonBreakChecker</span> { <span class="ident">lexicon</span>, <span class="ident">bos</span>: <span class="number">0</span> }
     }
 }
@@ -341,7 +341,7 @@
 <span class="kw">impl</span> <span class="ident">NonBreakChecker</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span> {
     <span class="doccomment">/// Returns whether there is a word that crosses the boundary</span>
 
-    <span class="kw">fn</span> <span class="ident">has_non_break_word</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">input</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>, <span class="ident">length</span>: <span class="ident">usize</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">bool</span> {
+    <span class="kw">fn</span> <span class="ident">has_non_break_word</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">input</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>, <span class="ident">length</span>: <span class="ident">usize</span>) -&gt; <span class="ident">bool</span> {
         <span class="comment">// assume that SentenceDetector::get_eos called with self.input[self.bos..]</span>
         <span class="kw">let</span> <span class="ident">eos_byte</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">bos</span> <span class="op">+</span> <span class="ident">length</span>;
         <span class="kw">let</span> <span class="ident">input_bytes</span> <span class="op">=</span> <span class="ident">input</span>.<span class="ident">as_bytes</span>();
@@ -353,11 +353,11 @@
                 <span class="comment">// handling cases like モーニング娘。</span>
                 <span class="kw">match</span> <span class="ident">end_byte</span>.<span class="ident">cmp</span>(<span class="kw-2">&amp;</span><span class="ident">eos_byte</span>) {
                     <span class="comment">// end is after than boundary candidate, this boundary is bad</span>
-                    <span class="ident">Ordering::Greater</span> <span class="op">=</span><span class="op">&gt;</span> <span class="kw">return</span> <span class="bool-val">true</span>,
+                    <span class="ident">Ordering::Greater</span> =&gt; <span class="kw">return</span> <span class="bool-val">true</span>,
                     <span class="comment">// end is on boundary candidate,</span>
                     <span class="comment">// check that there are more than one character in the matched word</span>
-                    <span class="ident">Ordering::Equal</span> <span class="op">=</span><span class="op">&gt;</span> <span class="kw">return</span> <span class="ident">input</span>[<span class="ident">i</span>..].<span class="ident">chars</span>().<span class="ident">take</span>(<span class="number">2</span>).<span class="ident">count</span>() <span class="op">&gt;</span> <span class="number">1</span>,
-                    <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> {}
+                    <span class="ident">Ordering::Equal</span> =&gt; <span class="kw">return</span> <span class="ident">input</span>[<span class="ident">i</span>..].<span class="ident">chars</span>().<span class="ident">take</span>(<span class="number">2</span>).<span class="ident">count</span>() <span class="op">&gt;</span> <span class="number">1</span>,
+                    <span class="kw">_</span> =&gt; {}
                 }
             }
         }
@@ -383,12 +383,12 @@
 }
 
 <span class="kw">impl</span> <span class="ident">SentenceDetector</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>() <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>() -&gt; <span class="self">Self</span> {
         <span class="ident">SentenceDetector</span> {
             <span class="ident">limit</span>: <span class="ident">DEFAULT_LIMIT</span>,
         }
     }
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">with_limit</span>(<span class="ident">limit</span>: <span class="ident">usize</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">with_limit</span>(<span class="ident">limit</span>: <span class="ident">usize</span>) -&gt; <span class="self">Self</span> {
         <span class="ident">SentenceDetector</span> { <span class="ident">limit</span> }
     }
 
@@ -408,7 +408,7 @@
     <span class="doccomment">/// assert_eq!(12, sd.get_eos(&quot;あいう。えお&quot;, None).unwrap());</span>
     <span class="doccomment">/// assert_eq!(-15, sd.get_eos(&quot;あいうえお&quot;, None).unwrap());</span>
     <span class="doccomment">/// ```</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_eos</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">input</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>, <span class="ident">checker</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">NonBreakChecker</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="ident">isize</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_eos</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">input</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>, <span class="ident">checker</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">NonBreakChecker</span><span class="op">&gt;</span>) -&gt; <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="ident">isize</span><span class="op">&gt;</span> {
         <span class="kw">if</span> <span class="ident">input</span>.<span class="ident">is_empty</span>() {
             <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="number">0</span>);
         }
@@ -473,7 +473,7 @@
 }
 
 <span class="doccomment">/// Returns the count of non-closed open parentheses remaining at the end of input.</span>
-<span class="kw">fn</span> <span class="ident">parenthesis_level</span>(<span class="ident">s</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span> {
+<span class="kw">fn</span> <span class="ident">parenthesis_level</span>(<span class="ident">s</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>) -&gt; <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span> {
     <span class="macro">lazy_static!</span> {
         <span class="kw">static</span> <span class="kw-2">ref</span> <span class="ident">PARENTHESIS</span>: <span class="ident">Regex</span> <span class="op">=</span> <span class="ident">Regex::new</span>(<span class="kw-2">&amp;</span><span class="macro">format!</span>(
             <span class="string">&quot;([{}])|([{}])&quot;</span>,
@@ -494,7 +494,7 @@
 }
 
 <span class="doccomment">/// Returns a byte length of chars at the beggining of str, which cannot be a bos</span>
-<span class="kw">fn</span> <span class="ident">prohibited_bos</span>(<span class="ident">s</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span> {
+<span class="kw">fn</span> <span class="ident">prohibited_bos</span>(<span class="ident">s</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>) -&gt; <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span> {
     <span class="macro">lazy_static!</span> {
         <span class="kw">static</span> <span class="kw-2">ref</span> <span class="ident">PROHIBITED_BOS</span>: <span class="ident">Regex</span> <span class="op">=</span> <span class="ident">Regex::new</span>(<span class="kw-2">&amp;</span><span class="macro">format!</span>(
             <span class="string">&quot;\\A([{}{}{}])+&quot;</span>,
@@ -511,7 +511,7 @@
 }
 
 <span class="comment">// Returns if eos is the middle of phrase</span>
-<span class="kw">fn</span> <span class="ident">is_continuous_phrase</span>(<span class="ident">s</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>, <span class="ident">eos</span>: <span class="ident">usize</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="ident">bool</span><span class="op">&gt;</span> {
+<span class="kw">fn</span> <span class="ident">is_continuous_phrase</span>(<span class="ident">s</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>, <span class="ident">eos</span>: <span class="ident">usize</span>) -&gt; <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="ident">bool</span><span class="op">&gt;</span> {
     <span class="macro">lazy_static!</span> {
         <span class="kw">static</span> <span class="kw-2">ref</span> <span class="ident">QUOTE_MARKER</span>: <span class="ident">Regex</span> <span class="op">=</span> <span class="ident">Regex::new</span>(<span class="kw-2">&amp;</span><span class="macro">format!</span>(
             <span class="string">&quot;(！|？|\\!|\\?|[{}])(と|っ|です)&quot;</span>,
@@ -525,14 +525,14 @@
     <span class="comment">// we can safely unwrap since eos &gt; 0</span>
     <span class="kw">let</span> <span class="ident">last_char_len</span> <span class="op">=</span> <span class="ident">s</span>[..<span class="ident">eos</span>].<span class="ident">chars</span>().<span class="ident">last</span>().<span class="ident">unwrap</span>().<span class="ident">to_string</span>().<span class="ident">len</span>();
     <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">mat</span>) <span class="op">=</span> <span class="ident">QUOTE_MARKER</span>.<span class="ident">find</span>(<span class="kw-2">&amp;</span><span class="ident">s</span>[(<span class="ident">eos</span> <span class="op">-</span> <span class="ident">last_char_len</span>)..])<span class="question-mark">?</span> {
-        <span class="kw">if</span> <span class="ident">mat</span>.<span class="ident">start</span>() <span class="op">=</span><span class="op">=</span> <span class="number">0</span> {
+        <span class="kw">if</span> <span class="ident">mat</span>.<span class="ident">start</span>() <span class="op">==</span> <span class="number">0</span> {
             <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="bool-val">true</span>);
         }
     }
 
     <span class="comment">// we can safely unwrap since eos &lt; s.len()</span>
     <span class="kw">let</span> <span class="ident">c</span> <span class="op">=</span> <span class="ident">s</span>[<span class="ident">eos</span>..].<span class="ident">chars</span>().<span class="ident">nth</span>(<span class="number">0</span>).<span class="ident">unwrap</span>();
-    <span class="prelude-val">Ok</span>((<span class="ident">c</span> <span class="op">=</span><span class="op">=</span> <span class="string">&#39;と&#39;</span> <span class="op">|</span><span class="op">|</span> <span class="ident">c</span> <span class="op">=</span><span class="op">=</span> <span class="string">&#39;や&#39;</span> <span class="op">|</span><span class="op">|</span> <span class="ident">c</span> <span class="op">=</span><span class="op">=</span> <span class="string">&#39;の&#39;</span>) <span class="op">&amp;&amp;</span> <span class="ident">EOS_ITEMIZE_HEADER</span>.<span class="ident">is_match</span>(<span class="kw-2">&amp;</span><span class="ident">s</span>[..<span class="ident">eos</span>])<span class="question-mark">?</span>)
+    <span class="prelude-val">Ok</span>((<span class="ident">c</span> <span class="op">==</span> <span class="string">&#39;と&#39;</span> <span class="op">|</span><span class="op">|</span> <span class="ident">c</span> <span class="op">==</span> <span class="string">&#39;や&#39;</span> <span class="op">|</span><span class="op">|</span> <span class="ident">c</span> <span class="op">==</span> <span class="string">&#39;の&#39;</span>) <span class="op">&amp;&amp;</span> <span class="ident">EOS_ITEMIZE_HEADER</span>.<span class="ident">is_match</span>(<span class="kw-2">&amp;</span><span class="ident">s</span>[..<span class="ident">eos</span>])<span class="question-mark">?</span>)
 }
 
 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">test</span>)]</span>

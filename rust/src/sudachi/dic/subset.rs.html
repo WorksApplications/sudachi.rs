@@ -88,13 +88,13 @@
 }
 
 <span class="kw">impl</span> <span class="ident">Default</span> <span class="kw">for</span> <span class="ident">InfoSubset</span> {
-    <span class="kw">fn</span> <span class="ident">default</span>() <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
+    <span class="kw">fn</span> <span class="ident">default</span>() -&gt; <span class="self">Self</span> {
         <span class="ident"><span class="self">Self</span>::all</span>()
     }
 }
 
 <span class="kw">impl</span> <span class="ident">InfoSubset</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">normalize</span>(<span class="kw-2">mut</span> <span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">normalize</span>(<span class="kw-2">mut</span> <span class="self">self</span>) -&gt; <span class="self">Self</span> {
         <span class="comment">// need to read surface if reading any of one of these forms</span>
         <span class="kw">if</span> <span class="self">self</span>.<span class="ident">intersects</span>(<span class="ident">InfoSubset::READING_FORM</span> <span class="op">|</span> <span class="ident">InfoSubset::NORMALIZED_FORM</span>) {
             <span class="self">self</span> <span class="op">|</span><span class="op">=</span> <span class="ident">InfoSubset::SURFACE</span>

@@ -95,11 +95,11 @@
 }
 
 <span class="kw">impl</span> <span class="ident">AsRef</span><span class="op">&lt;</span>[<span class="ident">u8</span>]<span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Storage</span> {
-    <span class="kw">fn</span> <span class="ident">as_ref</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span>[<span class="ident">u8</span>] {
+    <span class="kw">fn</span> <span class="ident">as_ref</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[<span class="ident">u8</span>] {
         <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">Storage::File</span>(<span class="ident">m</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">m</span>.<span class="ident">as_bytes</span>(),
-            <span class="ident">Storage::Borrowed</span>(<span class="ident">b</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">b</span>,
-            <span class="ident">Storage::Owned</span>(<span class="ident">v</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span><span class="ident">v</span>,
+            <span class="ident">Storage::File</span>(<span class="ident">m</span>) =&gt; <span class="ident">m</span>.<span class="ident">as_bytes</span>(),
+            <span class="ident">Storage::Borrowed</span>(<span class="ident">b</span>) =&gt; <span class="ident">b</span>,
+            <span class="ident">Storage::Owned</span>(<span class="ident">v</span>) =&gt; <span class="kw-2">&amp;</span><span class="ident">v</span>,
         }
     }
 }
@@ -112,7 +112,7 @@
 }
 
 <span class="kw">impl</span> <span class="ident">SudachiDicData</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">system</span>: <span class="ident">Storage</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">system</span>: <span class="ident">Storage</span>) -&gt; <span class="self">Self</span> {
         <span class="self">Self</span> {
             <span class="ident">system</span>,
             <span class="ident">user</span>: <span class="ident">Vec::new</span>(),
@@ -123,15 +123,15 @@
         <span class="self">self</span>.<span class="ident">user</span>.<span class="ident">push</span>(<span class="ident">user</span>)
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">system</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span>[<span class="ident">u8</span>] {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">system</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[<span class="ident">u8</span>] {
         <span class="self">self</span>.<span class="ident">system</span>.<span class="ident">as_ref</span>()
     }
 
-    <span class="kw">pub</span> <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">system_static_slice</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> [<span class="ident">u8</span>] {
+    <span class="kw">pub</span> <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">system_static_slice</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> [<span class="ident">u8</span>] {
         <span class="ident">std::mem::transmute</span>(<span class="self">self</span>.<span class="ident">system</span>())
     }
 
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">user_static_slice</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> [<span class="ident">u8</span>]<span class="op">&gt;</span> {
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">user_static_slice</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Vec</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> [<span class="ident">u8</span>]<span class="op">&gt;</span> {
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">result</span> <span class="op">=</span> <span class="ident">Vec::with_capacity</span>(<span class="self">self</span>.<span class="ident">user</span>.<span class="ident">len</span>());
         <span class="kw">for</span> <span class="ident">u</span> <span class="kw">in</span> <span class="self">self</span>.<span class="ident">user</span>.<span class="ident">iter</span>() {
             <span class="kw">let</span> <span class="ident">slice</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> [<span class="ident">u8</span>] <span class="op">=</span> <span class="kw">unsafe</span> { <span class="ident">std::mem::transmute</span>(<span class="ident">u</span>.<span class="ident">as_ref</span>()) };

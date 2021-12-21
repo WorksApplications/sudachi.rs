@@ -241,7 +241,7 @@
 }
 
 <span class="kw">impl</span> <span class="ident">ConnBuffer</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>() <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>() -&gt; <span class="self">Self</span> {
         <span class="self">Self</span> {
             <span class="ident">matrix</span>: <span class="ident">Vec::new</span>(),
             <span class="ident">ctx</span>: <span class="ident">DicCompilationCtx::default</span>(),
@@ -252,21 +252,21 @@
     }
 
     <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">unused</span>)]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">matrix</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span>[<span class="ident">u8</span>] {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">matrix</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[<span class="ident">u8</span>] {
         <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">matrix</span>
     }
 
     <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">unused</span>)]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">left</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">i16</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">left</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">i16</span> {
         <span class="self">self</span>.<span class="ident">num_left</span>
     }
 
     <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">unused</span>)]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">right</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">i16</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">right</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">i16</span> {
         <span class="self">self</span>.<span class="ident">num_right</span>
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">write_to</span><span class="op">&lt;</span><span class="ident">W</span>: <span class="ident">Write</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">writer</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">W</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">write_to</span><span class="op">&lt;</span><span class="ident">W</span>: <span class="ident">Write</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">writer</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">W</span>) -&gt; <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span> {
         <span class="kw">if</span> <span class="self">self</span>.<span class="ident">num_left</span> <span class="op">&lt;</span> <span class="number">0</span> {
             <span class="kw">return</span> <span class="ident">num_error</span>(<span class="string">&quot;left&quot;</span>, <span class="self">self</span>.<span class="ident">num_left</span>);
         }
@@ -281,7 +281,7 @@
         <span class="prelude-val">Ok</span>(<span class="number">4</span> <span class="op">+</span> <span class="self">self</span>.<span class="ident">matrix</span>.<span class="ident">len</span>())
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">read_file</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">path</span>: <span class="kw-2">&amp;</span><span class="ident">Path</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">SudachiResult</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">read_file</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">path</span>: <span class="kw-2">&amp;</span><span class="ident">Path</span>) -&gt; <span class="ident">SudachiResult</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
         <span class="kw">let</span> <span class="ident">file</span> <span class="op">=</span> <span class="ident">File::open</span>(<span class="ident">path</span>)<span class="question-mark">?</span>;
         <span class="kw">let</span> <span class="ident">bufrd</span> <span class="op">=</span> <span class="ident">BufReader::with_capacity</span>(<span class="number">32</span> <span class="op">*</span> <span class="number">1024</span>, <span class="ident">file</span>);
         <span class="kw">let</span> <span class="ident">filename</span> <span class="op">=</span> <span class="ident">path</span>.<span class="ident">to_str</span>().<span class="ident">unwrap_or</span>(<span class="string">&quot;unknown&quot;</span>).<span class="ident">to_owned</span>();
@@ -291,11 +291,11 @@
         <span class="ident">status</span>
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">read</span><span class="op">&lt;</span><span class="ident">R</span>: <span class="ident">std::io::BufRead</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="kw-2">mut</span> <span class="ident">reader</span>: <span class="ident">R</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">SudachiResult</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">read</span><span class="op">&lt;</span><span class="ident">R</span>: <span class="ident">std::io::BufRead</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="kw-2">mut</span> <span class="ident">reader</span>: <span class="ident">R</span>) -&gt; <span class="ident">SudachiResult</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
         <span class="self">self</span>.<span class="ident">ctx</span>.<span class="ident">set_line</span>(<span class="number">0</span>);
         <span class="kw">loop</span> {
             <span class="kw">let</span> <span class="ident">nread</span> <span class="op">=</span> <span class="ident">reader</span>.<span class="ident">read_line</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>.<span class="ident">line</span>)<span class="question-mark">?</span>;
-            <span class="kw">if</span> <span class="ident">nread</span> <span class="op">=</span><span class="op">=</span> <span class="number">0</span> {
+            <span class="kw">if</span> <span class="ident">nread</span> <span class="op">==</span> <span class="number">0</span> {
                 <span class="macro">todo!</span>()
             }
             <span class="self">self</span>.<span class="ident">ctx</span>.<span class="ident">add_line</span>(<span class="number">1</span>);
@@ -322,7 +322,7 @@
         <span class="kw">loop</span> {
             <span class="self">self</span>.<span class="ident">line</span>.<span class="ident">clear</span>();
             <span class="kw">let</span> <span class="ident">nread</span> <span class="op">=</span> <span class="ident">reader</span>.<span class="ident">read_line</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>.<span class="ident">line</span>)<span class="question-mark">?</span>;
-            <span class="kw">if</span> <span class="ident">nread</span> <span class="op">=</span><span class="op">=</span> <span class="number">0</span> {
+            <span class="kw">if</span> <span class="ident">nread</span> <span class="op">==</span> <span class="number">0</span> {
                 <span class="kw">break</span>;
             }
             <span class="self">self</span>.<span class="ident">ctx</span>.<span class="ident">add_line</span>(<span class="number">1</span>);
@@ -339,7 +339,7 @@
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="kw">fn</span> <span class="ident">parse_header</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">DicWriteResult</span><span class="op">&lt;</span>(<span class="ident">i16</span>, <span class="ident">i16</span>)<span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">parse_header</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>) -&gt; <span class="ident">DicWriteResult</span><span class="op">&lt;</span>(<span class="ident">i16</span>, <span class="ident">i16</span>)<span class="op">&gt;</span> {
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">items</span> <span class="op">=</span> <span class="ident">SPLIT_REGEX</span>.<span class="ident">splitn</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">line</span>.<span class="ident">trim</span>(), <span class="number">2</span>);
         <span class="comment">// TODO: fix get_next error message</span>
         <span class="kw">let</span> <span class="ident">left</span> <span class="op">=</span> <span class="ident">it_next</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">line</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">items</span>, <span class="string">&quot;left_num&quot;</span>, <span class="ident">parse_i16</span>)<span class="question-mark">?</span>;
@@ -347,7 +347,7 @@
         <span class="prelude-val">Ok</span>((<span class="ident">left</span>, <span class="ident">right</span>))
     }
 
-    <span class="kw">fn</span> <span class="ident">parse_line</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">DicWriteResult</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">parse_line</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>) -&gt; <span class="ident">DicWriteResult</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">items</span> <span class="op">=</span> <span class="ident">SPLIT_REGEX</span>.<span class="ident">splitn</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">line</span>.<span class="ident">trim</span>(), <span class="number">3</span>);
         <span class="kw">let</span> <span class="ident">left</span> <span class="op">=</span> <span class="ident">it_next</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">line</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">items</span>, <span class="string">&quot;left&quot;</span>, <span class="ident">parse_i16</span>)<span class="question-mark">?</span>;
         <span class="kw">let</span> <span class="ident">right</span> <span class="op">=</span> <span class="ident">it_next</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">line</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">items</span>, <span class="string">&quot;right&quot;</span>, <span class="ident">parse_i16</span>)<span class="question-mark">?</span>;
@@ -355,7 +355,7 @@
         <span class="self">self</span>.<span class="ident">write_elem</span>(<span class="ident">left</span>, <span class="ident">right</span>, <span class="ident">cost</span>)
     }
 
-    <span class="kw">fn</span> <span class="ident">write_elem</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">left</span>: <span class="ident">i16</span>, <span class="ident">right</span>: <span class="ident">i16</span>, <span class="ident">cost</span>: <span class="ident">i16</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">DicWriteResult</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">write_elem</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">left</span>: <span class="ident">i16</span>, <span class="ident">right</span>: <span class="ident">i16</span>, <span class="ident">cost</span>: <span class="ident">i16</span>) -&gt; <span class="ident">DicWriteResult</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
         <span class="kw">let</span> <span class="ident">index</span> <span class="op">=</span> <span class="ident">right</span> <span class="kw">as</span> <span class="ident">usize</span> <span class="op">*</span> <span class="self">self</span>.<span class="ident">num_left</span> <span class="kw">as</span> <span class="ident">usize</span> <span class="op">+</span> <span class="ident">left</span> <span class="kw">as</span> <span class="ident">usize</span>;
         <span class="kw">let</span> <span class="ident">index</span> <span class="op">=</span> <span class="ident">index</span> <span class="op">*</span> <span class="number">2</span>;
         <span class="kw">let</span> <span class="ident">bytes</span> <span class="op">=</span> <span class="ident">cost</span>.<span class="ident">to_le_bytes</span>();
@@ -365,7 +365,7 @@
     }
 }
 
-<span class="kw">fn</span> <span class="ident">num_error</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>(<span class="ident">part</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="ident">str</span>, <span class="ident">value</span>: <span class="ident">i16</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
+<span class="kw">fn</span> <span class="ident">num_error</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>(<span class="ident">part</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="ident">str</span>, <span class="ident">value</span>: <span class="ident">i16</span>) -&gt; <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
     <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">DicBuildError</span> {
         <span class="ident">file</span>: <span class="string">&quot;&lt;connection&gt;&quot;</span>.<span class="ident">to_owned</span>(),
         <span class="ident">line</span>: <span class="number">0</span>,

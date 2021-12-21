@@ -144,22 +144,22 @@
 }
 
 <span class="kw">impl</span> <span class="ident">NodeIdx</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">empty</span>() <span class="op">-</span><span class="op">&gt;</span> <span class="ident">NodeIdx</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">empty</span>() -&gt; <span class="ident">NodeIdx</span> {
         <span class="ident">NodeIdx</span> {
             <span class="ident">end</span>: <span class="ident">u16::MAX</span>,
             <span class="ident">index</span>: <span class="ident">u16::MAX</span>,
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">end</span>: <span class="ident">u16</span>, <span class="ident">index</span>: <span class="ident">u16</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">NodeIdx</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">end</span>: <span class="ident">u16</span>, <span class="ident">index</span>: <span class="ident">u16</span>) -&gt; <span class="ident">NodeIdx</span> {
         <span class="ident">NodeIdx</span> { <span class="ident">end</span>, <span class="ident">index</span> }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">end</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">u16</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">end</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">u16</span> {
         <span class="self">self</span>.<span class="ident">end</span>
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">index</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">u16</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">index</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">u16</span> {
         <span class="self">self</span>.<span class="ident">index</span>
     }
 }
@@ -182,7 +182,7 @@
         <span class="ident">right_id</span>: <span class="ident">u16</span>,
         <span class="ident">cost</span>: <span class="ident">i16</span>,
         <span class="ident">word_id</span>: <span class="ident">WordId</span>,
-    ) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Node</span> {
+    ) -&gt; <span class="ident">Node</span> {
         <span class="ident">Node</span> {
             <span class="ident">begin</span>,
             <span class="ident">end</span>,
@@ -201,29 +201,29 @@
 
 <span class="kw">impl</span> <span class="ident">RightId</span> <span class="kw">for</span> <span class="ident">Node</span> {
     <span class="attribute">#[<span class="ident">inline</span>(<span class="ident">always</span>)]</span>
-    <span class="kw">fn</span> <span class="ident">right_id</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">u16</span> {
+    <span class="kw">fn</span> <span class="ident">right_id</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">u16</span> {
         <span class="self">self</span>.<span class="ident">right_id</span>
     }
 }
 
 <span class="kw">impl</span> <span class="ident">LatticeNode</span> <span class="kw">for</span> <span class="ident">Node</span> {
-    <span class="kw">fn</span> <span class="ident">begin</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">usize</span> {
+    <span class="kw">fn</span> <span class="ident">begin</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">usize</span> {
         <span class="self">self</span>.<span class="ident">begin</span> <span class="kw">as</span> <span class="ident">usize</span>
     }
 
-    <span class="kw">fn</span> <span class="ident">end</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">usize</span> {
+    <span class="kw">fn</span> <span class="ident">end</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">usize</span> {
         <span class="self">self</span>.<span class="ident">end</span> <span class="kw">as</span> <span class="ident">usize</span>
     }
 
-    <span class="kw">fn</span> <span class="ident">cost</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">i16</span> {
+    <span class="kw">fn</span> <span class="ident">cost</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">i16</span> {
         <span class="self">self</span>.<span class="ident">cost</span>
     }
 
-    <span class="kw">fn</span> <span class="ident">word_id</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">WordId</span> {
+    <span class="kw">fn</span> <span class="ident">word_id</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">WordId</span> {
         <span class="self">self</span>.<span class="ident">word_id</span>
     }
 
-    <span class="kw">fn</span> <span class="ident">left_id</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">u16</span> {
+    <span class="kw">fn</span> <span class="ident">left_id</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">u16</span> {
         <span class="self">self</span>.<span class="ident">left_id</span>
     }
 }

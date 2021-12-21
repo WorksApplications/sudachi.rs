@@ -140,7 +140,7 @@
 <span class="kw">use</span> <span class="ident">std::ops::Range</span>;
 
 <span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">SplitSentences</span> {
-    <span class="kw">fn</span> <span class="ident">split</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="lifetime">&#39;b</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;b</span> <span class="self">self</span>, <span class="ident">data</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">str</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">SentenceIter</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="lifetime">&#39;b</span><span class="op">&gt;</span>;
+    <span class="kw">fn</span> <span class="ident">split</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="lifetime">&#39;b</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;b</span> <span class="self">self</span>, <span class="ident">data</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">str</span>) -&gt; <span class="ident">SentenceIter</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="lifetime">&#39;b</span><span class="op">&gt;</span>;
 }
 
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">SentenceIter</span><span class="op">&lt;</span><span class="lifetime">&#39;s</span>, <span class="lifetime">&#39;x</span><span class="op">&gt;</span> {
@@ -153,8 +153,8 @@
 <span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;s</span>, <span class="lifetime">&#39;x</span><span class="op">&gt;</span> <span class="ident">Iterator</span> <span class="kw">for</span> <span class="ident">SentenceIter</span><span class="op">&lt;</span><span class="lifetime">&#39;s</span>, <span class="lifetime">&#39;x</span><span class="op">&gt;</span> {
     <span class="kw">type</span> <span class="ident">Item</span> <span class="op">=</span> (<span class="ident">Range</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span>, <span class="kw-2">&amp;</span><span class="lifetime">&#39;s</span> <span class="ident">str</span>);
 
-    <span class="kw">fn</span> <span class="ident">next</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident"><span class="self">Self</span>::Item</span><span class="op">&gt;</span> {
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">position</span> <span class="op">=</span><span class="op">=</span> <span class="self">self</span>.<span class="ident">data</span>.<span class="ident">len</span>() {
+    <span class="kw">fn</span> <span class="ident">next</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident"><span class="self">Self</span>::Item</span><span class="op">&gt;</span> {
+        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">position</span> <span class="op">==</span> <span class="self">self</span>.<span class="ident">data</span>.<span class="ident">len</span>() {
             <span class="kw">return</span> <span class="prelude-val">None</span>;
         }
         <span class="kw">let</span> <span class="ident">slice</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">data</span>[<span class="self">self</span>.<span class="ident">position</span>..];
@@ -178,21 +178,21 @@
 }
 
 <span class="kw">impl</span> <span class="ident">SentenceSplitter</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>() <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>() -&gt; <span class="self">Self</span> {
         <span class="ident">SentenceSplitter</span> {
             <span class="ident">detector</span>: <span class="ident">SentenceDetector::new</span>(),
             <span class="ident">checker</span>: <span class="prelude-val">None</span>,
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">with_limit</span>(<span class="ident">limit</span>: <span class="ident">usize</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">with_limit</span>(<span class="ident">limit</span>: <span class="ident">usize</span>) -&gt; <span class="self">Self</span> {
         <span class="ident">SentenceSplitter</span> {
             <span class="ident">detector</span>: <span class="ident">SentenceDetector::with_limit</span>(<span class="ident">limit</span>),
             <span class="ident">checker</span>: <span class="prelude-val">None</span>,
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">with_checker</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="ident">lexicon</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">LexiconSet</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">SentenceSplitter</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">with_checker</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="ident">lexicon</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">LexiconSet</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>) -&gt; <span class="ident">SentenceSplitter</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
         <span class="kw">let</span> <span class="ident">checker</span> <span class="op">=</span> <span class="ident">NonBreakChecker::new</span>(<span class="ident">lexicon</span>);
         <span class="ident">SentenceSplitter</span> {
             <span class="ident">detector</span>: <span class="self">self</span>.<span class="ident">detector</span>,
@@ -202,7 +202,7 @@
 }
 
 <span class="kw">impl</span> <span class="ident">SplitSentences</span> <span class="kw">for</span> <span class="ident">SentenceSplitter</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span> {
-    <span class="kw">fn</span> <span class="ident">split</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="lifetime">&#39;b</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;b</span> <span class="self">self</span>, <span class="ident">data</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">str</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">SentenceIter</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="lifetime">&#39;b</span><span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">split</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="lifetime">&#39;b</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;b</span> <span class="self">self</span>, <span class="ident">data</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">str</span>) -&gt; <span class="ident">SentenceIter</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="lifetime">&#39;b</span><span class="op">&gt;</span> {
         <span class="ident">SentenceIter</span> {
             <span class="ident">data</span>,
             <span class="ident">position</span>: <span class="number">0</span>,

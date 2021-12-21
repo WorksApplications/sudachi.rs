@@ -205,7 +205,7 @@
     <span class="doccomment">/// Creates a LexiconSet given a lexicon</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// It is assumed that the passed lexicon is the system dictionary</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="kw-2">mut</span> <span class="ident">system_lexicon</span>: <span class="ident">Lexicon</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">LexiconSet</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="kw-2">mut</span> <span class="ident">system_lexicon</span>: <span class="ident">Lexicon</span>) -&gt; <span class="ident">LexiconSet</span> {
         <span class="ident">system_lexicon</span>.<span class="ident">set_dic_id</span>(<span class="number">0</span>);
         <span class="ident">LexiconSet</span> {
             <span class="ident">lexicons</span>: <span class="macro">vec!</span>[<span class="ident">system_lexicon</span>],
@@ -220,7 +220,7 @@
         <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>,
         <span class="kw-2">mut</span> <span class="ident">lexicon</span>: <span class="ident">Lexicon</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>,
         <span class="ident">pos_offset</span>: <span class="ident">usize</span>,
-    ) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">LexiconSetError</span><span class="op">&gt;</span> {
+    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">LexiconSetError</span><span class="op">&gt;</span> {
         <span class="kw">if</span> <span class="self">self</span>.<span class="ident">is_full</span>() {
             <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">LexiconSetError::TooManyDictionaries</span>);
         }
@@ -231,7 +231,7 @@
     }
 
     <span class="doccomment">/// Returns if dictionary capacity is full</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">is_full</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">bool</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">is_full</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
         <span class="self">self</span>.<span class="ident">lexicons</span>.<span class="ident">len</span>() <span class="op">&gt;</span><span class="op">=</span> <span class="ident">MAX_DICTIONARIES</span>
     }
 }
@@ -245,7 +245,7 @@
         <span class="kw-2">&amp;</span><span class="lifetime">&#39;b</span> <span class="self">self</span>,
         <span class="ident">input</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;b</span> [<span class="ident">u8</span>],
         <span class="ident">offset</span>: <span class="ident">usize</span>,
-    ) <span class="op">-</span><span class="op">&gt;</span> <span class="kw">impl</span> <span class="ident">Iterator</span><span class="op">&lt;</span><span class="ident">Item</span> <span class="op">=</span> <span class="ident">LexiconEntry</span><span class="op">&gt;</span> <span class="op">+</span> <span class="lifetime">&#39;b</span> {
+    ) -&gt; <span class="kw">impl</span> <span class="ident">Iterator</span><span class="op">&lt;</span><span class="ident">Item</span> <span class="op">=</span> <span class="ident">LexiconEntry</span><span class="op">&gt;</span> <span class="op">+</span> <span class="lifetime">&#39;b</span> {
         <span class="comment">// word_id fixup was moved to lexicon itself</span>
         <span class="self">self</span>.<span class="ident">lexicons</span>
             .<span class="ident">iter</span>()
@@ -254,14 +254,14 @@
     }
 
     <span class="doccomment">/// Returns WordInfo for given WordId</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_word_info</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">id</span>: <span class="ident">WordId</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="ident">WordInfo</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_word_info</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">id</span>: <span class="ident">WordId</span>) -&gt; <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="ident">WordInfo</span><span class="op">&gt;</span> {
         <span class="self">self</span>.<span class="ident">get_word_info_subset</span>(<span class="ident">id</span>, <span class="ident">InfoSubset::all</span>())
     }
 
     <span class="doccomment">/// Returns WordInfo for given WordId.</span>
     <span class="doccomment">/// Only fills a requested subset of fields.</span>
     <span class="doccomment">/// Rest will be of default values (0 or empty).</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_word_info_subset</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">id</span>: <span class="ident">WordId</span>, <span class="ident">subset</span>: <span class="ident">InfoSubset</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="ident">WordInfo</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_word_info_subset</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">id</span>: <span class="ident">WordId</span>, <span class="ident">subset</span>: <span class="ident">InfoSubset</span>) -&gt; <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="ident">WordInfo</span><span class="op">&gt;</span> {
         <span class="kw">let</span> <span class="ident">dict_id</span> <span class="op">=</span> <span class="ident">id</span>.<span class="ident">dic</span>();
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">word_info</span>: <span class="ident">WordInfoData</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">lexicons</span>[<span class="ident">dict_id</span> <span class="kw">as</span> <span class="ident">usize</span>]
             .<span class="ident">get_word_info</span>(<span class="ident">id</span>.<span class="ident">word</span>(), <span class="ident">subset</span>)<span class="question-mark">?</span>
@@ -292,12 +292,12 @@
     }
 
     <span class="doccomment">/// Returns word_param for given word_id</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_word_param</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">id</span>: <span class="ident">WordId</span>) <span class="op">-</span><span class="op">&gt;</span> (<span class="ident">i16</span>, <span class="ident">i16</span>, <span class="ident">i16</span>) {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_word_param</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">id</span>: <span class="ident">WordId</span>) -&gt; (<span class="ident">i16</span>, <span class="ident">i16</span>, <span class="ident">i16</span>) {
         <span class="kw">let</span> <span class="ident">dic_id</span> <span class="op">=</span> <span class="ident">id</span>.<span class="ident">dic</span>() <span class="kw">as</span> <span class="ident">usize</span>;
         <span class="self">self</span>.<span class="ident">lexicons</span>[<span class="ident">dic_id</span>].<span class="ident">get_word_param</span>(<span class="ident">id</span>.<span class="ident">word</span>())
     }
 
-    <span class="kw">fn</span> <span class="ident">update_dict_id</span>(<span class="ident">split</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">WordId</span><span class="op">&gt;</span>, <span class="ident">dict_id</span>: <span class="ident">u8</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">SudachiResult</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">update_dict_id</span>(<span class="ident">split</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">WordId</span><span class="op">&gt;</span>, <span class="ident">dict_id</span>: <span class="ident">u8</span>) -&gt; <span class="ident">SudachiResult</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
         <span class="kw">for</span> <span class="ident">id</span> <span class="kw">in</span> <span class="ident">split</span>.<span class="ident">iter_mut</span>() {
             <span class="kw">let</span> <span class="ident">cur_dict_id</span> <span class="op">=</span> <span class="ident">id</span>.<span class="ident">dic</span>();
             <span class="kw">if</span> <span class="ident">cur_dict_id</span> <span class="op">&gt;</span> <span class="number">0</span> {
@@ -308,7 +308,7 @@
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">size</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">u32</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">size</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">u32</span> {
         <span class="self">self</span>.<span class="ident">lexicons</span>.<span class="ident">iter</span>().<span class="ident">fold</span>(<span class="number">0</span>, <span class="op">|</span><span class="ident">acc</span>, <span class="ident">lex</span><span class="op">|</span> <span class="ident">acc</span> <span class="op">+</span> <span class="ident">lex</span>.<span class="ident">size</span>())
     }
 }

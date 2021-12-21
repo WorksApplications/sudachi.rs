@@ -217,22 +217,22 @@
     <span class="ident">_lexicon</span>: <span class="ident">LexiconSet</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span><span class="op">&gt;</span>,
 }
 
-<span class="kw">fn</span> <span class="ident">map_file</span>(<span class="ident">path</span>: <span class="kw-2">&amp;</span><span class="ident">Path</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="ident">Storage</span><span class="op">&gt;</span> {
+<span class="kw">fn</span> <span class="ident">map_file</span>(<span class="ident">path</span>: <span class="kw-2">&amp;</span><span class="ident">Path</span>) -&gt; <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="ident">Storage</span><span class="op">&gt;</span> {
     <span class="kw">let</span> <span class="ident">file</span> <span class="op">=</span> <span class="ident">File::open</span>(<span class="ident">path</span>)<span class="question-mark">?</span>;
     <span class="kw">let</span> <span class="ident">mapping</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="ident">Mmap::map</span>(<span class="kw-2">&amp;</span><span class="ident">file</span>) }<span class="question-mark">?</span>;
     <span class="prelude-val">Ok</span>(<span class="ident">Storage::File</span>(<span class="ident">mapping</span>))
 }
 
-<span class="kw">fn</span> <span class="ident">load_system_dic</span>(<span class="ident">cfg</span>: <span class="kw-2">&amp;</span><span class="ident">Config</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="ident">Storage</span><span class="op">&gt;</span> {
+<span class="kw">fn</span> <span class="ident">load_system_dic</span>(<span class="ident">cfg</span>: <span class="kw-2">&amp;</span><span class="ident">Config</span>) -&gt; <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="ident">Storage</span><span class="op">&gt;</span> {
     <span class="kw">match</span> <span class="kw-2">&amp;</span><span class="ident">cfg</span>.<span class="ident">system_dict</span> {
-        <span class="prelude-val">Some</span>(<span class="ident">p</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">map_file</span>(<span class="ident">p</span>).<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">e</span>.<span class="ident">with_context</span>(<span class="ident">p</span>.<span class="ident">as_os_str</span>().<span class="ident">to_string_lossy</span>())),
-        <span class="prelude-val">None</span> <span class="op">=</span><span class="op">&gt;</span> <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">ConfigError</span>(<span class="ident">MissingArgument</span>(<span class="ident">String::from</span>(<span class="string">&quot;system_dict&quot;</span>)))),
+        <span class="prelude-val">Some</span>(<span class="ident">p</span>) =&gt; <span class="ident">map_file</span>(<span class="ident">p</span>).<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">e</span>.<span class="ident">with_context</span>(<span class="ident">p</span>.<span class="ident">as_os_str</span>().<span class="ident">to_string_lossy</span>())),
+        <span class="prelude-val">None</span> =&gt; <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">ConfigError</span>(<span class="ident">MissingArgument</span>(<span class="ident">String::from</span>(<span class="string">&quot;system_dict&quot;</span>)))),
     }
 }
 <span class="kw">impl</span> <span class="ident">JapaneseDictionary</span> {
     <span class="doccomment">/// Creates a dictionary from the specified configuration</span>
     <span class="doccomment">/// Dictionaries will be read from disk</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">from_cfg</span>(<span class="ident">cfg</span>: <span class="kw-2">&amp;</span><span class="ident">Config</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="ident">JapaneseDictionary</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">from_cfg</span>(<span class="ident">cfg</span>: <span class="kw-2">&amp;</span><span class="ident">Config</span>) -&gt; <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="ident">JapaneseDictionary</span><span class="op">&gt;</span> {
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">sb</span> <span class="op">=</span> <span class="ident">SudachiDicData::new</span>(<span class="ident">load_system_dic</span>(<span class="ident">cfg</span>)<span class="question-mark">?</span>);
 
         <span class="kw">for</span> <span class="ident">udic</span> <span class="kw">in</span> <span class="ident">cfg</span>.<span class="ident">user_dicts</span>.<span class="ident">iter</span>() {
@@ -249,7 +249,7 @@
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">from_cfg_storage</span>(
         <span class="ident">cfg</span>: <span class="kw-2">&amp;</span><span class="ident">Config</span>,
         <span class="ident">storage</span>: <span class="ident">SudachiDicData</span>,
-    ) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="ident">JapaneseDictionary</span><span class="op">&gt;</span> {
+    ) -&gt; <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="ident">JapaneseDictionary</span><span class="op">&gt;</span> {
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">basic_dict</span> <span class="op">=</span> <span class="ident">LoadedDictionary::from_system_dictionary</span>(
             <span class="kw">unsafe</span> { <span class="ident">storage</span>.<span class="ident">system_static_slice</span>() },
             <span class="kw-2">&amp;</span><span class="ident">cfg</span>.<span class="ident">character_definition_file</span>,
@@ -282,16 +282,16 @@
     }
 
     <span class="doccomment">/// Returns grammar with the correct lifetime</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">grammar</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span><span class="ident">Grammar</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">grammar</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">Grammar</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
         <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">_grammar</span>
     }
 
     <span class="doccomment">/// Returns lexicon with the correct lifetime</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">lexicon</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span><span class="ident">LexiconSet</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">lexicon</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">LexiconSet</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
         <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">_lexicon</span>
     }
 
-    <span class="kw">fn</span> <span class="ident">merge_user_dictionary</span>(<span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">dictionary_bytes</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> [<span class="ident">u8</span>]) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">merge_user_dictionary</span>(<span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">dictionary_bytes</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> [<span class="ident">u8</span>]) -&gt; <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span> {
         <span class="kw">let</span> <span class="ident">user_dict</span> <span class="op">=</span> <span class="ident">DictionaryLoader::read_user_dictionary</span>(<span class="ident">dictionary_bytes</span>)<span class="question-mark">?</span>;
 
         <span class="comment">// we need to update lexicon first, since it needs the current number of pos</span>
@@ -310,23 +310,23 @@
 }
 
 <span class="kw">impl</span> <span class="ident">DictionaryAccess</span> <span class="kw">for</span> <span class="ident">JapaneseDictionary</span> {
-    <span class="kw">fn</span> <span class="ident">grammar</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span><span class="ident">Grammar</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">grammar</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">Grammar</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span> {
         <span class="self">self</span>.<span class="ident">grammar</span>()
     }
 
-    <span class="kw">fn</span> <span class="ident">lexicon</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span><span class="ident">LexiconSet</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">lexicon</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">LexiconSet</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span> {
         <span class="self">self</span>.<span class="ident">lexicon</span>()
     }
 
-    <span class="kw">fn</span> <span class="ident">input_text_plugins</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span>[<span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">InputTextPlugin</span> <span class="op">+</span> <span class="ident">Sync</span> <span class="op">+</span> <span class="ident">Send</span><span class="op">&gt;</span>] {
+    <span class="kw">fn</span> <span class="ident">input_text_plugins</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[<span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">InputTextPlugin</span> <span class="op">+</span> <span class="ident">Sync</span> <span class="op">+</span> <span class="ident">Send</span><span class="op">&gt;</span>] {
         <span class="self">self</span>.<span class="ident">plugins</span>.<span class="ident">input_text</span>.<span class="ident">plugins</span>()
     }
 
-    <span class="kw">fn</span> <span class="ident">oov_provider_plugins</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span>[<span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">OovProviderPlugin</span> <span class="op">+</span> <span class="ident">Sync</span> <span class="op">+</span> <span class="ident">Send</span><span class="op">&gt;</span>] {
+    <span class="kw">fn</span> <span class="ident">oov_provider_plugins</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[<span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">OovProviderPlugin</span> <span class="op">+</span> <span class="ident">Sync</span> <span class="op">+</span> <span class="ident">Send</span><span class="op">&gt;</span>] {
         <span class="self">self</span>.<span class="ident">plugins</span>.<span class="ident">oov</span>.<span class="ident">plugins</span>()
     }
 
-    <span class="kw">fn</span> <span class="ident">path_rewrite_plugins</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span>[<span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">PathRewritePlugin</span> <span class="op">+</span> <span class="ident">Sync</span> <span class="op">+</span> <span class="ident">Send</span><span class="op">&gt;</span>] {
+    <span class="kw">fn</span> <span class="ident">path_rewrite_plugins</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[<span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">PathRewritePlugin</span> <span class="op">+</span> <span class="ident">Sync</span> <span class="op">+</span> <span class="ident">Send</span><span class="op">&gt;</span>] {
         <span class="self">self</span>.<span class="ident">plugins</span>.<span class="ident">path_rewrite</span>.<span class="ident">plugins</span>()
     }
 }

@@ -171,7 +171,7 @@
 }
 
 <span class="kw">impl</span> <span class="ident">StringNumber</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>() <span class="op">-</span><span class="op">&gt;</span> <span class="ident">StringNumber</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>() -&gt; <span class="ident">StringNumber</span> {
         <span class="ident">StringNumber</span> {
             <span class="ident">significand</span>: <span class="ident">String::new</span>(),
             <span class="ident">scale</span>: <span class="number">0</span>,
@@ -201,7 +201,7 @@
         <span class="self">self</span>.<span class="ident">scale</span> <span class="op">=</span> (<span class="self">self</span>.<span class="ident">scale</span> <span class="kw">as</span> <span class="ident">i32</span> <span class="op">+</span> <span class="ident">i</span>) <span class="kw">as</span> <span class="ident">usize</span>;
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">add</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">number</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">StringNumber</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">bool</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">add</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">number</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">StringNumber</span>) -&gt; <span class="ident">bool</span> {
         <span class="kw">if</span> <span class="ident">number</span>.<span class="ident">is_zero</span>() {
             <span class="kw">return</span> <span class="bool-val">true</span>;
         }
@@ -228,15 +228,15 @@
         <span class="bool-val">false</span>
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">set_point</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">bool</span> {
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">scale</span> <span class="op">=</span><span class="op">=</span> <span class="number">0</span> <span class="op">&amp;&amp;</span> <span class="self">self</span>.<span class="ident">point</span> <span class="op">&lt;</span> <span class="number">0</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">set_point</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>) -&gt; <span class="ident">bool</span> {
+        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">scale</span> <span class="op">==</span> <span class="number">0</span> <span class="op">&amp;&amp;</span> <span class="self">self</span>.<span class="ident">point</span> <span class="op">&lt;</span> <span class="number">0</span> {
             <span class="self">self</span>.<span class="ident">point</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">significand</span>.<span class="ident">len</span>() <span class="kw">as</span> <span class="ident">i32</span>;
             <span class="kw">return</span> <span class="bool-val">true</span>;
         }
         <span class="bool-val">false</span>
     }
 
-    <span class="kw">fn</span> <span class="ident">int_length</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">usize</span> {
+    <span class="kw">fn</span> <span class="ident">int_length</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>) -&gt; <span class="ident">usize</span> {
         <span class="self">self</span>.<span class="ident">normalize_scale</span>();
         <span class="kw">if</span> <span class="self">self</span>.<span class="ident">point</span> <span class="op">&gt;</span><span class="op">=</span> <span class="number">0</span> {
             <span class="kw">return</span> <span class="self">self</span>.<span class="ident">point</span> <span class="kw">as</span> <span class="ident">usize</span>;
@@ -244,11 +244,11 @@
         <span class="self">self</span>.<span class="ident">significand</span>.<span class="ident">len</span>() <span class="op">+</span> <span class="self">self</span>.<span class="ident">scale</span>
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">is_zero</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">bool</span> {
-        <span class="self">self</span>.<span class="ident">significand</span>.<span class="ident">len</span>() <span class="op">=</span><span class="op">=</span> <span class="number">0</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">is_zero</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
+        <span class="self">self</span>.<span class="ident">significand</span>.<span class="ident">len</span>() <span class="op">==</span> <span class="number">0</span>
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">to_string</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">String</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">to_string</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>) -&gt; <span class="ident">String</span> {
         <span class="kw">if</span> <span class="self">self</span>.<span class="ident">is_zero</span>() {
             <span class="kw">return</span> <span class="string">&quot;0&quot;</span>.<span class="ident">to_owned</span>();
         }
@@ -258,18 +258,18 @@
             <span class="self">self</span>.<span class="ident">fill_zero</span>(<span class="self">self</span>.<span class="ident">scale</span>);
         } <span class="kw">else</span> <span class="kw">if</span> <span class="self">self</span>.<span class="ident">point</span> <span class="op">&gt;</span><span class="op">=</span> <span class="number">0</span> {
             <span class="self">self</span>.<span class="ident">significand</span>.<span class="ident">insert</span>(<span class="self">self</span>.<span class="ident">point</span> <span class="kw">as</span> <span class="ident">usize</span>, <span class="string">&#39;.&#39;</span>);
-            <span class="kw">if</span> <span class="self">self</span>.<span class="ident">point</span> <span class="op">=</span><span class="op">=</span> <span class="number">0</span> {
+            <span class="kw">if</span> <span class="self">self</span>.<span class="ident">point</span> <span class="op">==</span> <span class="number">0</span> {
                 <span class="self">self</span>.<span class="ident">significand</span>.<span class="ident">insert</span>(<span class="number">0</span>, <span class="string">&#39;0&#39;</span>);
             }
             <span class="kw">let</span> <span class="ident">n_last_zero</span> <span class="op">=</span> <span class="self">self</span>
                 .<span class="ident">significand</span>
                 .<span class="ident">chars</span>()
                 .<span class="ident">rev</span>()
-                .<span class="ident">take_while</span>(<span class="op">|</span><span class="ident">c</span><span class="op">|</span> <span class="kw-2">*</span><span class="ident">c</span> <span class="op">=</span><span class="op">=</span> <span class="string">&#39;0&#39;</span>)
+                .<span class="ident">take_while</span>(<span class="op">|</span><span class="ident">c</span><span class="op">|</span> <span class="kw-2">*</span><span class="ident">c</span> <span class="op">==</span> <span class="string">&#39;0&#39;</span>)
                 .<span class="ident">count</span>();
             <span class="self">self</span>.<span class="ident">significand</span>
                 .<span class="ident">truncate</span>(<span class="self">self</span>.<span class="ident">significand</span>.<span class="ident">len</span>() <span class="op">-</span> <span class="ident">n_last_zero</span>);
-            <span class="kw">if</span> <span class="self">self</span>.<span class="ident">significand</span>.<span class="ident">chars</span>().<span class="ident">last</span>().<span class="ident">unwrap</span>() <span class="op">=</span><span class="op">=</span> <span class="string">&#39;.&#39;</span> {
+            <span class="kw">if</span> <span class="self">self</span>.<span class="ident">significand</span>.<span class="ident">chars</span>().<span class="ident">last</span>().<span class="ident">unwrap</span>() <span class="op">==</span> <span class="string">&#39;.&#39;</span> {
                 <span class="self">self</span>.<span class="ident">significand</span>.<span class="ident">truncate</span>(<span class="self">self</span>.<span class="ident">significand</span>.<span class="ident">len</span>() <span class="op">-</span> <span class="number">1</span>);
             }
         }

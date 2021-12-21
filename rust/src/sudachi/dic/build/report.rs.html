@@ -127,19 +127,19 @@
 }
 
 <span class="kw">impl</span> <span class="ident">DictPartReport</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">part</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span><span class="ident">str</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">part</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">str</span> {
         <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">part</span>
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">time</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Duration</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">time</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Duration</span> {
         <span class="self">self</span>.<span class="ident">time</span>
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">size</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">usize</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">size</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">usize</span> {
         <span class="self">self</span>.<span class="ident">size</span>
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">is_write</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">bool</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">is_write</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
         <span class="self">self</span>.<span class="ident">write</span>
     }
 }
@@ -149,7 +149,7 @@
 }
 
 <span class="kw">impl</span> <span class="ident">Reporter</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>() <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Reporter</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>() -&gt; <span class="ident">Reporter</span> {
         <span class="self">Self</span> {
             <span class="ident">reports</span>: <span class="ident">Vec::with_capacity</span>(<span class="number">10</span>),
         }
@@ -166,17 +166,17 @@
         <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>,
         <span class="ident">end</span>: <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">usize</span>, <span class="ident">T</span><span class="op">&gt;</span>,
         <span class="ident">report</span>: <span class="ident">ReportBuilder</span>,
-    ) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">usize</span>, <span class="ident">T</span><span class="op">&gt;</span> {
+    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">usize</span>, <span class="ident">T</span><span class="op">&gt;</span> {
         <span class="kw">match</span> <span class="ident">end</span> {
-            <span class="prelude-val">Ok</span>(<span class="ident">s</span>) <span class="op">=</span><span class="op">&gt;</span> {
+            <span class="prelude-val">Ok</span>(<span class="ident">s</span>) =&gt; {
                 <span class="self">self</span>.<span class="ident">collect</span>(<span class="ident">s</span>, <span class="ident">report</span>);
                 <span class="prelude-val">Ok</span>(<span class="ident">s</span>)
             }
-            <span class="ident">e</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">e</span>,
+            <span class="ident">e</span> =&gt; <span class="ident">e</span>,
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">reports</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span>[<span class="ident">DictPartReport</span>] {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">reports</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[<span class="ident">DictPartReport</span>] {
         <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">reports</span>
     }
 }
@@ -187,7 +187,7 @@
 }
 
 <span class="kw">impl</span> <span class="ident">ReportBuilder</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span><span class="op">&lt;</span><span class="ident">S</span>: <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span><span class="op">&gt;</span>(<span class="ident">desc</span>: <span class="ident">S</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span><span class="op">&lt;</span><span class="ident">S</span>: <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span><span class="op">&gt;</span>(<span class="ident">desc</span>: <span class="ident">S</span>) -&gt; <span class="self">Self</span> {
         <span class="self">Self</span> {
             <span class="ident">start</span>: <span class="ident">Instant::now</span>(),
             <span class="ident">report</span>: <span class="ident">DictPartReport</span> {
@@ -199,7 +199,7 @@
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">read</span>(<span class="kw-2">mut</span> <span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">read</span>(<span class="kw-2">mut</span> <span class="self">self</span>) -&gt; <span class="self">Self</span> {
         <span class="self">self</span>.<span class="ident">report</span>.<span class="ident">write</span> <span class="op">=</span> <span class="bool-val">false</span>;
         <span class="self">self</span>
     }

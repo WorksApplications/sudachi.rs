@@ -171,11 +171,11 @@
 
 <span class="doccomment">/// Provides access to dictionary data</span>
 <span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">DictionaryAccess</span> {
-    <span class="kw">fn</span> <span class="ident">grammar</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span><span class="ident">Grammar</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>;
-    <span class="kw">fn</span> <span class="ident">lexicon</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span><span class="ident">LexiconSet</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>;
-    <span class="kw">fn</span> <span class="ident">input_text_plugins</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span>[<span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">InputTextPlugin</span> <span class="op">+</span> <span class="ident">Sync</span> <span class="op">+</span> <span class="ident">Send</span><span class="op">&gt;</span>];
-    <span class="kw">fn</span> <span class="ident">oov_provider_plugins</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span>[<span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">OovProviderPlugin</span> <span class="op">+</span> <span class="ident">Sync</span> <span class="op">+</span> <span class="ident">Send</span><span class="op">&gt;</span>];
-    <span class="kw">fn</span> <span class="ident">path_rewrite_plugins</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span>[<span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">PathRewritePlugin</span> <span class="op">+</span> <span class="ident">Sync</span> <span class="op">+</span> <span class="ident">Send</span><span class="op">&gt;</span>];
+    <span class="kw">fn</span> <span class="ident">grammar</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">Grammar</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>;
+    <span class="kw">fn</span> <span class="ident">lexicon</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">LexiconSet</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>;
+    <span class="kw">fn</span> <span class="ident">input_text_plugins</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[<span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">InputTextPlugin</span> <span class="op">+</span> <span class="ident">Sync</span> <span class="op">+</span> <span class="ident">Send</span><span class="op">&gt;</span>];
+    <span class="kw">fn</span> <span class="ident">oov_provider_plugins</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[<span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">OovProviderPlugin</span> <span class="op">+</span> <span class="ident">Sync</span> <span class="op">+</span> <span class="ident">Send</span><span class="op">&gt;</span>];
+    <span class="kw">fn</span> <span class="ident">path_rewrite_plugins</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[<span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">PathRewritePlugin</span> <span class="op">+</span> <span class="ident">Sync</span> <span class="op">+</span> <span class="ident">Send</span><span class="op">&gt;</span>];
 }
 
 <span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="ident">DictionaryAccess</span> <span class="kw">for</span> <span class="ident">T</span>
@@ -183,23 +183,23 @@
     <span class="ident">T</span>: <span class="ident">Deref</span>,
     <span class="op">&lt;</span><span class="ident">T</span> <span class="kw">as</span> <span class="ident">Deref</span><span class="op">&gt;</span><span class="ident">::Target</span>: <span class="ident">DictionaryAccess</span>,
 {
-    <span class="kw">fn</span> <span class="ident">grammar</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span><span class="ident">Grammar</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">grammar</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">Grammar</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span> {
         <span class="op">&lt;</span><span class="ident">T</span> <span class="kw">as</span> <span class="ident">Deref</span><span class="op">&gt;</span><span class="ident">::deref</span>(<span class="self">self</span>).<span class="ident">grammar</span>()
     }
 
-    <span class="kw">fn</span> <span class="ident">lexicon</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span><span class="ident">LexiconSet</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">lexicon</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">LexiconSet</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span> {
         <span class="op">&lt;</span><span class="ident">T</span> <span class="kw">as</span> <span class="ident">Deref</span><span class="op">&gt;</span><span class="ident">::deref</span>(<span class="self">self</span>).<span class="ident">lexicon</span>()
     }
 
-    <span class="kw">fn</span> <span class="ident">input_text_plugins</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span>[<span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">InputTextPlugin</span> <span class="op">+</span> <span class="ident">Sync</span> <span class="op">+</span> <span class="ident">Send</span><span class="op">&gt;</span>] {
+    <span class="kw">fn</span> <span class="ident">input_text_plugins</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[<span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">InputTextPlugin</span> <span class="op">+</span> <span class="ident">Sync</span> <span class="op">+</span> <span class="ident">Send</span><span class="op">&gt;</span>] {
         <span class="op">&lt;</span><span class="ident">T</span> <span class="kw">as</span> <span class="ident">Deref</span><span class="op">&gt;</span><span class="ident">::deref</span>(<span class="self">self</span>).<span class="ident">input_text_plugins</span>()
     }
 
-    <span class="kw">fn</span> <span class="ident">oov_provider_plugins</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span>[<span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">OovProviderPlugin</span> <span class="op">+</span> <span class="ident">Sync</span> <span class="op">+</span> <span class="ident">Send</span><span class="op">&gt;</span>] {
+    <span class="kw">fn</span> <span class="ident">oov_provider_plugins</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[<span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">OovProviderPlugin</span> <span class="op">+</span> <span class="ident">Sync</span> <span class="op">+</span> <span class="ident">Send</span><span class="op">&gt;</span>] {
         <span class="op">&lt;</span><span class="ident">T</span> <span class="kw">as</span> <span class="ident">Deref</span><span class="op">&gt;</span><span class="ident">::deref</span>(<span class="self">self</span>).<span class="ident">oov_provider_plugins</span>()
     }
 
-    <span class="kw">fn</span> <span class="ident">path_rewrite_plugins</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span>[<span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">PathRewritePlugin</span> <span class="op">+</span> <span class="ident">Sync</span> <span class="op">+</span> <span class="ident">Send</span><span class="op">&gt;</span>] {
+    <span class="kw">fn</span> <span class="ident">path_rewrite_plugins</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[<span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">PathRewritePlugin</span> <span class="op">+</span> <span class="ident">Sync</span> <span class="op">+</span> <span class="ident">Send</span><span class="op">&gt;</span>] {
         <span class="op">&lt;</span><span class="ident">T</span> <span class="kw">as</span> <span class="ident">Deref</span><span class="op">&gt;</span><span class="ident">::deref</span>(<span class="self">self</span>).<span class="ident">path_rewrite_plugins</span>()
     }
 }
@@ -213,7 +213,7 @@
 }
 
 <span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">DictionaryAccess</span><span class="op">&gt;</span> <span class="ident">StatelessTokenizer</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">dict</span>: <span class="ident">T</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">StatelessTokenizer</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">dict</span>: <span class="ident">T</span>) -&gt; <span class="ident">StatelessTokenizer</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
         <span class="ident">StatelessTokenizer</span> { <span class="ident">dict</span> }
     }
 }
@@ -223,7 +223,7 @@
     <span class="ident">T</span>: <span class="ident">Deref</span>,
     <span class="op">&lt;</span><span class="ident">T</span> <span class="kw">as</span> <span class="ident">Deref</span><span class="op">&gt;</span><span class="ident">::Target</span>: <span class="ident">DictionaryAccess</span>,
 {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">as_dict</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span><span class="op">&lt;</span><span class="ident">T</span> <span class="kw">as</span> <span class="ident">Deref</span><span class="op">&gt;</span><span class="ident">::Target</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">as_dict</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="op">&lt;</span><span class="ident">T</span> <span class="kw">as</span> <span class="ident">Deref</span><span class="op">&gt;</span><span class="ident">::Target</span> {
         <span class="kw">return</span> <span class="ident">Deref::deref</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">dict</span>);
     }
 }
@@ -239,7 +239,7 @@
         <span class="ident">input</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">str</span>,
         <span class="ident">mode</span>: <span class="ident">Mode</span>,
         <span class="ident">enable_debug</span>: <span class="ident">bool</span>,
-    ) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="ident">MorphemeList</span><span class="op">&lt;</span><span class="ident"><span class="self">Self</span>::Dictionary</span><span class="op">&gt;</span><span class="op">&gt;</span> {
+    ) -&gt; <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="ident">MorphemeList</span><span class="op">&lt;</span><span class="ident"><span class="self">Self</span>::Dictionary</span><span class="op">&gt;</span><span class="op">&gt;</span> {
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">tok</span> <span class="op">=</span> <span class="ident">StatefulTokenizer::create</span>(<span class="self">self</span>.<span class="ident">dict</span>.<span class="ident">clone</span>(), <span class="ident">enable_debug</span>, <span class="ident">mode</span>);
         <span class="ident">tok</span>.<span class="ident">reset</span>().<span class="ident">push_str</span>(<span class="ident">input</span>);
         <span class="ident">tok</span>.<span class="ident">do_tokenize</span>()<span class="question-mark">?</span>;
@@ -253,8 +253,8 @@
     <span class="ident">mode</span>: <span class="ident">Mode</span>,
     <span class="ident">subset</span>: <span class="ident">InfoSubset</span>,
     <span class="ident">input</span>: <span class="kw-2">&amp;</span><span class="ident">InputBuffer</span>,
-) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">ResultNode</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-    <span class="kw">if</span> <span class="ident">mode</span> <span class="op">=</span><span class="op">=</span> <span class="ident">Mode::C</span> {
+) -&gt; <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">ResultNode</span><span class="op">&gt;</span><span class="op">&gt;</span> {
+    <span class="kw">if</span> <span class="ident">mode</span> <span class="op">==</span> <span class="ident">Mode::C</span> {
         <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="ident">path</span>);
     }
 
