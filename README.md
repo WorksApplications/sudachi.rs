@@ -84,7 +84,7 @@ You need sudachi.rs, default plugins, and a dictionary. (This crate don't includ
 ### 1. Get the source code
 
 ```
-$ git clone https://github.com/WorksApplications/SudachiPy.git
+$ git clone https://github.com/WorksApplications/sudachi.rs.git
 ```
 
 ### 2. Download a Sudachi Dictionary
