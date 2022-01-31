@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `sudachi&#x2F;src&#x2F;plugin&#x2F;path_rewrite&#x2F;join_numeric&#x2F;numeric_parser&#x2F;mod.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>mod.rs - source</title><link rel="stylesheet" type="text/css" href="../../../../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../../../../light.css"  id="themeStyle"><link rel="stylesheet" type="text/css" href="../../../../../../dark.css" disabled ><link rel="stylesheet" type="text/css" href="../../../../../../ayu.css" disabled ><script id="default-settings" ></script><script src="../../../../../../storage.js"></script><script src="../../../../../../crates.js"></script><noscript><link rel="stylesheet" href="../../../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../../../favicon.svg"><style type="text/css">#crate-search{background-image:url("../../../../../../down-arrow.svg");}</style></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu" role="button">&#9776;</div><a href='../../../../../../sudachi/index.html'><div class='logo-container rust-logo'><img src='../../../../../../rust-logo.png' alt='logo'></div></a></nav><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img width="18" height="18" alt="Pick another theme!" src="../../../../../../brush.svg"></button><div id="theme-choices" role="menu"></div></div><nav class="sub"><form class="search-form"><div class="search-container"><div><select id="crate-search"><option value="All crates">All crates</option></select><input class="search-input" name="search" disabled autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"></div><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../../../../../settings.html" title="settings"><img width="18" height="18" alt="Change settings" src="../../../../../../wheel.svg"></a></div></form></nav><section id="main" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">  1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `sudachi&#x2F;src&#x2F;plugin&#x2F;path_rewrite&#x2F;join_numeric&#x2F;numeric_parser&#x2F;mod.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>mod.rs - source</title><link rel="stylesheet" type="text/css" href="../../../../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../../../../light.css"  id="themeStyle"><link rel="stylesheet" type="text/css" href="../../../../../../dark.css" disabled ><link rel="stylesheet" type="text/css" href="../../../../../../ayu.css" disabled ><script id="default-settings" ></script><script src="../../../../../../storage.js"></script><script src="../../../../../../crates.js"></script><script defer src="../../../../../../main.js"></script><script defer src="../../../../../../source-script.js"></script><script defer src="../../../../../../source-files.js"></script>
+    <noscript><link rel="stylesheet" href="../../../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../../../favicon.svg"><style type="text/css">#crate-search{background-image:url("../../../../../../down-arrow.svg");}</style></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu" role="button">&#9776;</div><a href='../../../../../../sudachi/index.html'><div class='logo-container rust-logo'><img src='../../../../../../rust-logo.png' alt='logo'></div></a></nav><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img width="18" height="18" alt="Pick another theme!" src="../../../../../../brush.svg"></button><div id="theme-choices" role="menu"></div></div><nav class="sub"><form class="search-form"><div class="search-container"><div><select id="crate-search"><option value="All crates">All crates</option></select><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"></div><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../../../../../settings.html" title="settings"><img width="18" height="18" alt="Change settings" src="../../../../../../wheel.svg"></a></div></form></nav><section id="main" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">  1</span>
 <span id="2">  2</span>
 <span id="3">  3</span>
 <span id="4">  4</span>
@@ -459,7 +460,7 @@
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">clear</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>) {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">clear</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) {
         <span class="self">self</span>.<span class="ident">digit_length</span> <span class="op">=</span> <span class="number">0</span>;
         <span class="self">self</span>.<span class="ident">is_first_digit</span> <span class="op">=</span> <span class="bool-val">true</span>;
         <span class="self">self</span>.<span class="ident">has_comma</span> <span class="op">=</span> <span class="bool-val">false</span>;
@@ -470,7 +471,7 @@
         <span class="self">self</span>.<span class="ident">tmp</span>.<span class="ident">clear</span>();
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">append</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">c</span>: <span class="kw-2">&amp;</span><span class="ident">char</span>) -&gt; <span class="ident">bool</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">append</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">c</span>: <span class="kw-2">&amp;</span><span class="ident">char</span>) -&gt; <span class="ident">bool</span> {
         <span class="kw">if</span> <span class="kw-2">*</span><span class="ident">c</span> <span class="op">==</span> <span class="string">&#39;.&#39;</span> {
             <span class="self">self</span>.<span class="ident">has_hanging_point</span> <span class="op">=</span> <span class="bool-val">true</span>;
             <span class="kw">if</span> <span class="self">self</span>.<span class="ident">is_first_digit</span> {
@@ -504,7 +505,7 @@
         };
         <span class="kw">if</span> <span class="ident">NumericParser::is_small_unit</span>(<span class="ident">n</span>) {
             <span class="self">self</span>.<span class="ident">tmp</span>.<span class="ident">shift_scale</span>(<span class="op">-</span><span class="ident">n</span>);
-            <span class="kw">if</span> <span class="op">!</span><span class="self">self</span>.<span class="ident">subtotal</span>.<span class="ident">add</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>.<span class="ident">tmp</span>) {
+            <span class="kw">if</span> <span class="op">!</span><span class="self">self</span>.<span class="ident">subtotal</span>.<span class="ident">add</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">tmp</span>) {
                 <span class="kw">return</span> <span class="bool-val">false</span>;
             }
             <span class="self">self</span>.<span class="ident">tmp</span>.<span class="ident">clear</span>();
@@ -512,11 +513,11 @@
             <span class="self">self</span>.<span class="ident">digit_length</span> <span class="op">=</span> <span class="number">0</span>;
             <span class="self">self</span>.<span class="ident">has_comma</span> <span class="op">=</span> <span class="bool-val">false</span>;
         } <span class="kw">else</span> <span class="kw">if</span> <span class="ident">NumericParser::is_large_unit</span>(<span class="ident">n</span>) {
-            <span class="kw">if</span> <span class="op">!</span><span class="self">self</span>.<span class="ident">subtotal</span>.<span class="ident">add</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>.<span class="ident">tmp</span>) <span class="op">|</span><span class="op">|</span> <span class="self">self</span>.<span class="ident">subtotal</span>.<span class="ident">is_zero</span>() {
+            <span class="kw">if</span> <span class="op">!</span><span class="self">self</span>.<span class="ident">subtotal</span>.<span class="ident">add</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">tmp</span>) <span class="op">|</span><span class="op">|</span> <span class="self">self</span>.<span class="ident">subtotal</span>.<span class="ident">is_zero</span>() {
                 <span class="kw">return</span> <span class="bool-val">false</span>;
             }
             <span class="self">self</span>.<span class="ident">subtotal</span>.<span class="ident">shift_scale</span>(<span class="op">-</span><span class="ident">n</span>);
-            <span class="kw">if</span> <span class="op">!</span><span class="self">self</span>.<span class="ident">total</span>.<span class="ident">add</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>.<span class="ident">subtotal</span>) {
+            <span class="kw">if</span> <span class="op">!</span><span class="self">self</span>.<span class="ident">total</span>.<span class="ident">add</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">subtotal</span>) {
                 <span class="kw">return</span> <span class="bool-val">false</span>;
             }
             <span class="self">self</span>.<span class="ident">subtotal</span>.<span class="ident">clear</span>();
@@ -534,8 +535,8 @@
         <span class="bool-val">true</span>
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">done</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="kw">let</span> <span class="ident">ret</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">subtotal</span>.<span class="ident">add</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>.<span class="ident">tmp</span>) <span class="op">&amp;&amp;</span> <span class="self">self</span>.<span class="ident">total</span>.<span class="ident">add</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>.<span class="ident">subtotal</span>);
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">done</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="ident">bool</span> {
+        <span class="kw">let</span> <span class="ident">ret</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">subtotal</span>.<span class="ident">add</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">tmp</span>) <span class="op">&amp;&amp;</span> <span class="self">self</span>.<span class="ident">total</span>.<span class="ident">add</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">subtotal</span>);
         <span class="kw">if</span> <span class="self">self</span>.<span class="ident">has_hanging_point</span> {
             <span class="self">self</span>.<span class="ident">error_state</span> <span class="op">=</span> <span class="ident">Error::POINT</span>;
             <span class="kw">return</span> <span class="bool-val">false</span>;
@@ -547,7 +548,7 @@
         <span class="ident">ret</span>
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_normalized</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>) -&gt; <span class="ident">String</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_normalized</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="ident">String</span> {
         <span class="self">self</span>.<span class="ident">total</span>.<span class="ident">to_string</span>()
     }
 
@@ -573,7 +574,7 @@
 <span class="kw">mod</span> <span class="ident">tests</span> {
     <span class="kw">use</span> <span class="kw">super</span>::<span class="kw-2">*</span>;
 
-    <span class="kw">fn</span> <span class="ident">parse</span>(<span class="ident">parser</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">NumericParser</span>, <span class="ident">text</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>) -&gt; <span class="ident">bool</span> {
+    <span class="kw">fn</span> <span class="ident">parse</span>(<span class="ident">parser</span>: <span class="kw-2">&amp;mut</span> <span class="ident">NumericParser</span>, <span class="ident">text</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>) -&gt; <span class="ident">bool</span> {
         <span class="kw">for</span> <span class="ident">c</span> <span class="kw">in</span> <span class="ident">text</span>.<span class="ident">to_string</span>().<span class="ident">chars</span>() {
             <span class="kw">if</span> <span class="op">!</span><span class="ident">parser</span>.<span class="ident">append</span>(<span class="kw-2">&amp;</span><span class="ident">c</span>) {
                 <span class="kw">return</span> <span class="bool-val">false</span>;
@@ -585,158 +586,157 @@
     <span class="attribute">#[<span class="ident">test</span>]</span>
     <span class="kw">fn</span> <span class="ident">digits</span>() {
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">parser</span> <span class="op">=</span> <span class="ident">NumericParser::new</span>();
-        <span class="macro">assert!</span>(<span class="ident">parse</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">parser</span>, <span class="string">&quot;1000&quot;</span>));
+        <span class="macro">assert!</span>(<span class="ident">parse</span>(<span class="kw-2">&amp;mut</span> <span class="ident">parser</span>, <span class="string">&quot;1000&quot;</span>));
         <span class="macro">assert_eq!</span>(<span class="string">&quot;1000&quot;</span>, <span class="ident">parser</span>.<span class="ident">get_normalized</span>());
     }
 
     <span class="attribute">#[<span class="ident">test</span>]</span>
     <span class="kw">fn</span> <span class="ident">starts_with_zero</span>() {
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">parser</span> <span class="op">=</span> <span class="ident">NumericParser::new</span>();
-        <span class="macro">assert!</span>(<span class="ident">parse</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">parser</span>, <span class="string">&quot;001000&quot;</span>));
+        <span class="macro">assert!</span>(<span class="ident">parse</span>(<span class="kw-2">&amp;mut</span> <span class="ident">parser</span>, <span class="string">&quot;001000&quot;</span>));
         <span class="macro">assert_eq!</span>(<span class="string">&quot;001000&quot;</span>, <span class="ident">parser</span>.<span class="ident">get_normalized</span>());
 
         <span class="ident">parser</span>.<span class="ident">clear</span>();
-        <span class="macro">assert!</span>(<span class="ident">parse</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">parser</span>, <span class="string">&quot;〇一〇〇〇&quot;</span>));
+        <span class="macro">assert!</span>(<span class="ident">parse</span>(<span class="kw-2">&amp;mut</span> <span class="ident">parser</span>, <span class="string">&quot;〇一〇〇〇&quot;</span>));
         <span class="macro">assert_eq!</span>(<span class="string">&quot;01000&quot;</span>, <span class="ident">parser</span>.<span class="ident">get_normalized</span>());
 
         <span class="ident">parser</span>.<span class="ident">clear</span>();
-        <span class="macro">assert!</span>(<span class="ident">parse</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">parser</span>, <span class="string">&quot;00.1000&quot;</span>));
+        <span class="macro">assert!</span>(<span class="ident">parse</span>(<span class="kw-2">&amp;mut</span> <span class="ident">parser</span>, <span class="string">&quot;00.1000&quot;</span>));
         <span class="macro">assert_eq!</span>(<span class="string">&quot;00.1&quot;</span>, <span class="ident">parser</span>.<span class="ident">get_normalized</span>());
 
         <span class="ident">parser</span>.<span class="ident">clear</span>();
-        <span class="macro">assert!</span>(<span class="ident">parse</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">parser</span>, <span class="string">&quot;000&quot;</span>));
+        <span class="macro">assert!</span>(<span class="ident">parse</span>(<span class="kw-2">&amp;mut</span> <span class="ident">parser</span>, <span class="string">&quot;000&quot;</span>));
         <span class="macro">assert_eq!</span>(<span class="string">&quot;000&quot;</span>, <span class="ident">parser</span>.<span class="ident">get_normalized</span>());
     }
 
     <span class="attribute">#[<span class="ident">test</span>]</span>
     <span class="kw">fn</span> <span class="ident">use_small_unit</span>() {
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">parser</span> <span class="op">=</span> <span class="ident">NumericParser::new</span>();
-        <span class="macro">assert!</span>(<span class="ident">parse</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">parser</span>, <span class="string">&quot;二十七&quot;</span>));
+        <span class="macro">assert!</span>(<span class="ident">parse</span>(<span class="kw-2">&amp;mut</span> <span class="ident">parser</span>, <span class="string">&quot;二十七&quot;</span>));
         <span class="macro">assert_eq!</span>(<span class="string">&quot;27&quot;</span>, <span class="ident">parser</span>.<span class="ident">get_normalized</span>());
 
         <span class="ident">parser</span>.<span class="ident">clear</span>();
-        <span class="macro">assert!</span>(<span class="ident">parse</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">parser</span>, <span class="string">&quot;千三百二十七&quot;</span>));
+        <span class="macro">assert!</span>(<span class="ident">parse</span>(<span class="kw-2">&amp;mut</span> <span class="ident">parser</span>, <span class="string">&quot;千三百二十七&quot;</span>));
         <span class="macro">assert_eq!</span>(<span class="string">&quot;1327&quot;</span>, <span class="ident">parser</span>.<span class="ident">get_normalized</span>());
 
         <span class="ident">parser</span>.<span class="ident">clear</span>();
-        <span class="macro">assert!</span>(<span class="ident">parse</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">parser</span>, <span class="string">&quot;千十七&quot;</span>));
+        <span class="macro">assert!</span>(<span class="ident">parse</span>(<span class="kw-2">&amp;mut</span> <span class="ident">parser</span>, <span class="string">&quot;千十七&quot;</span>));
         <span class="macro">assert_eq!</span>(<span class="string">&quot;1017&quot;</span>, <span class="ident">parser</span>.<span class="ident">get_normalized</span>());
 
         <span class="ident">parser</span>.<span class="ident">clear</span>();
-        <span class="macro">assert!</span>(<span class="ident">parse</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">parser</span>, <span class="string">&quot;千三百二十七.〇五&quot;</span>));
+        <span class="macro">assert!</span>(<span class="ident">parse</span>(<span class="kw-2">&amp;mut</span> <span class="ident">parser</span>, <span class="string">&quot;千三百二十七.〇五&quot;</span>));
         <span class="macro">assert_eq!</span>(<span class="string">&quot;1327.05&quot;</span>, <span class="ident">parser</span>.<span class="ident">get_normalized</span>());
 
         <span class="ident">parser</span>.<span class="ident">clear</span>();
-        <span class="macro">assert!</span>(<span class="op">!</span><span class="ident">parse</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">parser</span>, <span class="string">&quot;三百二十百&quot;</span>));
+        <span class="macro">assert!</span>(<span class="op">!</span><span class="ident">parse</span>(<span class="kw-2">&amp;mut</span> <span class="ident">parser</span>, <span class="string">&quot;三百二十百&quot;</span>));
     }
 
     <span class="attribute">#[<span class="ident">test</span>]</span>
     <span class="kw">fn</span> <span class="ident">use_large_unit</span>() {
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">parser</span> <span class="op">=</span> <span class="ident">NumericParser::new</span>();
-        <span class="macro">assert!</span>(<span class="ident">parse</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">parser</span>, <span class="string">&quot;1万&quot;</span>));
+        <span class="macro">assert!</span>(<span class="ident">parse</span>(<span class="kw-2">&amp;mut</span> <span class="ident">parser</span>, <span class="string">&quot;1万&quot;</span>));
         <span class="macro">assert_eq!</span>(<span class="string">&quot;10000&quot;</span>, <span class="ident">parser</span>.<span class="ident">get_normalized</span>());
 
         <span class="ident">parser</span>.<span class="ident">clear</span>();
-        <span class="macro">assert!</span>(<span class="ident">parse</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">parser</span>, <span class="string">&quot;千三百二十七万&quot;</span>));
+        <span class="macro">assert!</span>(<span class="ident">parse</span>(<span class="kw-2">&amp;mut</span> <span class="ident">parser</span>, <span class="string">&quot;千三百二十七万&quot;</span>));
         <span class="macro">assert_eq!</span>(<span class="string">&quot;13270000&quot;</span>, <span class="ident">parser</span>.<span class="ident">get_normalized</span>());
 
         <span class="ident">parser</span>.<span class="ident">clear</span>();
-        <span class="macro">assert!</span>(<span class="ident">parse</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">parser</span>, <span class="string">&quot;千三百二十七万一四&quot;</span>));
+        <span class="macro">assert!</span>(<span class="ident">parse</span>(<span class="kw-2">&amp;mut</span> <span class="ident">parser</span>, <span class="string">&quot;千三百二十七万一四&quot;</span>));
         <span class="macro">assert_eq!</span>(<span class="string">&quot;13270014&quot;</span>, <span class="ident">parser</span>.<span class="ident">get_normalized</span>());
 
         <span class="ident">parser</span>.<span class="ident">clear</span>();
-        <span class="macro">assert!</span>(<span class="ident">parse</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">parser</span>, <span class="string">&quot;千三百二十七万一四.〇五&quot;</span>));
+        <span class="macro">assert!</span>(<span class="ident">parse</span>(<span class="kw-2">&amp;mut</span> <span class="ident">parser</span>, <span class="string">&quot;千三百二十七万一四.〇五&quot;</span>));
         <span class="macro">assert_eq!</span>(<span class="string">&quot;13270014.05&quot;</span>, <span class="ident">parser</span>.<span class="ident">get_normalized</span>());
 
         <span class="ident">parser</span>.<span class="ident">clear</span>();
-        <span class="macro">assert!</span>(<span class="ident">parse</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">parser</span>, <span class="string">&quot;三兆2千億千三百二十七万一四.〇五&quot;</span>));
+        <span class="macro">assert!</span>(<span class="ident">parse</span>(<span class="kw-2">&amp;mut</span> <span class="ident">parser</span>, <span class="string">&quot;三兆2千億千三百二十七万一四.〇五&quot;</span>));
         <span class="macro">assert_eq!</span>(<span class="string">&quot;3200013270014.05&quot;</span>, <span class="ident">parser</span>.<span class="ident">get_normalized</span>());
 
         <span class="ident">parser</span>.<span class="ident">clear</span>();
-        <span class="macro">assert!</span>(<span class="op">!</span><span class="ident">parse</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">parser</span>, <span class="string">&quot;億万&quot;</span>));
+        <span class="macro">assert!</span>(<span class="op">!</span><span class="ident">parse</span>(<span class="kw-2">&amp;mut</span> <span class="ident">parser</span>, <span class="string">&quot;億万&quot;</span>));
     }
 
     <span class="attribute">#[<span class="ident">test</span>]</span>
     <span class="kw">fn</span> <span class="ident">float_with_unit</span>() {
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">parser</span> <span class="op">=</span> <span class="ident">NumericParser::new</span>();
-        <span class="macro">assert!</span>(<span class="ident">parse</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">parser</span>, <span class="string">&quot;1.5千&quot;</span>));
+        <span class="macro">assert!</span>(<span class="ident">parse</span>(<span class="kw-2">&amp;mut</span> <span class="ident">parser</span>, <span class="string">&quot;1.5千&quot;</span>));
         <span class="macro">assert_eq!</span>(<span class="string">&quot;1500&quot;</span>, <span class="ident">parser</span>.<span class="ident">get_normalized</span>());
 
         <span class="ident">parser</span>.<span class="ident">clear</span>();
-        <span class="macro">assert!</span>(<span class="ident">parse</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">parser</span>, <span class="string">&quot;1.5百万&quot;</span>));
+        <span class="macro">assert!</span>(<span class="ident">parse</span>(<span class="kw-2">&amp;mut</span> <span class="ident">parser</span>, <span class="string">&quot;1.5百万&quot;</span>));
         <span class="macro">assert_eq!</span>(<span class="string">&quot;1500000&quot;</span>, <span class="ident">parser</span>.<span class="ident">get_normalized</span>());
 
         <span class="ident">parser</span>.<span class="ident">clear</span>();
-        <span class="macro">assert!</span>(<span class="ident">parse</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">parser</span>, <span class="string">&quot;1.5百万1.5千20&quot;</span>));
+        <span class="macro">assert!</span>(<span class="ident">parse</span>(<span class="kw-2">&amp;mut</span> <span class="ident">parser</span>, <span class="string">&quot;1.5百万1.5千20&quot;</span>));
         <span class="macro">assert_eq!</span>(<span class="string">&quot;1501520&quot;</span>, <span class="ident">parser</span>.<span class="ident">get_normalized</span>());
 
         <span class="ident">parser</span>.<span class="ident">clear</span>();
-        <span class="macro">assert!</span>(<span class="op">!</span><span class="ident">parse</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">parser</span>, <span class="string">&quot;1.5千5百&quot;</span>));
+        <span class="macro">assert!</span>(<span class="op">!</span><span class="ident">parse</span>(<span class="kw-2">&amp;mut</span> <span class="ident">parser</span>, <span class="string">&quot;1.5千5百&quot;</span>));
 
         <span class="ident">parser</span>.<span class="ident">clear</span>();
-        <span class="macro">assert!</span>(<span class="op">!</span><span class="ident">parse</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">parser</span>, <span class="string">&quot;1.5千500&quot;</span>));
+        <span class="macro">assert!</span>(<span class="op">!</span><span class="ident">parse</span>(<span class="kw-2">&amp;mut</span> <span class="ident">parser</span>, <span class="string">&quot;1.5千500&quot;</span>));
     }
 
     <span class="attribute">#[<span class="ident">test</span>]</span>
     <span class="kw">fn</span> <span class="ident">log_numeric</span>() {
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">parser</span> <span class="op">=</span> <span class="ident">NumericParser::new</span>();
-        <span class="macro">assert!</span>(<span class="ident">parse</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">parser</span>, <span class="string">&quot;200000000000000000000万&quot;</span>));
+        <span class="macro">assert!</span>(<span class="ident">parse</span>(<span class="kw-2">&amp;mut</span> <span class="ident">parser</span>, <span class="string">&quot;200000000000000000000万&quot;</span>));
         <span class="macro">assert_eq!</span>(<span class="string">&quot;2000000000000000000000000&quot;</span>, <span class="ident">parser</span>.<span class="ident">get_normalized</span>());
     }
 
     <span class="attribute">#[<span class="ident">test</span>]</span>
     <span class="kw">fn</span> <span class="ident">with_comma</span>() {
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">parser</span> <span class="op">=</span> <span class="ident">NumericParser::new</span>();
-        <span class="macro">assert!</span>(<span class="ident">parse</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">parser</span>, <span class="string">&quot;2,000,000&quot;</span>));
+        <span class="macro">assert!</span>(<span class="ident">parse</span>(<span class="kw-2">&amp;mut</span> <span class="ident">parser</span>, <span class="string">&quot;2,000,000&quot;</span>));
         <span class="macro">assert_eq!</span>(<span class="string">&quot;2000000&quot;</span>, <span class="ident">parser</span>.<span class="ident">get_normalized</span>());
 
         <span class="ident">parser</span>.<span class="ident">clear</span>();
-        <span class="macro">assert!</span>(<span class="ident">parse</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">parser</span>, <span class="string">&quot;259万2,300&quot;</span>));
+        <span class="macro">assert!</span>(<span class="ident">parse</span>(<span class="kw-2">&amp;mut</span> <span class="ident">parser</span>, <span class="string">&quot;259万2,300&quot;</span>));
         <span class="macro">assert_eq!</span>(<span class="string">&quot;2592300&quot;</span>, <span class="ident">parser</span>.<span class="ident">get_normalized</span>());
 
         <span class="ident">parser</span>.<span class="ident">clear</span>();
-        <span class="macro">assert!</span>(<span class="op">!</span><span class="ident">parse</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">parser</span>, <span class="string">&quot;200,00,000&quot;</span>));
+        <span class="macro">assert!</span>(<span class="op">!</span><span class="ident">parse</span>(<span class="kw-2">&amp;mut</span> <span class="ident">parser</span>, <span class="string">&quot;200,00,000&quot;</span>));
         <span class="macro">assert_eq!</span>(<span class="ident">Error::COMMA</span>, <span class="ident">parser</span>.<span class="ident">error_state</span>);
 
         <span class="ident">parser</span>.<span class="ident">clear</span>();
-        <span class="macro">assert!</span>(<span class="op">!</span><span class="ident">parse</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">parser</span>, <span class="string">&quot;2,4&quot;</span>));
+        <span class="macro">assert!</span>(<span class="op">!</span><span class="ident">parse</span>(<span class="kw-2">&amp;mut</span> <span class="ident">parser</span>, <span class="string">&quot;2,4&quot;</span>));
         <span class="macro">assert_eq!</span>(<span class="ident">Error::COMMA</span>, <span class="ident">parser</span>.<span class="ident">error_state</span>);
 
         <span class="ident">parser</span>.<span class="ident">clear</span>();
-        <span class="macro">assert!</span>(<span class="op">!</span><span class="ident">parse</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">parser</span>, <span class="string">&quot;000,000&quot;</span>));
+        <span class="macro">assert!</span>(<span class="op">!</span><span class="ident">parse</span>(<span class="kw-2">&amp;mut</span> <span class="ident">parser</span>, <span class="string">&quot;000,000&quot;</span>));
         <span class="macro">assert_eq!</span>(<span class="ident">Error::COMMA</span>, <span class="ident">parser</span>.<span class="ident">error_state</span>);
 
         <span class="ident">parser</span>.<span class="ident">clear</span>();
-        <span class="macro">assert!</span>(<span class="op">!</span><span class="ident">parse</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">parser</span>, <span class="string">&quot;,000&quot;</span>));
+        <span class="macro">assert!</span>(<span class="op">!</span><span class="ident">parse</span>(<span class="kw-2">&amp;mut</span> <span class="ident">parser</span>, <span class="string">&quot;,000&quot;</span>));
         <span class="macro">assert_eq!</span>(<span class="ident">Error::COMMA</span>, <span class="ident">parser</span>.<span class="ident">error_state</span>);
 
         <span class="ident">parser</span>.<span class="ident">clear</span>();
-        <span class="macro">assert!</span>(<span class="op">!</span><span class="ident">parse</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">parser</span>, <span class="string">&quot;256,55.1&quot;</span>));
+        <span class="macro">assert!</span>(<span class="op">!</span><span class="ident">parse</span>(<span class="kw-2">&amp;mut</span> <span class="ident">parser</span>, <span class="string">&quot;256,55.1&quot;</span>));
         <span class="macro">assert_eq!</span>(<span class="ident">Error::COMMA</span>, <span class="ident">parser</span>.<span class="ident">error_state</span>);
     }
 
     <span class="attribute">#[<span class="ident">test</span>]</span>
     <span class="kw">fn</span> <span class="ident">not_digit</span>() {
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">parser</span> <span class="op">=</span> <span class="ident">NumericParser::new</span>();
-        <span class="macro">assert!</span>(<span class="op">!</span><span class="ident">parse</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">parser</span>, <span class="string">&quot;@@@&quot;</span>));
+        <span class="macro">assert!</span>(<span class="op">!</span><span class="ident">parse</span>(<span class="kw-2">&amp;mut</span> <span class="ident">parser</span>, <span class="string">&quot;@@@&quot;</span>));
     }
 
     <span class="attribute">#[<span class="ident">test</span>]</span>
     <span class="kw">fn</span> <span class="ident">float_point</span>() {
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">parser</span> <span class="op">=</span> <span class="ident">NumericParser::new</span>();
-        <span class="macro">assert!</span>(<span class="ident">parse</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">parser</span>, <span class="string">&quot;6.0&quot;</span>));
+        <span class="macro">assert!</span>(<span class="ident">parse</span>(<span class="kw-2">&amp;mut</span> <span class="ident">parser</span>, <span class="string">&quot;6.0&quot;</span>));
         <span class="macro">assert_eq!</span>(<span class="string">&quot;6&quot;</span>, <span class="ident">parser</span>.<span class="ident">get_normalized</span>());
 
         <span class="ident">parser</span>.<span class="ident">clear</span>();
-        <span class="macro">assert!</span>(<span class="op">!</span><span class="ident">parse</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">parser</span>, <span class="string">&quot;6.&quot;</span>));
+        <span class="macro">assert!</span>(<span class="op">!</span><span class="ident">parse</span>(<span class="kw-2">&amp;mut</span> <span class="ident">parser</span>, <span class="string">&quot;6.&quot;</span>));
         <span class="macro">assert_eq!</span>(<span class="ident">Error::POINT</span>, <span class="ident">parser</span>.<span class="ident">error_state</span>);
 
         <span class="ident">parser</span>.<span class="ident">clear</span>();
-        <span class="macro">assert!</span>(<span class="op">!</span><span class="ident">parse</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">parser</span>, <span class="string">&quot;1.2.3&quot;</span>));
+        <span class="macro">assert!</span>(<span class="op">!</span><span class="ident">parse</span>(<span class="kw-2">&amp;mut</span> <span class="ident">parser</span>, <span class="string">&quot;1.2.3&quot;</span>));
         <span class="macro">assert_eq!</span>(<span class="ident">Error::POINT</span>, <span class="ident">parser</span>.<span class="ident">error_state</span>);
     }
 }
 </code></pre></div>
 </section><section id="search" class="content hidden"></section><div id="rustdoc-vars" data-root-path="../../../../../../" data-current-crate="sudachi" data-search-index-js="../../../../../../search-index.js" data-search-js="../../../../../../search.js"></div>
-    <script src="../../../../../../main.js"></script><script src="../../../../../../source-script.js"></script><script src="../../../../../../source-files.js"></script>
 </body></html>
