@@ -15,7 +15,7 @@ x86 32-bit architecture is not supported and is not tested.
 MacOS source builds seem to work on ARM-based (Aarch64) Macs,
 but this architecture also is not tested and require installing Rust toolchain and Cargo.
 
-More information [here](https://worksapplications.github.io/sudachi.rs/python/wheels.html).
+More information [here](https://worksapplications.github.io/sudachi.rs/python/topics/wheels.html).
 
 ## TL;DR
 
