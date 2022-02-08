@@ -277,6 +277,13 @@ impl PyDictionary {
         self.dictionary = None;
     }
 
+    /// Get POS Tuple by its id
+    #[pyo3(text_signature = "($self, pos_id: int)")]
+    fn pos_of<'p>(&'p self, py: Python<'p>, pos_id: usize) -> Option<&'p PyTuple> {
+        let dic = self.dictionary.as_ref().unwrap();
+        dic.pos.get(pos_id).map(|x| x.as_ref(py))
+    }
+
     fn __repr__(&self) -> PyResult<String> {
         config_repr(&self.config).map_err(|e| {
             return PyException::new_err(format!("{:?}", e));

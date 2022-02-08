@@ -131,6 +131,33 @@ impl PyPosMatcher {
     pub fn __len__(&self) -> usize {
         self.matcher.num_entries()
     }
+
+    pub fn __or__(&self, other: &Self) -> Self {
+        assert_eq!(Arc::as_ptr(&self.dic), Arc::as_ptr(&other.dic), "");
+        let matcher = self.matcher.union(&other.matcher);
+        Self {
+            dic: self.dic.clone(),
+            matcher,
+        }
+    }
+
+    pub fn __and__(&self, other: &Self) -> Self {
+        assert_eq!(Arc::as_ptr(&self.dic), Arc::as_ptr(&other.dic));
+        let matcher = self.matcher.intersection(&other.matcher);
+        Self {
+            dic: self.dic.clone(),
+            matcher,
+        }
+    }
+
+    pub fn __sub__(&self, other: &Self) -> Self {
+        assert_eq!(Arc::as_ptr(&self.dic), Arc::as_ptr(&other.dic));
+        let matcher = self.matcher.difference(&other.matcher);
+        Self {
+            dic: self.dic.clone(),
+            matcher,
+        }
+    }
 }
 
 #[pyclass(name = "PosMatcherIterator", module = "sudachipy")]

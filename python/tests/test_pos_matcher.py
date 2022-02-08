@@ -61,6 +61,26 @@ class PosMatcherTestCase(unittest.TestCase):
         data = [x.surface() for x in tok.tokenize("東京に行く") if m(x)]
         self.assertEqual(data, ["東京"])
 
+    def test_union(self):
+        m1 = self.dict.pos_matcher(lambda p: p[0] == "名詞")
+        m2 = self.dict.pos_matcher(lambda p: p[0] == "動詞")
+        m3 = m1 | m2
+        self.assertEqual(len(m1) + len(m2), len(m3))
+
+    def test_intersection(self):
+        m1 = self.dict.pos_matcher(lambda p: p[5] == "終止形-一般")
+        m2 = self.dict.pos_matcher(lambda p: p[0] == "動詞")
+        m3 = m1 & m2
+        self.assertEqual(1, len(m3))
+        self.assertEqual(list(m3), [('動詞', '非自立可能', '*', '*', '五段-カ行', '終止形-一般')])
+
+    def test_difference(self):
+        m1 = self.dict.pos_matcher(lambda p: p[5] == "終止形-一般")
+        m2 = self.dict.pos_matcher(lambda p: p[0] == "動詞")
+        m3 = m1 - m2
+        self.assertEqual(1, len(m3))
+        self.assertEqual(list(m3), [('助動詞', '*', '*', '*', '助動詞-タ', '終止形-一般')])
+
 
 if __name__ == '__main__':
     unittest.main()

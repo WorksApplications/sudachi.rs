@@ -1,8 +1,5 @@
 from typing import ClassVar, Iterator, List, Tuple, Union, Callable, Iterable, Optional, Literal, Set
 
-import sudachipy
-from sudachipy.pretokenizer import SudachiPreTokenizer
-
 POS = Tuple[str, str, str, str, str, str]
 # POS element
 PE = Optional[str]
@@ -18,6 +15,23 @@ PartialPOS = Union[
 
 FieldSet = Optional[Set[Literal["surface", "pos", "normalized_form", "dictionary_form", "reading_form",
                                 "word_structure", "split_a", "split_b", "synonym_group_id"]]]
+
+class SplitMode:
+    """
+    Unit to split text.
+
+    A == short mode
+
+    B == middle mode
+
+    C == long mode
+    """
+
+    A: ClassVar[SplitMode] = ...
+    B: ClassVar[SplitMode] = ...
+    C: ClassVar[SplitMode] = ...
+    @classmethod
+    def __init__(cls) -> None: ...
 
 
 class Dictionary:
@@ -48,7 +62,7 @@ class Dictionary:
         ...
 
     def create(self,
-               mode: SplitMode = sudachipy.SplitMode.C,
+               mode: SplitMode = SplitMode.C,
                fields: FieldSet = None) -> Tokenizer:
         """
         Creates a Sudachi Tokenizer.
@@ -61,7 +75,7 @@ class Dictionary:
 
     def pos_matcher(self, target: Union[Iterable[PartialPOS], Callable[[POS], bool]]) -> PosMatcher:
         """
-        Creates a new POS matcher
+        Creates a new POS matcher.
 
         If target is a function, then it must return whether a POS should match or not.
         If target a list, it should contain partially specified POS.
@@ -76,9 +90,9 @@ class Dictionary:
         ...
 
     def pre_tokenizer(self,
-                      mode: SplitMode = sudachipy.SplitMode.C,
+                      mode: SplitMode = SplitMode.C,
                       fields: FieldSet = None,
-                      handler: Optional[Callable[[int, object, MorphemeList], list]] = None) -> SudachiPreTokenizer:
+                      handler: Optional[Callable[[int, object, MorphemeList], list]] = None) -> object:
         """
         Creates HuggingFace Tokenizers-compatible PreTokenizer.
         Requires package `tokenizers` to be installed.
@@ -91,12 +105,20 @@ class Dictionary:
         """
         ...
 
+    def pos_of(self, pos_id: int) -> Optional[POS]:
+        """
+        Returns POS with the given id.
+
+        :param pos_id: POS id
+        :return: POS tuple with the given id.
+        """
+        ...
+
 
 class Morpheme:
     """
     A morpheme (basic semantic unit of language).
     """
-    @classmethod
     def __init__(self) -> None: ...
 
     def begin(self) -> int:
@@ -200,12 +222,13 @@ class Morpheme:
 class MorphemeList:
     """
     A list of morphemes.
+    An object can not be instantiated manually.
+    Use Tokenizer.tokenize("") to create an empty morpheme list.
     """
-    @classmethod
     def __init__(self) -> None: ...
 
     @classmethod
-    def empty(dict) -> MorphemeList:
+    def empty(cls, dict) -> MorphemeList:
         """
         Returns an empty morpheme list with dictionary.
         """
@@ -228,31 +251,16 @@ class MorphemeList:
     def __len__(self) -> int: ...
 
 
-class SplitMode:
-    """
-    Unit to split text.
 
-    A == short mode
-
-    B == middle mode
-
-    C == long mode
-    """
-
-    A: ClassVar[SplitMode] = ...
-    B: ClassVar[SplitMode] = ...
-    C: ClassVar[SplitMode] = ...
-    @classmethod
-    def __init__(cls) -> None: ...
 
 
 class Tokenizer:
-    SplitMode: ClassVar[sudachipy.SplitMode] = ...
+    SplitMode: ClassVar[SplitMode] = ...
     @classmethod
     def __init__(cls) -> None: ...
 
     def tokenize(self, text: str,
-                 mode: sudachipy.SplitMode = ...,
+                 mode: SplitMode = ...,
                  out: Optional[MorphemeList] = None) -> MorphemeList:
         """
         Break text into morphemes.
@@ -294,5 +302,23 @@ class PosMatcher:
         Checks whether a morpheme has matching POS
         :param m: morpheme
         :return: if morpheme has matching POS
+        """
+        ...
+
+    def __or__(self, other: PosMatcher) -> PosMatcher:
+        """
+        Returns a POS matcher which matches a POS if any of two matchers would match it
+        """
+        ...
+
+    def __and__(self, other: PosMatcher) -> PosMatcher:
+        """
+        Returns a POS matcher which matches a POS if both matchers would match it at the same time
+        """
+        ...
+
+    def __sub__(self, other: PosMatcher) -> PosMatcher:
+        """
+        Returns a POS matcher which matches a POS if self would match the POS and other would not match the POS
         """
         ...
