@@ -21,12 +21,10 @@ use memmap2::Mmap;
 
 use crate::analysis::stateless_tokenizer::DictionaryAccess;
 use crate::config::Config;
-use crate::config::ConfigError::MissingArgument;
 use crate::dic::grammar::Grammar;
 use crate::dic::lexicon_set::LexiconSet;
 use crate::dic::storage::{Storage, SudachiDicData};
 use crate::dic::{DictionaryLoader, LoadedDictionary};
-use crate::error::SudachiError::ConfigError;
 use crate::error::{SudachiError, SudachiResult};
 use crate::plugin::input_text::InputTextPlugin;
 use crate::plugin::oov::OovProviderPlugin;
@@ -58,21 +56,19 @@ fn map_file(path: &Path) -> SudachiResult<Storage> {
 }
 
 fn load_system_dic(cfg: &Config) -> SudachiResult<Storage> {
-    match &cfg.system_dict {
-        Some(p) => map_file(p).map_err(|e| e.with_context(p.as_os_str().to_string_lossy())),
-        None => return Err(ConfigError(MissingArgument(String::from("system_dict")))),
-    }
+    let p = cfg.resolved_system_dict()?;
+    map_file(&p).map_err(|e| e.with_context(p.as_os_str().to_string_lossy()))
 }
+
 impl JapaneseDictionary {
     /// Creates a dictionary from the specified configuration
     /// Dictionaries will be read from disk
     pub fn from_cfg(cfg: &Config) -> SudachiResult<JapaneseDictionary> {
         let mut sb = SudachiDicData::new(load_system_dic(cfg)?);
 
-        for udic in cfg.user_dicts.iter() {
+        for udic in cfg.resolved_user_dicts()? {
             sb.add_user(
-                map_file(udic.as_path())
-                    .map_err(|e| e.with_context(udic.as_os_str().to_string_lossy()))?,
+                map_file(&udic).map_err(|e| e.with_context(udic.as_os_str().to_string_lossy()))?,
             )
         }
 
@@ -86,7 +82,7 @@ impl JapaneseDictionary {
     ) -> SudachiResult<JapaneseDictionary> {
         let mut basic_dict = LoadedDictionary::from_system_dictionary(
             unsafe { storage.system_static_slice() },
-            &cfg.character_definition_file,
+            cfg.complete_path(&cfg.character_definition_file)?.as_path(),
         )?;
 
         let plugins = Plugins::load(cfg, &basic_dict.grammar)?;

@@ -134,10 +134,10 @@ impl<'a, T: PluginCategory + ?Sized> PluginLoader<'a, T> {
     }
 
     fn resolve_dso_names(&self, name: &str) -> Vec<String> {
-        let mut resolved = self.cfg.resolve_plugin_paths(name.to_owned());
+        let mut resolved = self.cfg.resolve_paths(name.to_owned());
 
         if let Some(sysname) = system_specific_name(name) {
-            let resolved_sys = self.cfg.resolve_plugin_paths(sysname);
+            let resolved_sys = self.cfg.resolve_paths(sysname);
             resolved.extend(resolved_sys);
         }
 

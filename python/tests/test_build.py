@@ -26,6 +26,7 @@ CONFIG_TEMPLATE = RESOURCES_PATH / "test_config_template.json"
 class MyTestCase(unittest.TestCase):
     def setUp(self) -> None:
         self.tempfiles = []
+        self.tmpdir = tempfile.mkdtemp("sudachi", "test")
         super().setUp()
 
     def tearDown(self) -> None:
@@ -33,23 +34,24 @@ class MyTestCase(unittest.TestCase):
             p = Path(f)
             if p.exists():
                 p.unlink()
+        Path(self.tmpdir).rmdir()
         super().tearDown()
 
     def make_config(self, system, user):
         with open(CONFIG_TEMPLATE, encoding="utf-8") as fin:
             template_data = fin.read()
         system = system.replace("\\", "/")
-        user = ['"' + u.replace("\\", "/") + '"' for u in user]
-        template_data = template_data.replace("$system_dict", system)
+        user = ['"' + str(Path(u).name).replace("\\", "/") + '"' for u in user]
+        template_data = template_data.replace("$system_dict", str(Path(system).name))
         template_data = template_data.replace("\"$user_dict\"", "[" + ", ".join(user) + "]")
-        tempfname = tempfile.mktemp(prefix="sudachi_cfg", suffix=".json")
+        tempfname = tempfile.mktemp(prefix="sudachi_cfg", suffix=".json", dir=self.tmpdir)
         with open(tempfname, "wt", encoding='utf-8') as f:
             f.write(template_data)
         self.tempfiles.append(tempfname)
         return tempfname
 
     def test_build_system(self):
-        out_tmp = tempfile.mktemp(prefix="sudachi_sy", suffix=".dic")
+        out_tmp = tempfile.mktemp(prefix="sudachi_sy", suffix=".dic", dir=self.tmpdir)
         self.tempfiles.append(out_tmp)
         stats = sudachipy.sudachipy.build_system_dic(
             matrix=RESOURCES_PATH / "matrix.def",
@@ -64,14 +66,14 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual(result.size(), 3)
 
     def test_build_user1(self):
-        sys_dic = tempfile.mktemp(prefix="sudachi_sy", suffix=".dic")
+        sys_dic = tempfile.mktemp(prefix="sudachi_sy", suffix=".dic", dir=self.tmpdir)
         self.tempfiles.append(sys_dic)
         sudachipy.sudachipy.build_system_dic(
             matrix=RESOURCES_PATH / "matrix.def",
             lex=[RESOURCES_PATH / "lex.csv"],
             output=sys_dic
         )
-        u1_dic = tempfile.mktemp(prefix="sudachi_u1", suffix=".dic")
+        u1_dic = tempfile.mktemp(prefix="sudachi_u1", suffix=".dic", dir=self.tmpdir)
         self.tempfiles.append(u1_dic)
         sudachipy.sudachipy.build_user_dic(
             system=sys_dic,
@@ -86,14 +88,14 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual(result[0].dictionary_id(), 1)
 
     def test_build_user2(self):
-        sys_dic = tempfile.mktemp(prefix="sudachi_sy", suffix=".dic")
+        sys_dic = tempfile.mktemp(prefix="sudachi_sy", suffix=".dic", dir=self.tmpdir)
         self.tempfiles.append(sys_dic)
         sudachipy.sudachipy.build_system_dic(
             matrix=RESOURCES_PATH / "matrix.def",
             lex=[RESOURCES_PATH / "lex.csv"],
             output=sys_dic
         )
-        u1_dic = tempfile.mktemp(prefix="sudachi_u1", suffix=".dic")
+        u1_dic = tempfile.mktemp(prefix="sudachi_u1", suffix=".dic", dir=self.tmpdir)
         self.tempfiles.append(u1_dic)
         sudachipy.sudachipy.build_user_dic(
             system=sys_dic,
@@ -101,7 +103,7 @@ class MyTestCase(unittest.TestCase):
             output=u1_dic
         )
 
-        u2_dic = tempfile.mktemp(prefix="sudachi_u2", suffix=".dic")
+        u2_dic = tempfile.mktemp(prefix="sudachi_u2", suffix=".dic", dir=self.tmpdir)
         self.tempfiles.append(u2_dic)
         sudachipy.sudachipy.build_user_dic(
             system=sys_dic,

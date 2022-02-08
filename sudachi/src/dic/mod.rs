@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-use std::path::PathBuf;
+use std::path::Path;
 
 use crate::analysis::stateless_tokenizer::DictionaryAccess;
 use character_category::CharacterCategory;
@@ -54,7 +54,7 @@ impl<'a> LoadedDictionary<'a> {
     /// Creates a system dictionary from bytes, and load a character category from file
     pub fn from_system_dictionary(
         dictionary_bytes: &'a [u8],
-        character_category_file: &PathBuf,
+        character_category_file: &Path,
     ) -> SudachiResult<LoadedDictionary<'a>> {
         let system_dict = DictionaryLoader::read_system_dictionary(dictionary_bytes)?;
 

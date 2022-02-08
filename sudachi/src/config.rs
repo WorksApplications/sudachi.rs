@@ -45,12 +45,62 @@ pub enum ConfigError {
 
     #[error("Argument {0} is missing")]
     MissingArgument(String),
+
+    #[error("Failed to resolve relative path {0}, tried: {1:?}")]
+    PathResolution(String, Vec<String>),
+}
+
+#[derive(Default, Debug, Clone)]
+struct PathResolver {
+    roots: Vec<PathBuf>,
+}
+
+impl PathResolver {
+    fn with_capacity(capacity: usize) -> PathResolver {
+        return PathResolver {
+            roots: Vec::with_capacity(capacity),
+        };
+    }
+
+    fn add<P: Into<PathBuf>>(&mut self, path: P) {
+        self.roots.push(path.into())
+    }
+
+    fn contains<P: AsRef<Path>>(&self, path: P) -> bool {
+        let query = path.as_ref();
+        return self.roots.iter().find(|p| p.as_path() == query).is_some();
+    }
+
+    pub fn first_existing<P: AsRef<Path> + Clone>(&self, path: P) -> Option<PathBuf> {
+        self.all_candidates(path).find(|p| p.exists())
+    }
+
+    pub fn resolution_failure<P: AsRef<Path> + Clone>(&self, path: P) -> ConfigError {
+        let candidates = self
+            .all_candidates(path.clone())
+            .map(|p| p.to_string_lossy().into_owned())
+            .collect();
+
+        ConfigError::PathResolution(path.as_ref().to_string_lossy().into_owned(), candidates)
+    }
+
+    pub fn all_candidates<'a, P: AsRef<Path> + Clone + 'a>(
+        &'a self,
+        path: P,
+    ) -> impl Iterator<Item = PathBuf> + 'a {
+        self.roots.iter().map(move |root| root.join(path.clone()))
+    }
+
+    pub fn roots(&self) -> &[PathBuf] {
+        return &self.roots;
+    }
 }
 
 /// Setting data loaded from config file
 #[derive(Debug, Default, Clone)]
 pub struct Config {
-    pub resource_dir: PathBuf,
+    /// Paths will be resolved against these roots, until a file will be found
+    resolver: PathResolver,
     pub system_dict: Option<PathBuf>,
     pub user_dicts: Vec<PathBuf>,
     pub character_definition_file: PathBuf,
@@ -67,7 +117,15 @@ pub struct Config {
 #[allow(non_snake_case)]
 #[derive(Deserialize, Debug)]
 pub struct ConfigBuilder {
+    /// Analogue to Java Implementation path Override
+    path: Option<PathBuf>,
+    /// User-passed resourcePath
+    #[serde(skip)]
     resourcePath: Option<PathBuf>,
+    /// User-passed root directory.
+    /// Is also automatically set on from_file
+    #[serde(skip)]
+    rootDirectory: Option<PathBuf>,
     systemDict: Option<PathBuf>,
     userDict: Option<Vec<PathBuf>>,
     characterDefinitionFile: Option<PathBuf>,
@@ -78,11 +136,41 @@ pub struct ConfigBuilder {
     pathRewritePlugin: Option<Vec<Value>>,
 }
 
+pub fn default_resource_dir() -> PathBuf {
+    let mut src_root_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    if !src_root_path.pop() {
+        src_root_path.push("..");
+    }
+    src_root_path.push(DEFAULT_RESOURCE_DIR);
+    src_root_path
+}
+
+pub fn default_config_location() -> PathBuf {
+    let mut resdir = default_resource_dir();
+    resdir.push(DEFAULT_SETTING_FILE);
+    resdir
+}
+
 impl ConfigBuilder {
+    pub fn from_opt_file(config_file: Option<&Path>) -> Result<Self, ConfigError> {
+        match config_file {
+            None => {
+                let default_config = default_config_location();
+                Self::from_file(&default_config)
+            }
+            Some(cfg) => Self::from_file(cfg),
+        }
+    }
+
     pub fn from_file(config_file: &Path) -> Result<Self, ConfigError> {
         let file = File::open(config_file)?;
         let reader = BufReader::new(file);
-        serde_json::from_reader(reader).map_err(|e| e.into())
+        serde_json::from_reader(reader)
+            .map_err(|e| e.into())
+            .map(|cfg: ConfigBuilder| match config_file.parent() {
+                Some(p) => cfg.root_directory(p),
+                None => cfg,
+            })
     }
 
     pub fn from_bytes(data: &[u8]) -> Result<Self, ConfigError> {
@@ -115,34 +203,33 @@ impl ConfigBuilder {
         self
     }
 
+    pub fn root_directory(mut self, path: impl Into<PathBuf>) -> Self {
+        self.rootDirectory = Some(path.into());
+        self
+    }
+
     pub fn build(self) -> Config {
-        let src_root_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        let default_resource_dir_path = src_root_path.join("..").join(DEFAULT_RESOURCE_DIR);
+        let default_resource_dir = default_resource_dir();
+        let resource_dir = self.resourcePath.unwrap_or(default_resource_dir);
 
-        let resource_dir = self.resourcePath.unwrap_or(default_resource_dir_path);
+        let mut resolver = PathResolver::with_capacity(3);
+        let mut add_path = |buf: PathBuf| {
+            if !resolver.contains(&buf) {
+                resolver.add(buf);
+            }
+        };
+        self.path.map(&mut add_path);
+        add_path(resource_dir);
+        self.rootDirectory.map(&mut add_path);
 
-        let system_dict = self
-            .systemDict
-            .clone()
-            .map(|p| Config::join_if_relative(&resource_dir, p));
-
-        let user_dicts = self
-            .userDict
-            .unwrap_or(Vec::new())
-            .into_iter()
-            .map(|p| Config::join_if_relative(&resource_dir, p))
-            .collect();
-
-        let character_definition_file = Config::join_if_relative(
-            &resource_dir,
-            self.characterDefinitionFile
-                .unwrap_or(PathBuf::from(DEFAULT_CHAR_DEF_FILE)),
-        );
+        let character_definition_file = self
+            .characterDefinitionFile
+            .unwrap_or(PathBuf::from(DEFAULT_CHAR_DEF_FILE));
 
         Config {
-            resource_dir,
-            system_dict,
-            user_dicts,
+            resolver,
+            system_dict: self.systemDict,
+            user_dicts: self.userDict.unwrap_or_else(|| Vec::new()),
             character_definition_file,
 
             connection_cost_plugins: self.connectionCostPlugin.unwrap_or(Vec::new()),
@@ -159,16 +246,8 @@ impl Config {
         resource_dir: Option<PathBuf>,
         dictionary_path: Option<PathBuf>,
     ) -> Result<Self, ConfigError> {
-        let src_root_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        let default_resource_dir_path = src_root_path.join("..").join(DEFAULT_RESOURCE_DIR);
-
         // prioritize arg (cli option) > default
-        let config_file = match config_file {
-            Some(v) => v,
-            None => default_resource_dir_path.join(DEFAULT_SETTING_FILE),
-        };
-
-        let raw_config = ConfigBuilder::from_file(&config_file)?;
+        let raw_config = ConfigBuilder::from_opt_file(config_file.as_deref())?;
 
         // prioritize arg (cli option) > config file
         let raw_config = match resource_dir {
@@ -190,7 +269,9 @@ impl Config {
         let mut cfg = Config::default();
         let resource = resource_dir.into();
         cfg.character_definition_file = resource.join(DEFAULT_CHAR_DEF_FILE);
-        cfg.resource_dir = resource;
+        let mut resolver = PathResolver::with_capacity(1);
+        resolver.add(resource);
+        cfg.resolver = resolver;
         cfg.oov_provider_plugins = vec![serde_json::json!(
             { "class" : "com.worksap.nlp.sudachi.SimpleOovPlugin",
               "oovPOS" : [ "名詞", "普通名詞", "一般", "*", "*", "*" ],
@@ -207,25 +288,7 @@ impl Config {
         self
     }
 
-    /// Resolve variables in path.
-    /// Starting $exe is replaced with a directory of the current executable
-    /// Starting $cfg is replaced with the resource directory
-    ///
-    /// Takes the input path as String, by value, because it will be modified.
-    pub fn resolve_path(&self, mut path: String) -> String {
-        if path.starts_with("$exe") {
-            path.replace_range(0..4, &CURRENT_EXE_DIR);
-        }
-
-        if path.starts_with("$cfg") {
-            let cfg_path = self.resource_dir.to_str().unwrap();
-            path.replace_range(0..4, cfg_path);
-        }
-
-        path
-    }
-
-    pub fn resolve_plugin_paths(&self, mut path: String) -> Vec<String> {
+    pub fn resolve_paths(&self, mut path: String) -> Vec<String> {
         if path.starts_with("$exe") {
             path.replace_range(0..4, &CURRENT_EXE_DIR);
 
@@ -234,25 +297,73 @@ impl Config {
             return vec![path2, path];
         }
 
-        if path.starts_with("$cfg") {
-            let cfg_path = self.resource_dir.to_str().unwrap();
-            path.replace_range(0..4, cfg_path);
+        if path.starts_with("$cfg/") || path.starts_with("$cfg\\") {
+            let roots = self.resolver.roots();
+            let mut result = Vec::with_capacity(roots.len());
+            path.replace_range(0..5, "");
+            for root in roots {
+                let subpath = root.join(&path);
+                result.push(subpath.to_string_lossy().into_owned());
+            }
+            return result;
         }
 
         vec![path]
     }
 
-    /// Resolves given path to a path relative to resource_dir if its relative
-    pub fn complete_path(&self, file_path: PathBuf) -> PathBuf {
-        Config::join_if_relative(&self.resource_dir, file_path)
+    /// Resolves given path to a path relative to anchors if its relative
+    pub fn complete_path<P: AsRef<Path> + Into<PathBuf>>(
+        &self,
+        file_path: P,
+    ) -> Result<PathBuf, ConfigError> {
+        let pref = file_path.as_ref();
+        // 1. absolute paths are not normalized
+        if pref.is_absolute() {
+            return Ok(file_path.into());
+        }
+
+        // 2. try to resolve paths wrt anchors
+        if let Some(p) = self.resolver.first_existing(pref) {
+            return Ok(p);
+        }
+
+        // 3. try to resolve path wrt CWD
+        if pref.exists() {
+            return Ok(file_path.into());
+        }
+
+        // Report an error
+        return Err(self.resolver.resolution_failure(&file_path));
     }
 
-    fn join_if_relative(resource_dir: &PathBuf, file_path: PathBuf) -> PathBuf {
-        if file_path.is_absolute() {
-            file_path
-        } else {
-            resource_dir.join(&file_path)
+    pub fn resolved_system_dict(&self) -> Result<PathBuf, ConfigError> {
+        let sdic = self.system_dict.as_ref();
+        if sdic.is_none() {
+            return Err(ConfigError::MissingArgument("systemDict".to_owned()));
         }
+
+        let sdic = sdic.unwrap();
+
+        if sdic.is_absolute() {
+            return Ok(sdic.clone());
+        }
+
+        self.complete_path(sdic)
+    }
+
+    pub fn resolved_user_dicts(&self) -> Result<Vec<PathBuf>, ConfigError> {
+        self.user_dicts
+            .iter()
+            .map(|p| {
+                if p.is_absolute() {
+                    Ok(p.clone())
+                } else {
+                    self.resolver
+                        .first_existing(p)
+                        .ok_or_else(|| self.resolver.resolution_failure(p))
+                }
+            })
+            .collect()
     }
 }
 
@@ -274,7 +385,7 @@ lazy_static! {
 
 #[cfg(test)]
 mod tests {
-    use crate::config::Config;
+    use super::*;
     use crate::prelude::SudachiResult;
 
     use super::CURRENT_EXE_DIR;
@@ -282,18 +393,20 @@ mod tests {
     #[test]
     fn resolve_exe() -> SudachiResult<()> {
         let cfg = Config::new(None, None, None)?;
-        let npath = cfg.resolve_path("$exe/data".to_owned());
+        let npath = cfg.resolve_paths("$exe/data".to_owned());
         let exe_dir: &str = &CURRENT_EXE_DIR;
-        assert!(npath.starts_with(exe_dir));
+        assert!(npath[0].starts_with(exe_dir));
         Ok(())
     }
 
     #[test]
     fn resolve_cfg() -> SudachiResult<()> {
         let cfg = Config::new(None, None, None)?;
-        let npath = cfg.resolve_path("$cfg/data".to_owned());
-        let path_dir: &str = cfg.resource_dir.to_str().unwrap();
-        assert!(npath.starts_with(path_dir));
+        let npath = cfg.resolve_paths("$cfg/data".to_owned());
+        let def = default_resource_dir();
+        let path_dir: &str = def.to_str().unwrap();
+        assert_eq!(1, npath.len());
+        assert!(npath[0].starts_with(path_dir));
         Ok(())
     }
 }

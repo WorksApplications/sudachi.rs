@@ -32,6 +32,11 @@ class TestDictionary(unittest.TestCase):
     def test_create(self):
         self.assertEqual(Tokenizer, type(self.dict_.create()))
 
+    def test_repr(self):
+        repr_str = repr(self.dict_)
+        self.assertTrue(repr_str.startswith("<SudachiDictionary(system="))
+        self.assertTrue(repr_str.endswith("user.dic.test])>"))
+
 
 if __name__ == '__main__':
     unittest.main()

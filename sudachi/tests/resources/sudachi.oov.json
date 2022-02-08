@@ -1,5 +1,5 @@
 {
-    "resourcePath" : "tests/resources/",
+    "path" : "tests/resources/",
     "systemDict" : "system.dic.test",
     "userDict" : [ "user.dic.test" ],
     "characterDefinitionFile" : "char.def",
