@@ -250,7 +250,7 @@ impl OovProviderPlugin for MeCabOovPlugin {
             settings
                 .charDef
                 .unwrap_or_else(|| PathBuf::from(DEFAULT_CHAR_DEF_FILE)),
-        );
+        )?;
         let reader = BufReader::new(fs::File::open(&char_def_path)?);
         let categories = MeCabOovPlugin::read_character_property(reader)?;
 
@@ -258,7 +258,7 @@ impl OovProviderPlugin for MeCabOovPlugin {
             settings
                 .unkDef
                 .unwrap_or_else(|| PathBuf::from(DEFAULT_UNK_DEF_FILE)),
-        );
+        )?;
         let reader = BufReader::new(fs::File::open(&unk_def_path)?);
         let oov_list = MeCabOovPlugin::read_oov(reader, &categories, grammar)?;
 

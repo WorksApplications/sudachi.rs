@@ -14,6 +14,7 @@
  *  limitations under the License.
  */
 
+use std::fmt::Write;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
@@ -22,11 +23,7 @@ use pyo3::prelude::*;
 use pyo3::types::{PySet, PyString, PyTuple};
 
 use sudachi::analysis::stateless_tokenizer::DictionaryAccess;
-
-use crate::pretokenizer::PyPretokenizer;
-
-use crate::pos_matcher::PyPosMatcher;
-use sudachi::config::Config;
+use sudachi::config::{Config, ConfigBuilder};
 use sudachi::dic::dictionary::JapaneseDictionary;
 use sudachi::dic::grammar::Grammar;
 use sudachi::dic::lexicon_set::LexiconSet;
@@ -35,6 +32,8 @@ use sudachi::plugin::input_text::InputTextPlugin;
 use sudachi::plugin::oov::OovProviderPlugin;
 use sudachi::plugin::path_rewrite::PathRewritePlugin;
 
+use crate::pos_matcher::PyPosMatcher;
+use crate::pretokenizer::PyPretokenizer;
 use crate::tokenizer::{PySplitMode, PyTokenizer};
 
 pub(crate) struct PyDicData {
@@ -74,9 +73,9 @@ impl PyDicData {
 #[pyclass(module = "sudachipy.dictionary", name = "Dictionary")]
 #[pyo3(text_signature = "(config_path: str = ..., resource_dir: str = ..., dict_type: str = ...)")]
 #[derive(Clone)]
-#[repr(transparent)]
 pub struct PyDictionary {
     pub(super) dictionary: Option<Arc<PyDicData>>,
+    pub config: Config,
 }
 
 #[pymethods]
@@ -131,15 +130,33 @@ impl PyDictionary {
             )?;
         }
 
-        let mut config = Config::new(config_path, resource_dir, dict_path).map_err(|e| {
+        let config_builder = ConfigBuilder::from_opt_file(config_path.as_deref()).map_err(|e| {
             PyException::new_err(format!("Error loading config: {}", e.to_string()))
         })?;
+
+        let config_builder = match resource_dir {
+            Some(p) => config_builder.resource_path(p),
+            None => config_builder,
+        };
+
+        let config_builder = match dict_path {
+            Some(p) => config_builder.system_dict(p),
+            None => config_builder,
+        };
+
+        let mut config = config_builder.build();
 
         // Load a dictionary from `sudachidict_core` as the default one.
         // For this behavior, the value of `systemDict` key in the default setting file must be
         // empty (or no `systemDict` key), different from rust's one.
         if config.system_dict.is_none() || config.system_dict.as_ref().unwrap().is_dir() {
-            config.system_dict = Some(find_dict_path(py, "core")?);
+            let system_dict = find_dict_path(py, "core")?;
+            assert!(
+                system_dict.exists(),
+                "system dictionary {} did not exist",
+                system_dict.display()
+            );
+            config.system_dict = Some(system_dict);
         }
 
         let jdic = JapaneseDictionary::from_cfg(&config).map_err(|e| {
@@ -167,6 +184,7 @@ impl PyDictionary {
         let dictionary = Arc::new(dic_data);
 
         Ok(Self {
+            config,
             dictionary: Some(dictionary),
         })
     }
@@ -258,6 +276,42 @@ impl PyDictionary {
     fn close(&mut self) {
         self.dictionary = None;
     }
+
+    fn __repr__(&self) -> PyResult<String> {
+        config_repr(&self.config).map_err(|e| {
+            return PyException::new_err(format!("{:?}", e));
+        })
+    }
+}
+
+fn config_repr(cfg: &Config) -> Result<String, std::fmt::Error> {
+    let mut result = String::from("<SudachiDictionary(");
+    write!(
+        result,
+        "system={}",
+        cfg.resolved_system_dict()
+            .map(|p| p.to_string_lossy().into_owned())
+            .unwrap_or_else(|e| e.to_string())
+    )?;
+    write!(result, ", user=[")?;
+    match cfg.resolved_user_dicts() {
+        Ok(dicts) => {
+            for (i, dic) in dicts.iter().enumerate() {
+                write!(result, "{}", dic.display())?;
+                if i + 1 == dicts.len() {
+                    write!(result, "]")?;
+                } else {
+                    write!(result, ", ")?;
+                }
+            }
+        }
+        Err(e) => {
+            write!(result, "{:?}", e)?;
+        }
+    }
+
+    write!(result, ")>")?;
+    Ok(result)
 }
 
 pub(crate) fn get_default_setting_path(py: Python) -> PyResult<PathBuf> {

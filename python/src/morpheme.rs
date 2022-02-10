@@ -18,7 +18,7 @@ use std::fmt::Write;
 use std::ops::Deref;
 use std::sync::Arc;
 
-use pyo3::exceptions::{self, PyException, PyIndexError};
+use pyo3::exceptions::{PyException, PyIndexError};
 use pyo3::prelude::*;
 use pyo3::types::{PyList, PyString, PyTuple, PyType};
 

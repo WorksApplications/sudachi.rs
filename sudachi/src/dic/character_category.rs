@@ -19,7 +19,7 @@ use std::fs;
 use std::io::{BufRead, BufReader};
 use std::iter::FusedIterator;
 use std::ops::Range;
-use std::path::PathBuf;
+use std::path::Path;
 
 use thiserror::Error;
 
@@ -80,7 +80,7 @@ impl Default for CharacterCategory {
 
 impl CharacterCategory {
     /// Creates a character category from file
-    pub fn from_file(path: &PathBuf) -> SudachiResult<CharacterCategory> {
+    pub fn from_file(path: &Path) -> SudachiResult<CharacterCategory> {
         let reader = BufReader::new(fs::File::open(path)?);
         Self::from_reader(reader)
     }
@@ -307,6 +307,7 @@ impl FusedIterator for CharCategoryIter<'_> {}
 mod tests {
     use super::*;
     use claim::assert_matches;
+    use std::path::PathBuf;
 
     const TEST_RESOURCE_DIR: &str = "./tests/resources/";
     const TEST_CHAR_DEF_FILE: &str = "char.def";

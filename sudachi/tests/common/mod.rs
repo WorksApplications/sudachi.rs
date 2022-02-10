@@ -45,8 +45,6 @@ pub fn dictionary_bytes_from_path<P: AsRef<Path>>(dictionary_path: P) -> Sudachi
     Ok(dictionary_bytes)
 }
 
-pub const LEX_CSV: &[u8] = include_bytes!("../resources/lex.csv");
-
 lazy_static! {
     pub static ref TEST_CONFIG: Config = {
         let test_config_path = "tests/resources/sudachi.json";
@@ -57,16 +55,19 @@ lazy_static! {
     };
     static ref DICTIONARY_BYTES: Vec<u8> = {
         let dictionary_path = TEST_CONFIG
-            .system_dict
-            .clone()
-            .expect("No system dictionary set in config");
+            .resolved_system_dict()
+            .expect("system dict failure");
+
         let dictionary_bytes = dictionary_bytes_from_path(dictionary_path)
             .expect("Failed to read dictionary from path");
         dictionary_bytes
     };
     static ref USER_DICTIONARY_BYTES: Vec<Box<[u8]>> = {
         let mut bytes = Vec::with_capacity(TEST_CONFIG.user_dicts.len());
-        for pb in &TEST_CONFIG.user_dicts {
+        for pb in TEST_CONFIG
+            .resolved_user_dicts()
+            .expect("user dicts failure")
+        {
             let storage_buf = dictionary_bytes_from_path(pb)
                 .expect("Failed to get user dictionary bytes from file");
             bytes.push(storage_buf.into_boxed_slice());

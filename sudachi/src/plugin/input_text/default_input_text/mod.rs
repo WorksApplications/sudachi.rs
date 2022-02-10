@@ -259,7 +259,7 @@ impl InputTextPlugin for DefaultInputTextPlugin {
             settings
                 .rewriteDef
                 .unwrap_or(PathBuf::from(DEFAULT_REWRITE_DEF_FILE)),
-        );
+        )?;
 
         let reader = BufReader::new(fs::File::open(&rewrite_file_path)?);
         self.read_rewrite_lists(reader)?;
