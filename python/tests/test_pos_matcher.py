@@ -81,6 +81,11 @@ class PosMatcherTestCase(unittest.TestCase):
         self.assertEqual(1, len(m3))
         self.assertEqual(list(m3), [('助動詞', '*', '*', '*', '助動詞-タ', '終止形-一般')])
 
+    def test_invert(self):
+        m1 = self.dict.pos_matcher(lambda p: p[5] == "終止形-一般")
+        self.assertEqual(len(m1), 2)
+        self.assertEqual(len(~m1), 7)
+
 
 if __name__ == '__main__':
     unittest.main()

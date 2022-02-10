@@ -14,14 +14,17 @@
  *  limitations under the License.
  */
 
-use crate::dictionary::PyDicData;
-use crate::morpheme::PyMorpheme;
+use std::sync::Arc;
+
 use pyo3::exceptions::PyException;
 use pyo3::prelude::*;
 use pyo3::types::{PyBool, PyIterator, PyTuple};
-use std::sync::Arc;
+
 use sudachi::analysis::stateless_tokenizer::DictionaryAccess;
 use sudachi::pos::PosMatcher;
+
+use crate::dictionary::PyDicData;
+use crate::morpheme::PyMorpheme;
 
 #[pyclass(name = "PosMatcher", module = "sudachipy")]
 pub struct PyPosMatcher {
@@ -168,6 +171,20 @@ impl PyPosMatcher {
         Self {
             dic: self.dic.clone(),
             matcher,
+        }
+    }
+
+    pub fn __invert__(&self) -> Self {
+        let max_id = self.dic.pos.len();
+        // map -> filter chain is needed to handle exactly u16::MAX POS entries
+        let values = (0..max_id)
+            .into_iter()
+            .map(|x| x as u16)
+            .filter(|id| !self.matcher.matches_id(*id));
+        let matcher = PosMatcher::new(values);
+        Self {
+            matcher,
+            dic: self.dic.clone(),
         }
     }
 }

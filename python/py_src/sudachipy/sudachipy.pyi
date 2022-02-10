@@ -308,17 +308,27 @@ class PosMatcher:
     def __or__(self, other: PosMatcher) -> PosMatcher:
         """
         Returns a POS matcher which matches a POS if any of two matchers would match it
+        :return: PosMatcher
         """
         ...
 
     def __and__(self, other: PosMatcher) -> PosMatcher:
         """
         Returns a POS matcher which matches a POS if both matchers would match it at the same time
+        :return: PosMatcher
         """
         ...
 
     def __sub__(self, other: PosMatcher) -> PosMatcher:
         """
         Returns a POS matcher which matches a POS if self would match the POS and other would not match the POS
+        :return: PosMatcher
+        """
+        ...
+
+    def __invert__(self) -> PosMatcher:
+        """
+        Returns a POS matcher which matches all POS tags except ones defined in the current POS matcher
+        :return: PosMatcher
         """
         ...
