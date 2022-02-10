@@ -193,7 +193,7 @@
  * limitations under the License.
  */</span>
 
-<span class="kw">use</span> <span class="ident">std::path::PathBuf</span>;
+<span class="kw">use</span> <span class="ident">std::path::Path</span>;
 
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::analysis::stateless_tokenizer::DictionaryAccess</span>;
 <span class="kw">use</span> <span class="ident">character_category::CharacterCategory</span>;
@@ -233,7 +233,7 @@
     <span class="doccomment">/// Creates a system dictionary from bytes, and load a character category from file</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">from_system_dictionary</span>(
         <span class="ident">dictionary_bytes</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">u8</span>],
-        <span class="ident">character_category_file</span>: <span class="kw-2">&amp;</span><span class="ident">PathBuf</span>,
+        <span class="ident">character_category_file</span>: <span class="kw-2">&amp;</span><span class="ident">Path</span>,
     ) -&gt; <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="ident">LoadedDictionary</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span><span class="op">&gt;</span> {
         <span class="kw">let</span> <span class="ident">system_dict</span> <span class="op">=</span> <span class="ident">DictionaryLoader::read_system_dictionary</span>(<span class="ident">dictionary_bytes</span>)<span class="question-mark">?</span>;
 

@@ -574,6 +574,7 @@
 <span id="573">573</span>
 <span id="574">574</span>
 <span id="575">575</span>
+<span id="576">576</span>
 </pre><pre class="rust"><code><span class="comment">/*
  * Copyright (c) 2021 Works Applications Co., Ltd.
  *
@@ -595,7 +596,7 @@
 <span class="kw">use</span> <span class="ident">std::io</span>::{<span class="ident">BufRead</span>, <span class="ident">BufReader</span>};
 <span class="kw">use</span> <span class="ident">std::iter::FusedIterator</span>;
 <span class="kw">use</span> <span class="ident">std::ops::Range</span>;
-<span class="kw">use</span> <span class="ident">std::path::PathBuf</span>;
+<span class="kw">use</span> <span class="ident">std::path::Path</span>;
 
 <span class="kw">use</span> <span class="ident">thiserror::Error</span>;
 
@@ -656,7 +657,7 @@
 
 <span class="kw">impl</span> <span class="ident">CharacterCategory</span> {
     <span class="doccomment">/// Creates a character category from file</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">from_file</span>(<span class="ident">path</span>: <span class="kw-2">&amp;</span><span class="ident">PathBuf</span>) -&gt; <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="ident">CharacterCategory</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">from_file</span>(<span class="ident">path</span>: <span class="kw-2">&amp;</span><span class="ident">Path</span>) -&gt; <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="ident">CharacterCategory</span><span class="op">&gt;</span> {
         <span class="kw">let</span> <span class="ident">reader</span> <span class="op">=</span> <span class="ident">BufReader::new</span>(<span class="ident">fs::File::open</span>(<span class="ident">path</span>)<span class="question-mark">?</span>);
         <span class="ident"><span class="self">Self</span>::from_reader</span>(<span class="ident">reader</span>)
     }
@@ -883,6 +884,7 @@
 <span class="kw">mod</span> <span class="ident">tests</span> {
     <span class="kw">use</span> <span class="kw">super</span>::<span class="kw-2">*</span>;
     <span class="kw">use</span> <span class="ident">claim::assert_matches</span>;
+    <span class="kw">use</span> <span class="ident">std::path::PathBuf</span>;
 
     <span class="kw">const</span> <span class="ident">TEST_RESOURCE_DIR</span>: <span class="kw-2">&amp;</span><span class="ident">str</span> <span class="op">=</span> <span class="string">&quot;./tests/resources/&quot;</span>;
     <span class="kw">const</span> <span class="ident">TEST_CHAR_DEF_FILE</span>: <span class="kw-2">&amp;</span><span class="ident">str</span> <span class="op">=</span> <span class="string">&quot;char.def&quot;</span>;
