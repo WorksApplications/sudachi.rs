@@ -43,4 +43,22 @@ impl PosMatcher {
     pub fn entries(&self) -> impl Iterator<Item = u16> + '_ {
         self.ids.iter().cloned()
     }
+
+    pub fn union(&self, other: &PosMatcher) -> PosMatcher {
+        let mut ids = self.ids.clone();
+        ids.extend(other.ids.iter());
+        PosMatcher { ids }
+    }
+
+    pub fn intersection(&self, other: &PosMatcher) -> PosMatcher {
+        let mut ids = self.ids.clone();
+        ids.retain(|id| other.ids.contains(id));
+        PosMatcher { ids }
+    }
+
+    pub fn difference(&self, other: &PosMatcher) -> PosMatcher {
+        let mut ids = self.ids.clone();
+        ids.retain(|id| !other.ids.contains(id));
+        PosMatcher { ids }
+    }
 }

@@ -32,6 +32,9 @@ class TestDictionary(unittest.TestCase):
     def test_create(self):
         self.assertEqual(Tokenizer, type(self.dict_.create()))
 
+    def test_pos_of(self):
+        self.assertIsNotNone(self.dict_.pos_of(0))
+
     def test_repr(self):
         repr_str = repr(self.dict_)
         self.assertTrue(repr_str.startswith("<SudachiDictionary(system="))
