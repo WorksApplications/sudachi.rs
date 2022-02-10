@@ -311,7 +311,11 @@ impl Config {
         vec![path]
     }
 
-    /// Resolves given path to a path relative to anchors if its relative
+    /// Resolves a possibly relative path with regards to all possible anchors:
+    /// 1. Absolute paths stay as they are
+    /// 2. Paths are resolved wrt to anchors, returning the first existing one
+    /// 3. Path are checked wrt to CWD
+    /// 4. If all fail, return an error with all candidate paths listed
     pub fn complete_path<P: AsRef<Path> + Into<PathBuf>>(
         &self,
         file_path: P,
@@ -337,32 +341,16 @@ impl Config {
     }
 
     pub fn resolved_system_dict(&self) -> Result<PathBuf, ConfigError> {
-        let sdic = self.system_dict.as_ref();
-        if sdic.is_none() {
-            return Err(ConfigError::MissingArgument("systemDict".to_owned()));
+        match self.system_dict.as_ref() {
+            Some(p) => self.complete_path(p),
+            None => Err(ConfigError::MissingArgument("systemDict".to_owned())),
         }
-
-        let sdic = sdic.unwrap();
-
-        if sdic.is_absolute() {
-            return Ok(sdic.clone());
-        }
-
-        self.complete_path(sdic)
     }
 
     pub fn resolved_user_dicts(&self) -> Result<Vec<PathBuf>, ConfigError> {
         self.user_dicts
             .iter()
-            .map(|p| {
-                if p.is_absolute() {
-                    Ok(p.clone())
-                } else {
-                    self.resolver
-                        .first_existing(p)
-                        .ok_or_else(|| self.resolver.resolution_failure(p))
-                }
-            })
+            .map(|p| self.complete_path(p))
             .collect()
     }
 }
@@ -395,6 +383,7 @@ mod tests {
         let cfg = Config::new(None, None, None)?;
         let npath = cfg.resolve_paths("$exe/data".to_owned());
         let exe_dir: &str = &CURRENT_EXE_DIR;
+        assert_eq!(npath.len(), 2);
         assert!(npath[0].starts_with(exe_dir));
         Ok(())
     }
