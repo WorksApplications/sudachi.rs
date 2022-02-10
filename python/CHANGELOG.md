@@ -9,6 +9,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   - `sudachipy.Tokenizer` will ignore the provided logger.
   - Ref: [#76]
 
+## [0.6.3] - 2022/01/10
+
+- Changed path resolution algorithm for resources [#203](https://github.com/WorksApplications/sudachi.rs/pull/203)
+- Added set operations to `PosMatcher` [#204](https://github.com/WorksApplications/sudachi.rs/pull/204)
+- Added `pos_of()` function to `Dictionary` which returns a POS tuple for a given POS id.
+
+## [0.6.2] - 2021/12/09
+
+- Fixed analysis differences with 0.5.4
+
 ## [0.6.1] - 2021/12/08
 
 - [`Morpheme.part_of_speech`](https://worksapplications.github.io/sudachi.rs/python/api/sudachipy.html#sudachipy.Morpheme.part_of_speech) method now returns Tuple of POS components instead of a list.

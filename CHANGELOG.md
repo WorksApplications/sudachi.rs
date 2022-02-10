@@ -1,3 +1,31 @@
+# [0.6.3](https://github.com/WorksApplications/sudachi.rs/releases/tag/v0.6.2) (2020-02-10)
+
+## Highlights
+
+* Fixed path resolution algorithm for resources. They are now resolved in the following order (first existing file wins):
+  1. Absolute paths stay as they are
+  2. Relative to "path" value of the config file
+  3. Relative to "resource_dir" parameter of the config object during creation
+     * For SudachiPy it is the parameter of `Dictionary` constructor
+  4. Relative to the location of the configuration file
+  5. Relative to the current directory
+
+## Python
+
+* `Dictionary` now has `__repr__()` function which displays absolute paths to dictionaries in use.
+* `Dictionary` now has `pos_of()` function which returns a POS tuple for a given POS id.
+* `PosMatcher` supports set operations
+  * union (`m1 | m2`)
+  * intersection (`m1 & m2`)
+  * difference (`m1 - m2`)
+  * negation (`~m1`)
+
+# [0.6.2](https://github.com/WorksApplications/sudachi.rs/releases/tag/v0.6.2) (2020-12-09)
+
+## Fixes
+
+* Fix analysis differences with 0.5.4
+
 # [0.6.1](https://github.com/WorksApplications/sudachi.rs/releases/tag/v0.6.1) (2020-12-08)
 
 ## Highlights
