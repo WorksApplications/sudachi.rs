@@ -10,7 +10,7 @@ sudachi.rs は日本語形態素解析器 [Sudachi](https://github.com/WorksAppl
 
 SudachiPyとして使うには
 ```bash
-$ pip install --update 'sudachipy>=0.6.2'
+$ pip install --upgrade 'sudachipy>=0.6.2'
 ```
 
 ```bash
@@ -18,7 +18,7 @@ $ git clone https://github.com/WorksApplications/sudachi.rs.git
 $ cd ./sudachi.rs
 
 $ cargo build --release
-$ cargo install --path .
+$ cargo install --path sudachi-cli/
 $ ./fetch_dictionary.sh
 
 $ echo "高輪ゲートウェイ駅" | sudachi
