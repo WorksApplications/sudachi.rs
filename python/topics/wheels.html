@@ -14,6 +14,7 @@
         <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
         <script src="../_static/jquery.js"></script>
         <script src="../_static/underscore.js"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../_static/doctools.js"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
@@ -82,7 +83,7 @@
            <div itemprop="articleBody">
              
   <section id="wheel-status">
-<h1>Wheel Status<a class="headerlink" href="#wheel-status" title="Permalink to this headline"></a></h1>
+<h1>Wheel Status<a class="headerlink" href="#wheel-status" title="Permalink to this heading"></a></h1>
 <p>We provide wheel builds for following platforms:</p>
 <ul class="simple">
 <li><p>Linux-amd64</p></li>
@@ -93,19 +94,19 @@
 Wheels for Windows are supported in best-effort manner (we will try to fix bugs when reported, but that can take unspecified amount of time).
 Wheels for macOS are <strong>not</strong> supported and we welcome contributions for them.</p>
 <section id="linux">
-<h2>Linux<a class="headerlink" href="#linux" title="Permalink to this headline"></a></h2>
+<h2>Linux<a class="headerlink" href="#linux" title="Permalink to this heading"></a></h2>
 <p>We build wheels only for amd64 (x86_64) architecture at the moment.
 Wheels for Linux are built with <a class="reference external" href="https://doc.rust-lang.org/rustc/profile-guided-optimization.html">Profiled-Guided Optimizations</a>
 and will probably be faster than installations which are manaully-built from the source package.
 Wheels are built using manylinux container and should be compatible with most of distributions.</p>
 </section>
 <section id="windows">
-<h2>Windows<a class="headerlink" href="#windows" title="Permalink to this headline"></a></h2>
+<h2>Windows<a class="headerlink" href="#windows" title="Permalink to this heading"></a></h2>
 <p>Builds for Windows are built witout PGO, but should work as if you have built the wheels yourself.
 We don’t provide builds for x86 architecture.</p>
 </section>
 <section id="macos">
-<h2>macOS<a class="headerlink" href="#macos" title="Permalink to this headline"></a></h2>
+<h2>macOS<a class="headerlink" href="#macos" title="Permalink to this heading"></a></h2>
 <p>The situation is similar to Windows, but these builds are tested even less.
 We don’t provide aarch64 builds for Apple Silicon-based Macs, but would welcome a contribution which will add those builds.
 Builds from source should work on M1-based Macs.</p>
