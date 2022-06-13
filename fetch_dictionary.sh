@@ -1,6 +1,6 @@
 #!/bin/sh
 
-DICT_NAME_BASE="sudachi-dictionary-20210802"
+DICT_NAME_BASE="sudachi-dictionary-20220519"
 DICT_TYPE="core"
 DICT_NAME="${DICT_NAME_BASE}-${DICT_TYPE}"
 
