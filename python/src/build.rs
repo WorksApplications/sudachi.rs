@@ -17,6 +17,7 @@
 use crate::dictionary::get_default_resource_dir;
 use crate::errors;
 use pyo3::prelude::*;
+use pyo3::type_object::PyTypeObject;
 use pyo3::types::{PyBytes, PyList, PyString, PyTuple, PyType};
 use std::fs::{File, OpenOptions};
 use std::io::BufWriter;
@@ -70,13 +71,13 @@ fn build_system_dic<'p>(
     let mut builder = DictBuilder::new_system();
     description.map(|d| builder.set_description(d));
 
-    let matrix_src = as_data_source(&py, matrix)?;
+    let matrix_src = as_data_source(py, matrix)?;
     errors::wrap_ctx(builder.read_conn(matrix_src), matrix)?;
     for f in lex.iter() {
-        let lex_src = as_data_source(&py, &f)?;
+        let lex_src = as_data_source(py, &f)?;
         errors::wrap_ctx(builder.read_lexicon(lex_src), &f)?;
     }
-    let out_file = match as_data_source(&py, output)? {
+    let out_file = match as_data_source(py, output)? {
         DataSource::File(p) => errors::wrap_ctx(create_file(p), p)?,
         DataSource::Data(_) => return errors::wrap(Err("can't use bytes for output")),
     };
@@ -96,7 +97,7 @@ fn build_user_dic<'p>(
     output: &'p PyAny,
     description: Option<&str>,
 ) -> PyResult<&'p PyList> {
-    let system_dic = match as_data_source(&py, system)? {
+    let system_dic = match as_data_source(py, system)? {
         DataSource::File(f) => {
             let resource_path = get_default_resource_dir(py)?;
             let cfg = Config::minimal_at(resource_path).with_system_dic(f);
@@ -113,10 +114,10 @@ fn build_user_dic<'p>(
     description.map(|d| builder.set_description(d));
 
     for f in lex.iter() {
-        let lex_src = as_data_source(&py, &f)?;
+        let lex_src = as_data_source(py, &f)?;
         errors::wrap_ctx(builder.read_lexicon(lex_src), &f)?;
     }
-    let out_file = match as_data_source(&py, output)? {
+    let out_file = match as_data_source(py, output)? {
         DataSource::File(p) => errors::wrap_ctx(create_file(p), p)?,
         DataSource::Data(_) => return errors::wrap(Err("can't use bytes for output")),
     };
@@ -127,15 +128,15 @@ fn build_user_dic<'p>(
     to_stats(py, builder)
 }
 
-fn as_data_source<'p>(py: &'p Python<'p>, data: &'p PyAny) -> PyResult<DataSource<'p>> {
+fn as_data_source<'p>(py: Python<'p>, data: &'p PyAny) -> PyResult<DataSource<'p>> {
     let path = py.import("pathlib")?.getattr("Path")?.cast_as::<PyType>()?;
-    if path.is_instance(data)? {
+    if data.is_instance(path)? {
         let pypath = data.call_method0("resolve")?.str()?;
         Ok(DataSource::File(Path::new(pypath.to_str()?)))
-    } else if data.is_instance::<PyString>()? {
+    } else if data.is_instance(PyString::type_object(py))? {
         let pypath = data.str()?;
         Ok(DataSource::File(Path::new(pypath.to_str()?)))
-    } else if data.is_instance::<PyBytes>()? {
+    } else if data.is_instance(PyBytes::type_object(py))? {
         let data = data.cast_as::<PyBytes>()?;
         Ok(DataSource::Data(data.as_bytes()))
     } else {

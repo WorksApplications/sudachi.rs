@@ -13,7 +13,7 @@ fi
 source $VENV_NAME/bin/activate
 
 # build with tests extras
-pip --use-feature=in-tree-build install --no-use-pep517 --no-build-isolation -vvv -e '.[tests]'
+pip install --no-use-pep517 --no-build-isolation -vvv -e '.[tests]'
 
 # run test
 python -m unittest

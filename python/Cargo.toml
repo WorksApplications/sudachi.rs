@@ -13,7 +13,7 @@ name = "sudachipy"
 crate-type = ["cdylib"]
 
 [dependencies]
-pyo3 = { version = "0.15", features = ["extension-module"] }
+pyo3 = { version = "0.16", features = ["extension-module"] }
 thread_local = "1.1" # Apache 2.0/MIT
 
 [dependencies.sudachi]
