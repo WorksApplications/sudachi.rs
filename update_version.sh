@@ -48,8 +48,8 @@ sed -i -r "1,/^release = '/ s/^release = '${VERSION_FROM}'$/release = '${VERSION
 
 # check
 echo ""
-echo "grep with previous version number:"
+echo "files which include the previous version number:"
 
 set +e # allow grep to exit with 1 (no line match)
 
-git grep $VERSION_FROM
+git grep -F "$VERSION_FROM"
