@@ -393,7 +393,7 @@ fn read_oov() {
     file.seek(SeekFrom::Start(0)).expect("Failed to seek");
 
     let bytes = build_mock_bytes();
-    let grammar = build_mock_grammar(&bytes);
+    let mut grammar = build_mock_grammar(&bytes);
     let mut categories = HashMap::with_hasher(RoMu::new());
     categories.insert(
         CategoryType::DEFAULT,
@@ -404,8 +404,13 @@ fn read_oov() {
             length: 0,
         },
     );
-    let oov_list = MeCabOovPlugin::read_oov(BufReader::new(file), &categories, &grammar)
-        .expect("Failed to read tmp file");
+    let oov_list = MeCabOovPlugin::read_oov(
+        BufReader::new(file),
+        &categories,
+        &mut grammar,
+        UserPosMode::Forbid,
+    )
+    .expect("Failed to read tmp file");
 
     assert_eq!(1, oov_list.len());
     assert_eq!(2, oov_list.get(&CategoryType::DEFAULT).unwrap().len());
@@ -418,7 +423,7 @@ fn read_oov() {
 #[test]
 fn read_oov_with_too_few_columns() {
     let bytes = build_mock_bytes();
-    let grammar = build_mock_grammar(&bytes);
+    let mut grammar = build_mock_grammar(&bytes);
     let mut categories = HashMap::with_hasher(RoMu::new());
     categories.insert(
         CategoryType::DEFAULT,
@@ -431,14 +436,19 @@ fn read_oov_with_too_few_columns() {
     );
 
     let data = "DEFAULT,1,2,3,補助記号,一般,*,*,*";
-    let result = MeCabOovPlugin::read_oov(data.as_bytes(), &categories, &grammar);
+    let result = MeCabOovPlugin::read_oov(
+        data.as_bytes(),
+        &categories,
+        &mut grammar,
+        UserPosMode::Forbid,
+    );
     assert_matches!(result, Err(SudachiError::InvalidDataFormat(0, s)) if s == data);
 }
 
 #[test]
 fn read_oov_with_undefined_type() {
     let bytes = build_mock_bytes();
-    let grammar = build_mock_grammar(&bytes);
+    let mut grammar = build_mock_grammar(&bytes);
     let mut categories = HashMap::with_hasher(RoMu::new());
     categories.insert(
         CategoryType::DEFAULT,
@@ -451,14 +461,19 @@ fn read_oov_with_undefined_type() {
     );
 
     let data = "FOO,1,2,3,補助記号,一般,*,*,*,*";
-    let result = MeCabOovPlugin::read_oov(data.as_bytes(), &categories, &grammar);
+    let result = MeCabOovPlugin::read_oov(
+        data.as_bytes(),
+        &categories,
+        &mut grammar,
+        UserPosMode::Forbid,
+    );
     assert_matches!(result, Err(SudachiError::InvalidCharacterCategoryType(s)) if s == "FOO")
 }
 
 #[test]
 fn read_oov_with_category_not_in_character_property() {
     let bytes = build_mock_bytes();
-    let grammar = build_mock_grammar(&bytes);
+    let mut grammar = build_mock_grammar(&bytes);
     let mut categories = HashMap::with_hasher(RoMu::new());
     categories.insert(
         CategoryType::DEFAULT,
@@ -471,7 +486,12 @@ fn read_oov_with_category_not_in_character_property() {
     );
 
     let data = "ALPHA,1,2,3,補助記号,一般,*,*,*,*";
-    let result = MeCabOovPlugin::read_oov(data.as_bytes(), &categories, &grammar);
+    let result = MeCabOovPlugin::read_oov(
+        data.as_bytes(),
+        &categories,
+        &mut grammar,
+        UserPosMode::Forbid,
+    );
     assert_matches!(result, Err(SudachiError::InvalidDataFormat(0, s)) if s.contains("ALPHA"))
 }
 

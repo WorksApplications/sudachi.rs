@@ -835,6 +835,7 @@ dependencies = [
  "default_input_text",
  "fancy-regex",
  "indexmap",
+ "itertools",
  "join_katakana_oov",
  "join_numeric",
  "lazy_static",

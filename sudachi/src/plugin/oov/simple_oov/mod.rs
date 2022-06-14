@@ -23,7 +23,7 @@ use crate::config::Config;
 use crate::dic::grammar::Grammar;
 use crate::dic::word_id::WordId;
 use crate::input_text::InputBuffer;
-use crate::plugin::oov::OovProviderPlugin;
+use crate::plugin::oov::{OovProviderPlugin, UserPosMode, UserPosSupport};
 use crate::prelude::*;
 
 /// Provides a OOV node with single character if no words found in the dictionary
@@ -43,6 +43,8 @@ struct PluginSettings {
     leftId: i16,
     rightId: i16,
     cost: i16,
+    #[serde(default)]
+    userPOS: UserPosMode,
 }
 
 impl OovProviderPlugin for SimpleOovPlugin {
@@ -50,14 +52,11 @@ impl OovProviderPlugin for SimpleOovPlugin {
         &mut self,
         settings: &Value,
         _config: &Config,
-        grammar: &Grammar,
+        mut grammar: &mut Grammar,
     ) -> SudachiResult<()> {
         let settings: PluginSettings = serde_json::from_value(settings.clone())?;
 
-        let oov_pos_string: Vec<&str> = settings.oovPOS.iter().map(|s| s.as_str()).collect();
-        let oov_pos_id = grammar.get_part_of_speech_id(&oov_pos_string).ok_or(
-            SudachiError::InvalidPartOfSpeech(format!("{:?}", oov_pos_string)),
-        )?;
+        let oov_pos_id = grammar.maybe_user_pos(&settings.oovPOS, settings.userPOS)?;
         let cost = settings.cost;
 
         self.oov_pos_id = oov_pos_id;

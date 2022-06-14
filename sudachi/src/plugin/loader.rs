@@ -45,9 +45,9 @@ impl<T: PluginCategory + ?Sized> Drop for PluginContainer<T> {
     }
 }
 
-struct PluginLoader<'a, T: PluginCategory + ?Sized> {
+struct PluginLoader<'a, 'b, T: PluginCategory + ?Sized> {
     cfg: &'a Config,
-    grammar: &'a Grammar<'a>,
+    grammar: &'a mut Grammar<'b>,
     libraries: Vec<Library>,
     plugins: Vec<<T as PluginCategory>::BoxType>,
 }
@@ -84,8 +84,8 @@ fn system_specific_name(s: &str) -> Option<String> {
     }
 }
 
-impl<'a, T: PluginCategory + ?Sized> PluginLoader<'a, T> {
-    pub fn new(grammar: &'a Grammar, config: &'a Config) -> PluginLoader<'a, T> {
+impl<'a, 'b, T: PluginCategory + ?Sized> PluginLoader<'a, 'b, T> {
+    pub fn new(grammar: &'a mut Grammar<'b>, config: &'a Config) -> PluginLoader<'a, 'b, T> {
         PluginLoader {
             cfg: config,
             grammar,
@@ -127,7 +127,7 @@ impl<'a, T: PluginCategory + ?Sized> PluginLoader<'a, T> {
                 self.load_plugin_from_dso(&candidates)?
             };
 
-        <T as PluginCategory>::do_setup(&mut plugin, plugin_cfg, &self.cfg, &self.grammar)
+        <T as PluginCategory>::do_setup(&mut plugin, plugin_cfg, &self.cfg, &mut self.grammar)
             .map_err(|e| e.with_context(format!("plugin {} setup", name)))?;
         self.plugins.push(plugin);
         Ok(())
@@ -224,16 +224,16 @@ pub trait PluginCategory {
         ptr: &mut Self::BoxType,
         settings: &Value,
         config: &Config,
-        grammar: &Grammar,
+        grammar: &mut Grammar,
     ) -> SudachiResult<()>;
 }
 
 /// Helper function to load the plugins of a single category
 /// Should be called with turbofish syntax and trait object type:
 /// `let plugins = load_plugins_of::<dyn InputText>(...)`.
-pub fn load_plugins_of<T: PluginCategory + ?Sized>(
-    cfg: &Config,
-    grammar: &Grammar,
+pub fn load_plugins_of<'a, 'b, T: PluginCategory + ?Sized>(
+    cfg: &'a Config,
+    grammar: &'a mut Grammar<'b>,
 ) -> SudachiResult<PluginContainer<T>> {
     let mut loader: PluginLoader<T> = PluginLoader::new(grammar, cfg);
     loader.load()?;

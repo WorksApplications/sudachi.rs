@@ -16,7 +16,10 @@
 
 use crate::analysis::created::CreatedWords;
 use crate::analysis::Node;
+use itertools::Itertools;
+use serde::Deserialize;
 use serde_json::Value;
+use std::fmt::Display;
 
 use crate::config::Config;
 use crate::dic::grammar::Grammar;
@@ -29,11 +32,28 @@ use crate::prelude::*;
 pub mod mecab_oov;
 pub mod simple_oov;
 
+#[derive(Eq, PartialEq, Deserialize, Clone, Copy)]
+#[serde(rename_all = "lowercase")]
+enum UserPosMode {
+    Allow,
+    Forbid,
+}
+
+impl Default for UserPosMode {
+    fn default() -> Self {
+        UserPosMode::Forbid
+    }
+}
+
 /// Trait of plugin to provide oov node during tokenization
 pub trait OovProviderPlugin: Sync + Send {
     /// Loads necessary information for the plugin
-    fn set_up(&mut self, settings: &Value, config: &Config, grammar: &Grammar)
-        -> SudachiResult<()>;
+    fn set_up(
+        &mut self,
+        settings: &Value,
+        config: &Config,
+        grammar: &mut Grammar,
+    ) -> SudachiResult<()>;
 
     /// Generate a list of oov nodes
     /// offset - char idx
@@ -65,8 +85,36 @@ impl PluginCategory for dyn OovProviderPlugin {
         ptr: &mut Self::BoxType,
         settings: &Value,
         config: &Config,
-        grammar: &Grammar,
+        grammar: &mut Grammar,
     ) -> SudachiResult<()> {
         ptr.set_up(settings, config, grammar)
+    }
+}
+
+trait UserPosSupport {
+    fn maybe_user_pos<S: AsRef<str> + ToString + Display>(
+        &mut self,
+        pos: &[S],
+        mode: UserPosMode,
+    ) -> SudachiResult<u16>;
+}
+
+impl<'a> UserPosSupport for &'a mut Grammar<'_> {
+    fn maybe_user_pos<S: AsRef<str> + ToString + Display>(
+        &mut self,
+        pos: &[S],
+        mode: UserPosMode,
+    ) -> SudachiResult<u16> {
+        if let Some(id) = self.get_part_of_speech_id(pos) {
+            return Ok(id);
+        }
+
+        match mode {
+            UserPosMode::Allow => self.register_pos(pos),
+            UserPosMode::Forbid => Err(SudachiError::InvalidPartOfSpeech(format!(
+                "POS {} was not in the dictionary, user-defined POS are forbidden",
+                pos.iter().join(",")
+            ))),
+        }
     }
 }
