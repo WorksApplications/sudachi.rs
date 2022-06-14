@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+use crate::analysis::created::CreatedWords;
 use serde::Deserialize;
 use serde_json::Value;
 
@@ -91,11 +92,11 @@ impl OovProviderPlugin for SimpleOovPlugin {
         &self,
         input_text: &InputBuffer,
         offset: usize,
-        has_other_words: bool,
+        other_words: CreatedWords,
         result: &mut Vec<Node>,
-    ) -> SudachiResult<()> {
-        if has_other_words {
-            return Ok(());
+    ) -> SudachiResult<usize> {
+        if other_words.not_empty() {
+            return Ok(0);
         }
 
         let length = input_text.get_word_candidate_length(offset);
@@ -108,6 +109,6 @@ impl OovProviderPlugin for SimpleOovPlugin {
             self.cost,
             WordId::oov(self.oov_pos_id as u32),
         ));
-        Ok(())
+        Ok(1)
     }
 }

@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+use crate::analysis::created::CreatedWords;
 use serde::Deserialize;
 use serde_json::Value;
 use std::collections::HashMap;
@@ -194,20 +195,22 @@ impl MeCabOovPlugin {
         &self,
         input: &T,
         offset: usize,
-        has_other_words: bool,
+        other_words: CreatedWords,
         nodes: &mut Vec<Node>,
-    ) -> SudachiResult<()> {
+    ) -> SudachiResult<usize> {
         let char_len = input.cat_continuous_len(offset);
         if char_len == 0 {
-            return Ok(());
+            return Ok(0);
         }
+        let mut num_created = 0;
 
         for ctype in input.cat_at_char(offset).iter() {
             let cinfo = match self.categories.get(&ctype) {
                 Some(ci) => ci,
                 None => continue,
             };
-            if !cinfo.is_invoke && has_other_words {
+
+            if !cinfo.is_invoke && other_words.not_empty() {
                 continue;
             }
 
@@ -220,6 +223,7 @@ impl MeCabOovPlugin {
             if cinfo.is_group {
                 for oov in oovs {
                     nodes.push(self.get_oov_node(oov, offset, offset + char_len));
+                    num_created += 1;
                 }
                 llength -= 1;
             }
@@ -230,10 +234,11 @@ impl MeCabOovPlugin {
                 }
                 for oov in oovs {
                     nodes.push(self.get_oov_node(oov, offset, offset + sublength));
+                    num_created += 1;
                 }
             }
         }
-        Ok(())
+        Ok(num_created)
     }
 }
 
@@ -272,10 +277,10 @@ impl OovProviderPlugin for MeCabOovPlugin {
         &self,
         input_text: &InputBuffer,
         offset: usize,
-        has_other_words: bool,
+        other_words: CreatedWords,
         result: &mut Vec<Node>,
-    ) -> SudachiResult<()> {
-        self.provide_oov_gen(input_text, offset, has_other_words, result)
+    ) -> SudachiResult<usize> {
+        self.provide_oov_gen(input_text, offset, other_words, result)
     }
 }
 

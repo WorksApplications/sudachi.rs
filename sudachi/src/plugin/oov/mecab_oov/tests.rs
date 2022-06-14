@@ -42,12 +42,12 @@ fn provide_oov000() {
     let mut res: Vec<Node> = vec![];
 
     plugin
-        .provide_oov(&text, 0, false, &mut res)
+        .provide_oov(&text, 0, CreatedWords::empty(), &mut res)
         .expect("Failed to generate oovs");
     assert!(res.is_empty());
 
     plugin
-        .provide_oov(&text, 0, true, &mut res)
+        .provide_oov(&text, 0, CreatedWords::single(1), &mut res)
         .expect("Failed to generate oovs");
     assert!(res.is_empty());
 }
@@ -69,12 +69,12 @@ fn provide_oov100() {
     let mut nodes: Vec<Node> = vec![];
 
     plugin
-        .provide_oov(&text, 0, false, &mut nodes)
+        .provide_oov(&text, 0, CreatedWords::empty(), &mut nodes)
         .expect("Failed to generate oovs");
     assert!(nodes.is_empty());
 
     plugin
-        .provide_oov(&text, 0, true, &mut nodes)
+        .provide_oov(&text, 0, CreatedWords::single(1), &mut nodes)
         .expect("Failed to generate oovs");
     assert!(nodes.is_empty());
 }
@@ -95,7 +95,7 @@ fn provide_oov010() {
     let mut nodes: Vec<Node> = vec![];
 
     plugin
-        .provide_oov(&text, 0, false, &mut nodes)
+        .provide_oov(&text, 0, CreatedWords::empty(), &mut nodes)
         .expect("Failed to generate oovs");
     assert_eq!(1, nodes.len());
     assert_eq!("あいう", text.curr_slice_c(nodes[0].char_range()));
@@ -103,7 +103,7 @@ fn provide_oov010() {
 
     nodes.clear();
     plugin
-        .provide_oov(&text, 0, true, &mut nodes)
+        .provide_oov(&text, 0, CreatedWords::single(1), &mut nodes)
         .expect("Failed to generate oovs");
     assert!(nodes.is_empty());
 }
@@ -124,7 +124,7 @@ fn provide_oov110() {
     let mut nodes: Vec<Node> = vec![];
 
     plugin
-        .provide_oov(&text, 0, false, &mut nodes)
+        .provide_oov(&text, 0, CreatedWords::empty(), &mut nodes)
         .expect("Failed to generate oovs");
     assert_eq!(1, nodes.len());
     assert_eq!("あいう", text.curr_slice_c(nodes[0].char_range()));
@@ -132,7 +132,7 @@ fn provide_oov110() {
 
     nodes.clear();
     plugin
-        .provide_oov(&text, 0, true, &mut nodes)
+        .provide_oov(&text, 0, CreatedWords::single(1), &mut nodes)
         .expect("Failed to generate oovs");
     assert_eq!(1, nodes.len());
 }
@@ -153,7 +153,7 @@ fn provide_oov002() {
     let mut nodes: Vec<Node> = vec![];
 
     plugin
-        .provide_oov(&text, 0, false, &mut nodes)
+        .provide_oov(&text, 0, CreatedWords::empty(), &mut nodes)
         .expect("Failed to generate oovs");
     assert_eq!(2, nodes.len());
 
@@ -165,7 +165,7 @@ fn provide_oov002() {
 
     nodes.clear();
     plugin
-        .provide_oov(&text, 0, true, &mut nodes)
+        .provide_oov(&text, 0, CreatedWords::single(1), &mut nodes)
         .expect("Failed to generate oovs");
     assert!(nodes.is_empty());
 }
@@ -186,7 +186,7 @@ fn provide_oov012() {
     let mut nodes: Vec<Node> = vec![];
 
     plugin
-        .provide_oov(&text, 0, false, &mut nodes)
+        .provide_oov(&text, 0, CreatedWords::empty(), &mut nodes)
         .expect("Failed to generate oovs");
     assert_eq!(3, nodes.len());
 
@@ -201,7 +201,7 @@ fn provide_oov012() {
 
     nodes.clear();
     plugin
-        .provide_oov(&text, 0, true, &mut nodes)
+        .provide_oov(&text, 0, CreatedWords::single(1), &mut nodes)
         .expect("Failed to generate oovs");
     assert!(nodes.is_empty());
 }
@@ -222,7 +222,7 @@ fn provide_oov112() {
     let mut nodes: Vec<Node> = vec![];
 
     plugin
-        .provide_oov(&text, 0, false, &mut nodes)
+        .provide_oov(&text, 0, CreatedWords::empty(), &mut nodes)
         .expect("Failed to generate oovs");
     assert_eq!(3, nodes.len());
 
@@ -237,7 +237,7 @@ fn provide_oov112() {
 
     nodes.clear();
     plugin
-        .provide_oov(&text, 0, true, &mut nodes)
+        .provide_oov(&text, 0, CreatedWords::single(1), &mut nodes)
         .expect("Failed to generate oovs");
     assert_eq!(3, nodes.len());
 }
@@ -258,7 +258,7 @@ fn provide_oov006() {
     let mut nodes: Vec<Node> = vec![];
 
     plugin
-        .provide_oov(&text, 0, false, &mut nodes)
+        .provide_oov(&text, 0, CreatedWords::empty(), &mut nodes)
         .expect("Failed to generate oovs");
     assert_eq!(3, nodes.len());
 
@@ -273,7 +273,7 @@ fn provide_oov006() {
 
     nodes.clear();
     plugin
-        .provide_oov(&text, 0, true, &mut nodes)
+        .provide_oov(&text, 0, CreatedWords::single(1), &mut nodes)
         .expect("Failed to generate oovs");
     assert!(nodes.is_empty());
 }
@@ -294,7 +294,7 @@ fn provide_oov_multi_oov() {
     let mut nodes: Vec<Node> = vec![];
 
     plugin
-        .provide_oov(&text, 0, false, &mut nodes)
+        .provide_oov(&text, 0, CreatedWords::empty(), &mut nodes)
         .expect("Failed to generate oovs");
     assert_eq!(2, nodes.len());
 
@@ -312,7 +312,7 @@ fn provide_oov_without_cinfo() {
     let mut nodes: Vec<Node> = vec![];
 
     plugin
-        .provide_oov(&text, 0, false, &mut nodes)
+        .provide_oov(&text, 0, CreatedWords::empty(), &mut nodes)
         .expect("Failed to generate oovs");
     assert!(nodes.is_empty());
 }
@@ -333,7 +333,7 @@ fn provide_oov_without_oov_list() {
     let mut nodes: Vec<Node> = vec![];
 
     plugin
-        .provide_oov(&text, 0, false, &mut nodes)
+        .provide_oov(&text, 0, CreatedWords::empty(), &mut nodes)
         .expect("Failed to generate oovs");
     assert!(nodes.is_empty());
 }
