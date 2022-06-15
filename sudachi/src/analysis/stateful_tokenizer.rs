@@ -252,7 +252,7 @@ struct LatticeBuilder<'a> {
 }
 
 impl<'a> LatticeBuilder<'a> {
-    #[inline(always)]
+    #[inline]
     fn build_lattice(&mut self) -> SudachiResult<()> {
         self.lattice.reset(self.input.current_chars().len());
         let input_bytes = self.input.current().as_bytes();
@@ -309,10 +309,10 @@ impl<'a> LatticeBuilder<'a> {
         Ok(())
     }
 
-    #[inline(always)]
+    #[inline]
     fn provide_oovs<P>(
         &mut self,
-        offset: usize,
+        char_offset: usize,
         mut other: CreatedWords,
         plugin: &P,
     ) -> SudachiResult<CreatedWords>
@@ -320,7 +320,7 @@ impl<'a> LatticeBuilder<'a> {
         P: OovProviderPlugin + 'a + ?Sized,
     {
         let start_size = self.node_buffer.len();
-        let num_provided = plugin.provide_oov(self.input, offset, other, self.node_buffer)?;
+        let num_provided = plugin.provide_oov(self.input, char_offset, other, self.node_buffer)?;
         for idx in start_size..(start_size + num_provided) {
             let node = self.node_buffer[idx].clone();
             other = other.add_word(node.char_range().len() as i64);

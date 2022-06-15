@@ -15,7 +15,7 @@
  */
 
 use crate::analysis::created::CreatedWords;
-use crate::plugin::oov::UserPosSupport;
+use crate::util::user_pos::{UserPosMode, UserPosSupport};
 use serde::Deserialize;
 use serde_json::Value;
 use std::collections::HashMap;
@@ -32,11 +32,11 @@ use crate::dic::word_id::WordId;
 use crate::hash::RoMu;
 use crate::input_text::InputBuffer;
 use crate::input_text::InputTextIndex;
-use crate::plugin::oov::{OovProviderPlugin, UserPosMode};
+use crate::plugin::oov::OovProviderPlugin;
 use crate::prelude::*;
 
 #[cfg(test)]
-mod tests;
+mod test;
 
 const DEFAULT_CHAR_DEF_FILE: &str = "char.def";
 const DEFAULT_UNK_DEF_FILE: &str = "unk.def";
@@ -143,7 +143,7 @@ impl MeCabOovPlugin {
                 left_id: cols[1].parse()?,
                 right_id: cols[2].parse()?,
                 cost: cols[3].parse()?,
-                pos_id: grammar.maybe_user_pos(&cols[4..10], user_pos)?,
+                pos_id: grammar.handle_user_pos(&cols[4..10], user_pos)?,
             };
 
             if oov.left_id as usize > grammar.conn_matrix().num_left() {

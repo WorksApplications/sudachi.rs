@@ -18,29 +18,43 @@ use std::cmp::min;
 
 type Carrier = u64;
 
-#[derive(Copy, Clone, Eq, PartialEq, Default)]
+/// Bitset which represents that a word of a specified length was created.
+/// Lattice construction fills this bitmap and passes it to the OOV providers.
+/// It allows OOV providers to check if a word of a specific length was created very cheaply.
+///
+/// Unfortunately, if a word is more than `MAX_VALUE` characters, handlers need to do usual linear-time check.
+#[derive(Copy, Clone, Eq, PartialEq, Default, Debug)]
 #[repr(transparent)]
 pub struct CreatedWords(Carrier);
 
+#[derive(Eq, PartialEq, Copy, Clone, Debug)]
+pub enum HasWord {
+    Yes,
+    No,
+    Maybe,
+}
+
 impl CreatedWords {
-    const MAX_VALUE: Carrier = 63;
+    /// Maximum supported length of the word
+    pub const MAX_VALUE: Carrier = 64;
+    const MAX_SHIFT: Carrier = CreatedWords::MAX_VALUE - 1;
 
     pub fn empty() -> CreatedWords {
         return Default::default();
     }
 
-    pub fn single<Pos: Into<i64>>(position: Pos) -> CreatedWords {
-        let raw = position.into();
+    pub fn single<Pos: Into<i64>>(length: Pos) -> CreatedWords {
+        let raw = length.into();
         debug_assert!(raw > 0);
         let raw = raw as Carrier;
-        let shift = min(raw.saturating_sub(1), CreatedWords::MAX_VALUE);
+        let shift = min(raw.saturating_sub(1), CreatedWords::MAX_SHIFT);
         let bits = (1 as Carrier) << shift;
         CreatedWords(bits)
     }
 
     #[must_use]
-    pub fn add_word<P: Into<i64>>(&self, position: P) -> CreatedWords {
-        let mask = CreatedWords::single(position);
+    pub fn add_word<P: Into<i64>>(&self, length: P) -> CreatedWords {
+        let mask = CreatedWords::single(length);
         return self.add(mask);
     }
 
@@ -49,9 +63,17 @@ impl CreatedWords {
         CreatedWords(self.0 | other.0)
     }
 
-    pub fn has_word<P: Into<i64>>(&self, position: P) -> bool {
-        let mask = CreatedWords::single(position);
-        return (self.0 & mask.0) != 0;
+    pub fn has_word<P: Into<i64> + Copy>(&self, length: P) -> HasWord {
+        let mask = CreatedWords::single(length);
+        if (self.0 & mask.0) == 0 {
+            HasWord::No
+        } else {
+            if length.into() >= CreatedWords::MAX_VALUE as _ {
+                HasWord::Maybe
+            } else {
+                HasWord::Yes
+            }
+        }
     }
 
     pub fn is_empty(&self) -> bool {
@@ -70,15 +92,31 @@ mod test {
     #[test]
     fn simple() {
         let mask = CreatedWords::single(1);
-        assert!(mask.has_word(1));
+        assert_eq!(mask.has_word(1), HasWord::Yes);
     }
 
     #[test]
     fn add() {
         let mask1 = CreatedWords::single(5);
         let mask2 = mask1.add_word(10);
-        assert!(mask2.has_word(5));
-        assert!(mask2.has_word(10));
-        assert!(!mask2.has_word(15));
+        assert_eq!(mask2.has_word(5), HasWord::Yes);
+        assert_eq!(mask2.has_word(10), HasWord::Yes);
+        assert_eq!(mask2.has_word(15), HasWord::No);
+    }
+
+    #[test]
+    fn long_value_present() {
+        let mask1 = CreatedWords::single(100);
+        assert_eq!(HasWord::No, mask1.has_word(62));
+        assert_eq!(HasWord::No, mask1.has_word(63));
+        assert_eq!(HasWord::Maybe, mask1.has_word(64));
+    }
+
+    #[test]
+    fn long_value_absent() {
+        let mask1 = CreatedWords::single(62);
+        assert_eq!(HasWord::Yes, mask1.has_word(62));
+        assert_eq!(HasWord::No, mask1.has_word(63));
+        assert_eq!(HasWord::No, mask1.has_word(64));
     }
 }

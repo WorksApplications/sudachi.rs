@@ -14,14 +14,11 @@
  *  limitations under the License.
  */
 
-use std::io::{Seek, SeekFrom, Write};
+use std::io::{Cursor, Write};
 
 use crate::analysis::node::LatticeNode;
+use crate::util::testing::*;
 use claim::assert_matches;
-use lazy_static::lazy_static;
-use tempfile::tempfile;
-
-use crate::dic::character_category::CharacterCategory;
 
 use super::*;
 
@@ -386,14 +383,12 @@ fn read_character_property_duplicate_definitions() {
 
 #[test]
 fn read_oov() {
-    let mut file = tempfile().expect("Failed to get temporary file");
-    writeln!(file, "DEFAULT,1,2,3,補助記号,一般,*,*,*,*").unwrap();
-    writeln!(file, "DEFAULT,3,4,5,補助記号,一般,*,*,*,*").unwrap();
-    file.flush().expect("Failed to flush");
-    file.seek(SeekFrom::Start(0)).expect("Failed to seek");
+    let mut data: Vec<u8> = Vec::new();
+    let mut writer = Cursor::new(&mut data);
+    writeln!(writer, "DEFAULT,1,2,3,補助記号,一般,*,*,*,*").unwrap();
+    writeln!(writer, "DEFAULT,3,4,5,補助記号,一般,*,*,*,*").unwrap();
 
-    let bytes = build_mock_bytes();
-    let mut grammar = build_mock_grammar(&bytes);
+    let mut grammar = build_mock_grammar(&GRAMMAR_BYTES);
     let mut categories = HashMap::with_hasher(RoMu::new());
     categories.insert(
         CategoryType::DEFAULT,
@@ -405,7 +400,7 @@ fn read_oov() {
         },
     );
     let oov_list = MeCabOovPlugin::read_oov(
-        BufReader::new(file),
+        BufReader::new(Cursor::new(&data)),
         &categories,
         &mut grammar,
         UserPosMode::Forbid,
@@ -516,56 +511,4 @@ fn build_plugin() -> MeCabOovPlugin {
         .oov_list
         .insert(CategoryType::KANJINUMERIC, vec![oov1, oov2]);
     plugin
-}
-
-lazy_static! {
-    static ref DATA: Vec<u8> = build_mock_bytes();
-    static ref GRAMMAR: Grammar<'static> = build_mock_grammar(&DATA);
-}
-
-fn input_text(data: &str) -> InputBuffer {
-    let mut buf = InputBuffer::from(data);
-    buf.build(&GRAMMAR).expect("does not fail");
-    buf
-}
-
-const ALL_KANJI_CAT: &str = "
-0x0061..0x007A ALPHA    #a-z
-0x3041..0x309F  KANJI # HIRAGANA
-0x30A1..0x30FF  KANJINUMERIC # KATAKANA
-";
-
-fn char_cats() -> CharacterCategory {
-    CharacterCategory::from_reader(ALL_KANJI_CAT.as_bytes()).unwrap()
-}
-
-fn build_mock_bytes() -> Vec<u8> {
-    let mut buf = Vec::new();
-    // encode pos for oov
-    buf.extend(&(1 as i16).to_le_bytes());
-    let pos = vec!["補助記号", "一般", "*", "*", "*", "*"];
-    for s in pos {
-        let utf16: Vec<_> = s.encode_utf16().collect();
-        buf.extend(&(utf16.len() as u8).to_le_bytes());
-        for c in utf16 {
-            buf.extend(&(c).to_le_bytes());
-        }
-    }
-    // set 10 for left and right id sizes
-    buf.extend(&(10 as i16).to_le_bytes());
-    buf.extend(&(10 as i16).to_le_bytes());
-    for i in 0..10 {
-        for j in 0..10 {
-            let val = i * 100 + j;
-            buf.extend(&(val as i16).to_le_bytes());
-        }
-    }
-
-    buf
-}
-
-fn build_mock_grammar(bytes: &[u8]) -> Grammar {
-    let mut grammar = Grammar::parse(bytes, 0).expect("Failed to create grammar");
-    grammar.set_character_category(char_cats());
-    grammar
 }

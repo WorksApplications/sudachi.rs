@@ -23,8 +23,10 @@ use crate::config::Config;
 use crate::dic::grammar::Grammar;
 use crate::dic::word_id::WordId;
 use crate::input_text::InputBuffer;
-use crate::plugin::oov::{OovProviderPlugin, UserPosMode, UserPosSupport};
+use crate::plugin::oov::OovProviderPlugin;
 use crate::prelude::*;
+use crate::util::check_params::CheckParams;
+use crate::util::user_pos::{UserPosMode, UserPosSupport};
 
 /// Provides a OOV node with single character if no words found in the dictionary
 #[derive(Default)]
@@ -40,9 +42,9 @@ pub struct SimpleOovPlugin {
 #[derive(Deserialize)]
 struct PluginSettings {
     oovPOS: Vec<String>,
-    leftId: i16,
-    rightId: i16,
-    cost: i16,
+    leftId: i64,
+    rightId: i64,
+    cost: i64,
     #[serde(default)]
     userPOS: UserPosMode,
 }
@@ -56,34 +58,10 @@ impl OovProviderPlugin for SimpleOovPlugin {
     ) -> SudachiResult<()> {
         let settings: PluginSettings = serde_json::from_value(settings.clone())?;
 
-        let oov_pos_id = grammar.maybe_user_pos(&settings.oovPOS, settings.userPOS)?;
-        let cost = settings.cost;
-
-        self.oov_pos_id = oov_pos_id;
-        self.left_id = settings.leftId as u16;
-        self.right_id = settings.rightId as u16;
-        self.cost = cost;
-
-        if self.left_id as usize > grammar.conn_matrix().num_left() {
-            return Err(SudachiError::InvalidDataFormat(
-                self.left_id as usize,
-                format!(
-                    "max grammar left_id is {}",
-                    grammar.conn_matrix().num_left()
-                ),
-            ));
-        }
-
-        if self.right_id as usize > grammar.conn_matrix().num_right() {
-            return Err(SudachiError::InvalidDataFormat(
-                self.right_id as usize,
-                format!(
-                    "max grammar left_id is {}",
-                    grammar.conn_matrix().num_right()
-                ),
-            ));
-        }
-
+        self.oov_pos_id = grammar.handle_user_pos(&settings.oovPOS, settings.userPOS)?;
+        self.left_id = grammar.check_left_id(settings.leftId)?;
+        self.right_id = grammar.check_right_id(settings.rightId)?;
+        self.cost = grammar.check_cost(settings.cost)?;
         Ok(())
     }
 

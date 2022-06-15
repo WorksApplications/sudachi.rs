@@ -14,5 +14,9 @@
  *  limitations under the License.
  */
 
+pub mod check_params;
 pub mod cow_array;
 pub mod fxhash;
+#[cfg(test)]
+pub(crate) mod testing;
+pub mod user_pos;

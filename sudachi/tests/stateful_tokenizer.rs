@@ -22,6 +22,7 @@ use sudachi::prelude::Mode;
 
 mod common;
 use crate::common::TestStatefulTokenizer as TestTokenizer;
+use common::LEX_CSV;
 
 #[test]
 fn empty() {
@@ -145,7 +146,6 @@ fn split_middle() {
 }
 
 const OOV_CFG: &[u8] = include_bytes!("resources/sudachi.oov.json");
-const LEX_CSV: &[u8] = include_bytes!("resources/lex.csv");
 
 #[test]
 fn istanbul_is_not_splitted() {

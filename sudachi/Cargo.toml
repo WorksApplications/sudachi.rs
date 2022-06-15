@@ -20,7 +20,7 @@ lazy_static = "1.4" # MIT/Apache 2.0
 libloading = "0.7" # ISC (MIT-compatible)
 nom = "7" # MIT
 memmap2 = "0.5" # MIT/Apache 2.0
-regex = "1.5" # MIT/Apache 2.0
+regex = "1" # MIT/Apache 2.0
 serde = { version = "1.0", features = ["derive"] } # MIT/Apache 2.0
 serde_json = "1.0" # MIT/Apache 2.0
 thiserror = "1.0" # MIT/Apache 2.0
