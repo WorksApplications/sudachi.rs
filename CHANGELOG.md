@@ -1,4 +1,18 @@
-# [0.6.3](https://github.com/WorksApplications/sudachi.rs/releases/tag/v0.6.2) (2020-02-10)
+# [0.6.4](https://github.com/WorksApplications/sudachi.rs/releases/tag/v0.6.3) (2022-06-16)
+
+## Highlights
+
+* Remove Python 3.6 support which reached end-of-life status on [2021-12-23](https://endoflife.date/python)
+* OOV handler plugins support user-defined POS, [similar to Java version](https://github.com/WorksApplications/Sudachi/releases/tag/v0.6.0)
+* Added Regex OOV handler
+
+## Regex OOV Handler
+
+* For details, see [Java version changelog](https://github.com/WorksApplications/Sudachi/releases/tag/v0.6.0)
+* In Rust/Python Regexes do not support backtracking and backreferences
+* `maxLength` setting defines maximum length in unicode codepoints, not in utf-8 bytes as in Java (will be changed to codepoints later)
+
+# [0.6.3](https://github.com/WorksApplications/sudachi.rs/releases/tag/v0.6.3) (2022-02-10)
 
 ## Highlights
 
@@ -20,13 +34,13 @@
   * difference (`m1 - m2`)
   * negation (`~m1`)
 
-# [0.6.2](https://github.com/WorksApplications/sudachi.rs/releases/tag/v0.6.2) (2020-12-09)
+# [0.6.2](https://github.com/WorksApplications/sudachi.rs/releases/tag/v0.6.2) (2021-12-09)
 
 ## Fixes
 
 * Fix analysis differences with 0.5.4
 
-# [0.6.1](https://github.com/WorksApplications/sudachi.rs/releases/tag/v0.6.1) (2020-12-08)
+# [0.6.1](https://github.com/WorksApplications/sudachi.rs/releases/tag/v0.6.1) (2021-12-08)
 
 ## Highlights
 * Added Fuzzing (see `sudachi-fuzz` subdirectory), Sudachi.rs seems to be pretty robust towards arbitrary inputs (no crashes and panics)
@@ -41,7 +55,7 @@
 ## Python
 * See [Python changelog](./python/CHANGELOG.md)
 
-# [0.6.0](https://github.com/WorksApplications/sudachi.rs/releases/tag/v0.6.0) (2020-11-11)
+# [0.6.0](https://github.com/WorksApplications/sudachi.rs/releases/tag/v0.6.0) (2021-11-11)
 ## Highlights
 * Full feature parity with Java version
 * ~15% analysis speed improvement over 0.6.0-rc1
