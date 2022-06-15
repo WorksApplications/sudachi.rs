@@ -118,14 +118,14 @@ impl<'a> Grammar<'a> {
             return None;
         }
         for (i, pos2) in self.pos_list.iter().enumerate() {
-            if pos1.len() == pos2.len() && pos1.iter().zip(pos2).all(|(a, b)| a.as_ref() == b) {
+            if pos1.iter().zip(pos2).all(|(a, b)| a.as_ref() == b) {
                 return Some(i as u16);
             }
         }
         None
     }
 
-    pub fn register_pos<'b, S>(&mut self, pos: &[S]) -> SudachiResult<u16>
+    pub fn register_pos<S>(&mut self, pos: &[S]) -> SudachiResult<u16>
     where
         S: AsRef<str> + ToString,
     {
