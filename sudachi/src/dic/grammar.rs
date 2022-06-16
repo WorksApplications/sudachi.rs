@@ -20,6 +20,7 @@ use crate::dic::read::u16str::utf16_string_parser;
 use crate::dic::POS_DEPTH;
 use crate::error::SudachiNomResult;
 use crate::prelude::*;
+use itertools::Itertools;
 use nom::{
     bytes::complete::take,
     number::complete::{le_i16, le_u16},
@@ -109,13 +110,43 @@ impl<'a> Grammar<'a> {
     }
 
     /// Returns a pos_id of given pos in the grammar
-    pub fn get_part_of_speech_id(&self, pos1: &[&str]) -> Option<u16> {
+    pub fn get_part_of_speech_id<S>(&self, pos1: &[S]) -> Option<u16>
+    where
+        S: AsRef<str>,
+    {
+        if pos1.len() != POS_DEPTH {
+            return None;
+        }
         for (i, pos2) in self.pos_list.iter().enumerate() {
-            if pos1.len() == pos2.len() && pos1.iter().zip(pos2).all(|(a, b)| a == b) {
+            if pos1.iter().zip(pos2).all(|(a, b)| a.as_ref() == b) {
                 return Some(i as u16);
             }
         }
         None
+    }
+
+    pub fn register_pos<S>(&mut self, pos: &[S]) -> SudachiResult<u16>
+    where
+        S: AsRef<str> + ToString,
+    {
+        if pos.len() != POS_DEPTH {
+            let pos_string = pos.iter().map(|x| x.as_ref()).join(",");
+            return Err(SudachiError::InvalidPartOfSpeech(pos_string));
+        }
+        match self.get_part_of_speech_id(pos) {
+            Some(id) => Ok(id),
+            None => {
+                let new_id = self.pos_list.len();
+                if new_id > u16::MAX as usize {
+                    return Err(SudachiError::InvalidPartOfSpeech(
+                        "Too much POS tags registered".to_owned(),
+                    ));
+                }
+                let components = pos.iter().map(|x| x.to_string()).collect();
+                self.pos_list.push(components);
+                Ok(new_id as u16)
+            }
+        }
     }
 
     /// Gets POS components for POS ID.
@@ -194,6 +225,20 @@ mod tests {
     }
 
     #[test]
+    fn register_pos() {
+        let bytes = setup_bytes();
+        let mut grammar = Grammar::parse(&bytes, 0).expect("failed to create grammar");
+
+        let id1 = grammar
+            .register_pos(["a", "b", "c", "d", "e", "f"].as_slice())
+            .expect("failed");
+        let id2 = grammar
+            .register_pos(["a", "b", "c", "d", "e", "f"].as_slice())
+            .expect("failed");
+        assert_eq!(id1, id2);
+    }
+
+    #[test]
     fn bos_parameter() {
         assert_eq!(0, Grammar::BOS_PARAMETER.0);
         assert_eq!(0, Grammar::BOS_PARAMETER.1);
@@ -205,11 +250,6 @@ mod tests {
         assert_eq!(0, Grammar::EOS_PARAMETER.0);
         assert_eq!(0, Grammar::EOS_PARAMETER.1);
         assert_eq!(0, Grammar::EOS_PARAMETER.2);
-    }
-
-    #[test]
-    fn read_from_file() {
-        // todo: after tidying up dictionary management
     }
 
     fn setup_bytes() -> Vec<u8> {

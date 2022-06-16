@@ -14,14 +14,11 @@
  *  limitations under the License.
  */
 
-use std::io::{Seek, SeekFrom, Write};
+use std::io::{Cursor, Write};
 
 use crate::analysis::node::LatticeNode;
+use crate::util::testing::*;
 use claim::assert_matches;
-use lazy_static::lazy_static;
-use tempfile::tempfile;
-
-use crate::dic::character_category::CharacterCategory;
 
 use super::*;
 
@@ -42,12 +39,12 @@ fn provide_oov000() {
     let mut res: Vec<Node> = vec![];
 
     plugin
-        .provide_oov(&text, 0, false, &mut res)
+        .provide_oov(&text, 0, CreatedWords::empty(), &mut res)
         .expect("Failed to generate oovs");
     assert!(res.is_empty());
 
     plugin
-        .provide_oov(&text, 0, true, &mut res)
+        .provide_oov(&text, 0, CreatedWords::single(1), &mut res)
         .expect("Failed to generate oovs");
     assert!(res.is_empty());
 }
@@ -69,12 +66,12 @@ fn provide_oov100() {
     let mut nodes: Vec<Node> = vec![];
 
     plugin
-        .provide_oov(&text, 0, false, &mut nodes)
+        .provide_oov(&text, 0, CreatedWords::empty(), &mut nodes)
         .expect("Failed to generate oovs");
     assert!(nodes.is_empty());
 
     plugin
-        .provide_oov(&text, 0, true, &mut nodes)
+        .provide_oov(&text, 0, CreatedWords::single(1), &mut nodes)
         .expect("Failed to generate oovs");
     assert!(nodes.is_empty());
 }
@@ -95,7 +92,7 @@ fn provide_oov010() {
     let mut nodes: Vec<Node> = vec![];
 
     plugin
-        .provide_oov(&text, 0, false, &mut nodes)
+        .provide_oov(&text, 0, CreatedWords::empty(), &mut nodes)
         .expect("Failed to generate oovs");
     assert_eq!(1, nodes.len());
     assert_eq!("あいう", text.curr_slice_c(nodes[0].char_range()));
@@ -103,7 +100,7 @@ fn provide_oov010() {
 
     nodes.clear();
     plugin
-        .provide_oov(&text, 0, true, &mut nodes)
+        .provide_oov(&text, 0, CreatedWords::single(1), &mut nodes)
         .expect("Failed to generate oovs");
     assert!(nodes.is_empty());
 }
@@ -124,7 +121,7 @@ fn provide_oov110() {
     let mut nodes: Vec<Node> = vec![];
 
     plugin
-        .provide_oov(&text, 0, false, &mut nodes)
+        .provide_oov(&text, 0, CreatedWords::empty(), &mut nodes)
         .expect("Failed to generate oovs");
     assert_eq!(1, nodes.len());
     assert_eq!("あいう", text.curr_slice_c(nodes[0].char_range()));
@@ -132,7 +129,7 @@ fn provide_oov110() {
 
     nodes.clear();
     plugin
-        .provide_oov(&text, 0, true, &mut nodes)
+        .provide_oov(&text, 0, CreatedWords::single(1), &mut nodes)
         .expect("Failed to generate oovs");
     assert_eq!(1, nodes.len());
 }
@@ -153,7 +150,7 @@ fn provide_oov002() {
     let mut nodes: Vec<Node> = vec![];
 
     plugin
-        .provide_oov(&text, 0, false, &mut nodes)
+        .provide_oov(&text, 0, CreatedWords::empty(), &mut nodes)
         .expect("Failed to generate oovs");
     assert_eq!(2, nodes.len());
 
@@ -165,7 +162,7 @@ fn provide_oov002() {
 
     nodes.clear();
     plugin
-        .provide_oov(&text, 0, true, &mut nodes)
+        .provide_oov(&text, 0, CreatedWords::single(1), &mut nodes)
         .expect("Failed to generate oovs");
     assert!(nodes.is_empty());
 }
@@ -186,7 +183,7 @@ fn provide_oov012() {
     let mut nodes: Vec<Node> = vec![];
 
     plugin
-        .provide_oov(&text, 0, false, &mut nodes)
+        .provide_oov(&text, 0, CreatedWords::empty(), &mut nodes)
         .expect("Failed to generate oovs");
     assert_eq!(3, nodes.len());
 
@@ -201,7 +198,7 @@ fn provide_oov012() {
 
     nodes.clear();
     plugin
-        .provide_oov(&text, 0, true, &mut nodes)
+        .provide_oov(&text, 0, CreatedWords::single(1), &mut nodes)
         .expect("Failed to generate oovs");
     assert!(nodes.is_empty());
 }
@@ -222,7 +219,7 @@ fn provide_oov112() {
     let mut nodes: Vec<Node> = vec![];
 
     plugin
-        .provide_oov(&text, 0, false, &mut nodes)
+        .provide_oov(&text, 0, CreatedWords::empty(), &mut nodes)
         .expect("Failed to generate oovs");
     assert_eq!(3, nodes.len());
 
@@ -237,7 +234,7 @@ fn provide_oov112() {
 
     nodes.clear();
     plugin
-        .provide_oov(&text, 0, true, &mut nodes)
+        .provide_oov(&text, 0, CreatedWords::single(1), &mut nodes)
         .expect("Failed to generate oovs");
     assert_eq!(3, nodes.len());
 }
@@ -258,7 +255,7 @@ fn provide_oov006() {
     let mut nodes: Vec<Node> = vec![];
 
     plugin
-        .provide_oov(&text, 0, false, &mut nodes)
+        .provide_oov(&text, 0, CreatedWords::empty(), &mut nodes)
         .expect("Failed to generate oovs");
     assert_eq!(3, nodes.len());
 
@@ -273,7 +270,7 @@ fn provide_oov006() {
 
     nodes.clear();
     plugin
-        .provide_oov(&text, 0, true, &mut nodes)
+        .provide_oov(&text, 0, CreatedWords::single(1), &mut nodes)
         .expect("Failed to generate oovs");
     assert!(nodes.is_empty());
 }
@@ -294,7 +291,7 @@ fn provide_oov_multi_oov() {
     let mut nodes: Vec<Node> = vec![];
 
     plugin
-        .provide_oov(&text, 0, false, &mut nodes)
+        .provide_oov(&text, 0, CreatedWords::empty(), &mut nodes)
         .expect("Failed to generate oovs");
     assert_eq!(2, nodes.len());
 
@@ -312,7 +309,7 @@ fn provide_oov_without_cinfo() {
     let mut nodes: Vec<Node> = vec![];
 
     plugin
-        .provide_oov(&text, 0, false, &mut nodes)
+        .provide_oov(&text, 0, CreatedWords::empty(), &mut nodes)
         .expect("Failed to generate oovs");
     assert!(nodes.is_empty());
 }
@@ -333,7 +330,7 @@ fn provide_oov_without_oov_list() {
     let mut nodes: Vec<Node> = vec![];
 
     plugin
-        .provide_oov(&text, 0, false, &mut nodes)
+        .provide_oov(&text, 0, CreatedWords::empty(), &mut nodes)
         .expect("Failed to generate oovs");
     assert!(nodes.is_empty());
 }
@@ -386,14 +383,12 @@ fn read_character_property_duplicate_definitions() {
 
 #[test]
 fn read_oov() {
-    let mut file = tempfile().expect("Failed to get temporary file");
-    writeln!(file, "DEFAULT,1,2,3,補助記号,一般,*,*,*,*").unwrap();
-    writeln!(file, "DEFAULT,3,4,5,補助記号,一般,*,*,*,*").unwrap();
-    file.flush().expect("Failed to flush");
-    file.seek(SeekFrom::Start(0)).expect("Failed to seek");
+    let mut data: Vec<u8> = Vec::new();
+    let mut writer = Cursor::new(&mut data);
+    writeln!(writer, "DEFAULT,1,2,3,補助記号,一般,*,*,*,*").unwrap();
+    writeln!(writer, "DEFAULT,3,4,5,補助記号,一般,*,*,*,*").unwrap();
 
-    let bytes = build_mock_bytes();
-    let grammar = build_mock_grammar(&bytes);
+    let mut grammar = build_mock_grammar(&GRAMMAR_BYTES);
     let mut categories = HashMap::with_hasher(RoMu::new());
     categories.insert(
         CategoryType::DEFAULT,
@@ -404,8 +399,13 @@ fn read_oov() {
             length: 0,
         },
     );
-    let oov_list = MeCabOovPlugin::read_oov(BufReader::new(file), &categories, &grammar)
-        .expect("Failed to read tmp file");
+    let oov_list = MeCabOovPlugin::read_oov(
+        BufReader::new(Cursor::new(&data)),
+        &categories,
+        &mut grammar,
+        UserPosMode::Forbid,
+    )
+    .expect("Failed to read tmp file");
 
     assert_eq!(1, oov_list.len());
     assert_eq!(2, oov_list.get(&CategoryType::DEFAULT).unwrap().len());
@@ -418,7 +418,7 @@ fn read_oov() {
 #[test]
 fn read_oov_with_too_few_columns() {
     let bytes = build_mock_bytes();
-    let grammar = build_mock_grammar(&bytes);
+    let mut grammar = build_mock_grammar(&bytes);
     let mut categories = HashMap::with_hasher(RoMu::new());
     categories.insert(
         CategoryType::DEFAULT,
@@ -431,14 +431,19 @@ fn read_oov_with_too_few_columns() {
     );
 
     let data = "DEFAULT,1,2,3,補助記号,一般,*,*,*";
-    let result = MeCabOovPlugin::read_oov(data.as_bytes(), &categories, &grammar);
+    let result = MeCabOovPlugin::read_oov(
+        data.as_bytes(),
+        &categories,
+        &mut grammar,
+        UserPosMode::Forbid,
+    );
     assert_matches!(result, Err(SudachiError::InvalidDataFormat(0, s)) if s == data);
 }
 
 #[test]
 fn read_oov_with_undefined_type() {
     let bytes = build_mock_bytes();
-    let grammar = build_mock_grammar(&bytes);
+    let mut grammar = build_mock_grammar(&bytes);
     let mut categories = HashMap::with_hasher(RoMu::new());
     categories.insert(
         CategoryType::DEFAULT,
@@ -451,14 +456,19 @@ fn read_oov_with_undefined_type() {
     );
 
     let data = "FOO,1,2,3,補助記号,一般,*,*,*,*";
-    let result = MeCabOovPlugin::read_oov(data.as_bytes(), &categories, &grammar);
+    let result = MeCabOovPlugin::read_oov(
+        data.as_bytes(),
+        &categories,
+        &mut grammar,
+        UserPosMode::Forbid,
+    );
     assert_matches!(result, Err(SudachiError::InvalidCharacterCategoryType(s)) if s == "FOO")
 }
 
 #[test]
 fn read_oov_with_category_not_in_character_property() {
     let bytes = build_mock_bytes();
-    let grammar = build_mock_grammar(&bytes);
+    let mut grammar = build_mock_grammar(&bytes);
     let mut categories = HashMap::with_hasher(RoMu::new());
     categories.insert(
         CategoryType::DEFAULT,
@@ -471,7 +481,12 @@ fn read_oov_with_category_not_in_character_property() {
     );
 
     let data = "ALPHA,1,2,3,補助記号,一般,*,*,*,*";
-    let result = MeCabOovPlugin::read_oov(data.as_bytes(), &categories, &grammar);
+    let result = MeCabOovPlugin::read_oov(
+        data.as_bytes(),
+        &categories,
+        &mut grammar,
+        UserPosMode::Forbid,
+    );
     assert_matches!(result, Err(SudachiError::InvalidDataFormat(0, s)) if s.contains("ALPHA"))
 }
 
@@ -496,56 +511,4 @@ fn build_plugin() -> MeCabOovPlugin {
         .oov_list
         .insert(CategoryType::KANJINUMERIC, vec![oov1, oov2]);
     plugin
-}
-
-lazy_static! {
-    static ref DATA: Vec<u8> = build_mock_bytes();
-    static ref GRAMMAR: Grammar<'static> = build_mock_grammar(&DATA);
-}
-
-fn input_text(data: &str) -> InputBuffer {
-    let mut buf = InputBuffer::from(data);
-    buf.build(&GRAMMAR).expect("does not fail");
-    buf
-}
-
-const ALL_KANJI_CAT: &str = "
-0x0061..0x007A ALPHA    #a-z
-0x3041..0x309F  KANJI # HIRAGANA
-0x30A1..0x30FF  KANJINUMERIC # KATAKANA
-";
-
-fn char_cats() -> CharacterCategory {
-    CharacterCategory::from_reader(ALL_KANJI_CAT.as_bytes()).unwrap()
-}
-
-fn build_mock_bytes() -> Vec<u8> {
-    let mut buf = Vec::new();
-    // encode pos for oov
-    buf.extend(&(1 as i16).to_le_bytes());
-    let pos = vec!["補助記号", "一般", "*", "*", "*", "*"];
-    for s in pos {
-        let utf16: Vec<_> = s.encode_utf16().collect();
-        buf.extend(&(utf16.len() as u8).to_le_bytes());
-        for c in utf16 {
-            buf.extend(&(c).to_le_bytes());
-        }
-    }
-    // set 10 for left and right id sizes
-    buf.extend(&(10 as i16).to_le_bytes());
-    buf.extend(&(10 as i16).to_le_bytes());
-    for i in 0..10 {
-        for j in 0..10 {
-            let val = i * 100 + j;
-            buf.extend(&(val as i16).to_le_bytes());
-        }
-    }
-
-    buf
-}
-
-fn build_mock_grammar(bytes: &[u8]) -> Grammar {
-    let mut grammar = Grammar::parse(bytes, 0).expect("Failed to create grammar");
-    grammar.set_character_category(char_cats());
-    grammar
 }

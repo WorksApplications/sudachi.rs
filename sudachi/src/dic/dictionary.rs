@@ -85,7 +85,11 @@ impl JapaneseDictionary {
             cfg.complete_path(&cfg.character_definition_file)?.as_path(),
         )?;
 
-        let plugins = Plugins::load(cfg, &basic_dict.grammar)?;
+        let plugins = {
+            let grammar = &mut basic_dict.grammar;
+            let cfg = &*cfg;
+            Plugins::load(cfg, grammar)?
+        };
 
         if plugins.oov.is_empty() {
             return Err(SudachiError::NoOOVPluginProvided);

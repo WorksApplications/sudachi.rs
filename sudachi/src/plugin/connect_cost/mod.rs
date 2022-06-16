@@ -53,7 +53,7 @@ impl PluginCategory for dyn EditConnectionCostPlugin {
         ptr: &mut Self::BoxType,
         settings: &Value,
         config: &Config,
-        grammar: &Grammar,
+        grammar: &mut Grammar,
     ) -> SudachiResult<()> {
         ptr.set_up(settings, config, grammar)
     }

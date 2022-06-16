@@ -14,17 +14,21 @@
  *  limitations under the License.
  */
 
+use crate::analysis::created::CreatedWords;
 use crate::analysis::inner::{Node, NodeIdx};
 use crate::analysis::lattice::Lattice;
 use crate::analysis::node::{LatticeNode, ResultNode};
 use crate::analysis::stateless_tokenizer::{dump_path, split_path, DictionaryAccess};
 use crate::analysis::Mode;
 use crate::dic::category_type::CategoryType;
+use crate::dic::connect::ConnectionMatrix;
 use crate::dic::lexicon::word_infos::WordInfoData;
+use crate::dic::lexicon_set::LexiconSet;
 use crate::dic::subset::InfoSubset;
 use crate::error::{SudachiError, SudachiResult};
 use crate::input_text::InputBuffer;
 use crate::input_text::InputTextIndex;
+use crate::plugin::oov::OovProviderPlugin;
 use crate::prelude::MorphemeList;
 
 pub struct StatefulTokenizer<D> {
@@ -82,7 +86,7 @@ impl<D: DictionaryAccess> StatefulTokenizer<D> {
         std::mem::replace(&mut self.mode, mode)
     }
 
-    /// Analyzer will read only following WordInfo field subset
+    /// Analyzer will read only following [`WordInfo`] field subset
     pub fn set_subset(&mut self, subset: InfoSubset) -> InfoSubset {
         let mode_subset = match self.mode {
             Mode::A => InfoSubset::SPLIT_A,
@@ -211,72 +215,15 @@ impl<D: DictionaryAccess> StatefulTokenizer<D> {
     }
 
     fn build_lattice(&mut self) -> SudachiResult<()> {
-        let input = &self.input;
-        let dict = &self.dictionary;
-        let input_bytes = input.current().as_bytes();
-        let oovs = &mut self.oov;
-        let lattice = &mut self.lattice;
-
-        lattice.reset(input.current_chars().len());
-
-        for (ch_off, &byte_off) in input.curr_byte_offsets().iter().enumerate() {
-            if !lattice.has_previous_node(ch_off) {
-                continue;
-            }
-
-            let mut has_word = false;
-            for e in dict.lexicon().lookup(input_bytes, byte_off) {
-                // do we really need input.can_bow condition?
-                if (e.end < input_bytes.len()) && !input.can_bow(e.end) {
-                    continue;
-                }
-                has_word = true;
-                let (left_id, right_id, cost) = dict.lexicon().get_word_param(e.word_id);
-                let end_c = input.ch_idx(e.end);
-                let node = Node::new(
-                    ch_off as u16,
-                    end_c as u16,
-                    left_id as u16,
-                    right_id as u16,
-                    cost,
-                    e.word_id,
-                );
-                lattice.insert(node, dict.grammar().conn_matrix());
-            }
-
-            // OOV
-            if !input
-                .cat_at_char(ch_off)
-                .intersects(CategoryType::NOOOVBOW | CategoryType::NOOOVBOW2)
-            {
-                for oov_provider in dict.oov_provider_plugins() {
-                    oov_provider.get_oov(&input, ch_off, has_word, oovs)?;
-                    for node in oovs.drain(..) {
-                        has_word = true;
-                        lattice.insert(node, dict.grammar().conn_matrix());
-                    }
-                }
-            }
-
-            if !has_word {
-                dict.oov_provider_plugins()
-                    .last()
-                    .unwrap() // JapaneseDictionary
-                    .get_oov(&input, ch_off, has_word, oovs)?;
-                // use last oov_provider as default
-                for node in oovs.drain(..) {
-                    has_word = true;
-                    lattice.insert(node, dict.grammar().conn_matrix());
-                }
-            }
-
-            if !has_word {
-                return Err(SudachiError::EosBosDisconnect);
-            }
-        }
-        lattice.connect_eos(dict.grammar().conn_matrix())?;
-
-        Ok(())
+        let mut builder = LatticeBuilder {
+            node_buffer: &mut self.oov,
+            lattice: &mut self.lattice,
+            matrix: self.dictionary.grammar().conn_matrix(),
+            oov_providers: self.dictionary.oov_provider_plugins(),
+            lexicon: self.dictionary.lexicon(),
+            input: &self.input,
+        };
+        builder.build_lattice()
     }
 
     /// Consume the Tokenizer and produce MorphemeList
@@ -290,5 +237,95 @@ impl<D: DictionaryAccess> StatefulTokenizer<D> {
                 self.subset,
             )),
         }
+    }
+}
+
+// This structure is purely for Rust.
+// Otherwise splitting code into functions fails to compile with double borrow errors
+struct LatticeBuilder<'a> {
+    node_buffer: &'a mut Vec<Node>,
+    lattice: &'a mut Lattice,
+    matrix: &'a ConnectionMatrix<'a>,
+    input: &'a InputBuffer,
+    lexicon: &'a LexiconSet<'a>,
+    oov_providers: &'a [Box<dyn OovProviderPlugin + Sync + Send>],
+}
+
+impl<'a> LatticeBuilder<'a> {
+    #[inline]
+    fn build_lattice(&mut self) -> SudachiResult<()> {
+        self.lattice.reset(self.input.current_chars().len());
+        let input_bytes = self.input.current().as_bytes();
+
+        for (ch_off, &byte_off) in self.input.curr_byte_offsets().iter().enumerate() {
+            if !self.lattice.has_previous_node(ch_off) {
+                continue;
+            }
+
+            self.node_buffer.clear();
+            let mut created = CreatedWords::default();
+            for e in self.lexicon.lookup(input_bytes, byte_off) {
+                // do we really need input.can_bow condition?
+                if (e.end < input_bytes.len()) && !self.input.can_bow(e.end) {
+                    continue;
+                }
+                let (left_id, right_id, cost) = self.lexicon.get_word_param(e.word_id);
+                let end_c = self.input.ch_idx(e.end);
+                let node = Node::new(
+                    ch_off as u16,
+                    end_c as u16,
+                    left_id as u16,
+                    right_id as u16,
+                    cost,
+                    e.word_id,
+                );
+                created = created.add_word((end_c - ch_off) as i64);
+                self.node_buffer.push(node.clone());
+                self.lattice.insert(node, self.matrix);
+            }
+
+            // OOV
+            if !self
+                .input
+                .cat_at_char(ch_off)
+                .intersects(CategoryType::NOOOVBOW | CategoryType::NOOOVBOW2)
+            {
+                for provider in self.oov_providers {
+                    created = self.provide_oovs(ch_off, created, provider.as_ref())?;
+                }
+            }
+
+            if created.is_empty() {
+                let provider = self.oov_providers.last().unwrap();
+                created = self.provide_oovs(ch_off, created, provider.as_ref())?;
+            }
+
+            if created.is_empty() {
+                return Err(SudachiError::EosBosDisconnect);
+            }
+        }
+        self.lattice.connect_eos(self.matrix)?;
+
+        Ok(())
+    }
+
+    #[inline]
+    fn provide_oovs<P>(
+        &mut self,
+        char_offset: usize,
+        mut other: CreatedWords,
+        plugin: &P,
+    ) -> SudachiResult<CreatedWords>
+    where
+        P: OovProviderPlugin + 'a + ?Sized,
+    {
+        let start_size = self.node_buffer.len();
+        let num_provided = plugin.provide_oov(self.input, char_offset, other, self.node_buffer)?;
+        for idx in start_size..(start_size + num_provided) {
+            let node = self.node_buffer[idx].clone();
+            other = other.add_word(node.char_range().len() as i64);
+            self.lattice.insert(node, self.matrix);
+        }
+        Ok(other)
     }
 }

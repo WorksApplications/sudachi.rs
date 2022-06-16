@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+use crate::analysis::created::CreatedWords;
+use crate::util::user_pos::{UserPosMode, UserPosSupport};
 use serde::Deserialize;
 use serde_json::Value;
 use std::collections::HashMap;
@@ -34,7 +36,7 @@ use crate::plugin::oov::OovProviderPlugin;
 use crate::prelude::*;
 
 #[cfg(test)]
-mod tests;
+mod test;
 
 const DEFAULT_CHAR_DEF_FILE: &str = "char.def";
 const DEFAULT_UNK_DEF_FILE: &str = "unk.def";
@@ -52,6 +54,8 @@ pub struct MeCabOovPlugin {
 struct PluginSettings {
     charDef: Option<PathBuf>,
     unkDef: Option<PathBuf>,
+    #[serde(default)]
+    userPOS: UserPosMode,
 }
 
 impl MeCabOovPlugin {
@@ -112,7 +116,8 @@ impl MeCabOovPlugin {
     fn read_oov<T: BufRead>(
         reader: T,
         categories: &HashMap<CategoryType, CategoryInfo, RoMu>,
-        grammar: &Grammar,
+        mut grammar: &mut Grammar,
+        user_pos: UserPosMode,
     ) -> SudachiResult<HashMap<CategoryType, Vec<OOV>, RoMu>> {
         let mut oov_list: HashMap<CategoryType, Vec<OOV>, RoMu> = HashMap::with_hasher(RoMu::new());
         for (i, line) in reader.lines().enumerate() {
@@ -138,9 +143,7 @@ impl MeCabOovPlugin {
                 left_id: cols[1].parse()?,
                 right_id: cols[2].parse()?,
                 cost: cols[3].parse()?,
-                pos_id: grammar.get_part_of_speech_id(&cols[4..10]).ok_or(
-                    SudachiError::InvalidPartOfSpeech(format!("{:?}", &cols[4..10])),
-                )?,
+                pos_id: grammar.handle_user_pos(&cols[4..10], user_pos)?,
             };
 
             if oov.left_id as usize > grammar.conn_matrix().num_left() {
@@ -194,20 +197,22 @@ impl MeCabOovPlugin {
         &self,
         input: &T,
         offset: usize,
-        has_other_words: bool,
+        other_words: CreatedWords,
         nodes: &mut Vec<Node>,
-    ) -> SudachiResult<()> {
+    ) -> SudachiResult<usize> {
         let char_len = input.cat_continuous_len(offset);
         if char_len == 0 {
-            return Ok(());
+            return Ok(0);
         }
+        let mut num_created = 0;
 
         for ctype in input.cat_at_char(offset).iter() {
             let cinfo = match self.categories.get(&ctype) {
                 Some(ci) => ci,
                 None => continue,
             };
-            if !cinfo.is_invoke && has_other_words {
+
+            if !cinfo.is_invoke && other_words.not_empty() {
                 continue;
             }
 
@@ -220,6 +225,7 @@ impl MeCabOovPlugin {
             if cinfo.is_group {
                 for oov in oovs {
                     nodes.push(self.get_oov_node(oov, offset, offset + char_len));
+                    num_created += 1;
                 }
                 llength -= 1;
             }
@@ -230,10 +236,11 @@ impl MeCabOovPlugin {
                 }
                 for oov in oovs {
                     nodes.push(self.get_oov_node(oov, offset, offset + sublength));
+                    num_created += 1;
                 }
             }
         }
-        Ok(())
+        Ok(num_created)
     }
 }
 
@@ -242,7 +249,7 @@ impl OovProviderPlugin for MeCabOovPlugin {
         &mut self,
         settings: &Value,
         config: &Config,
-        grammar: &Grammar,
+        grammar: &mut Grammar,
     ) -> SudachiResult<()> {
         let settings: PluginSettings = serde_json::from_value(settings.clone())?;
 
@@ -260,7 +267,7 @@ impl OovProviderPlugin for MeCabOovPlugin {
                 .unwrap_or_else(|| PathBuf::from(DEFAULT_UNK_DEF_FILE)),
         )?;
         let reader = BufReader::new(fs::File::open(&unk_def_path)?);
-        let oov_list = MeCabOovPlugin::read_oov(reader, &categories, grammar)?;
+        let oov_list = MeCabOovPlugin::read_oov(reader, &categories, grammar, settings.userPOS)?;
 
         self.categories = categories;
         self.oov_list = oov_list;
@@ -272,10 +279,10 @@ impl OovProviderPlugin for MeCabOovPlugin {
         &self,
         input_text: &InputBuffer,
         offset: usize,
-        has_other_words: bool,
+        other_words: CreatedWords,
         result: &mut Vec<Node>,
-    ) -> SudachiResult<()> {
-        self.provide_oov_gen(input_text, offset, has_other_words, result)
+    ) -> SudachiResult<usize> {
+        self.provide_oov_gen(input_text, offset, other_words, result)
     }
 }
 

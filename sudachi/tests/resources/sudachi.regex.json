@@ -1,0 +1,69 @@
+{
+  "path": "tests/resources/",
+  "systemDict": "system.dic.test",
+  "userDict": [
+    "user.dic.test"
+  ],
+  "characterDefinitionFile": "char.def",
+  "inputTextPlugin": [
+    {
+      "class": "com.worksap.nlp.sudachi.DefaultInputTextPlugin"
+    }
+  ],
+  "oovProviderPlugin": [
+    {
+      "class": "com.worksap.nlp.sudachi.MeCabOovPlugin",
+      "charDef": "char.def",
+      "unkDef": "unk2.def"
+    },
+    {
+      "class": "com.worksap.nlp.sudachi.RegexOovProvider",
+      "oovPOS": [
+        "名詞",
+        "普通名詞",
+        "REGEX",
+        "*",
+        "*",
+        "*"
+      ],
+      "leftId": 5,
+      "rightId": 5,
+      "cost": -32000,
+      "userPOS": "allow",
+      "regex": "[-a-zA-Z0-9]+",
+      "maxLength": 400
+    },
+    {
+      "class": "com.worksap.nlp.sudachi.SimpleOovPlugin",
+      "oovPOS": [
+        "名詞",
+        "普通名詞",
+        "一般",
+        "*",
+        "*",
+        "*"
+      ],
+      "leftId": 8,
+      "rightId": 8,
+      "cost": 6000
+    }
+  ],
+  "pathRewritePlugin": [
+    {
+      "class": "com.worksap.nlp.sudachi.JoinNumericPlugin",
+      "enableNormalize": true
+    },
+    {
+      "class": "com.worksap.nlp.sudachi.JoinKatakanaOovPlugin",
+      "oovPOS": [
+        "名詞",
+        "普通名詞",
+        "一般",
+        "*",
+        "*",
+        "*"
+      ],
+      "minLength": 3
+    }
+  ]
+}
