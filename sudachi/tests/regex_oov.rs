@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-use crate::common::{TestStatefulTokenizer, LEX_CSV};
+use crate::common::{TestStatefulTokenizer, LEX_CSV, USER1_CSV, USER2_CSV};
 use std::ops::Deref;
 
 mod common;
@@ -72,4 +72,21 @@ fn very_long_word_not_added() {
     assert_eq!(1, tokens.len());
     assert_eq!(&data, tokens.get(0).surface().deref());
     assert_eq!("数詞", tokens.get(0).part_of_speech()[1])
+}
+
+#[test]
+fn user_dictionaries_have_correct_pos() {
+    let mut tok = TestStatefulTokenizer::builder(LEX_CSV)
+        .config(REGEX_CONFIG)
+        .user(USER1_CSV)
+        .user(USER2_CSV)
+        .build();
+    let tokens = tok.tokenize("すだちASDF12かぼす");
+    assert_eq!(3, tokens.len());
+    assert_eq!("すだち", tokens.get(0).surface().deref());
+    assert_eq!("スダチ", tokens.get(0).part_of_speech()[5]);
+    assert_eq!("ASDF12", tokens.get(1).surface().deref());
+    assert_eq!("REGEX", tokens.get(1).part_of_speech()[5]);
+    assert_eq!("かぼす", tokens.get(2).surface().deref());
+    assert_eq!("カボス", tokens.get(2).part_of_speech()[5]);
 }

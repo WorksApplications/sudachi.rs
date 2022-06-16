@@ -200,6 +200,12 @@ pub struct TestStatefulTokenizer {
 pub const LEX_CSV: &[u8] = include_bytes!("../resources/lex.csv");
 
 #[allow(unused)]
+pub const USER1_CSV: &[u8] = include_bytes!("../resources/user1.csv");
+
+#[allow(unused)]
+pub const USER2_CSV: &[u8] = include_bytes!("../resources/user2.csv");
+
+#[allow(unused)]
 impl TestStatefulTokenizer {
     pub fn new_built(mode: Mode) -> TestStatefulTokenizer {
         let dic = Rc::new(JapaneseDictionary::from_cfg(&TEST_CONFIG).expect("works"));
