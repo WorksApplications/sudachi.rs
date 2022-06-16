@@ -301,6 +301,13 @@
 <span id="296">296</span>
 <span id="297">297</span>
 <span id="298">298</span>
+<span id="299">299</span>
+<span id="300">300</span>
+<span id="301">301</span>
+<span id="302">302</span>
+<span id="303">303</span>
+<span id="304">304</span>
+<span id="305">305</span>
 </pre><pre class="rust"><code><span class="comment">/*
  * Copyright (c) 2021 Works Applications Co., Ltd.
  *
@@ -317,6 +324,8 @@
  * limitations under the License.
  */</span>
 
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::analysis::created::CreatedWords</span>;
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::util::user_pos</span>::{<span class="ident">UserPosMode</span>, <span class="ident">UserPosSupport</span>};
 <span class="kw">use</span> <span class="ident">serde::Deserialize</span>;
 <span class="kw">use</span> <span class="ident">serde_json::Value</span>;
 <span class="kw">use</span> <span class="ident">std::collections::HashMap</span>;
@@ -337,7 +346,7 @@
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::prelude</span>::<span class="kw-2">*</span>;
 
 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">test</span>)]</span>
-<span class="kw">mod</span> <span class="ident">tests</span>;
+<span class="kw">mod</span> <span class="ident">test</span>;
 
 <span class="kw">const</span> <span class="ident">DEFAULT_CHAR_DEF_FILE</span>: <span class="kw-2">&amp;</span><span class="ident">str</span> <span class="op">=</span> <span class="string">&quot;char.def&quot;</span>;
 <span class="kw">const</span> <span class="ident">DEFAULT_UNK_DEF_FILE</span>: <span class="kw-2">&amp;</span><span class="ident">str</span> <span class="op">=</span> <span class="string">&quot;unk.def&quot;</span>;
@@ -355,6 +364,8 @@
 <span class="kw">struct</span> <span class="ident">PluginSettings</span> {
     <span class="ident">charDef</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">PathBuf</span><span class="op">&gt;</span>,
     <span class="ident">unkDef</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">PathBuf</span><span class="op">&gt;</span>,
+    <span class="attribute">#[<span class="ident">serde</span>(<span class="ident">default</span>)]</span>
+    <span class="ident">userPOS</span>: <span class="ident">UserPosMode</span>,
 }
 
 <span class="kw">impl</span> <span class="ident">MeCabOovPlugin</span> {
@@ -415,7 +426,8 @@
     <span class="kw">fn</span> <span class="ident">read_oov</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">BufRead</span><span class="op">&gt;</span>(
         <span class="ident">reader</span>: <span class="ident">T</span>,
         <span class="ident">categories</span>: <span class="kw-2">&amp;</span><span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">CategoryType</span>, <span class="ident">CategoryInfo</span>, <span class="ident">RoMu</span><span class="op">&gt;</span>,
-        <span class="ident">grammar</span>: <span class="kw-2">&amp;</span><span class="ident">Grammar</span>,
+        <span class="kw-2">mut</span> <span class="ident">grammar</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Grammar</span>,
+        <span class="ident">user_pos</span>: <span class="ident">UserPosMode</span>,
     ) -&gt; <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">CategoryType</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">OOV</span><span class="op">&gt;</span>, <span class="ident">RoMu</span><span class="op">&gt;</span><span class="op">&gt;</span> {
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">oov_list</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">CategoryType</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">OOV</span><span class="op">&gt;</span>, <span class="ident">RoMu</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">HashMap::with_hasher</span>(<span class="ident">RoMu::new</span>());
         <span class="kw">for</span> (<span class="ident">i</span>, <span class="ident">line</span>) <span class="kw">in</span> <span class="ident">reader</span>.<span class="ident">lines</span>().<span class="ident">enumerate</span>() {
@@ -441,9 +453,7 @@
                 <span class="ident">left_id</span>: <span class="ident">cols</span>[<span class="number">1</span>].<span class="ident">parse</span>()<span class="question-mark">?</span>,
                 <span class="ident">right_id</span>: <span class="ident">cols</span>[<span class="number">2</span>].<span class="ident">parse</span>()<span class="question-mark">?</span>,
                 <span class="ident">cost</span>: <span class="ident">cols</span>[<span class="number">3</span>].<span class="ident">parse</span>()<span class="question-mark">?</span>,
-                <span class="ident">pos_id</span>: <span class="ident">grammar</span>.<span class="ident">get_part_of_speech_id</span>(<span class="kw-2">&amp;</span><span class="ident">cols</span>[<span class="number">4</span>..<span class="number">10</span>]).<span class="ident">ok_or</span>(
-                    <span class="ident">SudachiError::InvalidPartOfSpeech</span>(<span class="macro">format!</span>(<span class="string">&quot;{:?}&quot;</span>, <span class="kw-2">&amp;</span><span class="ident">cols</span>[<span class="number">4</span>..<span class="number">10</span>])),
-                )<span class="question-mark">?</span>,
+                <span class="ident">pos_id</span>: <span class="ident">grammar</span>.<span class="ident">handle_user_pos</span>(<span class="kw-2">&amp;</span><span class="ident">cols</span>[<span class="number">4</span>..<span class="number">10</span>], <span class="ident">user_pos</span>)<span class="question-mark">?</span>,
             };
 
             <span class="kw">if</span> <span class="ident">oov</span>.<span class="ident">left_id</span> <span class="kw">as</span> <span class="ident">usize</span> <span class="op">&gt;</span> <span class="ident">grammar</span>.<span class="ident">conn_matrix</span>().<span class="ident">num_left</span>() {
@@ -497,20 +507,22 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         <span class="ident">input</span>: <span class="kw-2">&amp;</span><span class="ident">T</span>,
         <span class="ident">offset</span>: <span class="ident">usize</span>,
-        <span class="ident">has_other_words</span>: <span class="ident">bool</span>,
+        <span class="ident">other_words</span>: <span class="ident">CreatedWords</span>,
         <span class="ident">nodes</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Node</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="ident">SudachiResult</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
+    ) -&gt; <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span> {
         <span class="kw">let</span> <span class="ident">char_len</span> <span class="op">=</span> <span class="ident">input</span>.<span class="ident">cat_continuous_len</span>(<span class="ident">offset</span>);
         <span class="kw">if</span> <span class="ident">char_len</span> <span class="op">==</span> <span class="number">0</span> {
-            <span class="kw">return</span> <span class="prelude-val">Ok</span>(());
+            <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="number">0</span>);
         }
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">num_created</span> <span class="op">=</span> <span class="number">0</span>;
 
         <span class="kw">for</span> <span class="ident">ctype</span> <span class="kw">in</span> <span class="ident">input</span>.<span class="ident">cat_at_char</span>(<span class="ident">offset</span>).<span class="ident">iter</span>() {
             <span class="kw">let</span> <span class="ident">cinfo</span> <span class="op">=</span> <span class="kw">match</span> <span class="self">self</span>.<span class="ident">categories</span>.<span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="ident">ctype</span>) {
                 <span class="prelude-val">Some</span>(<span class="ident">ci</span>) =&gt; <span class="ident">ci</span>,
                 <span class="prelude-val">None</span> =&gt; <span class="kw">continue</span>,
             };
-            <span class="kw">if</span> <span class="op">!</span><span class="ident">cinfo</span>.<span class="ident">is_invoke</span> <span class="op">&amp;&amp;</span> <span class="ident">has_other_words</span> {
+
+            <span class="kw">if</span> <span class="op">!</span><span class="ident">cinfo</span>.<span class="ident">is_invoke</span> <span class="op">&amp;&amp;</span> <span class="ident">other_words</span>.<span class="ident">not_empty</span>() {
                 <span class="kw">continue</span>;
             }
 
@@ -523,6 +535,7 @@
             <span class="kw">if</span> <span class="ident">cinfo</span>.<span class="ident">is_group</span> {
                 <span class="kw">for</span> <span class="ident">oov</span> <span class="kw">in</span> <span class="ident">oovs</span> {
                     <span class="ident">nodes</span>.<span class="ident">push</span>(<span class="self">self</span>.<span class="ident">get_oov_node</span>(<span class="ident">oov</span>, <span class="ident">offset</span>, <span class="ident">offset</span> <span class="op">+</span> <span class="ident">char_len</span>));
+                    <span class="ident">num_created</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
                 }
                 <span class="ident">llength</span> <span class="op">-</span><span class="op">=</span> <span class="number">1</span>;
             }
@@ -533,10 +546,11 @@
                 }
                 <span class="kw">for</span> <span class="ident">oov</span> <span class="kw">in</span> <span class="ident">oovs</span> {
                     <span class="ident">nodes</span>.<span class="ident">push</span>(<span class="self">self</span>.<span class="ident">get_oov_node</span>(<span class="ident">oov</span>, <span class="ident">offset</span>, <span class="ident">offset</span> <span class="op">+</span> <span class="ident">sublength</span>));
+                    <span class="ident">num_created</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
                 }
             }
         }
-        <span class="prelude-val">Ok</span>(())
+        <span class="prelude-val">Ok</span>(<span class="ident">num_created</span>)
     }
 }
 
@@ -545,7 +559,7 @@
         <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
         <span class="ident">settings</span>: <span class="kw-2">&amp;</span><span class="ident">Value</span>,
         <span class="ident">config</span>: <span class="kw-2">&amp;</span><span class="ident">Config</span>,
-        <span class="ident">grammar</span>: <span class="kw-2">&amp;</span><span class="ident">Grammar</span>,
+        <span class="ident">grammar</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Grammar</span>,
     ) -&gt; <span class="ident">SudachiResult</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
         <span class="kw">let</span> <span class="ident">settings</span>: <span class="ident">PluginSettings</span> <span class="op">=</span> <span class="ident">serde_json::from_value</span>(<span class="ident">settings</span>.<span class="ident">clone</span>())<span class="question-mark">?</span>;
 
@@ -563,7 +577,7 @@
                 .<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="op">|</span> <span class="ident">PathBuf::from</span>(<span class="ident">DEFAULT_UNK_DEF_FILE</span>)),
         )<span class="question-mark">?</span>;
         <span class="kw">let</span> <span class="ident">reader</span> <span class="op">=</span> <span class="ident">BufReader::new</span>(<span class="ident">fs::File::open</span>(<span class="kw-2">&amp;</span><span class="ident">unk_def_path</span>)<span class="question-mark">?</span>);
-        <span class="kw">let</span> <span class="ident">oov_list</span> <span class="op">=</span> <span class="ident">MeCabOovPlugin::read_oov</span>(<span class="ident">reader</span>, <span class="kw-2">&amp;</span><span class="ident">categories</span>, <span class="ident">grammar</span>)<span class="question-mark">?</span>;
+        <span class="kw">let</span> <span class="ident">oov_list</span> <span class="op">=</span> <span class="ident">MeCabOovPlugin::read_oov</span>(<span class="ident">reader</span>, <span class="kw-2">&amp;</span><span class="ident">categories</span>, <span class="ident">grammar</span>, <span class="ident">settings</span>.<span class="ident">userPOS</span>)<span class="question-mark">?</span>;
 
         <span class="self">self</span>.<span class="ident">categories</span> <span class="op">=</span> <span class="ident">categories</span>;
         <span class="self">self</span>.<span class="ident">oov_list</span> <span class="op">=</span> <span class="ident">oov_list</span>;
@@ -575,10 +589,10 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         <span class="ident">input_text</span>: <span class="kw-2">&amp;</span><span class="ident">InputBuffer</span>,
         <span class="ident">offset</span>: <span class="ident">usize</span>,
-        <span class="ident">has_other_words</span>: <span class="ident">bool</span>,
+        <span class="ident">other_words</span>: <span class="ident">CreatedWords</span>,
         <span class="ident">result</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Node</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="ident">SudachiResult</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="self">self</span>.<span class="ident">provide_oov_gen</span>(<span class="ident">input_text</span>, <span class="ident">offset</span>, <span class="ident">has_other_words</span>, <span class="ident">result</span>)
+    ) -&gt; <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span> {
+        <span class="self">self</span>.<span class="ident">provide_oov_gen</span>(<span class="ident">input_text</span>, <span class="ident">offset</span>, <span class="ident">other_words</span>, <span class="ident">result</span>)
     }
 }
 
