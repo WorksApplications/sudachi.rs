@@ -11,7 +11,7 @@ from importlib import import_module
 from importlib.util import find_spec
 from pathlib import Path
 
-__version__ = "0.6.4"
+__version__ = "0.6.5-a1"
 
 _DEFAULT_RESOURCEDIR = Path(__file__).resolve().parent / 'resources'
 _DEFAULT_SETTINGFILE = _DEFAULT_RESOURCEDIR / 'sudachi.json'
