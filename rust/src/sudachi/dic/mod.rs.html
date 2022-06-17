@@ -181,6 +181,10 @@
 <span id="176">176</span>
 <span id="177">177</span>
 <span id="178">178</span>
+<span id="179">179</span>
+<span id="180">180</span>
+<span id="181">181</span>
+<span id="182">182</span>
 </pre><pre class="rust"><code><span class="comment">/*
  * Copyright (c) 2021 Works Applications Co., Ltd.
  *
@@ -247,9 +251,10 @@
             .<span class="ident">ok_or</span>(<span class="ident">SudachiError::InvalidDictionaryGrammar</span>)<span class="question-mark">?</span>;
         <span class="ident">grammar</span>.<span class="ident">set_character_category</span>(<span class="ident">character_category</span>);
 
+        <span class="kw">let</span> <span class="ident">num_system_pos</span> <span class="op">=</span> <span class="ident">grammar</span>.<span class="ident">pos_list</span>.<span class="ident">len</span>();
         <span class="prelude-val">Ok</span>(<span class="ident">LoadedDictionary</span> {
             <span class="ident">grammar</span>,
-            <span class="ident">lexicon_set</span>: <span class="ident">LexiconSet::new</span>(<span class="ident">system_dict</span>.<span class="ident">lexicon</span>),
+            <span class="ident">lexicon_set</span>: <span class="ident">LexiconSet::new</span>(<span class="ident">system_dict</span>.<span class="ident">lexicon</span>, <span class="ident">num_system_pos</span>),
         })
     }
 
@@ -352,10 +357,13 @@
         <span class="ident">lexicon</span>.<span class="ident">set_dic_id</span>(<span class="number">0</span>);
         <span class="kw">match</span> <span class="self">self</span>.<span class="ident">grammar</span> {
             <span class="prelude-val">None</span> =&gt; <span class="prelude-val">None</span>,
-            <span class="prelude-val">Some</span>(<span class="ident">grammar</span>) =&gt; <span class="prelude-val">Some</span>(<span class="ident">LoadedDictionary</span> {
-                <span class="ident">grammar</span>,
-                <span class="ident">lexicon_set</span>: <span class="ident">LexiconSet::new</span>(<span class="ident">lexicon</span>),
-            }),
+            <span class="prelude-val">Some</span>(<span class="ident">grammar</span>) =&gt; {
+                <span class="kw">let</span> <span class="ident">num_system_pos</span> <span class="op">=</span> <span class="ident">grammar</span>.<span class="ident">pos_list</span>.<span class="ident">len</span>();
+                <span class="prelude-val">Some</span>(<span class="ident">LoadedDictionary</span> {
+                    <span class="ident">grammar</span>,
+                    <span class="ident">lexicon_set</span>: <span class="ident">LexiconSet::new</span>(<span class="ident">lexicon</span>, <span class="ident">num_system_pos</span>),
+                })
+            }
         }
     }
 }

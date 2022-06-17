@@ -160,6 +160,8 @@
 <span id="155">155</span>
 <span id="156">156</span>
 <span id="157">157</span>
+<span id="158">158</span>
+<span id="159">159</span>
 </pre><pre class="rust"><code><span class="comment">/*
  * Copyright (c) 2021 Works Applications Co., Ltd.
  *
@@ -204,17 +206,19 @@
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">LexiconSet</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
     <span class="ident">lexicons</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Lexicon</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span><span class="op">&gt;</span>,
     <span class="ident">pos_offsets</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span>,
+    <span class="ident">num_system_pos</span>: <span class="ident">usize</span>,
 }
 
 <span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="ident">LexiconSet</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
     <span class="doccomment">/// Creates a LexiconSet given a lexicon</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// It is assumed that the passed lexicon is the system dictionary</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="kw-2">mut</span> <span class="ident">system_lexicon</span>: <span class="ident">Lexicon</span>) -&gt; <span class="ident">LexiconSet</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="kw-2">mut</span> <span class="ident">system_lexicon</span>: <span class="ident">Lexicon</span>, <span class="ident">num_system_pos</span>: <span class="ident">usize</span>) -&gt; <span class="ident">LexiconSet</span> {
         <span class="ident">system_lexicon</span>.<span class="ident">set_dic_id</span>(<span class="number">0</span>);
         <span class="ident">LexiconSet</span> {
             <span class="ident">lexicons</span>: <span class="macro">vec!</span>[<span class="ident">system_lexicon</span>],
             <span class="ident">pos_offsets</span>: <span class="macro">vec!</span>[<span class="number">0</span>],
+            <span class="ident">num_system_pos</span>,
         }
     }
 
@@ -273,10 +277,10 @@
             .<span class="ident">into</span>();
 
         <span class="kw">if</span> <span class="ident">subset</span>.<span class="ident">contains</span>(<span class="ident">InfoSubset::POS_ID</span>) {
-            <span class="kw">let</span> <span class="ident">pos_id</span> <span class="op">=</span> <span class="ident">word_info</span>.<span class="ident">pos_id</span>;
-            <span class="kw">if</span> <span class="ident">dict_id</span> <span class="op">&gt;</span> <span class="number">0</span> <span class="op">&amp;&amp;</span> <span class="ident">pos_id</span> <span class="kw">as</span> <span class="ident">usize</span> <span class="op">&gt;</span><span class="op">=</span> <span class="self">self</span>.<span class="ident">pos_offsets</span>[<span class="number">1</span>] {
+            <span class="kw">let</span> <span class="ident">pos_id</span> <span class="op">=</span> <span class="ident">word_info</span>.<span class="ident">pos_id</span> <span class="kw">as</span> <span class="ident">usize</span>;
+            <span class="kw">if</span> <span class="ident">dict_id</span> <span class="op">&gt;</span> <span class="number">0</span> <span class="op">&amp;&amp;</span> <span class="ident">pos_id</span> <span class="op">&gt;</span><span class="op">=</span> <span class="self">self</span>.<span class="ident">num_system_pos</span> {
                 <span class="comment">// user defined part-of-speech</span>
-                <span class="ident">word_info</span>.<span class="ident">pos_id</span> <span class="op">=</span> (<span class="ident">pos_id</span> <span class="kw">as</span> <span class="ident">usize</span> <span class="op">-</span> <span class="self">self</span>.<span class="ident">pos_offsets</span>[<span class="number">1</span>]
+                <span class="ident">word_info</span>.<span class="ident">pos_id</span> <span class="op">=</span> (<span class="ident">pos_id</span> <span class="kw">as</span> <span class="ident">usize</span> <span class="op">-</span> <span class="self">self</span>.<span class="ident">num_system_pos</span>
                     <span class="op">+</span> <span class="self">self</span>.<span class="ident">pos_offsets</span>[<span class="ident">dict_id</span> <span class="kw">as</span> <span class="ident">usize</span>]) <span class="kw">as</span> <span class="ident">u16</span>;
             }
         }
