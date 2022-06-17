@@ -64,9 +64,10 @@ impl<'a> LoadedDictionary<'a> {
             .ok_or(SudachiError::InvalidDictionaryGrammar)?;
         grammar.set_character_category(character_category);
 
+        let num_system_pos = grammar.pos_list.len();
         Ok(LoadedDictionary {
             grammar,
-            lexicon_set: LexiconSet::new(system_dict.lexicon),
+            lexicon_set: LexiconSet::new(system_dict.lexicon, num_system_pos),
         })
     }
 
@@ -169,10 +170,13 @@ impl<'a> DictionaryLoader<'a> {
         lexicon.set_dic_id(0);
         match self.grammar {
             None => None,
-            Some(grammar) => Some(LoadedDictionary {
-                grammar,
-                lexicon_set: LexiconSet::new(lexicon),
-            }),
+            Some(grammar) => {
+                let num_system_pos = grammar.pos_list.len();
+                Some(LoadedDictionary {
+                    grammar,
+                    lexicon_set: LexiconSet::new(lexicon, num_system_pos),
+                })
+            }
         }
     }
 }

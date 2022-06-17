@@ -22,9 +22,9 @@
         "名詞",
         "普通名詞",
         "REGEX",
-        "*",
-        "*",
-        "*"
+        "REGEX",
+        "REGEX",
+        "REGEX"
       ],
       "leftId": 5,
       "rightId": 5,

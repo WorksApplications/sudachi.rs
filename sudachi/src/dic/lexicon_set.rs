@@ -42,17 +42,19 @@ pub enum LexiconSetError {
 pub struct LexiconSet<'a> {
     lexicons: Vec<Lexicon<'a>>,
     pos_offsets: Vec<usize>,
+    num_system_pos: usize,
 }
 
 impl<'a> LexiconSet<'a> {
     /// Creates a LexiconSet given a lexicon
     ///
     /// It is assumed that the passed lexicon is the system dictionary
-    pub fn new(mut system_lexicon: Lexicon) -> LexiconSet {
+    pub fn new(mut system_lexicon: Lexicon, num_system_pos: usize) -> LexiconSet {
         system_lexicon.set_dic_id(0);
         LexiconSet {
             lexicons: vec![system_lexicon],
             pos_offsets: vec![0],
+            num_system_pos,
         }
     }
 
@@ -111,10 +113,10 @@ impl LexiconSet<'_> {
             .into();
 
         if subset.contains(InfoSubset::POS_ID) {
-            let pos_id = word_info.pos_id;
-            if dict_id > 0 && pos_id as usize >= self.pos_offsets[1] {
+            let pos_id = word_info.pos_id as usize;
+            if dict_id > 0 && pos_id >= self.num_system_pos {
                 // user defined part-of-speech
-                word_info.pos_id = (pos_id as usize - self.pos_offsets[1]
+                word_info.pos_id = (pos_id as usize - self.num_system_pos
                     + self.pos_offsets[dict_id as usize]) as u16;
             }
         }
