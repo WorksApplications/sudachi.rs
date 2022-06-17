@@ -1,6 +1,6 @@
 [package]
 name = "join_numeric"
-version = "0.6.5-a1"
+version = "0.6.5"
 authors = ["Works Applications <sudachi@worksap.co.jp>"]
 edition = "2018"
 license = "Apache-2.0"
