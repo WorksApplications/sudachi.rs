@@ -95,7 +95,7 @@ jobs:
         run: |
           cd python && python setup.py bdist_wheel
         env:
-          MACOSX_DEPLOYMENT_TARGET: 10.12
+          ARCHFLAGS: -arch x86_64 -arch arm64
 
       - uses: actions/upload-artifact@v2
         with:
