@@ -91,6 +91,10 @@ jobs:
           python -m pip install -U pip
           python -m pip install -U setuptools setuptools_rust wheel
 
+      - name: Add aarch64 target for Rust
+        run: rustup target add aarch64-apple-darwin
+        if: startsWith(matrix.os, 'macOS')
+
       - name: build wheel
         run: |
           cd python && python setup.py bdist_wheel

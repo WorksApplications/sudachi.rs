@@ -90,6 +90,10 @@ jobs:
       - name: Make .devXX version
         run: python ./python/latest_dev_version.py
 
+      - name: Add aarch64 target for Rust
+        run: rustup target add aarch64-apple-darwin
+        if: startsWith(matrix.os, 'macOS')
+
       - name: Install dependencies
         run: |
           python -m pip install -U pip
