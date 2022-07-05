@@ -79,9 +79,10 @@ impl PackedNode {
 
     #[inline]
     fn from_vnode(vnode: VNode) -> Self {
+        // node and node_idx are dummy.
         Self {
             vnode,
-            node: Node::new(0, 0, 0, 0, 0, WordId::INVALID),
+            node: Node::new(u16::MAX, u16::MAX, 0, 0, 0, WordId::INVALID),
             node_idx: NodeIdx::empty(),
         }
     }
