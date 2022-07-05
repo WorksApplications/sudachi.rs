@@ -61,6 +61,32 @@ impl VNode {
     }
 }
 
+struct PackedNode {
+    vnode: VNode,
+    node: Node,
+    node_idx: NodeIdx,
+}
+
+impl PackedNode {
+    #[inline]
+    fn new(vnode: VNode, node: Node, node_idx: NodeIdx) -> Self {
+        Self {
+            vnode,
+            node,
+            node_idx,
+        }
+    }
+
+    #[inline]
+    fn from_vnode(vnode: VNode) -> Self {
+        Self {
+            vnode,
+            node: Node::new(0, 0, 0, 0, 0, WordId::INVALID),
+            node_idx: NodeIdx::empty(),
+        }
+    }
+}
+
 /// Lattice which is constructed for performing the Viterbi search.
 /// Contain several parallel arrays.
 /// First level of parallel arrays is indexed by end word boundary.
@@ -71,9 +97,7 @@ impl VNode {
 /// You must use the size parameter to check the current size and never
 /// access vectors after the end.
 pub struct Lattice {
-    ends: Vec<Vec<VNode>>,
-    ends_full: Vec<Vec<Node>>,
-    indices: Vec<Vec<NodeIdx>>,
+    ends: Vec<Vec<PackedNode>>,
     eos: Option<(NodeIdx, i32)>,
     size: usize,
 }
@@ -82,8 +106,6 @@ impl Default for Lattice {
     fn default() -> Self {
         Lattice {
             ends: Vec::new(),
-            ends_full: Vec::new(),
-            indices: Vec::new(),
             eos: None,
             size: 0,
         }
@@ -108,15 +130,13 @@ impl Lattice {
     /// specified length (in codepoints)
     pub fn reset(&mut self, length: usize) {
         Self::reset_vec(&mut self.ends, length + 1);
-        Self::reset_vec(&mut self.ends_full, length + 1);
-        Self::reset_vec(&mut self.indices, length + 1);
         self.eos = None;
         self.size = length + 1;
         self.connect_bos();
     }
 
     fn connect_bos(&mut self) {
-        self.ends[0].push(VNode::new(0, 0));
+        self.ends[0].push(PackedNode::from_vnode(VNode::new(0, 0)));
     }
 
     /// Find EOS node -- finish the lattice construction
@@ -139,9 +159,11 @@ impl Lattice {
     pub fn insert(&mut self, node: Node, conn: &ConnectionMatrix) -> i32 {
         let (idx, cost) = self.connect_node(&node, conn);
         let end_idx = node.end();
-        self.ends[end_idx].push(VNode::new(node.right_id(), cost));
-        self.indices[end_idx].push(idx);
-        self.ends_full[end_idx].push(node);
+        self.ends[end_idx].push(PackedNode::new(
+            VNode::new(node.right_id(), cost),
+            node,
+            idx,
+        ));
         cost
     }
 
@@ -156,6 +178,7 @@ impl Lattice {
         let mut prev_idx = NodeIdx::empty();
 
         for (i, l_node) in self.ends[begin].iter().enumerate() {
+            let l_node = &l_node.vnode;
             if !l_node.is_connected_to_bos() {
                 continue;
             }
@@ -178,9 +201,8 @@ impl Lattice {
 
     /// Lookup a node for the index
     pub fn node(&self, id: NodeIdx) -> (&Node, i32) {
-        let node = &self.ends_full[id.end() as usize][id.index() as usize];
-        let cost = self.ends[id.end() as usize][id.index() as usize].total_cost;
-        (node, cost)
+        let end_node = &self.ends[id.end() as usize][id.index() as usize];
+        (&end_node.node, end_node.vnode.total_cost)
     }
 
     /// Fill the path with the minimum cost (indices only).
@@ -194,7 +216,7 @@ impl Lattice {
         let (mut idx, _) = self.eos.unwrap();
         result.push(idx);
         loop {
-            let prev_idx = self.indices[idx.end() as usize][idx.index() as usize];
+            let prev_idx = self.ends[idx.end() as usize][idx.index() as usize].node_idx;
             if prev_idx.end() != 0 {
                 // add if not BOS
                 result.push(prev_idx);
@@ -239,11 +261,11 @@ impl Lattice {
 
         let mut dump_idx = 0;
 
-        for boundary in (0..self.indices.len()).rev() {
-            let nodes = &self.ends_full[boundary];
+        for boundary in (1..self.ends.len()).rev() {
+            let nodes = &self.ends[boundary];
 
             for node_idx in 0..nodes.len() {
-                let r_node = &nodes[node_idx];
+                let r_node = &nodes[node_idx].node;
                 let (surface, pos) = if r_node.is_special_node() {
                     ("(null)", PosData::Bos)
                 } else if r_node.is_oov() {
@@ -278,6 +300,7 @@ impl Lattice {
                 let conn = grammar.conn_matrix();
 
                 for l_node in &self.ends[r_node.begin()] {
+                    let l_node = &l_node.vnode;
                     let connect_cost = conn.cost(l_node.right_id(), r_node.left_id());
                     write!(out, " {}", connect_cost)?;
                 }
