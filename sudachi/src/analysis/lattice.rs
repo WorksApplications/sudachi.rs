@@ -89,8 +89,7 @@ impl PackedNode {
 }
 
 /// Lattice which is constructed for performing the Viterbi search.
-/// Contain several parallel arrays.
-/// First level of parallel arrays is indexed by end word boundary.
+/// First level of an array is indexed by end word boundary.
 /// Word boundaries are always aligned to codepoint boundaries, not to byte boundaries.
 ///
 /// During the successive analysis, we do not drop inner vectors, so
