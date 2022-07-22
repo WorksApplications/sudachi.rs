@@ -41,6 +41,20 @@ pub(crate) struct RegexOovProvider {
     pos: u16,
     max_length: usize,
     debug: bool,
+    boundaries: BoundaryMode,
+}
+
+#[derive(Deserialize, Eq, PartialEq, Debug, Copy, Clone)]
+#[serde(rename_all = "lowercase")]
+pub enum BoundaryMode {
+    Strict,
+    Relaxed,
+}
+
+impl Default for BoundaryMode {
+    fn default() -> Self {
+        BoundaryMode::Strict
+    }
 }
 
 fn default_max_length() -> usize {
@@ -62,6 +76,8 @@ struct RegexProviderConfig {
     debug: bool,
     #[serde(default)]
     userPOS: UserPosMode,
+    #[serde(default)]
+    boundaries: BoundaryMode,
 }
 
 impl OovProviderPlugin for RegexOovProvider {
@@ -83,6 +99,7 @@ impl OovProviderPlugin for RegexOovProvider {
         self.max_length = parsed.maxLength;
         self.debug = parsed.debug;
         self.pos = grammar.handle_user_pos(&parsed.pos, parsed.userPOS)?;
+        self.boundaries = parsed.boundaries;
 
         match RegexBuilder::new(&parsed.regex).build() {
             Ok(re) => self.regex = Some(re),
@@ -103,7 +120,7 @@ impl OovProviderPlugin for RegexOovProvider {
         other_words: CreatedWords,
         result: &mut Vec<Node>,
     ) -> SudachiResult<usize> {
-        if offset > 0 {
+        if self.boundaries == BoundaryMode::Strict && offset > 0 {
             // check that we have discontinuity in character categories
             let this_cat = input_text.cat_continuous_len(offset);
             let prev_cat = input_text.cat_continuous_len(offset - 1);

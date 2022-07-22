@@ -47,7 +47,14 @@ impl<T: OovProviderPlugin> ProvideOovs for T {
     }
 }
 
-fn plugin(regex: impl AsRef<str>) -> RegexOovProvider {
+fn noop(v: serde_json::Value) -> serde_json::Value {
+    v
+}
+
+fn plugin(
+    regex: impl AsRef<str>,
+    tf: impl FnOnce(serde_json::Value) -> serde_json::Value,
+) -> RegexOovProvider {
     let mut plugin = RegexOovProvider::default();
     let mut grammar = zero_grammar();
     let cfg = Config::minimal_at("");
@@ -59,13 +66,14 @@ fn plugin(regex: impl AsRef<str>) -> RegexOovProvider {
         "pos": ["a", "b", "c", "d", "e", "f"],
         "userPOS": "allow"
     });
+    let jval = tf(jval);
     plugin.set_up(&jval, &cfg, &mut grammar).expect("failed");
     plugin
 }
 
 #[test]
 fn works() {
-    let p = plugin("test");
+    let p = plugin("test", noop);
     let o1 = p.oovs("xtest", 0);
     assert_eq!(0, o1.len());
     let o2 = p.oovs("xtest", 1);
@@ -76,7 +84,7 @@ fn works() {
 
 #[test]
 fn works_regex() {
-    let p = plugin("[-0-9a-zA-Z]{4,}");
+    let p = plugin("[-0-9a-zA-Z]{4,}", noop);
     let o1 = p.oovs("おらおら1512XF-2テスト", 4);
     assert_eq!(1, o1.len());
     let node = &o1[0];
@@ -84,4 +92,26 @@ fn works_regex() {
 
     let o2 = p.oovs_other("おらおら1512XF-2テスト", 4, CreatedWords::single(8));
     assert_eq!(0, o2.len());
+}
+
+#[test]
+fn boundaries() {
+    let p = plugin("[-0-9a-zA-Z]{4,}", |v| match v {
+        serde_json::Value::Object(mut fields) => {
+            fields.insert("boundaries".to_string(), json!("relaxed"));
+            serde_json::Value::Object(fields)
+        }
+        _ => panic!("should not happen"),
+    });
+
+    let nodes = p.oovs("Q1232WERTY", 0);
+    assert_eq!(1, nodes.len());
+    let nodes = p.oovs("Q1232WERTY", 1);
+    assert_eq!(1, nodes.len());
+    let nodes = p.oovs("Q1232WERTY", 2);
+    assert_eq!(1, nodes.len());
+
+    let p = plugin("[-0-9a-zA-Z]{4,}", noop);
+    let nodes = p.oovs("Q1232WERTY", 2);
+    assert_eq!(0, nodes.len());
 }
