@@ -172,6 +172,23 @@
 <span id="167">167</span>
 <span id="168">168</span>
 <span id="169">169</span>
+<span id="170">170</span>
+<span id="171">171</span>
+<span id="172">172</span>
+<span id="173">173</span>
+<span id="174">174</span>
+<span id="175">175</span>
+<span id="176">176</span>
+<span id="177">177</span>
+<span id="178">178</span>
+<span id="179">179</span>
+<span id="180">180</span>
+<span id="181">181</span>
+<span id="182">182</span>
+<span id="183">183</span>
+<span id="184">184</span>
+<span id="185">185</span>
+<span id="186">186</span>
 </pre><pre class="rust"><code><span class="comment">/*
  *  Copyright (c) 2022 Works Applications Co., Ltd.
  *
@@ -215,6 +232,20 @@
     <span class="ident">pos</span>: <span class="ident">u16</span>,
     <span class="ident">max_length</span>: <span class="ident">usize</span>,
     <span class="ident">debug</span>: <span class="ident">bool</span>,
+    <span class="ident">boundaries</span>: <span class="ident">BoundaryMode</span>,
+}
+
+<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Deserialize</span>, <span class="ident">Eq</span>, <span class="ident">PartialEq</span>, <span class="ident">Debug</span>, <span class="ident">Copy</span>, <span class="ident">Clone</span>)]</span>
+<span class="attribute">#[<span class="ident">serde</span>(<span class="ident">rename_all</span> <span class="op">=</span> <span class="string">&quot;lowercase&quot;</span>)]</span>
+<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">BoundaryMode</span> {
+    <span class="ident">Strict</span>,
+    <span class="ident">Relaxed</span>,
+}
+
+<span class="kw">impl</span> <span class="ident">Default</span> <span class="kw">for</span> <span class="ident">BoundaryMode</span> {
+    <span class="kw">fn</span> <span class="ident">default</span>() -&gt; <span class="self">Self</span> {
+        <span class="ident">BoundaryMode::Strict</span>
+    }
 }
 
 <span class="kw">fn</span> <span class="ident">default_max_length</span>() -&gt; <span class="ident">usize</span> {
@@ -236,6 +267,8 @@
     <span class="ident">debug</span>: <span class="ident">bool</span>,
     <span class="attribute">#[<span class="ident">serde</span>(<span class="ident">default</span>)]</span>
     <span class="ident">userPOS</span>: <span class="ident">UserPosMode</span>,
+    <span class="attribute">#[<span class="ident">serde</span>(<span class="ident">default</span>)]</span>
+    <span class="ident">boundaries</span>: <span class="ident">BoundaryMode</span>,
 }
 
 <span class="kw">impl</span> <span class="ident">OovProviderPlugin</span> <span class="kw">for</span> <span class="ident">RegexOovProvider</span> {
@@ -257,6 +290,7 @@
         <span class="self">self</span>.<span class="ident">max_length</span> <span class="op">=</span> <span class="ident">parsed</span>.<span class="ident">maxLength</span>;
         <span class="self">self</span>.<span class="ident">debug</span> <span class="op">=</span> <span class="ident">parsed</span>.<span class="ident">debug</span>;
         <span class="self">self</span>.<span class="ident">pos</span> <span class="op">=</span> <span class="ident">grammar</span>.<span class="ident">handle_user_pos</span>(<span class="kw-2">&amp;</span><span class="ident">parsed</span>.<span class="ident">pos</span>, <span class="ident">parsed</span>.<span class="ident">userPOS</span>)<span class="question-mark">?</span>;
+        <span class="self">self</span>.<span class="ident">boundaries</span> <span class="op">=</span> <span class="ident">parsed</span>.<span class="ident">boundaries</span>;
 
         <span class="kw">match</span> <span class="ident">RegexBuilder::new</span>(<span class="kw-2">&amp;</span><span class="ident">parsed</span>.<span class="ident">regex</span>).<span class="ident">build</span>() {
             <span class="prelude-val">Ok</span>(<span class="ident">re</span>) =&gt; <span class="self">self</span>.<span class="ident">regex</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="ident">re</span>),
@@ -277,7 +311,7 @@
         <span class="ident">other_words</span>: <span class="ident">CreatedWords</span>,
         <span class="ident">result</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Node</span><span class="op">&gt;</span>,
     ) -&gt; <span class="ident">SudachiResult</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span> {
-        <span class="kw">if</span> <span class="ident">offset</span> <span class="op">&gt;</span> <span class="number">0</span> {
+        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">boundaries</span> <span class="op">==</span> <span class="ident">BoundaryMode::Strict</span> <span class="op">&amp;&amp;</span> <span class="ident">offset</span> <span class="op">&gt;</span> <span class="number">0</span> {
             <span class="comment">// check that we have discontinuity in character categories</span>
             <span class="kw">let</span> <span class="ident">this_cat</span> <span class="op">=</span> <span class="ident">input_text</span>.<span class="ident">cat_continuous_len</span>(<span class="ident">offset</span>);
             <span class="kw">let</span> <span class="ident">prev_cat</span> <span class="op">=</span> <span class="ident">input_text</span>.<span class="ident">cat_continuous_len</span>(<span class="ident">offset</span> <span class="op">-</span> <span class="number">1</span>);
@@ -342,5 +376,5 @@
     }
 }
 </code></pre></div>
-</section><section id="search" class="content hidden"></section></div></main><div id="rustdoc-vars" data-root-path="../../../../../" data-current-crate="sudachi" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.61.0 (fe5b13d68 2022-05-18)" ></div>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../../" data-current-crate="sudachi" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.62.0 (a8314ef7d 2022-06-27)" ></div>
 </body></html>
