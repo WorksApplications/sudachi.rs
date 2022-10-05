@@ -40,6 +40,14 @@ class TestDictionary(unittest.TestCase):
         self.assertTrue(repr_str.startswith("<SudachiDictionary(system="))
         self.assertTrue(repr_str.endswith("user.dic.test])>"))
 
+    def test_lookup(self):
+        ms = self.dict_.lookup("東京都")
+        self.assertEqual(1, len(ms))
+        self.assertEqual("トウキョウト", ms[0].reading_form())
+        ms = self.dict_.lookup("京都", out=ms)
+        self.assertEqual(1, len(ms))
+        self.assertEqual("キョウト", ms[0].reading_form())
+
 
 if __name__ == '__main__':
     unittest.main()

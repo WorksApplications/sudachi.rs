@@ -18,7 +18,7 @@ use crate::analysis::morpheme::Morpheme;
 use crate::analysis::node::{PathCost, ResultNode};
 use crate::analysis::stateful_tokenizer::StatefulTokenizer;
 use crate::analysis::stateless_tokenizer::DictionaryAccess;
-use crate::analysis::Mode;
+use crate::analysis::{Mode, Node};
 use crate::dic::subset::InfoSubset;
 use crate::error::{SudachiError, SudachiResult};
 use crate::input_text::InputBuffer;
@@ -193,6 +193,30 @@ impl<T: DictionaryAccess> MorphemeList<T> {
     pub fn copy_slice(&self, start: usize, end: usize, out: &mut Self) {
         let out_data = out.nodes.mut_data();
         out_data.extend_from_slice(&self.nodes.data[start..end]);
+    }
+
+    pub fn lookup(&mut self, query: &str, subset: InfoSubset) -> SudachiResult<usize> {
+        {
+            let input = &mut self.input.borrow_mut().input;
+            input.reset().push_str(query);
+            input.start_build()?;
+            input.build(self.dict.grammar())?;
+        }
+
+        let mut result = 0;
+        let lex = self.dict.lexicon();
+        for entry in lex.lookup(query.as_bytes(), 0) {
+            if entry.end != query.len() {
+                continue;
+            }
+            let info = lex.get_word_info_subset(entry.word_id, subset)?;
+            let node = Node::new(0, query.len() as _, 0, 0, 0, entry.word_id);
+            self.nodes
+                .data
+                .push(ResultNode::new(node, 0, 0, query.len() as _, info));
+            result += 1;
+        }
+        Ok(result)
     }
 }
 

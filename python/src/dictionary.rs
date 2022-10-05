@@ -32,6 +32,7 @@ use sudachi::plugin::input_text::InputTextPlugin;
 use sudachi::plugin::oov::OovProviderPlugin;
 use sudachi::plugin::path_rewrite::PathRewritePlugin;
 
+use crate::morpheme::PyMorphemeListWrapper;
 use crate::pos_matcher::PyPosMatcher;
 use crate::pretokenizer::PyPretokenizer;
 use crate::tokenizer::{PySplitMode, PyTokenizer};
@@ -269,6 +270,37 @@ impl PyDictionary {
             .getattr("PreTokenizer")?
             .getattr("custom")?
             .call1(PyTuple::new(py, [internal_cell]))
+    }
+
+    #[pyo3(text_signature = "($self, surface, list = None) -> sudachipy.MorphemeList")]
+    fn lookup<'p>(
+        &'p self,
+        py: Python<'p>,
+        surface: &'p str,
+        out: Option<&'p PyCell<PyMorphemeListWrapper>>,
+    ) -> PyResult<&'p PyCell<PyMorphemeListWrapper>> {
+        let l = match out {
+            Some(l) => l,
+            None => PyCell::new(
+                py,
+                PyMorphemeListWrapper::new(self.dictionary.clone().unwrap()),
+            )?,
+        };
+
+        // this needs to be a variable
+        let mut borrow = l.try_borrow_mut();
+        let out_list = match borrow {
+            Err(_) => return Err(PyException::new_err("out was used twice at the same time")),
+            Ok(ref mut ms) => ms.internal_mut(py),
+        };
+
+        out_list.clear();
+
+        out_list.lookup(surface, InfoSubset::all()).map_err(|e| {
+            PyException::new_err(format!("Failed to lookup words for {}: {:?}", surface, e))
+        })?;
+
+        Ok(l)
     }
 
     /// Close this dictionary
