@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["JapaneseDictionary",""]]});
+window.SIDEBAR_ITEMS = {"struct":[["JapaneseDictionary",""]]};

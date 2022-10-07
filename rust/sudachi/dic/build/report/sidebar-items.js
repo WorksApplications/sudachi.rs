@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["DictPartReport",""]]});
+window.SIDEBAR_ITEMS = {"struct":[["DictPartReport",""]]};

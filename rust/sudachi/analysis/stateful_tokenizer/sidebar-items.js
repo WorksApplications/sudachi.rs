@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["StatefulTokenizer",""]]});
+window.SIDEBAR_ITEMS = {"struct":[["StatefulTokenizer",""]]};

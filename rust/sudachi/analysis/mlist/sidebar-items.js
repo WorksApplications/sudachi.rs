@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["MorphemeIter","Iterates over morpheme list"],["MorphemeList",""]]});
+window.SIDEBAR_ITEMS = {"struct":[["MorphemeIter","Iterates over morpheme list"],["MorphemeList",""]]};

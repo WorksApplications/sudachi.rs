@@ -1,1 +1,1 @@
-initSidebarItems({"enum":[["HeaderError","Sudachi error"],["HeaderVersion","Header version"],["SystemDictVersion",""],["UserDictVersion",""]],"struct":[["Header","Dictionary header"]]});
+window.SIDEBAR_ITEMS = {"enum":[["HeaderError","Sudachi error"],["HeaderVersion","Header version"],["SystemDictVersion",""],["UserDictVersion",""]],"struct":[["Header","Dictionary header"]]};

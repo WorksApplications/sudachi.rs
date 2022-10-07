@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["ConnectionMatrix",""]]});
+window.SIDEBAR_ITEMS = {"struct":[["ConnectionMatrix",""]]};

@@ -1,1 +1,1 @@
-initSidebarItems({"trait":[["EditConnectionCostPlugin","Trait of plugin to edit connection cost in the grammar"]]});
+window.SIDEBAR_ITEMS = {"trait":[["EditConnectionCostPlugin","Trait of plugin to edit connection cost in the grammar"]]};

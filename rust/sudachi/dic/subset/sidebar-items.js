@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["InfoSubset",""]]});
+window.SIDEBAR_ITEMS = {"struct":[["InfoSubset",""]]};

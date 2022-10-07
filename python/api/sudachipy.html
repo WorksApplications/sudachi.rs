@@ -16,6 +16,7 @@
         <script src="../_static/underscore.js"></script>
         <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../_static/doctools.js"></script>
+        <script src="../_static/sphinx_highlight.js"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -47,11 +48,73 @@
 <p class="caption" role="heading"><span class="caption-text">API Reference:</span></p>
 <ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="#">sudachipy package</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#dictionary">Dictionary</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#splitmode">SplitMode</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#tokenizer">Tokenizer</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#morpheme">Morpheme</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#wordinfo">WordInfo</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#dictionary">Dictionary</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#sudachipy.Dictionary"><code class="docutils literal notranslate"><span class="pre">Dictionary</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#sudachipy.Dictionary.close"><code class="docutils literal notranslate"><span class="pre">Dictionary.close()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sudachipy.Dictionary.create"><code class="docutils literal notranslate"><span class="pre">Dictionary.create()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sudachipy.Dictionary.pos_matcher"><code class="docutils literal notranslate"><span class="pre">Dictionary.pos_matcher()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sudachipy.Dictionary.pos_of"><code class="docutils literal notranslate"><span class="pre">Dictionary.pos_of()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sudachipy.Dictionary.pre_tokenizer"><code class="docutils literal notranslate"><span class="pre">Dictionary.pre_tokenizer()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#splitmode">SplitMode</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#sudachipy.SplitMode"><code class="docutils literal notranslate"><span class="pre">SplitMode</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#tokenizer">Tokenizer</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#sudachipy.Tokenizer"><code class="docutils literal notranslate"><span class="pre">Tokenizer</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#sudachipy.Tokenizer.SplitMode"><code class="docutils literal notranslate"><span class="pre">Tokenizer.SplitMode</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sudachipy.Tokenizer.tokenize"><code class="docutils literal notranslate"><span class="pre">Tokenizer.tokenize()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#morpheme">Morpheme</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#sudachipy.MorphemeList"><code class="docutils literal notranslate"><span class="pre">MorphemeList</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#sudachipy.MorphemeList.empty"><code class="docutils literal notranslate"><span class="pre">MorphemeList.empty()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sudachipy.MorphemeList.get_internal_cost"><code class="docutils literal notranslate"><span class="pre">MorphemeList.get_internal_cost()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sudachipy.MorphemeList.size"><code class="docutils literal notranslate"><span class="pre">MorphemeList.size()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#sudachipy.Morpheme"><code class="docutils literal notranslate"><span class="pre">Morpheme</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#sudachipy.Morpheme.begin"><code class="docutils literal notranslate"><span class="pre">Morpheme.begin()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sudachipy.Morpheme.dictionary_form"><code class="docutils literal notranslate"><span class="pre">Morpheme.dictionary_form()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sudachipy.Morpheme.dictionary_id"><code class="docutils literal notranslate"><span class="pre">Morpheme.dictionary_id()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sudachipy.Morpheme.end"><code class="docutils literal notranslate"><span class="pre">Morpheme.end()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sudachipy.Morpheme.get_word_info"><code class="docutils literal notranslate"><span class="pre">Morpheme.get_word_info()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sudachipy.Morpheme.is_oov"><code class="docutils literal notranslate"><span class="pre">Morpheme.is_oov()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sudachipy.Morpheme.normalized_form"><code class="docutils literal notranslate"><span class="pre">Morpheme.normalized_form()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sudachipy.Morpheme.part_of_speech"><code class="docutils literal notranslate"><span class="pre">Morpheme.part_of_speech()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sudachipy.Morpheme.part_of_speech_id"><code class="docutils literal notranslate"><span class="pre">Morpheme.part_of_speech_id()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sudachipy.Morpheme.reading_form"><code class="docutils literal notranslate"><span class="pre">Morpheme.reading_form()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sudachipy.Morpheme.split"><code class="docutils literal notranslate"><span class="pre">Morpheme.split()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sudachipy.Morpheme.surface"><code class="docutils literal notranslate"><span class="pre">Morpheme.surface()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sudachipy.Morpheme.synonym_group_ids"><code class="docutils literal notranslate"><span class="pre">Morpheme.synonym_group_ids()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sudachipy.Morpheme.word_id"><code class="docutils literal notranslate"><span class="pre">Morpheme.word_id()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#wordinfo">WordInfo</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#sudachipy.WordInfo"><code class="docutils literal notranslate"><span class="pre">WordInfo</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#sudachipy.WordInfo.a_unit_split"><code class="docutils literal notranslate"><span class="pre">WordInfo.a_unit_split</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sudachipy.WordInfo.b_unit_split"><code class="docutils literal notranslate"><span class="pre">WordInfo.b_unit_split</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sudachipy.WordInfo.dictionary_form"><code class="docutils literal notranslate"><span class="pre">WordInfo.dictionary_form</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sudachipy.WordInfo.dictionary_form_word_id"><code class="docutils literal notranslate"><span class="pre">WordInfo.dictionary_form_word_id</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sudachipy.WordInfo.head_word_length"><code class="docutils literal notranslate"><span class="pre">WordInfo.head_word_length</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sudachipy.WordInfo.length"><code class="docutils literal notranslate"><span class="pre">WordInfo.length()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sudachipy.WordInfo.normalized_form"><code class="docutils literal notranslate"><span class="pre">WordInfo.normalized_form</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sudachipy.WordInfo.pos_id"><code class="docutils literal notranslate"><span class="pre">WordInfo.pos_id</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sudachipy.WordInfo.reading_form"><code class="docutils literal notranslate"><span class="pre">WordInfo.reading_form</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sudachipy.WordInfo.surface"><code class="docutils literal notranslate"><span class="pre">WordInfo.surface</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sudachipy.WordInfo.synonym_group_ids"><code class="docutils literal notranslate"><span class="pre">WordInfo.synonym_group_ids</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sudachipy.WordInfo.word_structure"><code class="docutils literal notranslate"><span class="pre">WordInfo.word_structure</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="sudachipy.dictionary.html">sudachipy.dictionary package</a></li>

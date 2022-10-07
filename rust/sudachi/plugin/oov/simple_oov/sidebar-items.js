@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["SimpleOovPlugin","Provides a OOV node with single character if no words found in the dictionary"]]});
+window.SIDEBAR_ITEMS = {"struct":[["SimpleOovPlugin","Provides a OOV node with single character if no words found in the dictionary"]]};

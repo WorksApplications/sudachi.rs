@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["JoinKatakanaOovPlugin","Concatenates katakana oov nodes into one"]]});
+window.SIDEBAR_ITEMS = {"struct":[["JoinKatakanaOovPlugin","Concatenates katakana oov nodes into one"]]};

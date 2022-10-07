@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["PosMatcher",""]]});
+window.SIDEBAR_ITEMS = {"struct":[["PosMatcher",""]]};

@@ -1,1 +1,1 @@
-initSidebarItems({"enum":[["BoundaryMode",""]]});
+window.SIDEBAR_ITEMS = {"enum":[["BoundaryMode",""]]};

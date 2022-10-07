@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["CategoryType","A set of categories for a character"]]});
+window.SIDEBAR_ITEMS = {"struct":[["CategoryType","A set of categories for a character"]]};

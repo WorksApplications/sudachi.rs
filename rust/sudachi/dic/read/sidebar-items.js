@@ -1,1 +1,1 @@
-initSidebarItems({"fn":[["skip_u32_array",""],["skip_wid_array",""],["u32_array_parser",""],["u32_parser",""],["u32_wid_array_parser",""]]});
+window.SIDEBAR_ITEMS = {"fn":[["skip_u32_array",""],["skip_wid_array",""],["u32_array_parser",""],["u32_parser",""],["u32_wid_array_parser",""]]};

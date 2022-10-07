@@ -1,1 +1,1 @@
-initSidebarItems({"mod":[["default_input_text",""]],"trait":[["InputTextPlugin","Trait of plugin to modify the input text before tokenization"]]});
+window.SIDEBAR_ITEMS = {"mod":[["default_input_text",""]],"trait":[["InputTextPlugin","Trait of plugin to modify the input text before tokenization"]]};

@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["Morpheme","A morpheme (basic semantic unit of language)"]]});
+window.SIDEBAR_ITEMS = {"struct":[["Morpheme","A morpheme (basic semantic unit of language)"]]};
