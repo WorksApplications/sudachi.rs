@@ -196,12 +196,13 @@ impl<T: DictionaryAccess> MorphemeList<T> {
     }
 
     pub fn lookup(&mut self, query: &str, subset: InfoSubset) -> SudachiResult<usize> {
-        {
+        let end_chars = {
             let input = &mut self.input.borrow_mut().input;
             input.reset().push_str(query);
             input.start_build()?;
             input.build(self.dict.grammar())?;
-        }
+            input.ch_idx(query.len())
+        };
 
         let mut result = 0;
         let lex = self.dict.lexicon();
@@ -210,7 +211,6 @@ impl<T: DictionaryAccess> MorphemeList<T> {
                 continue;
             }
             let info = lex.get_word_info_subset(entry.word_id, subset)?;
-            let end_chars = self.input.borrow().input.ch_idx(query.len());
             let node = Node::new(0, end_chars as _, 0, 0, 0, entry.word_id);
             self.nodes
                 .data
