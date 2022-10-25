@@ -178,3 +178,16 @@ fn zeros_are_accepted() {
     assert_eq!(ms.get(1).surface().deref(), "京都");
     assert_eq!(ms.get(2).surface().deref(), "いく");
 }
+
+#[test]
+fn morpheme_extraction() {
+    let mut tok = TestTokenizer::builder(LEX_CSV).config(OOV_CFG).build();
+    let entries = tok.entries("東京都");
+    assert_eq!(1, entries.len());
+    let e = entries.get(0);
+    assert_eq!("東京都", e.surface().deref());
+    assert_eq!(0, e.begin());
+    assert_eq!(9, e.end());
+    assert_eq!(0, e.begin_c());
+    assert_eq!(3, e.end_c());
+}

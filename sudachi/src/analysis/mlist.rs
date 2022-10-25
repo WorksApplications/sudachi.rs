@@ -210,7 +210,8 @@ impl<T: DictionaryAccess> MorphemeList<T> {
                 continue;
             }
             let info = lex.get_word_info_subset(entry.word_id, subset)?;
-            let node = Node::new(0, query.len() as _, 0, 0, 0, entry.word_id);
+            let end_chars = self.input.borrow().input.ch_idx(query.len());
+            let node = Node::new(0, end_chars as _, 0, 0, 0, entry.word_id);
             self.nodes
                 .data
                 .push(ResultNode::new(node, 0, 0, query.len() as _, info));

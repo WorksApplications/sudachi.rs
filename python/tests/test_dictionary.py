@@ -15,6 +15,7 @@
 import os
 import unittest
 
+import sudachipy
 from sudachipy import Dictionary, Tokenizer
 
 
@@ -44,9 +45,15 @@ class TestDictionary(unittest.TestCase):
         ms = self.dict_.lookup("東京都")
         self.assertEqual(1, len(ms))
         self.assertEqual("トウキョウト", ms[0].reading_form())
+        self.assertEqual(0, ms[0].begin())
+        self.assertEqual(3, ms[0].end())
+        splits = ms[0].split(sudachipy.SplitMode.A)
+        self.assertEqual(2, len(splits))
         ms = self.dict_.lookup("京都", out=ms)
         self.assertEqual(1, len(ms))
         self.assertEqual("キョウト", ms[0].reading_form())
+        self.assertEqual(0, ms[0].begin())
+        self.assertEqual(2, ms[0].end())
 
 
 if __name__ == '__main__':
