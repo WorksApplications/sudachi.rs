@@ -52,6 +52,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#sudachipy.Dictionary"><code class="docutils literal notranslate"><span class="pre">Dictionary</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#sudachipy.Dictionary.close"><code class="docutils literal notranslate"><span class="pre">Dictionary.close()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#sudachipy.Dictionary.create"><code class="docutils literal notranslate"><span class="pre">Dictionary.create()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sudachipy.Dictionary.lookup"><code class="docutils literal notranslate"><span class="pre">Dictionary.lookup()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#sudachipy.Dictionary.pos_matcher"><code class="docutils literal notranslate"><span class="pre">Dictionary.pos_matcher()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#sudachipy.Dictionary.pos_of"><code class="docutils literal notranslate"><span class="pre">Dictionary.pos_of()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#sudachipy.Dictionary.pre_tokenizer"><code class="docutils literal notranslate"><span class="pre">Dictionary.pre_tokenizer()</span></code></a></li>
@@ -178,6 +179,27 @@ See <a class="reference external" href="https://worksapplications.github.io/suda
 </ul>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sudachipy.Dictionary.lookup">
+<span class="sig-name descname"><span class="pre">lookup</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">$self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">surface</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out</span> <span class="pre">=</span> <span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#sudachipy.MorphemeList" title="sudachipy.MorphemeList"><span class="pre">sudachipy.MorphemeList</span></a></span></span><a class="headerlink" href="#sudachipy.Dictionary.lookup" title="Permalink to this definition"></a></dt>
+<dd><p>–</p>
+<p>Look up morphemes in the binary dictionary without performing the analysis.
+All morphemes from the dictionary with the given surface string are returned,
+with the last user dictionary searched first and the system dictionary searched last.
+Inside a dictionary, morphemes are outputted in-binary-dictionary order.
+Morphemes which are not indexed are not returned.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>surface</strong> (<em>str</em>) – find all morphemes with the given surface</p></li>
+<li><p><strong>out</strong> – if passed, reuse the given morpheme list instead of creating a new one.
+See <a class="reference external" href="https://worksapplications.github.io/sudachi.rs/python/topics/out_param.html">https://worksapplications.github.io/sudachi.rs/python/topics/out_param.html</a> for details.</p></li>
+</ul>
+</dd>
+</dl>
+<p>type: out: sudachipy.MorphemeList</p>
 </dd></dl>
 
 <dl class="py method">
