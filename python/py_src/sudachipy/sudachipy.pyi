@@ -114,6 +114,7 @@ class Dictionary:
         """
         ...
 
+    def lookup(self, query: str, out: Optional[MorphemeList] = None) -> MorphemeList: ...
 
 class Morpheme:
     """

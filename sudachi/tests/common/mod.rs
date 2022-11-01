@@ -34,6 +34,7 @@ use lazy_static::lazy_static;
 use sudachi::analysis::Tokenize;
 use sudachi::dic::build::DictBuilder;
 use sudachi::dic::storage::{Storage, SudachiDicData};
+use sudachi::dic::subset::InfoSubset;
 
 pub fn dictionary_bytes_from_path<P: AsRef<Path>>(dictionary_path: P) -> SudachiResult<Vec<u8>> {
     let dictionary_path = dictionary_path.as_ref();
@@ -241,5 +242,13 @@ impl TestStatefulTokenizer {
 
     pub fn set_mode(&mut self, mode: Mode) -> Mode {
         self.tok.set_mode(mode)
+    }
+
+    pub fn entries(&mut self, query: impl AsRef<str>) -> &MorphemeList<Rc<JapaneseDictionary>> {
+        self.result.clear();
+        self.result
+            .lookup(query.as_ref(), InfoSubset::all())
+            .expect("should not fail");
+        &self.result
     }
 }

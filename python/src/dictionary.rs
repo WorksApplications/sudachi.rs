@@ -32,6 +32,7 @@ use sudachi::plugin::input_text::InputTextPlugin;
 use sudachi::plugin::oov::OovProviderPlugin;
 use sudachi::plugin::path_rewrite::PathRewritePlugin;
 
+use crate::morpheme::PyMorphemeListWrapper;
 use crate::pos_matcher::PyPosMatcher;
 use crate::pretokenizer::PyPretokenizer;
 use crate::tokenizer::{PySplitMode, PyTokenizer};
@@ -269,6 +270,48 @@ impl PyDictionary {
             .getattr("PreTokenizer")?
             .getattr("custom")?
             .call1(PyTuple::new(py, [internal_cell]))
+    }
+
+    /// Look up morphemes in the binary dictionary without performing the analysis.
+    /// All morphemes from the dictionary with the given surface string are returned,
+    /// with the last user dictionary searched first and the system dictionary searched last.
+    /// Inside a dictionary, morphemes are outputted in-binary-dictionary order.
+    /// Morphemes which are not indexed are not returned.
+    ///
+    /// :param surface: find all morphemes with the given surface
+    /// :param out: if passed, reuse the given morpheme list instead of creating a new one.
+    ///    See https://worksapplications.github.io/sudachi.rs/python/topics/out_param.html for details.
+    /// :type surface: str
+    /// type: out: sudachipy.MorphemeList
+    #[pyo3(text_signature = "($self, surface, out = None) -> sudachipy.MorphemeList")]
+    fn lookup<'p>(
+        &'p self,
+        py: Python<'p>,
+        surface: &'p str,
+        out: Option<&'p PyCell<PyMorphemeListWrapper>>,
+    ) -> PyResult<&'p PyCell<PyMorphemeListWrapper>> {
+        let l = match out {
+            Some(l) => l,
+            None => PyCell::new(
+                py,
+                PyMorphemeListWrapper::new(self.dictionary.clone().unwrap()),
+            )?,
+        };
+
+        // this needs to be a variable
+        let mut borrow = l.try_borrow_mut();
+        let out_list = match borrow {
+            Err(_) => return Err(PyException::new_err("out was used twice at the same time")),
+            Ok(ref mut ms) => ms.internal_mut(py),
+        };
+
+        out_list.clear();
+
+        out_list.lookup(surface, InfoSubset::all()).map_err(|e| {
+            PyException::new_err(format!("Failed to lookup words for {}: {:?}", surface, e))
+        })?;
+
+        Ok(l)
     }
 
     /// Close this dictionary
