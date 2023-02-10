@@ -105,9 +105,9 @@ impl PyTokenizer {
     /// :type mode: sudachipy.SplitMode
     /// :type out: sudachipy.MorphemeList
     #[pyo3(
-        text_signature = "($self, text: str, mode: SplitMode = None, logger = None, out = None) -> sudachipy.MorphemeList"
+        text_signature = "($self, text: str, mode: SplitMode = None, logger = None, out = None) -> sudachipy.MorphemeList",
+        signature = (text, mode = None, logger = None, out = None)
     )]
-    #[args(text, mode = "None", logger = "None")]
     #[allow(unused_variables)]
     fn tokenize<'py>(
         &'py mut self,

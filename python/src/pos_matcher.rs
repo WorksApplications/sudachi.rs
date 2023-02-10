@@ -50,7 +50,7 @@ impl PyPosMatcher {
         let mut data = Vec::new();
         for (pos_id, pos) in dic.pos.iter().enumerate() {
             let args = PyTuple::new(py, &[pos]);
-            if func.call1(args)?.cast_as::<PyBool>()?.is_true() {
+            if func.call1(args)?.downcast::<PyBool>()?.is_true() {
                 data.push(pos_id as u16);
             }
         }
@@ -63,7 +63,7 @@ impl PyPosMatcher {
     fn create_from_iter(dic: &Arc<PyDicData>, data: &PyIterator) -> PyResult<Self> {
         let mut result = Vec::new();
         for item in data {
-            let item = item?.cast_as::<PyTuple>()?;
+            let item = item?.downcast::<PyTuple>()?;
             Self::match_pos_elements(&mut result, dic.as_ref(), item)?;
         }
         Ok(Self {
