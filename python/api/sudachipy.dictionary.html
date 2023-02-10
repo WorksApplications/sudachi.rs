@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>sudachipy.dictionary package &mdash; SudachiPy 0.6.7-a1 documentation</title>
@@ -11,10 +11,8 @@
     <script src="../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
         <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
-        <script src="../_static/jquery.js"></script>
-        <script src="../_static/underscore.js"></script>
-        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../_static/doctools.js"></script>
         <script src="../_static/sphinx_highlight.js"></script>
     <script src="../_static/js/theme.js"></script>
@@ -29,11 +27,15 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="../index.html" class="icon icon-home"> SudachiPy
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            SudachiPy
           </a>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
@@ -57,7 +59,6 @@
 <li class="toctree-l4"><a class="reference internal" href="#sudachipy.dictionary.Dictionary.lookup"><code class="docutils literal notranslate"><span class="pre">Dictionary.lookup()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#sudachipy.dictionary.Dictionary.pos_matcher"><code class="docutils literal notranslate"><span class="pre">Dictionary.pos_matcher()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#sudachipy.dictionary.Dictionary.pos_of"><code class="docutils literal notranslate"><span class="pre">Dictionary.pos_of()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#sudachipy.dictionary.Dictionary.pre_tokenizer"><code class="docutils literal notranslate"><span class="pre">Dictionary.pre_tokenizer()</span></code></a></li>
 </ul>
 </li>
 </ul>
@@ -82,8 +83,8 @@
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
-      <li>sudachipy.dictionary package</li>
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">sudachipy.dictionary package</li>
       <li class="wy-breadcrumbs-aside">
             <a href="../_sources/api/sudachipy.dictionary.rst.txt" rel="nofollow"> View page source</a>
       </li>
@@ -126,7 +127,7 @@
 <dd><p>–</p>
 <p>Creates a sudachi tokenizer.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>mode</strong> – tokenizer’s default split mode (C by default).</p></li>
 <li><p><strong>fields</strong> – load only a subset of fields.
@@ -146,7 +147,7 @@ with the last user dictionary searched first and the system dictionary searched 
 Inside a dictionary, morphemes are outputted in-binary-dictionary order.
 Morphemes which are not indexed are not returned.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>surface</strong> (<em>str</em>) – find all morphemes with the given surface</p></li>
 <li><p><strong>out</strong> – if passed, reuse the given morpheme list instead of creating a new one.
@@ -168,7 +169,7 @@ use None as a sentinel value that matches any POS.</p>
 <p>For example, (‘名詞’,) will match any noun and
 (None, None, None, None, None, ‘終止形‐一般’) will match any word in 終止形‐一般 conjugation form.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>target</strong> – can be either a callable or list of POS partial tuples</p>
 </dd>
 </dl>
@@ -178,27 +179,6 @@ use None as a sentinel value that matches any POS.</p>
 <dt class="sig sig-object py" id="sudachipy.dictionary.Dictionary.pos_of">
 <span class="sig-name descname"><span class="pre">pos_of</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#sudachipy.dictionary.Dictionary.pos_of" title="Permalink to this definition"></a></dt>
 <dd><p>Get POS Tuple by its id</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="sudachipy.dictionary.Dictionary.pre_tokenizer">
-<span class="sig-name descname"><span class="pre">pre_tokenizer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">$self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fields</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">handler</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tokenizers.PreTokenizer</span></span></span><a class="headerlink" href="#sudachipy.dictionary.Dictionary.pre_tokenizer" title="Permalink to this definition"></a></dt>
-<dd><p>–</p>
-<p>Creates HuggingFace Tokenizers-compatible PreTokenizer.
-Requires package <cite>tokenizers</cite> to be installed.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>mode</strong> (<a class="reference internal" href="sudachipy.html#sudachipy.SplitMode" title="sudachipy.SplitMode"><em>sudachipy.SplitMode</em></a>) – Use this split mode (C by default)</p></li>
-<li><p><strong>fields</strong> (<em>Set</em><em>[</em><em>str</em><em>]</em>) – ask Sudachi to load only a subset of fields.
-See <a class="reference external" href="https://worksapplications.github.io/sudachi.rs/python/topics/subsetting.html">https://worksapplications.github.io/sudachi.rs/python/topics/subsetting.html</a></p></li>
-<li><p><strong>handler</strong> – a custom callable to transform MorphemeList into list of tokens.
-It should be should be a function(index: int, original: NormalizedString, morphemes: MorphemeList) -&gt; List[NormalizedString].
-See <a class="reference external" href="https://github.com/huggingface/tokenizers/blob/master/bindings/python/examples/custom_components.py">https://github.com/huggingface/tokenizers/blob/master/bindings/python/examples/custom_components.py</a>
-If nothing was passed, simply use surface as token representations.</p></li>
-</ul>
-</dd>
-</dl>
 </dd></dl>
 
 </dd></dl>
