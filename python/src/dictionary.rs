@@ -93,7 +93,7 @@ impl PyDictionary {
     ///     Also, can be an _absolute_ path to a compiled dictionary file.
     /// :param dict_type: deprecated alias to dict
     #[new]
-    #[args(config_path = "None", resource_dir = "None", dict_type = "None")]
+    #[pyo3(signature=(config_path = None, resource_dir = None, dict = None, dict_type = None))]
     fn new(
         py: Python,
         config_path: Option<PathBuf>,
@@ -196,9 +196,9 @@ impl PyDictionary {
     /// :param fields: load only a subset of fields.
     ///     See https://worksapplications.github.io/sudachi.rs/python/topics/subsetting.html
     #[pyo3(
-        text_signature = "($self, mode: sudachipy.SplitMode = sudachipy.SplitMode.C) -> sudachipy.Tokenizer"
+        text_signature = "($self, mode: sudachipy.SplitMode = sudachipy.SplitMode.C) -> sudachipy.Tokenizer",
+        signature = (mode = None, fields = None)
     )]
-    #[args(mode = "None")]
     fn create(&self, mode: Option<PySplitMode>, fields: Option<&PySet>) -> PyResult<PyTokenizer> {
         let mode = mode.unwrap_or(PySplitMode::C).into();
         let fields = parse_field_subset(fields)?;
@@ -234,8 +234,10 @@ impl PyDictionary {
     ///     If nothing was passed, simply use surface as token representations.
     /// :type mode: sudachipy.SplitMode
     /// :type fields: Set[str]
-    #[pyo3(text_signature = "($self, mode, fields, handler) -> tokenizers.PreTokenizer")]
-    #[args(mode = "None")]
+    #[pyo3(
+        text_signature = "($self, mode, fields, handler) -> tokenizers.PreTokenizer)",
+        signature = (mode = None, fields = None, handler = None)
+    )]
     fn pre_tokenizer<'p>(
         &'p self,
         py: Python<'p>,
@@ -366,13 +368,13 @@ fn config_repr(cfg: &Config) -> Result<String, std::fmt::Error> {
 
 pub(crate) fn get_default_setting_path(py: Python) -> PyResult<PathBuf> {
     let path = PyModule::import(py, "sudachipy")?.getattr("_DEFAULT_SETTINGFILE")?;
-    let path = path.cast_as::<PyString>()?.to_str()?;
+    let path = path.downcast::<PyString>()?.to_str()?;
     Ok(PathBuf::from(path))
 }
 
 pub(crate) fn get_default_resource_dir(py: Python) -> PyResult<PathBuf> {
     let path = PyModule::import(py, "sudachipy")?.getattr("_DEFAULT_RESOURCEDIR")?;
-    let path = path.cast_as::<PyString>()?.to_str()?;
+    let path = path.downcast::<PyString>()?.to_str()?;
     Ok(PathBuf::from(path))
 }
 
@@ -380,7 +382,7 @@ fn find_dict_path(py: Python, dict_type: &str) -> PyResult<PathBuf> {
     let pyfunc = PyModule::import(py, "sudachipy")?.getattr("_find_dict_path")?;
     let path = pyfunc
         .call1((dict_type,))?
-        .cast_as::<PyString>()?
+        .downcast::<PyString>()?
         .to_str()?;
     Ok(PathBuf::from(path))
 }

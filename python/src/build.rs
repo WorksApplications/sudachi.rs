@@ -17,7 +17,7 @@
 use crate::dictionary::get_default_resource_dir;
 use crate::errors;
 use pyo3::prelude::*;
-use pyo3::type_object::PyTypeObject;
+use pyo3::type_object::PyTypeInfo;
 use pyo3::types::{PyBytes, PyList, PyString, PyTuple, PyType};
 use std::fs::{File, OpenOptions};
 use std::io::BufWriter;
@@ -129,7 +129,10 @@ fn build_user_dic<'p>(
 }
 
 fn as_data_source<'p>(py: Python<'p>, data: &'p PyAny) -> PyResult<DataSource<'p>> {
-    let path = py.import("pathlib")?.getattr("Path")?.cast_as::<PyType>()?;
+    let path = py
+        .import("pathlib")?
+        .getattr("Path")?
+        .downcast::<PyType>()?;
     if data.is_instance(path)? {
         let pypath = data.call_method0("resolve")?.str()?;
         Ok(DataSource::File(Path::new(pypath.to_str()?)))
@@ -137,7 +140,7 @@ fn as_data_source<'p>(py: Python<'p>, data: &'p PyAny) -> PyResult<DataSource<'p
         let pypath = data.str()?;
         Ok(DataSource::File(Path::new(pypath.to_str()?)))
     } else if data.is_instance(PyBytes::type_object(py))? {
-        let data = data.cast_as::<PyBytes>()?;
+        let data = data.downcast::<PyBytes>()?;
         Ok(DataSource::Data(data.as_bytes()))
     } else {
         Err(pyo3::exceptions::PyValueError::new_err(format!(
