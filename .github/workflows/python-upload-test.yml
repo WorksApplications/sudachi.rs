@@ -28,7 +28,7 @@ jobs:
         working-directory: ./python
         run: bash build-sdist.sh
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           path: python/dist/*
 
@@ -58,7 +58,7 @@ jobs:
         with:
           script: python/build-wheels-manylinux-pgo.sh
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           path: python/dist/*manylinux*
 
@@ -106,7 +106,7 @@ jobs:
           ARCHFLAGS: -arch x86_64 -arch arm64
           MACOSX_DEPLOYMENT_TARGET: 10.12
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           path: python/dist/*.whl
 
@@ -114,7 +114,7 @@ jobs:
     needs: [ build-sdist, build-non-linux-wheels, build-linux-wheels ]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v3
         with:
           name: artifact # default artifact name
           path: dist/
@@ -123,10 +123,10 @@ jobs:
         run: ls -R dist/
 
       - name: Publish distribution to Test PyPI
-        uses: pypa/gh-action-pypi-publish@master
+        uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          user: ${{ secrets.PYPI_USERNAME }}
-          password: ${{ secrets.PYPI_PASSWORD }}
+          user: ${{ secrets.PYPI_TEST_USERNAME }}
+          password: ${{ secrets.PYPI_TEST_PASSWORD }}
           repository_url: https://test.pypi.org/legacy/
           verbose: true
 
@@ -135,7 +135,7 @@ jobs:
     strategy:
       matrix:
         os: [ ubuntu-latest, windows-latest, macOS-latest ]
-        python-version: [ "3.7", "3.8", "3.9" , "3.10" ]
+        python-version: [ "3.7", "3.8", "3.9", "3.10", "3.11" ]
       fail-fast: false
     runs-on: ${{ matrix.os }}
 

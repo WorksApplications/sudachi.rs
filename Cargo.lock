@@ -221,7 +221,7 @@ dependencies = [
 
 [[package]]
 name = "default_input_text"
-version = "0.6.7-a1"
+version = "0.6.7"
 dependencies = [
  "sudachi",
 ]
@@ -350,14 +350,14 @@ checksum = "fad582f4b9e86b6caa621cabeb0963332d92eea04729ab12892c2533951e6440"
 
 [[package]]
 name = "join_katakana_oov"
-version = "0.6.7-a1"
+version = "0.6.7"
 dependencies = [
  "sudachi",
 ]
 
 [[package]]
 name = "join_numeric"
-version = "0.6.7-a1"
+version = "0.6.7"
 dependencies = [
  "sudachi",
 ]
@@ -786,7 +786,7 @@ dependencies = [
 
 [[package]]
 name = "simple_oov"
-version = "0.6.7-a1"
+version = "0.6.7"
 dependencies = [
  "sudachi",
 ]
@@ -829,7 +829,7 @@ dependencies = [
 
 [[package]]
 name = "sudachi"
-version = "0.6.7-a1"
+version = "0.6.7"
 dependencies = [
  "aho-corasick",
  "bitflags",
@@ -857,7 +857,7 @@ dependencies = [
 
 [[package]]
 name = "sudachi-cli"
-version = "0.6.7-a1"
+version = "0.6.7"
 dependencies = [
  "cfg-if",
  "memmap2",
@@ -877,7 +877,7 @@ dependencies = [
 
 [[package]]
 name = "sudachipy"
-version = "0.6.7-a1"
+version = "0.6.7"
 dependencies = [
  "pyo3",
  "sudachi",
