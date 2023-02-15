@@ -30,7 +30,7 @@ jobs:
         working-directory: ./python
         run: bash build-sdist.sh
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           path: python/dist/*
 
@@ -57,7 +57,7 @@ jobs:
         with:
           script: python/build-wheels-manylinux-pgo.sh
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           path: python/dist/*manylinux*
 
@@ -102,7 +102,7 @@ jobs:
           ARCHFLAGS: -arch x86_64 -arch arm64
           MACOSX_DEPLOYMENT_TARGET: 10.12
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           path: python/dist/*.whl
 
