@@ -53,7 +53,7 @@ pub trait InputTextPlugin: Sync + Send {
     }
 
     /// Actual implementation of rewriting. Call `apply_rewrite` instead.
-    #[deprecated(note = "call apply_rewrite instead")]
+    #[deprecated(note = "call rewrite instead")]
     fn rewrite_impl<'a>(
         &'a self,
         input: &InputBuffer,

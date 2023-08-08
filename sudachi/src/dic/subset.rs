@@ -18,6 +18,7 @@ use bitflags::bitflags;
 
 bitflags! {
     #[repr(transparent)]
+    #[derive(Copy, Clone, Eq, PartialEq, Debug)]
     pub struct InfoSubset: u32 {
         const SURFACE = (1 << 0);
         const HEAD_WORD_LENGTH = (1 << 1);

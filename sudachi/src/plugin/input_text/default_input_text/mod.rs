@@ -19,12 +19,14 @@ use std::fs;
 use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
 
-use aho_corasick::{AhoCorasick, AhoCorasickBuilder, MatchKind};
+use aho_corasick::{
+    AhoCorasick, AhoCorasickBuilder, AhoCorasickKind, Anchored, MatchKind, StartKind,
+};
 use serde::Deserialize;
 use serde_json::Value;
 use unicode_normalization::{is_nfkc_quick, IsNormalized, UnicodeNormalization};
 
-use crate::config::Config;
+use crate::config::{Config, ConfigError};
 use crate::dic::grammar::Grammar;
 use crate::hash::RoMu;
 use crate::input_text::{InputBuffer, InputEditor};
@@ -45,10 +47,8 @@ pub struct DefaultInputTextPlugin {
     key_lengths: HashMap<char, usize>,
     /// Replacement mapping
     replace_char_map: HashMap<String, String>,
-    /// Checks whether the full string contains symbols to normalize
-    full_checker: Option<AhoCorasick>,
-    /// Checks the same as previous, but checks only prefix
-    anchored_checker: Option<AhoCorasick>,
+    /// Checks whether the string contains symbols to normalize
+    checker: Option<AhoCorasick>,
     replacements: Vec<String>,
 }
 
@@ -124,19 +124,15 @@ impl DefaultInputTextPlugin {
             values.push(v.clone());
         }
 
-        self.full_checker = Some(
+        self.checker = Some(
             AhoCorasickBuilder::new()
-                .dfa(true)
+                .kind(Some(AhoCorasickKind::DFA))
                 .match_kind(MatchKind::LeftmostLongest)
-                .build(keys.clone()),
-        );
-
-        self.anchored_checker = Some(
-            AhoCorasickBuilder::new()
-                .dfa(true)
-                .match_kind(MatchKind::LeftmostLongest)
-                .anchored(true)
-                .build(keys),
+                .start_kind(StartKind::Both)
+                .build(keys.clone())
+                .map_err(|e| {
+                    ConfigError::InvalidFormat(format!("failed to parse rewrite.def: {e:?}"))
+                })?,
         );
 
         self.replacements = values;
@@ -160,10 +156,12 @@ impl DefaultInputTextPlugin {
         mut replacer: InputEditor<'a>,
     ) -> SudachiResult<InputEditor<'a>> {
         let cur = buffer.current();
-        let checker = self.full_checker.as_ref().unwrap();
+        let checker = self.checker.as_ref().unwrap();
 
-        for m in checker.find_iter(cur) {
-            let replacement = self.replacements.get(m.pattern()).unwrap();
+        let ac_input = aho_corasick::Input::new(cur).anchored(Anchored::No);
+
+        for m in checker.find_iter(ac_input) {
+            let replacement = self.replacements.get(m.pattern().as_usize()).unwrap();
             replacer.replace_ref(m.start()..m.end(), replacement);
         }
 
@@ -178,16 +176,21 @@ impl DefaultInputTextPlugin {
         mut replacer: InputEditor<'a>,
     ) -> SudachiResult<InputEditor<'a>> {
         let cur = buffer.current();
-        let checker = self.anchored_checker.as_ref().unwrap();
+        let checker = self.checker.as_ref().unwrap();
         let mut min_offset = 0;
+
+        let mut ac_input = aho_corasick::Input::new(cur)
+            .anchored(Anchored::Yes)
+            .earliest(true);
 
         for (offset, ch) in cur.char_indices() {
             if offset < min_offset {
                 continue;
             }
+            ac_input.set_start(offset);
             // 1. replacement as defined by char.def
-            if let Some(m) = checker.earliest_find(&cur[offset..]) {
-                let range = offset..offset + m.end();
+            if let Some(m) = checker.find(ac_input.clone()) {
+                let range = m.range();
                 let replacement = self.replacements[m.pattern()].as_str();
                 min_offset = range.end;
                 replacer.replace_ref(range, replacement);
