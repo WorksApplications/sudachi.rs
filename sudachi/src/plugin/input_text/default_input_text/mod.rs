@@ -161,7 +161,7 @@ impl DefaultInputTextPlugin {
         let ac_input = aho_corasick::Input::new(cur).anchored(Anchored::No);
 
         for m in checker.find_iter(ac_input) {
-            let replacement = self.replacements.get(m.pattern().as_usize()).unwrap();
+            let replacement = self.replacements[m.pattern()].as_str();
             replacer.replace_ref(m.start()..m.end(), replacement);
         }
 
