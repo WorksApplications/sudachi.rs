@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":[["DictPartReport",""]]};
+window.SIDEBAR_ITEMS = {"struct":["DictPartReport"]};

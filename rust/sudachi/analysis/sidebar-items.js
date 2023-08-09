@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":[["Mode","Unit to split text"]],"mod":[["created",""],["lattice",""],["mlist",""],["morpheme",""],["node",""],["stateful_tokenizer",""],["stateless_tokenizer",""]],"struct":[["Node",""]],"trait":[["Tokenize","Able to tokenize Japanese text"]]};
+window.SIDEBAR_ITEMS = {"enum":["Mode"],"mod":["created","lattice","mlist","morpheme","node","stateful_tokenizer","stateless_tokenizer"],"struct":["Node"],"trait":["Tokenize"]};

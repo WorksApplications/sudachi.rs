@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":[["LexiconSetError","Sudachi error"]],"struct":[["LexiconSet","Set of Lexicons"]]};
+window.SIDEBAR_ITEMS = {"enum":["LexiconSetError"],"struct":["LexiconSet"]};

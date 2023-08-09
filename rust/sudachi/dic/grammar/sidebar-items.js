@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":[["Grammar","Dictionary grammar"]]};
+window.SIDEBAR_ITEMS = {"struct":["Grammar"]};

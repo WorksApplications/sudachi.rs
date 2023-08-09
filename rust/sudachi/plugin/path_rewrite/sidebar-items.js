@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":[["join_katakana_oov",""],["join_numeric",""]],"trait":[["PathRewritePlugin","Trait of plugin to rewrite the path from lattice"]]};
+window.SIDEBAR_ITEMS = {"mod":["join_katakana_oov","join_numeric"],"trait":["PathRewritePlugin"]};

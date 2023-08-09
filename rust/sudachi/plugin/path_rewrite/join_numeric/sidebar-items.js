@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":[["JoinNumericPlugin","Concatenates numeric nodes as one"]]};
+window.SIDEBAR_ITEMS = {"struct":["JoinNumericPlugin"]};

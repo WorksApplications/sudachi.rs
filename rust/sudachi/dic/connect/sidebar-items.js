@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":[["ConnectionMatrix",""]]};
+window.SIDEBAR_ITEMS = {"struct":["ConnectionMatrix"]};

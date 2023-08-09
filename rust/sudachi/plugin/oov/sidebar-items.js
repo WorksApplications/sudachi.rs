@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":[["mecab_oov",""],["regex_oov",""],["simple_oov",""]],"trait":[["OovProviderPlugin","Trait of plugin to provide oov node during tokenization"]]};
+window.SIDEBAR_ITEMS = {"mod":["mecab_oov","regex_oov","simple_oov"],"trait":["OovProviderPlugin"]};

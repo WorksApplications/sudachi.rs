@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":[["WordIdIter",""],["WordIdTable",""]]};
+window.SIDEBAR_ITEMS = {"struct":["WordIdIter","WordIdTable"]};

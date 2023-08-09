@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":[["MAX_DICTIONARIES","The first 4 bits of word_id are used to indicate that from which lexicon the word comes, thus we can only hold 15 lexicons in the same time. 16th is reserved for marking OOVs."]],"mod":[["trie",""],["word_id_table",""],["word_infos",""],["word_params",""]],"struct":[["Lexicon","Dictionary lexicon"],["LexiconEntry","Result of the Lexicon lookup"]]};
+window.SIDEBAR_ITEMS = {"constant":["MAX_DICTIONARIES"],"mod":["trie","word_id_table","word_infos","word_params"],"struct":["Lexicon","LexiconEntry"]};

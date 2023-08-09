@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":[["WordParams",""]]};
+window.SIDEBAR_ITEMS = {"struct":["WordParams"]};
