@@ -72,7 +72,6 @@ impl PyDicData {
 
 /// A sudachi dictionary
 #[pyclass(module = "sudachipy.dictionary", name = "Dictionary")]
-#[pyo3(text_signature = "(config_path: str = ..., resource_dir: str = ..., dict_type: str = ...)")]
 #[derive(Clone)]
 pub struct PyDictionary {
     pub(super) dictionary: Option<Arc<PyDicData>>,

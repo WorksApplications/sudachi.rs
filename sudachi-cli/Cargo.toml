@@ -13,7 +13,7 @@ license = "Apache-2.0"
 sudachi = { path = "../sudachi" }
 
 cfg-if = "1.0.0" # MIT/Apache 2.0
-memmap2 = "0.5" # MIT/Apache 2.0
+memmap2 = "0.7" # MIT/Apache 2.0
 structopt = "0.3" # MIT/Apache 2.0
 
 [[bin]]
