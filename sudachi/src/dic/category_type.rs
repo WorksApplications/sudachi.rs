@@ -16,6 +16,7 @@
 
 use crate::error::SudachiError;
 use bitflags::bitflags;
+use std::fmt::{Debug, Formatter};
 use std::str::FromStr;
 
 bitflags! {
@@ -23,6 +24,7 @@ bitflags! {
     ///
     /// Implemented as a bitset with fixed size
     #[repr(transparent)]
+    #[derive(Clone, Copy, PartialEq, Eq, Hash)]
     pub struct CategoryType: u32 {
         /** The fall back category. */
         const DEFAULT = (1 << 0);
@@ -64,36 +66,9 @@ bitflags! {
     }
 }
 
-struct CategoryTypeIter {
-    values: u32,
-}
-
-/// Iterating over individual bitfields (somehow is not automatically implemented)
-/// by bitfields crate
-impl Iterator for CategoryTypeIter {
-    type Item = CategoryType;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.values == 0 {
-            return None;
-        }
-
-        let numtz = self.values.trailing_zeros();
-        let mask = 1u32 << numtz;
-        self.values ^= mask;
-        // Safety: it is impossible to call this from user code
-        // and we do not produce any new bits here
-        Some(unsafe { CategoryType::from_bits_unchecked(mask) })
-    }
-}
-
 impl CategoryType {
-    pub fn iter(self) -> impl Iterator<Item = CategoryType> {
-        CategoryTypeIter { values: self.bits }
-    }
-
     pub fn count(self) -> u32 {
-        self.bits.count_ones()
+        self.bits().count_ones()
     }
 }
 
@@ -103,31 +78,18 @@ impl Default for CategoryType {
     }
 }
 
+impl Debug for CategoryType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        bitflags::parser::to_writer(self, f)
+    }
+}
+
 impl FromStr for CategoryType {
     type Err = SudachiError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.to_uppercase().as_str() {
-            "DEFAULT" => Ok(Self::DEFAULT),
-            "SPACE" => Ok(Self::SPACE),
-            "KANJI" => Ok(Self::KANJI),
-            "SYMBOL" => Ok(Self::SYMBOL),
-            "NUMERIC" => Ok(Self::NUMERIC),
-            "ALPHA" => Ok(Self::ALPHA),
-            "HIRAGANA" => Ok(Self::HIRAGANA),
-            "KATAKANA" => Ok(Self::KATAKANA),
-            "KANJINUMERIC" => Ok(Self::KANJINUMERIC),
-            "GREEK" => Ok(Self::GREEK),
-            "CYRILLIC" => Ok(Self::CYRILLIC),
-            "USER1" => Ok(Self::USER1),
-            "USER2" => Ok(Self::USER2),
-            "USER3" => Ok(Self::USER3),
-            "USER4" => Ok(Self::USER4),
-            "NOOOVBOW" => Ok(Self::NOOOVBOW),
-            "NOOOVBOW2" => Ok(Self::NOOOVBOW2),
-            "ALL" => Ok(Self::ALL),
-            _ => Err(SudachiError::InvalidCharacterCategoryType(String::from(s))),
-        }
+        let result = bitflags::parser::from_str::<CategoryType>(s);
+        result.map_err(|_| SudachiError::InvalidCharacterCategoryType(s.into()))
     }
 }
 
