@@ -15,6 +15,8 @@ crate-type = ["cdylib"]
 [dependencies]
 pyo3 = { version = "0.19", features = ["extension-module"] }
 thread_local = "1.1" # Apache 2.0/MIT
+serde = { version = "1.0", features = ["derive"] } # MIT/Apache 2.0
+serde_json = "1.0" # MIT/Apache 2.0
 
 [dependencies.sudachi]
 path = "../sudachi"

@@ -14,20 +14,22 @@
  *  limitations under the License.
  */
 
-use pyo3::exceptions::PyException;
-use pyo3::PyResult;
+use pyo3::{import_exception, PyResult};
 use std::fmt::{Debug, Display};
+
+// Sudachi exception class is defined in Python
+import_exception!(sudachipy.errors, SudachiError);
 
 pub fn wrap<T, E: Display>(v: Result<T, E>) -> PyResult<T> {
     match v {
         Ok(v) => Ok(v),
-        Err(e) => Err(PyException::new_err(format!("{}", e))),
+        Err(e) => Err(SudachiError::new_err(format!("{}", e))),
     }
 }
 
 pub fn wrap_ctx<T, E: Display, C: Debug + ?Sized>(v: Result<T, E>, ctx: &C) -> PyResult<T> {
     match v {
         Ok(v) => Ok(v),
-        Err(e) => Err(PyException::new_err(format!("{:?}: {}", ctx, e))),
+        Err(e) => Err(SudachiError::new_err(format!("{:?}: {}", ctx, e))),
     }
 }

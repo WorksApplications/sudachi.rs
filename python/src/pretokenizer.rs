@@ -16,13 +16,16 @@
 
 use crate::dictionary::PyDicData;
 use crate::errors::wrap;
-use crate::morpheme::PyMorphemeListWrapper;
+use crate::morpheme::{PyMorphemeList, PyMorphemeListWrapper};
+use pyo3::intern;
 use pyo3::prelude::*;
-use pyo3::types::{PyList, PySlice, PyTuple};
+use pyo3::types::{PyList, PySlice, PyString, PyTuple};
 use std::cell::RefCell;
+use std::ops::Deref;
 use std::sync::Arc;
 
 use sudachi::analysis::stateful_tokenizer::StatefulTokenizer;
+use sudachi::config::SurfaceProjection;
 use sudachi::dic::subset::InfoSubset;
 use sudachi::prelude::Mode;
 use thread_local::ThreadLocal;
@@ -135,17 +138,14 @@ impl PyPretokenizer {
         let morphs = cell.result();
         match self.handler.as_ref() {
             None => {
-                let result = PyList::empty(py);
+                let proj = self.dict.projection;
                 let py_ref = morphs.borrow(py);
                 let morphs = py_ref.internal(py);
-                for idx in 0..morphs.len() {
-                    let node = morphs.get(idx);
-                    let slice = PySlice::new(py, node.begin_c() as isize, node.end_c() as isize, 1);
-                    let args = PyTuple::new(py, [slice]);
-                    let substring = string.call_method1("slice", args)?;
-                    result.append(substring)?;
+                if proj == SurfaceProjection::Surface {
+                    make_result_for_surface(py, morphs, string)
+                } else {
+                    make_result_for_projection(py, morphs, string, proj)
                 }
-                Ok(result)
             }
             Some(h) => {
                 let mrp: &PyAny = morphs.as_ref(py);
@@ -163,4 +163,46 @@ impl PyPretokenizer {
     ) -> PyResult<&'p PyAny> {
         data.call_method1("split", PyTuple::new(py, [self_]))
     }
+}
+
+fn make_result_for_surface<'py>(
+    py: Python<'py>,
+    morphs: &PyMorphemeList,
+    string: &'py PyAny,
+) -> PyResult<&'py PyAny> {
+    let result = PyList::empty(py);
+    for idx in 0..morphs.len() {
+        let node = morphs.get(idx);
+        let slice = PySlice::new(py, node.begin_c() as isize, node.end_c() as isize, 1);
+        let args = PyTuple::new(py, [slice]);
+        let substring = string.call_method1(intern!(py, "slice"), args)?;
+        result.append(substring)?;
+    }
+    Ok(result)
+}
+
+fn make_result_for_projection<'py>(
+    py: Python<'py>,
+    morphs: &PyMorphemeList,
+    string: &'py PyAny,
+    proj: SurfaceProjection,
+) -> PyResult<&'py PyAny> {
+    let result = PyList::empty(py);
+    for idx in 0..morphs.len() {
+        let node = morphs.get(idx);
+        let slice = PySlice::new(py, node.begin_c() as isize, node.end_c() as isize, 1);
+        let args = PyTuple::new(py, [slice]);
+        let substring = string.call_method1(intern!(py, "slice"), args)?;
+        substring.call_method0(intern!(py, "clear"))?;
+        let value = match proj {
+            SurfaceProjection::Surface => PyString::new(py, node.surface().deref()),
+            SurfaceProjection::Dictionary => PyString::new(py, node.dictionary_form()),
+            SurfaceProjection::Normalized => PyString::new(py, node.normalized_form()),
+            SurfaceProjection::Reading => PyString::new(py, node.reading_form()),
+        };
+        let args = PyTuple::new(py, [value]);
+        substring.call_method1(intern!(py, "append"), args)?;
+        result.append(substring)?;
+    }
+    Ok(result)
 }

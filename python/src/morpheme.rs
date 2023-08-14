@@ -21,6 +21,7 @@ use std::sync::Arc;
 use pyo3::exceptions::{PyException, PyIndexError};
 use pyo3::prelude::*;
 use pyo3::types::{PyList, PyString, PyTuple, PyType};
+use sudachi::config::SurfaceProjection;
 
 use sudachi::prelude::{Morpheme, MorphemeList};
 
@@ -28,7 +29,7 @@ use crate::dictionary::{PyDicData, PyDictionary};
 use crate::tokenizer::PySplitMode;
 use crate::word_info::PyWordInfo;
 
-type PyMorphemeList = MorphemeList<Arc<PyDicData>>;
+pub(crate) type PyMorphemeList = MorphemeList<Arc<PyDicData>>;
 
 /// A list of morphemes
 #[pyclass(module = "sudachipy.morphemelist", name = "MorphemeList")]
@@ -278,8 +279,21 @@ impl PyMorpheme {
 
     /// Returns the substring of input text corresponding to the morpheme
     #[pyo3(text_signature = "($self) -> str")]
-    fn surface<'py>(&'py self, py: Python<'py>) -> PyObject {
-        self.morph(py).surface().deref().into_py(py)
+    fn surface<'py>(&'py self, py: Python<'py>) -> &'py PyString {
+        let proj = self.list(py).internal(py).dict().projection;
+        let morph = self.morph(py);
+        match proj {
+            SurfaceProjection::Surface => PyString::new(py, morph.surface().deref()),
+            SurfaceProjection::Normalized => PyString::new(py, morph.normalized_form()),
+            SurfaceProjection::Reading => PyString::new(py, morph.reading_form()),
+            SurfaceProjection::Dictionary => PyString::new(py, morph.dictionary_form()),
+        }
+    }
+
+    /// Returns the substring of input text corresponding to the morpheme
+    #[pyo3(text_signature = "($self) -> str")]
+    fn raw_surface<'py>(&'py self, py: Python<'py>) -> &'py PyString {
+        PyString::new(py, self.morph(py).surface().deref())
     }
 
     /// Returns the part of speech as a six-element tuple.
@@ -418,7 +432,7 @@ impl PyMorpheme {
         m.end_c() - m.begin_c()
     }
 
-    pub fn __str__<'py>(&'py self, py: Python<'py>) -> PyObject {
+    pub fn __str__<'py>(&'py self, py: Python<'py>) -> &'py PyString {
         self.surface(py)
     }
 

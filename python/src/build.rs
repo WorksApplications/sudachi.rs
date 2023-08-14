@@ -17,7 +17,6 @@
 use crate::dictionary::get_default_resource_dir;
 use crate::errors;
 use pyo3::prelude::*;
-use pyo3::type_object::PyTypeInfo;
 use pyo3::types::{PyBytes, PyList, PyString, PyTuple, PyType};
 use std::fs::{File, OpenOptions};
 use std::io::BufWriter;
@@ -136,10 +135,10 @@ fn as_data_source<'p>(py: Python<'p>, data: &'p PyAny) -> PyResult<DataSource<'p
     if data.is_instance(path)? {
         let pypath = data.call_method0("resolve")?.str()?;
         Ok(DataSource::File(Path::new(pypath.to_str()?)))
-    } else if data.is_instance(PyString::type_object(py))? {
+    } else if data.is_instance_of::<PyString>() {
         let pypath = data.str()?;
         Ok(DataSource::File(Path::new(pypath.to_str()?)))
-    } else if data.is_instance(PyBytes::type_object(py))? {
+    } else if data.is_instance_of::<PyBytes>() {
         let data = data.downcast::<PyBytes>()?;
         Ok(DataSource::Data(data.as_bytes()))
     } else {

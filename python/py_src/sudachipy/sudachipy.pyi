@@ -1,4 +1,5 @@
 from typing import ClassVar, Iterator, List, Tuple, Union, Callable, Iterable, Optional, Literal, Set
+from sudachipy.config import Config
 
 POS = Tuple[str, str, str, str, str, str]
 # POS element
@@ -40,16 +41,18 @@ class Dictionary:
     """
 
     @classmethod
-    def __init__(cls, config_path: Optional[str] = ..., resource_dir: Optional[str] = ..., dict: Optional[str] = None, *, dict_type: Optional[str] = None) -> None:
+    def __init__(cls, config_path: Optional[str | Config] = ..., resource_dir: Optional[str] = ..., dict: Optional[str] = None,
+                 dict_type: Optional[str] = None, *, config: Optional[str | Config] = ...) -> None:
         """
         Creates a sudachi dictionary.
 
-        If both config.systemDict and dict_type are not given, `sudachidict_core` is used.
-        If both config.systemDict and dict_type are given, dict_type is used.
+        If both config.systemDict and dict are not given, `sudachidict_core` is used.
+        If both config.systemDict and dict are given, dict_type is used.
 
-        :param config_path: path to the configuration JSON file
+        :param config_path: path to the configuration JSON file, config json as a string, or a [sudachipy.config.Config] object
+        :param config: alias to config_path, only one of them can be specified at the same time
         :param resource_dir: path to the resource directory folder
-        :param dict: type of pre-packaged dictionary, referring to sudachidict_<dict> packages on PyPI: https://pypi.org/search/?q=sudachidict.
+        :param dict: type of pre-packaged system dictionary, referring to sudachidict_<dict> packages on PyPI: https://pypi.org/search/?q=sudachidict.
             Also, can be an _absolute_ path to a compiled dictionary file.
         :param dict_type: deprecated alias to dict
         """
@@ -198,7 +201,14 @@ class Morpheme:
 
     def surface(self) -> str:
         """
-        Returns the surface.
+        Returns the projected string for the given morpheme (by default surface).
+        See Config.projection
+        """
+        ...
+
+    def raw_surface(self) -> str:
+        """
+        Returns the surface string no matter the value of Config.projection
         """
         ...
 

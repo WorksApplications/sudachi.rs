@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2021 Works Applications Co., Ltd.
+ *  Copyright (c) 2021-2023 Works Applications Co., Ltd.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -19,11 +19,13 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use pyo3::exceptions::PyException;
+use pyo3::methods::OkWrap;
 use pyo3::prelude::*;
 use pyo3::types::{PySet, PyString, PyTuple};
 
+use crate::errors::{wrap, wrap_ctx, SudachiError as SudachiErr};
 use sudachi::analysis::stateless_tokenizer::DictionaryAccess;
-use sudachi::config::{Config, ConfigBuilder};
+use sudachi::config::{Config, ConfigBuilder, SurfaceProjection};
 use sudachi::dic::dictionary::JapaneseDictionary;
 use sudachi::dic::grammar::Grammar;
 use sudachi::dic::lexicon_set::LexiconSet;
@@ -40,6 +42,7 @@ use crate::tokenizer::{PySplitMode, PyTokenizer};
 pub(crate) struct PyDicData {
     pub(crate) dictionary: JapaneseDictionary,
     pub(crate) pos: Vec<Py<PyTuple>>,
+    pub(crate) projection: SurfaceProjection,
 }
 
 impl DictionaryAccess for PyDicData {
@@ -92,32 +95,34 @@ impl PyDictionary {
     ///     Also, can be an _absolute_ path to a compiled dictionary file.
     /// :param dict_type: deprecated alias to dict
     #[new]
-    #[pyo3(signature=(config_path = None, resource_dir = None, dict = None, dict_type = None))]
+    #[pyo3(signature=(config_path = None, resource_dir = None, dict = None, dict_type = None, *, config = None))]
     fn new(
         py: Python,
-        config_path: Option<PathBuf>,
+        config_path: Option<&PyAny>,
         resource_dir: Option<PathBuf>,
         dict: Option<&str>,
         dict_type: Option<&str>,
+        config: Option<&PyAny>,
     ) -> PyResult<Self> {
-        let config_path = match config_path {
-            None => Some(get_default_setting_path(py)?),
-            Some(v) => Some(v),
+        if config.is_some() && config_path.is_some() {
+            return Err(SudachiErr::new_err("Both config and config_path options were specified at the same time, use one of them"));
+        }
+
+        let default_config = read_default_config(py)?;
+
+        let config_builder = match config.or(config_path) {
+            None => default_config,
+            Some(v) => read_config(v)?.fallback(&default_config),
         };
+
         let resource_dir = match resource_dir {
             None => Some(get_default_resource_dir(py)?),
             Some(v) => Some(v),
         };
+
         let dict_path = match dict.or(dict_type) {
             None => None,
-            Some(dt) => {
-                let path = Path::new(dt);
-                if path.is_absolute() && path.exists() {
-                    Some(path.to_path_buf())
-                } else {
-                    Some(find_dict_path(py, dt)?)
-                }
-            }
+            Some(dt) => Some(locate_system_dict(py, Path::new(dt))?),
         };
 
         if dict_type.is_some() {
@@ -129,10 +134,6 @@ impl PyDictionary {
                 1,
             )?;
         }
-
-        let config_builder = ConfigBuilder::from_opt_file(config_path.as_deref()).map_err(|e| {
-            PyException::new_err(format!("Error loading config: {}", e.to_string()))
-        })?;
 
         let config_builder = match resource_dir {
             Some(p) => config_builder.resource_path(p),
@@ -157,10 +158,22 @@ impl PyDictionary {
                 system_dict.display()
             );
             config.system_dict = Some(system_dict);
+        } else {
+            // resolve system dictionary alias to full path
+            let system_dict = config.system_dict.as_deref().unwrap();
+            if let Some(kind @ ("small" | "core" | "full")) = system_dict.to_str() {
+                let system_dict = find_dict_path(py, kind)?;
+                assert!(
+                    system_dict.exists(),
+                    "system dictionary {} did not exist",
+                    system_dict.display()
+                );
+                config.system_dict = Some(system_dict)
+            }
         }
 
         let jdic = JapaneseDictionary::from_cfg(&config).map_err(|e| {
-            PyException::new_err(format!(
+            SudachiErr::new_err(format!(
                 "Error while constructing dictionary: {}",
                 e.to_string()
             ))
@@ -179,6 +192,7 @@ impl PyDictionary {
         let dic_data = PyDicData {
             dictionary: jdic,
             pos: pos_data,
+            projection: config.projection,
         };
 
         let dictionary = Arc::new(dic_data);
@@ -248,7 +262,7 @@ impl PyDictionary {
         let subset = parse_field_subset(fields)?;
         if let Some(h) = handler.as_ref() {
             if !h.as_ref(py).is_callable() {
-                return Err(PyException::new_err("handler must be callable"));
+                return Err(SudachiErr::new_err("handler must be callable"));
             }
         }
 
@@ -302,16 +316,12 @@ impl PyDictionary {
         // this needs to be a variable
         let mut borrow = l.try_borrow_mut();
         let out_list = match borrow {
-            Err(_) => return Err(PyException::new_err("out was used twice at the same time")),
+            Err(_) => return Err(SudachiErr::new_err("out was used twice at the same time")),
             Ok(ref mut ms) => ms.internal_mut(py),
         };
 
         out_list.clear();
-
-        out_list.lookup(surface, InfoSubset::all()).map_err(|e| {
-            PyException::new_err(format!("Failed to lookup words for {}: {:?}", surface, e))
-        })?;
-
+        wrap_ctx(out_list.lookup(surface, InfoSubset::all()), surface)?;
         Ok(l)
     }
 
@@ -329,21 +339,16 @@ impl PyDictionary {
     }
 
     fn __repr__(&self) -> PyResult<String> {
-        config_repr(&self.config).map_err(|e| {
-            return PyException::new_err(format!("{:?}", e));
-        })
+        wrap(config_repr(&self.config))
     }
 }
 
 fn config_repr(cfg: &Config) -> Result<String, std::fmt::Error> {
     let mut result = String::from("<SudachiDictionary(");
-    write!(
-        result,
-        "system={}",
-        cfg.resolved_system_dict()
-            .map(|p| p.to_string_lossy().into_owned())
-            .unwrap_or_else(|e| e.to_string())
-    )?;
+    match cfg.resolved_system_dict() {
+        Ok(path) => write!(result, "system={}", path.display()),
+        Err(e) => write!(result, "system=<err:{}>", e),
+    }?;
     write!(result, ", user=[")?;
     match cfg.resolved_user_dicts() {
         Ok(dicts) => {
@@ -357,7 +362,7 @@ fn config_repr(cfg: &Config) -> Result<String, std::fmt::Error> {
             }
         }
         Err(e) => {
-            write!(result, "{:?}", e)?;
+            write!(result, "<err:{:?}>", e)?;
         }
     }
 
@@ -365,10 +370,44 @@ fn config_repr(cfg: &Config) -> Result<String, std::fmt::Error> {
     Ok(result)
 }
 
-pub(crate) fn get_default_setting_path(py: Python) -> PyResult<PathBuf> {
+fn read_config_from_fs(path: Option<&Path>) -> PyResult<ConfigBuilder> {
+    wrap(ConfigBuilder::from_opt_file(path))
+}
+
+fn read_config(config_opt: &PyAny) -> PyResult<ConfigBuilder> {
+    if config_opt.is_instance_of::<PyString>() {
+        let config_str = config_opt.str()?.to_str()?.trim();
+        // looks like json
+        if config_str.starts_with("{") && config_str.ends_with("}") {
+            let result = ConfigBuilder::from_bytes(config_str.as_bytes());
+            return wrap(result);
+        }
+        let p = Path::new(config_str);
+        if p.exists() && p.is_file() {
+            return read_config_from_fs(Some(p));
+        }
+        return Err(SudachiErr::new_err(format!(
+            "config file [{}] do not exist or is not a file",
+            p.display()
+        )));
+    }
+    let py = config_opt.py();
+    let cfg_type = py.import("sudachipy.config")?.getattr("Config")?;
+    if config_opt.is_instance(cfg_type)? {
+        let cfg_as_str = config_opt.call_method0("as_jsons")?;
+        return read_config(cfg_as_str);
+    }
+    Err(SudachiErr::new_err((
+        format!("passed config was not a string, json object or sudachipy.config.Config object"),
+        config_opt.wrap(py)?,
+    )))
+}
+
+pub(crate) fn read_default_config(py: Python) -> PyResult<ConfigBuilder> {
     let path = PyModule::import(py, "sudachipy")?.getattr("_DEFAULT_SETTINGFILE")?;
     let path = path.downcast::<PyString>()?.to_str()?;
-    Ok(PathBuf::from(path))
+    let path = PathBuf::from(path);
+    wrap_ctx(ConfigBuilder::from_opt_file(Some(&path)), &path)
 }
 
 pub(crate) fn get_default_resource_dir(py: Python) -> PyResult<PathBuf> {
@@ -384,6 +423,19 @@ fn find_dict_path(py: Python, dict_type: &str) -> PyResult<PathBuf> {
         .downcast::<PyString>()?
         .to_str()?;
     Ok(PathBuf::from(path))
+}
+
+fn locate_system_dict(py: Python, path: &Path) -> PyResult<PathBuf> {
+    if path.exists() && path.is_file() {
+        return Ok(path.to_owned());
+    }
+    match path.to_str() {
+        Some(name @ ("small" | "core" | "full")) => find_dict_path(py, name),
+        _ => Err(SudachiErr::new_err(format!(
+            "invalid dictionary path {:?}",
+            path
+        ))),
+    }
 }
 
 fn parse_field_subset(data: Option<&PySet>) -> PyResult<InfoSubset> {

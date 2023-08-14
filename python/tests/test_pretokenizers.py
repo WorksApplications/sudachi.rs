@@ -19,6 +19,7 @@ from tokenizers.models import WordLevel
 
 import sudachipy
 from sudachipy import MorphemeList
+from sudachipy.config import Config
 
 
 class PretokenizerTestCase(unittest.TestCase):
@@ -70,6 +71,22 @@ class PretokenizerTestCase(unittest.TestCase):
         tok.pre_tokenizer = pretok
         res = tok.encode("外国人参政権")
         self.assertEqual(res.ids, [6, 7])
+
+
+    def ignoredtest_with_projection(self):
+        dict = sudachipy.Dictionary(config=Config(projection="reading"))
+        pretok = dict.pre_tokenizer(sudachipy.SplitMode.A)
+        vocab = {
+            "[UNK]": 0,
+            "のむ": 1,
+            "さけ": 2,
+            "ひと": 3,
+            "を": 5,
+        }
+        tok = tokenizers.Tokenizer(WordLevel(vocab, unk_token="[UNK]"))
+        tok.pre_tokenizer = pretok
+        res = tok.encode("酒を飲む人")
+        self.assertEqual(res.ids, [2, 5, 1, 3])
 
 
 if __name__ == '__main__':
