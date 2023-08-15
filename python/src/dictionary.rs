@@ -37,12 +37,15 @@ use sudachi::plugin::path_rewrite::PathRewritePlugin;
 use crate::morpheme::PyMorphemeListWrapper;
 use crate::pos_matcher::PyPosMatcher;
 use crate::pretokenizer::PyPretokenizer;
+use crate::projection::{morpheme_projection, MorphemeProjection};
 use crate::tokenizer::{PySplitMode, PyTokenizer};
 
 pub(crate) struct PyDicData {
     pub(crate) dictionary: JapaneseDictionary,
     pub(crate) pos: Vec<Py<PyTuple>>,
-    pub(crate) projection: SurfaceProjection,
+    /// Compute default string representation for a morpheme using vtable dispatch.
+    /// None by default (if outputting surface as it is)
+    pub(crate) projection: Option<Box<dyn MorphemeProjection + Send + Sync>>,
 }
 
 impl DictionaryAccess for PyDicData {
@@ -189,10 +192,16 @@ impl PyDictionary {
             })
             .collect();
 
+        let projection = if config.projection == SurfaceProjection::Surface {
+            None
+        } else {
+            Some(morpheme_projection(config.projection, &jdic))
+        };
+
         let dic_data = PyDicData {
             dictionary: jdic,
             pos: pos_data,
-            projection: config.projection,
+            projection,
         };
 
         let dictionary = Arc::new(dic_data);

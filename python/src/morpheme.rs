@@ -21,7 +21,6 @@ use std::sync::Arc;
 use pyo3::exceptions::{PyException, PyIndexError};
 use pyo3::prelude::*;
 use pyo3::types::{PyList, PyString, PyTuple, PyType};
-use sudachi::config::SurfaceProjection;
 
 use sudachi::prelude::{Morpheme, MorphemeList};
 
@@ -57,6 +56,7 @@ impl PyMorphemeListWrapper {
     }
 
     /// Borrow internals immutable. GIL token proves access.
+    #[inline]
     pub(crate) fn internal(&self, _py: Python) -> &PyMorphemeList {
         &self.inner
     }
@@ -280,13 +280,12 @@ impl PyMorpheme {
     /// Returns the substring of input text corresponding to the morpheme
     #[pyo3(text_signature = "($self) -> str")]
     fn surface<'py>(&'py self, py: Python<'py>) -> &'py PyString {
-        let proj = self.list(py).internal(py).dict().projection;
+        let list = self.list(py);
+        let proj = &list.internal(py).dict().projection;
         let morph = self.morph(py);
-        match proj {
-            SurfaceProjection::Surface => PyString::new(py, morph.surface().deref()),
-            SurfaceProjection::Normalized => PyString::new(py, morph.normalized_form()),
-            SurfaceProjection::Reading => PyString::new(py, morph.reading_form()),
-            SurfaceProjection::Dictionary => PyString::new(py, morph.dictionary_form()),
+        match proj.as_deref() {
+            None => PyString::new(py, morph.surface().deref()),
+            Some(proj) => proj.project(morph.deref(), py),
         }
     }
 

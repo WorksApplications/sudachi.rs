@@ -975,8 +975,6 @@ name = "sudachipy"
 version = "0.6.8-a1"
 dependencies = [
  "pyo3",
- "serde",
- "serde_json",
  "sudachi",
  "thread_local",
 ]

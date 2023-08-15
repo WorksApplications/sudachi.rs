@@ -17,6 +17,7 @@
 use crate::util::fxhash::FxBuildHasher;
 use std::collections::HashSet;
 
+#[derive(Clone)]
 pub struct PosMatcher {
     ids: HashSet<u16, FxBuildHasher>,
 }

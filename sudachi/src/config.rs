@@ -97,12 +97,15 @@ impl PathResolver {
 }
 
 #[derive(Deserialize, Clone, Copy, Debug, Eq, PartialEq)]
-#[serde(rename_all = "lowercase")]
+#[serde(rename_all = "snake_case")]
 pub enum SurfaceProjection {
     Surface,
     Normalized,
     Reading,
     Dictionary,
+    DictionaryAndSurface,
+    NormalizedAndSurface,
+    NormalizedNouns,
 }
 
 impl Default for SurfaceProjection {
