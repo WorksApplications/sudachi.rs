@@ -17,10 +17,20 @@ import unittest
 from pathlib import Path
 
 import sudachipy
+from sudachipy.config import Config
+from dataclasses import replace
 
 FILE_PATH = Path(__file__)
 RESOURCES_PATH = FILE_PATH.parent / "resources"
-CONFIG_TEMPLATE = RESOURCES_PATH / "test_config_template.json"
+CFG_TEMPLATE = Config(
+    oovProviderPlugin=[
+        { "class" : "com.worksap.nlp.sudachi.SimpleOovPlugin",
+          "oovPOS" : [ "名詞", "普通名詞", "一般", "*", "*", "*" ],
+          "leftId" : 8,
+          "rightId" : 8,
+          "cost" : 6000 }
+    ]
+)
 
 
 class MyTestCase(unittest.TestCase):
@@ -37,19 +47,6 @@ class MyTestCase(unittest.TestCase):
         Path(self.tmpdir).rmdir()
         super().tearDown()
 
-    def make_config(self, system, user):
-        with open(CONFIG_TEMPLATE, encoding="utf-8") as fin:
-            template_data = fin.read()
-        system = system.replace("\\", "/")
-        user = ['"' + str(Path(u).name).replace("\\", "/") + '"' for u in user]
-        template_data = template_data.replace("$system_dict", str(Path(system).name))
-        template_data = template_data.replace("\"$user_dict\"", "[" + ", ".join(user) + "]")
-        tempfname = tempfile.mktemp(prefix="sudachi_cfg", suffix=".json", dir=self.tmpdir)
-        with open(tempfname, "wt", encoding='utf-8') as f:
-            f.write(template_data)
-        self.tempfiles.append(tempfname)
-        return tempfname
-
     def test_build_system(self):
         out_tmp = tempfile.mktemp(prefix="sudachi_sy", suffix=".dic", dir=self.tmpdir)
         self.tempfiles.append(out_tmp)
@@ -59,7 +56,7 @@ class MyTestCase(unittest.TestCase):
             output=out_tmp
         )
         self.assertIsNotNone(stats)
-        cfg = self.make_config(out_tmp, [])
+        cfg = replace(CFG_TEMPLATE, system=out_tmp)
         dict = sudachipy.Dictionary(config_path=cfg)
         tok = dict.create()
         result = tok.tokenize("東京にいく")
@@ -80,8 +77,9 @@ class MyTestCase(unittest.TestCase):
             lex=[RESOURCES_PATH / "user1.csv"],
             output=u1_dic
         )
-        cfg = self.make_config(sys_dic, [u1_dic])
-        dict = sudachipy.Dictionary(config_path=cfg)
+
+        cfg = replace(CFG_TEMPLATE, system=sys_dic, user=[u1_dic])
+        dict = sudachipy.Dictionary(config=cfg)
         tok = dict.create()
         result = tok.tokenize("すだちにいく")
         self.assertEqual(result.size(), 3)
@@ -111,7 +109,7 @@ class MyTestCase(unittest.TestCase):
             output=u2_dic
         )
 
-        cfg = self.make_config(sys_dic, [u1_dic, u2_dic])
+        cfg = replace(CFG_TEMPLATE, system=sys_dic, user=[u1_dic, u2_dic])
         dict = sudachipy.Dictionary(config_path=cfg)
         tok = dict.create()
         result = tok.tokenize("かぼすにいく")

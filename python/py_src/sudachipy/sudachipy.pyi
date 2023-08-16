@@ -1,4 +1,5 @@
 from typing import ClassVar, Iterator, List, Tuple, Union, Callable, Iterable, Optional, Literal, Set
+from sudachipy.config import Config
 
 POS = Tuple[str, str, str, str, str, str]
 # POS element
@@ -40,16 +41,18 @@ class Dictionary:
     """
 
     @classmethod
-    def __init__(cls, config_path: Optional[str] = ..., resource_dir: Optional[str] = ..., dict: Optional[str] = None, *, dict_type: Optional[str] = None) -> None:
+    def __init__(cls, config_path: Optional[str | Config] = ..., resource_dir: Optional[str] = ..., dict: Optional[str] = None,
+                 dict_type: Optional[str] = None, *, config: Optional[str | Config] = ...) -> None:
         """
         Creates a sudachi dictionary.
 
-        If both config.systemDict and dict_type are not given, `sudachidict_core` is used.
-        If both config.systemDict and dict_type are given, dict_type is used.
+        If both config.systemDict and dict are not given, `sudachidict_core` is used.
+        If both config.systemDict and dict are given, dict_type is used.
 
-        :param config_path: path to the configuration JSON file
+        :param config_path: path to the configuration JSON file, config json as a string, or a [sudachipy.config.Config] object
+        :param config: alias to config_path, only one of them can be specified at the same time
         :param resource_dir: path to the resource directory folder
-        :param dict: type of pre-packaged dictionary, referring to sudachidict_<dict> packages on PyPI: https://pypi.org/search/?q=sudachidict.
+        :param dict: type of pre-packaged system dictionary, referring to sudachidict_<dict> packages on PyPI: https://pypi.org/search/?q=sudachidict.
             Also, can be an _absolute_ path to a compiled dictionary file.
         :param dict_type: deprecated alias to dict
         """
@@ -63,13 +66,16 @@ class Dictionary:
 
     def create(self,
                mode: SplitMode = SplitMode.C,
-               fields: FieldSet = None) -> Tokenizer:
+               fields: FieldSet = None,
+               *,
+               projection: str = None) -> Tokenizer:
         """
         Creates a Sudachi Tokenizer.
 
         :param mode: sets the analysis mode for this Tokenizer
         :param fields: load only a subset of fields.
             See https://worksapplications.github.io/sudachi.rs/python/topics/subsetting.html
+        :param projection: Projection override for created Tokenizer. See Config.projection for values.
         """
         ...
 
@@ -92,7 +98,9 @@ class Dictionary:
     def pre_tokenizer(self,
                       mode: SplitMode = SplitMode.C,
                       fields: FieldSet = None,
-                      handler: Optional[Callable[[int, object, MorphemeList], list]] = None) -> object:
+                      handler: Optional[Callable[[int, object, MorphemeList], list]] = None,
+                      *,
+                      projection: str = None) -> object:
         """
         Creates HuggingFace Tokenizers-compatible PreTokenizer.
         Requires package `tokenizers` to be installed.
@@ -102,6 +110,7 @@ class Dictionary:
         :param handler: custom callable to transform MorphemeList into list of tokens. See https://github.com/huggingface/tokenizers/blob/master/bindings/python/examples/custom_components.py
         First two parameters are the index (int) and HuggingFace NormalizedString.
         The handler must return a List[NormalizedString]. By default, just segment the tokens.
+        :param projection: Projection override for created Tokenizer. See Config.projection for values.
         """
         ...
 
@@ -198,7 +207,14 @@ class Morpheme:
 
     def surface(self) -> str:
         """
-        Returns the surface.
+        Returns the projected string for the given morpheme (by default surface).
+        See Config.projection
+        """
+        ...
+
+    def raw_surface(self) -> str:
+        """
+        Returns the surface string no matter the value of Config.projection
         """
         ...
 

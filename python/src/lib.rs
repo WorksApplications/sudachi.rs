@@ -22,6 +22,7 @@ mod errors;
 mod morpheme;
 mod pos_matcher;
 mod pretokenizer;
+mod projection;
 mod tokenizer;
 mod word_info;
 

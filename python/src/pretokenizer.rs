@@ -16,12 +16,15 @@
 
 use crate::dictionary::PyDicData;
 use crate::errors::wrap;
-use crate::morpheme::PyMorphemeListWrapper;
+use crate::morpheme::{PyMorphemeList, PyMorphemeListWrapper, PyProjector};
+use pyo3::intern;
 use pyo3::prelude::*;
-use pyo3::types::{PyList, PySlice, PyTuple};
+use pyo3::sync::GILOnceCell;
+use pyo3::types::{PyList, PySlice, PyTuple, PyType};
 use std::cell::RefCell;
 use std::sync::Arc;
 
+use crate::projection::MorphemeProjection;
 use sudachi::analysis::stateful_tokenizer::StatefulTokenizer;
 use sudachi::dic::subset::InfoSubset;
 use sudachi::prelude::Mode;
@@ -83,6 +86,7 @@ pub struct PyPretokenizer {
     subset: InfoSubset,
     tokenizers: ThreadLocal<RefCell<PerThreadPreTokenizer>>,
     handler: Option<Py<PyAny>>,
+    projection: PyProjector,
 }
 
 impl PyPretokenizer {
@@ -91,6 +95,7 @@ impl PyPretokenizer {
         mode: Mode,
         subset: InfoSubset,
         handler: Option<Py<PyAny>>,
+        projection: PyProjector,
     ) -> PyPretokenizer {
         Self {
             dict,
@@ -98,6 +103,7 @@ impl PyPretokenizer {
             subset,
             tokenizers: ThreadLocal::new(),
             handler,
+            projection,
         }
     }
 
@@ -135,17 +141,12 @@ impl PyPretokenizer {
         let morphs = cell.result();
         match self.handler.as_ref() {
             None => {
-                let result = PyList::empty(py);
                 let py_ref = morphs.borrow(py);
                 let morphs = py_ref.internal(py);
-                for idx in 0..morphs.len() {
-                    let node = morphs.get(idx);
-                    let slice = PySlice::new(py, node.begin_c() as isize, node.end_c() as isize, 1);
-                    let args = PyTuple::new(py, [slice]);
-                    let substring = string.call_method1("slice", args)?;
-                    result.append(substring)?;
+                match self.projection.as_deref() {
+                    None => make_result_for_surface(py, morphs, string),
+                    Some(p) => make_result_for_projection(py, morphs, p),
                 }
-                Ok(result)
             }
             Some(h) => {
                 let mrp: &PyAny = morphs.as_ref(py);
@@ -163,4 +164,44 @@ impl PyPretokenizer {
     ) -> PyResult<&'p PyAny> {
         data.call_method1("split", PyTuple::new(py, [self_]))
     }
+}
+
+fn make_result_for_surface<'py>(
+    py: Python<'py>,
+    morphs: &PyMorphemeList,
+    string: &'py PyAny,
+) -> PyResult<&'py PyAny> {
+    let result = PyList::empty(py);
+    for idx in 0..morphs.len() {
+        let node = morphs.get(idx);
+        let slice = PySlice::new(py, node.begin_c() as isize, node.end_c() as isize, 1);
+        let args = PyTuple::new(py, [slice]);
+        let substring = string.call_method1(intern!(py, "slice"), args)?;
+        result.append(substring)?;
+    }
+    Ok(result)
+}
+
+fn make_result_for_projection<'py>(
+    py: Python<'py>,
+    morphs: &PyMorphemeList,
+    proj: &dyn MorphemeProjection,
+) -> PyResult<&'py PyAny> {
+    let result = PyList::empty(py);
+    let nstring = {
+        static NORMALIZED_STRING: GILOnceCell<Py<PyType>> = pyo3::sync::GILOnceCell::new();
+        NORMALIZED_STRING.get_or_try_init(py, || -> PyResult<Py<PyType>> {
+            let ns = py.import("tokenizers")?.getattr("NormalizedString")?;
+            let tpe = ns.downcast::<PyType>();
+            tpe.map(|x| x.into_py(py)).map_err(|e| e.into())
+        })?
+    };
+    for idx in 0..morphs.len() {
+        let node = morphs.get(idx);
+        let value = proj.project(&node, py);
+        let args = PyTuple::new(py, [value]);
+        let substring = nstring.call1(py, args)?;
+        result.append(substring)?;
+    }
+    Ok(result)
 }

@@ -14,11 +14,14 @@
  * limitations under the License.
  */
 
+use std::convert::TryFrom;
 use std::env::current_exe;
 use std::fs::File;
 use std::io::BufReader;
 use std::path::{Path, PathBuf};
 
+use crate::dic::subset::InfoSubset;
+use crate::error::SudachiError;
 use lazy_static::lazy_static;
 use serde::Deserialize;
 use serde_json::Value;
@@ -96,6 +99,56 @@ impl PathResolver {
     }
 }
 
+#[derive(Deserialize, Clone, Copy, Debug, Eq, PartialEq)]
+#[serde(rename_all = "snake_case")]
+pub enum SurfaceProjection {
+    Surface,
+    Normalized,
+    Reading,
+    Dictionary,
+    DictionaryAndSurface,
+    NormalizedAndSurface,
+    NormalizedNouns,
+}
+
+impl Default for SurfaceProjection {
+    fn default() -> Self {
+        SurfaceProjection::Surface
+    }
+}
+
+impl SurfaceProjection {
+    /// Return required InfoSubset for the current projection type
+    pub fn required_subset(&self) -> InfoSubset {
+        match *self {
+            SurfaceProjection::Surface => InfoSubset::empty(),
+            SurfaceProjection::Normalized => InfoSubset::NORMALIZED_FORM,
+            SurfaceProjection::Reading => InfoSubset::READING_FORM,
+            SurfaceProjection::Dictionary => InfoSubset::DIC_FORM_WORD_ID,
+            SurfaceProjection::DictionaryAndSurface => InfoSubset::DIC_FORM_WORD_ID,
+            SurfaceProjection::NormalizedAndSurface => InfoSubset::NORMALIZED_FORM,
+            SurfaceProjection::NormalizedNouns => InfoSubset::NORMALIZED_FORM,
+        }
+    }
+}
+
+impl TryFrom<&str> for SurfaceProjection {
+    type Error = SudachiError;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        match value {
+            "surface" => Ok(SurfaceProjection::Surface),
+            "normalized" => Ok(SurfaceProjection::Normalized),
+            "reading" => Ok(SurfaceProjection::Reading),
+            "dictionary" => Ok(SurfaceProjection::Dictionary),
+            "dictionary_and_surface" => Ok(SurfaceProjection::DictionaryAndSurface),
+            "normalized_and_surface" => Ok(SurfaceProjection::NormalizedAndSurface),
+            "normalized_nouns" => Ok(SurfaceProjection::NormalizedNouns),
+            _ => Err(ConfigError::InvalidFormat(format!("unknown projection: {value}")).into()),
+        }
+    }
+}
+
 /// Setting data loaded from config file
 #[derive(Debug, Default, Clone)]
 pub struct Config {
@@ -109,15 +162,17 @@ pub struct Config {
     pub input_text_plugins: Vec<Value>,
     pub oov_provider_plugins: Vec<Value>,
     pub path_rewrite_plugins: Vec<Value>,
+    // this option is Python-only and is ignored in Rust APIs
+    pub projection: SurfaceProjection,
 }
 
 /// Struct corresponds with raw config json file.
 /// You must use filed names defined here as json object key.
 /// For plugins, refer to each plugin.
 #[allow(non_snake_case)]
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct ConfigBuilder {
-    /// Analogue to Java Implementation path Override
+    /// Analogue to Java Implementation path Override    
     path: Option<PathBuf>,
     /// User-passed resourcePath
     #[serde(skip)]
@@ -126,14 +181,16 @@ pub struct ConfigBuilder {
     /// Is also automatically set on from_file
     #[serde(skip)]
     rootDirectory: Option<PathBuf>,
+    #[serde(alias = "system")]
     systemDict: Option<PathBuf>,
+    #[serde(alias = "user")]
     userDict: Option<Vec<PathBuf>>,
     characterDefinitionFile: Option<PathBuf>,
-
     connectionCostPlugin: Option<Vec<Value>>,
     inputTextPlugin: Option<Vec<Value>>,
     oovProviderPlugin: Option<Vec<Value>>,
     pathRewritePlugin: Option<Vec<Value>>,
+    projection: Option<SurfaceProjection>,
 }
 
 pub fn default_resource_dir() -> PathBuf {
@@ -149,6 +206,12 @@ pub fn default_config_location() -> PathBuf {
     let mut resdir = default_resource_dir();
     resdir.push(DEFAULT_SETTING_FILE);
     resdir
+}
+
+macro_rules! merge_cfg_value {
+    ($base: ident, $o: ident, $name: tt) => {
+        $base.$name = $base.$name.or_else(|| $o.$name.clone())
+    };
 }
 
 impl ConfigBuilder {
@@ -236,7 +299,23 @@ impl ConfigBuilder {
             input_text_plugins: self.inputTextPlugin.unwrap_or(Vec::new()),
             oov_provider_plugins: self.oovProviderPlugin.unwrap_or(Vec::new()),
             path_rewrite_plugins: self.pathRewritePlugin.unwrap_or(Vec::new()),
+            projection: self.projection.unwrap_or(SurfaceProjection::Surface),
         }
+    }
+
+    pub fn fallback(mut self, other: &ConfigBuilder) -> ConfigBuilder {
+        merge_cfg_value!(self, other, path);
+        merge_cfg_value!(self, other, resourcePath);
+        merge_cfg_value!(self, other, rootDirectory);
+        merge_cfg_value!(self, other, systemDict);
+        merge_cfg_value!(self, other, userDict);
+        merge_cfg_value!(self, other, characterDefinitionFile);
+        merge_cfg_value!(self, other, connectionCostPlugin);
+        merge_cfg_value!(self, other, inputTextPlugin);
+        merge_cfg_value!(self, other, oovProviderPlugin);
+        merge_cfg_value!(self, other, pathRewritePlugin);
+        merge_cfg_value!(self, other, projection);
+        self
     }
 }
 
@@ -397,5 +476,22 @@ mod tests {
         assert_eq!(1, npath.len());
         assert!(npath[0].starts_with(path_dir));
         Ok(())
+    }
+
+    #[test]
+    fn config_builder_fallback() {
+        let mut cfg = ConfigBuilder::empty();
+        cfg.path = Some("test".into());
+        let cfg2 = ConfigBuilder::empty();
+        let cfg2 = cfg2.fallback(&cfg);
+        assert_eq!(cfg2.path, Some("test".into()));
+    }
+
+    #[test]
+    fn surface_projection_tryfrom() {
+        assert_eq!(
+            SurfaceProjection::Surface,
+            SurfaceProjection::try_from("surface").unwrap()
+        );
     }
 }
