@@ -91,6 +91,7 @@
 <li class="toctree-l4"><a class="reference internal" href="#sudachipy.Morpheme.normalized_form"><code class="docutils literal notranslate"><span class="pre">Morpheme.normalized_form()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#sudachipy.Morpheme.part_of_speech"><code class="docutils literal notranslate"><span class="pre">Morpheme.part_of_speech()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#sudachipy.Morpheme.part_of_speech_id"><code class="docutils literal notranslate"><span class="pre">Morpheme.part_of_speech_id()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sudachipy.Morpheme.raw_surface"><code class="docutils literal notranslate"><span class="pre">Morpheme.raw_surface()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#sudachipy.Morpheme.reading_form"><code class="docutils literal notranslate"><span class="pre">Morpheme.reading_form()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#sudachipy.Morpheme.split"><code class="docutils literal notranslate"><span class="pre">Morpheme.split()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#sudachipy.Morpheme.surface"><code class="docutils literal notranslate"><span class="pre">Morpheme.surface()</span></code></a></li>
@@ -159,7 +160,7 @@
 </ul>
 <dl class="py class">
 <dt class="sig sig-object py" id="sudachipy.Dictionary">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">sudachipy.</span></span><span class="sig-name descname"><span class="pre">Dictionary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">resource_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dict_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#sudachipy.Dictionary" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">sudachipy.</span></span><span class="sig-name descname"><span class="pre">Dictionary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">resource_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dict_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#sudachipy.Dictionary" title="Permalink to this definition"></a></dt>
 <dd><p>A sudachi dictionary</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="sudachipy.Dictionary.close">
@@ -382,6 +383,13 @@ Tuple elements are four POS levels, conjugation type and conjugation form.</p>
 <span class="sig-name descname"><span class="pre">part_of_speech_id</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">$self</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#sudachipy.Morpheme.part_of_speech_id" title="Permalink to this definition"></a></dt>
 <dd><p>–</p>
 <p>Returns the id of the part of speech in the dictionary</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sudachipy.Morpheme.raw_surface">
+<span class="sig-name descname"><span class="pre">raw_surface</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">$self</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#sudachipy.Morpheme.raw_surface" title="Permalink to this definition"></a></dt>
+<dd><p>–</p>
+<p>Returns the substring of input text corresponding to the morpheme</p>
 </dd></dl>
 
 <dl class="py method">

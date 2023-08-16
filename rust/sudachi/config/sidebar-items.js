@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["ConfigError"],"fn":["default_config_location","default_resource_dir"],"struct":["Config","ConfigBuilder"]};
+window.SIDEBAR_ITEMS = {"enum":["ConfigError","SurfaceProjection"],"fn":["default_config_location","default_resource_dir"],"struct":["Config","ConfigBuilder"]};
