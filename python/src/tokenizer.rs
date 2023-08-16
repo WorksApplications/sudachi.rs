@@ -25,7 +25,7 @@ use sudachi::dic::subset::InfoSubset;
 use sudachi::prelude::*;
 
 use crate::dictionary::PyDicData;
-use crate::morpheme::PyMorphemeListWrapper;
+use crate::morpheme::{PyMorphemeListWrapper, PyProjector};
 
 /// Unit to split text
 ///
@@ -68,14 +68,21 @@ impl From<PySplitMode> for Mode {
 
 /// Sudachi Tokenizer, Python version
 #[pyclass(module = "sudachipy.tokenizer", name = "Tokenizer")]
-pub struct PyTokenizer {
+pub(crate) struct PyTokenizer {
     tokenizer: StatefulTokenizer<Arc<PyDicData>>,
+    projection: PyProjector,
 }
 
 impl PyTokenizer {
-    pub(crate) fn new(dict: Arc<PyDicData>, mode: Mode, fields: InfoSubset) -> Self {
+    pub(crate) fn new(
+        dict: Arc<PyDicData>,
+        mode: Mode,
+        fields: InfoSubset,
+        projection: PyProjector,
+    ) -> Self {
         let mut tok = Self {
             tokenizer: StatefulTokenizer::new(dict, mode),
+            projection,
         };
         tok.tokenizer.set_subset(fields);
         tok
@@ -127,8 +134,10 @@ impl PyTokenizer {
 
         let out_list = match out {
             None => {
-                let morphemes = MorphemeList::empty(self.tokenizer.dict_clone());
-                let wrapper = PyMorphemeListWrapper::from(morphemes);
+                let dict = self.tokenizer.dict_clone();
+                let morphemes = MorphemeList::empty(dict);
+                let wrapper =
+                    PyMorphemeListWrapper::from_components(morphemes, self.projection.clone());
                 PyCell::new(py, wrapper)?
             }
             Some(list) => list,

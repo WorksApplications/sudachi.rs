@@ -25,17 +25,19 @@ use pyo3::types::{PyList, PyString, PyTuple, PyType};
 use sudachi::prelude::{Morpheme, MorphemeList};
 
 use crate::dictionary::{PyDicData, PyDictionary};
+use crate::projection::MorphemeProjection;
 use crate::tokenizer::PySplitMode;
 use crate::word_info::PyWordInfo;
 
 pub(crate) type PyMorphemeList = MorphemeList<Arc<PyDicData>>;
+pub(crate) type PyProjector = Option<Arc<dyn MorphemeProjection + Send + Sync>>;
 
 /// A list of morphemes
 #[pyclass(module = "sudachipy.morphemelist", name = "MorphemeList")]
-#[repr(transparent)]
 pub struct PyMorphemeListWrapper {
     /// use `internal()` function instead
     inner: PyMorphemeList,
+    projection: PyProjector,
 }
 
 // PyMorphemeListWrapper is used only when GIL is active,
@@ -45,8 +47,24 @@ unsafe impl Send for PyMorphemeListWrapper {}
 
 impl PyMorphemeListWrapper {
     pub(crate) fn new(dict: Arc<PyDicData>) -> Self {
+        let proj = dict.projection.clone();
         Self {
             inner: PyMorphemeList::empty(dict),
+            projection: proj,
+        }
+    }
+
+    pub(crate) fn from_components(list: PyMorphemeList, projection: PyProjector) -> Self {
+        Self {
+            inner: list,
+            projection,
+        }
+    }
+
+    pub(crate) fn projection(&self) -> Option<&dyn MorphemeProjection> {
+        match &self.projection {
+            None => None,
+            Some(p) => Some(p.as_ref()),
         }
     }
 
@@ -65,6 +83,7 @@ impl PyMorphemeListWrapper {
     pub(crate) fn empty_clone(&self, _py: Python) -> Self {
         Self {
             inner: self.inner.empty_clone(),
+            projection: self.projection.clone(),
         }
     }
 }
@@ -82,8 +101,11 @@ impl PyMorphemeListWrapper {
             1,
         )?;
 
+        let cloned = dict.dictionary.as_ref().unwrap().clone();
+        let proj = cloned.projection.clone();
         Ok(Self {
-            inner: PyMorphemeList::empty(dict.dictionary.as_ref().unwrap().clone()),
+            inner: PyMorphemeList::empty(cloned),
+            projection: proj,
         })
     }
 
@@ -176,14 +198,6 @@ impl PyMorphemeListWrapper {
     }
 }
 
-impl From<MorphemeList<Arc<PyDicData>>> for PyMorphemeListWrapper {
-    fn from(morpheme_list: MorphemeList<Arc<PyDicData>>) -> Self {
-        Self {
-            inner: morpheme_list,
-        }
-    }
-}
-
 /// A morpheme (basic semantic unit of language).
 #[pyclass(module = "sudachipy.morphemelist", name = "MorphemeIter")]
 pub struct PyMorphemeIter {
@@ -228,7 +242,7 @@ impl<'py> Deref for MorphemeRef<'py> {
     }
 }
 
-#[pyclass(module = "sudachipy.morpheme", name = "Morpheme")]
+#[pyclass(module = "sudachipy.morpheme", name = "Morpheme", frozen)]
 pub struct PyMorpheme {
     list: Py<PyMorphemeListWrapper>,
     index: usize,
@@ -281,9 +295,8 @@ impl PyMorpheme {
     #[pyo3(text_signature = "($self) -> str")]
     fn surface<'py>(&'py self, py: Python<'py>) -> &'py PyString {
         let list = self.list(py);
-        let proj = &list.internal(py).dict().projection;
         let morph = self.morph(py);
-        match proj.as_deref() {
+        match list.projection() {
             None => PyString::new(py, morph.surface().deref()),
             Some(proj) => proj.project(morph.deref(), py),
         }

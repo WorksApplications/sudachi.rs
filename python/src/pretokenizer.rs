@@ -16,10 +16,11 @@
 
 use crate::dictionary::PyDicData;
 use crate::errors::wrap;
-use crate::morpheme::{PyMorphemeList, PyMorphemeListWrapper};
+use crate::morpheme::{PyMorphemeList, PyMorphemeListWrapper, PyProjector};
 use pyo3::intern;
 use pyo3::prelude::*;
-use pyo3::types::{PyList, PySlice, PyTuple};
+use pyo3::sync::GILOnceCell;
+use pyo3::types::{PyList, PySlice, PyTuple, PyType};
 use std::cell::RefCell;
 use std::sync::Arc;
 
@@ -85,6 +86,7 @@ pub struct PyPretokenizer {
     subset: InfoSubset,
     tokenizers: ThreadLocal<RefCell<PerThreadPreTokenizer>>,
     handler: Option<Py<PyAny>>,
+    projection: PyProjector,
 }
 
 impl PyPretokenizer {
@@ -93,6 +95,7 @@ impl PyPretokenizer {
         mode: Mode,
         subset: InfoSubset,
         handler: Option<Py<PyAny>>,
+        projection: PyProjector,
     ) -> PyPretokenizer {
         Self {
             dict,
@@ -100,6 +103,7 @@ impl PyPretokenizer {
             subset,
             tokenizers: ThreadLocal::new(),
             handler,
+            projection,
         }
     }
 
@@ -137,12 +141,11 @@ impl PyPretokenizer {
         let morphs = cell.result();
         match self.handler.as_ref() {
             None => {
-                let proj = &self.dict.projection;
                 let py_ref = morphs.borrow(py);
                 let morphs = py_ref.internal(py);
-                match proj {
+                match self.projection.as_deref() {
                     None => make_result_for_surface(py, morphs, string),
-                    Some(p) => make_result_for_projection(py, morphs, string, p.as_ref()),
+                    Some(p) => make_result_for_projection(py, morphs, p),
                 }
             }
             Some(h) => {
@@ -182,19 +185,22 @@ fn make_result_for_surface<'py>(
 fn make_result_for_projection<'py>(
     py: Python<'py>,
     morphs: &PyMorphemeList,
-    string: &'py PyAny,
     proj: &dyn MorphemeProjection,
 ) -> PyResult<&'py PyAny> {
     let result = PyList::empty(py);
+    let nstring = {
+        static NORMALIZED_STRING: GILOnceCell<Py<PyType>> = pyo3::sync::GILOnceCell::new();
+        NORMALIZED_STRING.get_or_try_init(py, || -> PyResult<Py<PyType>> {
+            let ns = py.import("tokenizers")?.getattr("NormalizedString")?;
+            let tpe = ns.downcast::<PyType>();
+            tpe.map(|x| x.into_py(py)).map_err(|e| e.into())
+        })?
+    };
     for idx in 0..morphs.len() {
         let node = morphs.get(idx);
-        let slice = PySlice::new(py, node.begin_c() as isize, node.end_c() as isize, 1);
-        let args = PyTuple::new(py, [slice]);
-        let substring = string.call_method1(intern!(py, "slice"), args)?;
-        substring.call_method0(intern!(py, "clear"))?;
         let value = proj.project(&node, py);
         let args = PyTuple::new(py, [value]);
-        substring.call_method1(intern!(py, "append"), args)?;
+        let substring = nstring.call1(py, args)?;
         result.append(substring)?;
     }
     Ok(result)

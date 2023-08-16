@@ -66,13 +66,16 @@ class Dictionary:
 
     def create(self,
                mode: SplitMode = SplitMode.C,
-               fields: FieldSet = None) -> Tokenizer:
+               fields: FieldSet = None,
+               *,
+               projection: str = None) -> Tokenizer:
         """
         Creates a Sudachi Tokenizer.
 
         :param mode: sets the analysis mode for this Tokenizer
         :param fields: load only a subset of fields.
             See https://worksapplications.github.io/sudachi.rs/python/topics/subsetting.html
+        :param projection: Projection override for created Tokenizer. See Config.projection for values.
         """
         ...
 
@@ -95,7 +98,9 @@ class Dictionary:
     def pre_tokenizer(self,
                       mode: SplitMode = SplitMode.C,
                       fields: FieldSet = None,
-                      handler: Optional[Callable[[int, object, MorphemeList], list]] = None) -> object:
+                      handler: Optional[Callable[[int, object, MorphemeList], list]] = None,
+                      *,
+                      projection: str = None) -> object:
         """
         Creates HuggingFace Tokenizers-compatible PreTokenizer.
         Requires package `tokenizers` to be installed.
@@ -105,6 +110,7 @@ class Dictionary:
         :param handler: custom callable to transform MorphemeList into list of tokens. See https://github.com/huggingface/tokenizers/blob/master/bindings/python/examples/custom_components.py
         First two parameters are the index (int) and HuggingFace NormalizedString.
         The handler must return a List[NormalizedString]. By default, just segment the tokens.
+        :param projection: Projection override for created Tokenizer. See Config.projection for values.
         """
         ...
 

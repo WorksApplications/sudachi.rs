@@ -14,6 +14,7 @@
  *  limitations under the License.
  */
 
+use std::convert::TryFrom;
 use std::fmt::Write;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -34,10 +35,10 @@ use sudachi::plugin::input_text::InputTextPlugin;
 use sudachi::plugin::oov::OovProviderPlugin;
 use sudachi::plugin::path_rewrite::PathRewritePlugin;
 
-use crate::morpheme::PyMorphemeListWrapper;
+use crate::morpheme::{PyMorphemeListWrapper, PyProjector};
 use crate::pos_matcher::PyPosMatcher;
 use crate::pretokenizer::PyPretokenizer;
-use crate::projection::{morpheme_projection, MorphemeProjection};
+use crate::projection::{morpheme_projection, parse_projection_opt, resolve_projection};
 use crate::tokenizer::{PySplitMode, PyTokenizer};
 
 pub(crate) struct PyDicData {
@@ -45,7 +46,8 @@ pub(crate) struct PyDicData {
     pub(crate) pos: Vec<Py<PyTuple>>,
     /// Compute default string representation for a morpheme using vtable dispatch.
     /// None by default (if outputting surface as it is)
-    pub(crate) projection: Option<Box<dyn MorphemeProjection + Send + Sync>>,
+    /// This is default per-dictionary value, can be overriden when creating tokenizers and pre-tokenizers
+    pub(crate) projection: PyProjector,
 }
 
 impl DictionaryAccess for PyDicData {
@@ -219,12 +221,29 @@ impl PyDictionary {
     ///     See https://worksapplications.github.io/sudachi.rs/python/topics/subsetting.html
     #[pyo3(
         text_signature = "($self, mode: sudachipy.SplitMode = sudachipy.SplitMode.C) -> sudachipy.Tokenizer",
-        signature = (mode = None, fields = None)
+        signature = (mode = None, fields = None, *, projection = None)
     )]
-    fn create(&self, mode: Option<PySplitMode>, fields: Option<&PySet>) -> PyResult<PyTokenizer> {
+    fn create(
+        &self,
+        mode: Option<PySplitMode>,
+        fields: Option<&PySet>,
+        projection: Option<&PyString>,
+    ) -> PyResult<PyTokenizer> {
         let mode = mode.unwrap_or(PySplitMode::C).into();
         let fields = parse_field_subset(fields)?;
-        let tok = PyTokenizer::new(self.dictionary.as_ref().unwrap().clone(), mode, fields);
+        let mut required_fields = self.config.projection.required_subset();
+        let dict = self.dictionary.as_ref().unwrap().clone();
+        let projobj = if let Some(s) = projection {
+            let proj = wrap(SurfaceProjection::try_from(s.to_str()?))?;
+            required_fields = proj.required_subset();
+            Some(morpheme_projection(proj, &dict))
+        } else {
+            None
+        };
+
+        let projobj = resolve_projection(projobj, &dict.projection);
+
+        let tok = PyTokenizer::new(dict, mode, fields | required_fields, projobj);
         Ok(tok)
     }
 
@@ -258,7 +277,7 @@ impl PyDictionary {
     /// :type fields: Set[str]
     #[pyo3(
         text_signature = "($self, mode, fields, handler) -> tokenizers.PreTokenizer)",
-        signature = (mode = None, fields = None, handler = None)
+        signature = (mode = None, fields = None, handler = None, *, projection = None)
     )]
     fn pre_tokenizer<'p>(
         &'p self,
@@ -266,6 +285,7 @@ impl PyDictionary {
         mode: Option<PySplitMode>,
         fields: Option<&PySet>,
         handler: Option<Py<PyAny>>,
+        projection: Option<&PyString>,
     ) -> PyResult<&'p PyAny> {
         let mode = mode.unwrap_or(PySplitMode::C).into();
         let subset = parse_field_subset(fields)?;
@@ -275,19 +295,24 @@ impl PyDictionary {
             }
         }
 
-        // we don't need any fields when handler is not present
-        let subset = if handler.is_none() {
-            InfoSubset::empty()
+        let dict = self.dictionary.as_ref().unwrap().clone();
+
+        let mut required_fields = if handler.is_none() {
+            self.config.projection.required_subset()
         } else {
-            subset
+            subset | self.config.projection.required_subset()
         };
 
-        let internal = PyPretokenizer::new(
-            self.dictionary.as_ref().unwrap().clone(),
-            mode,
-            subset,
-            handler,
-        );
+        let passed_projector = if let Some(s) = projection {
+            let proj = wrap(SurfaceProjection::try_from(s.to_str()?))?;
+            required_fields = proj.required_subset();
+            Some(morpheme_projection(proj, &dict))
+        } else {
+            None
+        };
+
+        let projector = resolve_projection(passed_projector, &dict.projection);
+        let internal = PyPretokenizer::new(dict, mode, subset, handler, projector);
         let internal_cell = PyCell::new(py, internal)?;
         let module = py.import("tokenizers.pre_tokenizers")?;
         module

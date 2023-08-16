@@ -41,11 +41,17 @@ class Config:
     Output the following field as the result of [Morpheme.surface()] instead of its value.
     This option works for pre-tokenizers created for a given dictionary as well.
     The original value is available as [Morpheme.raw_surface()].
+    
+    This option is created for chiTra integration.
+    
     Available options:
     - surface
     - normalized
     - reading
     - dictionary 
+    - dictionary_and_surface 
+    - normalized_and_surface
+    - normalized_nouns
     """
 
     connectionCostPlugin: list = None

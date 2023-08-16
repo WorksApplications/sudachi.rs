@@ -14,11 +14,14 @@
  * limitations under the License.
  */
 
+use std::convert::TryFrom;
 use std::env::current_exe;
 use std::fs::File;
 use std::io::BufReader;
 use std::path::{Path, PathBuf};
 
+use crate::dic::subset::InfoSubset;
+use crate::error::SudachiError;
 use lazy_static::lazy_static;
 use serde::Deserialize;
 use serde_json::Value;
@@ -111,6 +114,38 @@ pub enum SurfaceProjection {
 impl Default for SurfaceProjection {
     fn default() -> Self {
         SurfaceProjection::Surface
+    }
+}
+
+impl SurfaceProjection {
+    /// Return required InfoSubset for the current projection type
+    pub fn required_subset(&self) -> InfoSubset {
+        match *self {
+            SurfaceProjection::Surface => InfoSubset::empty(),
+            SurfaceProjection::Normalized => InfoSubset::NORMALIZED_FORM,
+            SurfaceProjection::Reading => InfoSubset::READING_FORM,
+            SurfaceProjection::Dictionary => InfoSubset::DIC_FORM_WORD_ID,
+            SurfaceProjection::DictionaryAndSurface => InfoSubset::DIC_FORM_WORD_ID,
+            SurfaceProjection::NormalizedAndSurface => InfoSubset::NORMALIZED_FORM,
+            SurfaceProjection::NormalizedNouns => InfoSubset::NORMALIZED_FORM,
+        }
+    }
+}
+
+impl TryFrom<&str> for SurfaceProjection {
+    type Error = SudachiError;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        match value {
+            "surface" => Ok(SurfaceProjection::Surface),
+            "normalized" => Ok(SurfaceProjection::Normalized),
+            "reading" => Ok(SurfaceProjection::Reading),
+            "dictionary" => Ok(SurfaceProjection::Dictionary),
+            "dictionary_and_surface" => Ok(SurfaceProjection::DictionaryAndSurface),
+            "normalized_and_surface" => Ok(SurfaceProjection::NormalizedAndSurface),
+            "normalized_nouns" => Ok(SurfaceProjection::NormalizedNouns),
+            _ => Err(ConfigError::InvalidFormat(format!("unknown projection: {value}")).into()),
+        }
     }
 }
 
@@ -450,5 +485,13 @@ mod tests {
         let cfg2 = ConfigBuilder::empty();
         let cfg2 = cfg2.fallback(&cfg);
         assert_eq!(cfg2.path, Some("test".into()));
+    }
+
+    #[test]
+    fn surface_projection_tryfrom() {
+        assert_eq!(
+            SurfaceProjection::Surface,
+            SurfaceProjection::try_from("surface").unwrap()
+        );
     }
 }

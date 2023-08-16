@@ -73,20 +73,35 @@ class PretokenizerTestCase(unittest.TestCase):
         self.assertEqual(res.ids, [6, 7])
 
 
-    def ignoredtest_with_projection(self):
-        dict = sudachipy.Dictionary(config=Config(projection="reading"))
-        pretok = dict.pre_tokenizer(sudachipy.SplitMode.A)
+    def test_with_projection(self):
+        pretok = self.dict.pre_tokenizer(sudachipy.SplitMode.A, projection="reading")
         vocab = {
             "[UNK]": 0,
-            "のむ": 1,
-            "さけ": 2,
-            "ひと": 3,
-            "を": 5,
+            "ノム": 1,
+            "サケ": 2,
+            "ヒト": 3,
+            "ヲ": 5,
         }
         tok = tokenizers.Tokenizer(WordLevel(vocab, unk_token="[UNK]"))
         tok.pre_tokenizer = pretok
         res = tok.encode("酒を飲む人")
-        self.assertEqual(res.ids, [2, 5, 1, 3])
+        self.assertEqual([2, 5, 1, 3], res.ids)
+
+    def test_projection_surface_override(self):
+        dictobj = sudachipy.Dictionary(config=sudachipy.config.Config(projection="reading"))
+        pretok = dictobj.pre_tokenizer(sudachipy.SplitMode.A, projection="surface")
+        vocab = {
+            "[UNK]": 0,
+            "酒": 1,
+            "人": 2,
+            "飲む": 3,
+            "を": 5,
+            "外国人参政権": 4
+        }
+        tok = tokenizers.Tokenizer(WordLevel(vocab, unk_token="[UNK]"))
+        tok.pre_tokenizer = pretok
+        res = tok.encode("酒を飲む人")
+        self.assertEqual(res.ids, [1, 5, 3, 2])
 
 
 if __name__ == '__main__':
