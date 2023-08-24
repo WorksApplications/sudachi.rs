@@ -279,7 +279,7 @@ Alternatively, if the dictionary file is specified in the setting file, `sudachi
 }
 ```
 
-The default setting file is [sudachi.json](https://github.com/WorksApplications/sudachi.rs/blob/develop/python/py_src/sudachi/resources/sudachi.json). You can specify your `sudachi.json` with the `-r` option.
+The default setting file is [sudachi.json](https://github.com/WorksApplications/sudachi.rs/blob/develop/python/py_src/sudachipy/resources/sudachi.json). You can specify your `sudachi.json` with the `-r` option.
 
 ```bash
 $ sudachipy -r path/to/sudachi.json
@@ -288,7 +288,7 @@ $ sudachipy -r path/to/sudachi.json
 
 ## User Dictionary
 
-To use a user dictionary, `user.dic`, place [sudachi.json](https://github.com/WorksApplications/sudachi.rs/blob/develop/python/py_src/sudachi/resources/sudachi.json) to anywhere you like, and add `userDict` value with the relative path from `sudachi.json` to your `user.dic`.
+To use a user dictionary, `user.dic`, place [sudachi.json](https://github.com/WorksApplications/sudachi.rs/blob/develop/python/py_src/sudachipy/resources/sudachi.json) to anywhere you like, and add `userDict` value with the relative path from `sudachi.json` to your `user.dic`.
 
 ```js
 {
@@ -346,7 +346,7 @@ required named arguments:
   -m file     connection matrix file with MeCab's matrix.def format
 ```
 
-To use your customized `system.dic`, place [sudachi.json](https://github.com/WorksApplications/sudachi.rs/blob/develop/python/py_src/sudachi/resources/sudachi.json) to anywhere you like, and overwrite `systemDict` value with the relative path from `sudachi.json` to your `system.dic`.
+To use your customized `system.dic`, place [sudachi.json](https://github.com/WorksApplications/sudachi.rs/blob/develop/python/py_src/sudachipy/resources/sudachi.json) to anywhere you like, and overwrite `systemDict` value with the relative path from `sudachi.json` to your `system.dic`.
 
 ```js
 {
