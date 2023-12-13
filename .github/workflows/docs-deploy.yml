@@ -21,7 +21,7 @@ jobs:
       - name: Setup python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.9'
+          python-version: '3.11'
       - name: Install dependencies
         run: python3 -m pip install -U setuptools setuptools-rust sphinx sphinx-rtd-theme
 

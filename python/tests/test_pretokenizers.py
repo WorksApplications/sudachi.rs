@@ -92,10 +92,10 @@ class PretokenizerTestCase(unittest.TestCase):
         pretok = dictobj.pre_tokenizer(sudachipy.SplitMode.A, projection="surface")
         vocab = {
             "[UNK]": 0,
-            "酒": 1,
-            "人": 2,
-            "飲む": 3,
-            "を": 5,
+            "サケ": 1,
+            "ヒト": 2,
+            "ノム": 3,
+            "ヲ": 5,
             "外国人参政権": 4
         }
         tok = tokenizers.Tokenizer(WordLevel(vocab, unk_token="[UNK]"))
