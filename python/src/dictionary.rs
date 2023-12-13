@@ -14,15 +14,13 @@
  *  limitations under the License.
  */
 
-use std::convert::TryFrom;
-use std::fmt::Write;
-use std::path::{Path, PathBuf};
-use std::sync::Arc;
-
-use pyo3::exceptions::PyException;
-use pyo3::methods::OkWrap;
 use pyo3::prelude::*;
 use pyo3::types::{PySet, PyString, PyTuple};
+use std::convert::TryFrom;
+use std::fmt::Write;
+use std::ops::Deref;
+use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
 use crate::errors::{wrap, wrap_ctx, SudachiError as SudachiErr};
 use sudachi::analysis::stateless_tokenizer::DictionaryAccess;
@@ -300,19 +298,15 @@ impl PyDictionary {
         let mut required_fields = if handler.is_none() {
             self.config.projection.required_subset()
         } else {
-            subset | self.config.projection.required_subset()
+            self.config.projection.required_subset() | subset
         };
 
-        let passed_projector = if let Some(s) = projection {
-            let proj = wrap(SurfaceProjection::try_from(s.to_str()?))?;
-            required_fields = proj.required_subset();
-            Some(morpheme_projection(proj, &dict))
-        } else {
-            None
-        };
+        let (passed, projection) = parse_projection_opt(projection, dict.deref())?;
 
-        let projector = resolve_projection(passed_projector, &dict.projection);
-        let internal = PyPretokenizer::new(dict, mode, subset, handler, projector);
+        required_fields |= projection.required_subset();
+
+        let projector = resolve_projection(passed, &dict.projection);
+        let internal = PyPretokenizer::new(dict, mode, required_fields, handler, projector);
         let internal_cell = PyCell::new(py, internal)?;
         let module = py.import("tokenizers.pre_tokenizers")?;
         module
@@ -433,7 +427,7 @@ fn read_config(config_opt: &PyAny) -> PyResult<ConfigBuilder> {
     }
     Err(SudachiErr::new_err((
         format!("passed config was not a string, json object or sudachipy.config.Config object"),
-        config_opt.wrap(py)?,
+        config_opt.into_py(py),
     )))
 }
 
@@ -491,7 +485,7 @@ fn parse_field_subset(data: Option<&PySet>) -> PyResult<InfoSubset> {
             "split_b" => InfoSubset::SPLIT_B,
             "synonym_group_id" => InfoSubset::SYNONYM_GROUP_ID,
             x => {
-                return Err(PyException::new_err(format!(
+                return Err(SudachiErr::new_err(format!(
                     "Invalid WordInfo field name {}",
                     x
                 )))

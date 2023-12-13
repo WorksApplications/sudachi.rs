@@ -166,20 +166,20 @@ pub(crate) fn resolve_projection(base: PyProjector, fallback: &PyProjector) -> P
 pub(crate) fn parse_projection<D: DictionaryAccess>(
     value: &PyString,
     dict: &D,
-) -> PyResult<PyProjector> {
+) -> PyResult<(PyProjector, SurfaceProjection)> {
     value.to_str().and_then(|s| parse_projection_raw(s, dict))
 }
 
 pub(crate) fn parse_projection_raw<D: DictionaryAccess>(
     value: &str,
     dict: &D,
-) -> PyResult<PyProjector> {
+) -> PyResult<(PyProjector, SurfaceProjection)> {
     match SurfaceProjection::try_from(value) {
         Ok(v) => {
             if v == SurfaceProjection::Surface {
-                Ok(None)
+                Ok((None, SurfaceProjection::Surface))
             } else {
-                Ok(Some(morpheme_projection(v, dict)))
+                Ok((Some(morpheme_projection(v, dict)), v))
             }
         }
         Err(e) => Err(crate::errors::SudachiError::new_err(format!(
@@ -191,9 +191,9 @@ pub(crate) fn parse_projection_raw<D: DictionaryAccess>(
 pub(crate) fn parse_projection_opt<D: DictionaryAccess>(
     value: Option<&PyString>,
     dict: &D,
-) -> PyResult<PyProjector> {
+) -> PyResult<(PyProjector, SurfaceProjection)> {
     match value {
-        None => Ok(None),
+        None => Ok((None, SurfaceProjection::Surface)),
         Some(v) => parse_projection(v, dict),
     }
 }

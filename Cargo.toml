@@ -13,3 +13,5 @@ default-members = [
     "sudachi",
     "sudachi-cli"
 ]
+
+resolver = "2"
