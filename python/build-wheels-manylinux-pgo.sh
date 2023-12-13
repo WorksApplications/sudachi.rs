@@ -31,11 +31,11 @@ cd "$DIR"
 export RUSTFLAGS='-C profile-use=/tmp/sudachi-profdata.merged -C opt-level=3'
 export CARGO_BUILD_TARGET=x86_64-unknown-linux-gnu
 
-for PYBIN in /opt/python/cp{37,38,39,310,311}*/bin; do
+for PYBIN in /opt/python/cp{37,38,39,310,311,312}*/bin; do
     "${PYBIN}/pip" install -U setuptools wheel setuptools-rust
     find . -iname 'sudachipy*.so'
     rm -f build/lib/sudachipy/sudachipy*.so
-    "${PYBIN}/python" setup.py bdist_wheel
+    "${PYBIN}/pip" wheel . --no-build-isolation -vvv --wheel-dir ./dist
 done
 
 for whl in dist/*.whl; do
