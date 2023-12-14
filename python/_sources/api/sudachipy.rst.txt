@@ -1,6 +1,11 @@
 sudachipy package
 =================
 
+config.Config
+---------------------
+
+.. autoclass:: sudachipy.config.Config
+   :members:
 
 Dictionary
 ----------------------

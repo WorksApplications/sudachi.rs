@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>sudachipy.config &mdash; SudachiPy 0.6.9-a1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../../_static/documentation_options.js?v=6cb8837e"></script>
+        <script src="../../_static/doctools.js?v=888ff710"></script>
+        <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            SudachiPy
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Topics</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../topics/out_param.html">Output Parameters and Memory Reuse</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../topics/subsetting.html">WordInfo subsetting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../topics/wheels.html">Wheel Status</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api/sudachipy.html">sudachipy package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/sudachipy.dictionary.html">sudachipy.dictionary package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/sudachipy.tokenizer.html">sudachipy.tokenizer package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/sudachipy.morphemelist.html">sudachipy.morphemelist package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/sudachipy.morpheme.html">sudachipy.morpheme package</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">SudachiPy</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">sudachipy.config</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for sudachipy.config</h1><div class="highlight"><pre>
+<span></span><span class="c1">#   Copyright (c) 2023 Works Applications Co., Ltd.</span>
+<span class="c1">#</span>
+<span class="c1">#   Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c1">#   you may not use this file except in compliance with the License.</span>
+<span class="c1">#   You may obtain a copy of the License at</span>
+<span class="c1">#</span>
+<span class="c1">#       http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="c1">#</span>
+<span class="c1">#    Unless required by applicable law or agreed to in writing, software</span>
+<span class="c1">#   distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c1">#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="c1">#   See the License for the specific language governing permissions and</span>
+<span class="c1">#   limitations under the License.</span>
+<span class="kn">import</span> <span class="nn">dataclasses</span>
+<span class="kn">from</span> <span class="nn">dataclasses</span> <span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">asdict</span>
+<span class="kn">from</span> <span class="nn">json</span> <span class="kn">import</span> <span class="n">dumps</span>
+
+<div class="viewcode-block" id="Config">
+<a class="viewcode-back" href="../../api/sudachipy.html#sudachipy.config.Config">[docs]</a>
+<span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">Config</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    SudachiPy rich configuration object.</span>
+
+<span class="sd">    Fields passed here will override the fields in the default configuration.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">system</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Path to dictionary or one of three strings: &#39;small&#39;, &#39;core&#39;, &#39;notcore&#39;.    </span>
+<span class="sd">    If the file with the specified path does not exist and is not one of three special values, raise an error.</span>
+<span class="sd">    If you want to use dictionary with one of predefined names, use relative paths e.g. &#39;./core&#39; instead of &#39;core&#39;.</span>
+<span class="sd">    </span>
+<span class="sd">    If the value is one of three special values and there does not exist a file with the same name,</span>
+<span class="sd">    we try to load the dictionary from the SudachiDict_{system} installed package.</span>
+<span class="sd">    For example, for &quot;core&quot; we will try to load the dictionary from the installed SudachiDict_core package.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">user</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Paths to user dictionaries, maximum number of user dictionaries is 14</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">projection</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;surface&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Output the following field as the result of :func:`sudachipy.Morpheme.surface()` instead of its value.</span>
+<span class="sd">    This option works for pre-tokenizers created for a given dictionary as well.</span>
+<span class="sd">    The original value is available as :func:`sudachipy.Morpheme.raw_surface()`.</span>
+<span class="sd">    </span>
+<span class="sd">    This option is created for chiTra integration.</span>
+<span class="sd">    </span>
+<span class="sd">    Available options:</span>
+<span class="sd">    </span>
+<span class="sd">    * surface</span>
+<span class="sd">    * normalized</span>
+<span class="sd">    * reading</span>
+<span class="sd">    * dictionary </span>
+<span class="sd">    * dictionary_and_surface </span>
+<span class="sd">    * normalized_and_surface</span>
+<span class="sd">    * normalized_nouns</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">connectionCostPlugin</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">oovProviderPlugin</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">pathRewritePlugin</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">inputTextPlugin</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">characterDefinitionFile</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="Config.as_jsons">
+<a class="viewcode-back" href="../../api/sudachipy.html#sudachipy.config.Config.as_jsons">[docs]</a>
+    <span class="k">def</span> <span class="nf">as_jsons</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Convert this Config object to the json string</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">dumps</span><span class="p">(</span><span class="n">_filter_nulls</span><span class="p">(</span><span class="n">asdict</span><span class="p">(</span><span class="bp">self</span><span class="p">)))</span></div>
+
+
+    <span class="k">def</span> <span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">changes</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">dataclasses</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">changes</span><span class="p">)</span></div>
+
+
+
+<span class="k">def</span> <span class="nf">_filter_nulls</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+    <span class="n">keys</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">:</span>
+        <span class="n">v</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">del</span> <span class="n">data</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">data</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Works Applications.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

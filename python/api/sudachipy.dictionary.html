@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>sudachipy.dictionary package &mdash; SudachiPy 0.6.8 documentation</title>
+  <title>sudachipy.dictionary package &mdash; SudachiPy 0.6.9-a1 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=80d5e7a1" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
 
@@ -15,7 +15,7 @@
   
         <script src="../_static/jquery.js?v=5d32c60e"></script>
         <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-        <script src="../_static/documentation_options.js?v=ac3b80e6"></script>
+        <script src="../_static/documentation_options.js?v=6cb8837e"></script>
         <script src="../_static/doctools.js?v=888ff710"></script>
         <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/js/theme.js"></script>
@@ -62,6 +62,7 @@
 <li class="toctree-l4"><a class="reference internal" href="#sudachipy.dictionary.Dictionary.lookup"><code class="docutils literal notranslate"><span class="pre">Dictionary.lookup()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#sudachipy.dictionary.Dictionary.pos_matcher"><code class="docutils literal notranslate"><span class="pre">Dictionary.pos_matcher()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#sudachipy.dictionary.Dictionary.pos_of"><code class="docutils literal notranslate"><span class="pre">Dictionary.pos_of()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sudachipy.dictionary.Dictionary.pre_tokenizer"><code class="docutils literal notranslate"><span class="pre">Dictionary.pre_tokenizer()</span></code></a></li>
 </ul>
 </li>
 </ul>
@@ -182,6 +183,29 @@ use None as a sentinel value that matches any POS.</p>
 <dt class="sig sig-object py" id="sudachipy.dictionary.Dictionary.pos_of">
 <span class="sig-name descname"><span class="pre">pos_of</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#sudachipy.dictionary.Dictionary.pos_of" title="Link to this definition"></a></dt>
 <dd><p>Get POS Tuple by its id</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sudachipy.dictionary.Dictionary.pre_tokenizer">
+<span class="sig-name descname"><span class="pre">pre_tokenizer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">$self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fields</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">handler</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tokenizers.PreTokenizer</span></span></span><a class="headerlink" href="#sudachipy.dictionary.Dictionary.pre_tokenizer" title="Link to this definition"></a></dt>
+<dd><p>–</p>
+<p>Creates HuggingFace Tokenizers-compatible PreTokenizer.
+Requires package <cite>tokenizers</cite> to be installed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>mode</strong> (<a class="reference internal" href="sudachipy.html#sudachipy.SplitMode" title="sudachipy.SplitMode"><em>sudachipy.SplitMode</em></a>) – Use this split mode (C by default)</p></li>
+<li><p><strong>fields</strong> (<em>Set</em><em>[</em><em>str</em><em>]</em>) – ask Sudachi to load only a subset of fields.
+See <a class="reference external" href="https://worksapplications.github.io/sudachi.rs/python/topics/subsetting.html">https://worksapplications.github.io/sudachi.rs/python/topics/subsetting.html</a></p></li>
+<li><p><strong>handler</strong> – a custom callable to transform MorphemeList into list of tokens.
+It should be should be a <cite>function(index: int, original: NormalizedString, morphemes: MorphemeList) -&gt; List[NormalizedString]</cite>.
+See <a class="reference external" href="https://github.com/huggingface/tokenizers/blob/master/bindings/python/examples/custom_components.py">https://github.com/huggingface/tokenizers/blob/master/bindings/python/examples/custom_components.py</a>
+If nothing was passed, simply use surface as token representations.</p></li>
+<li><p><strong>projection</strong> – projection mode for a created PreTokenizer.
+See <a class="reference internal" href="sudachipy.html#sudachipy.config.Config" title="sudachipy.config.Config"><code class="xref py py-class docutils literal notranslate"><span class="pre">sudachipy.config.Config</span></code></a> object documentation for supported projections.</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 </dd></dl>

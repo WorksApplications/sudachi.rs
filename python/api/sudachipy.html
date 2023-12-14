@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>sudachipy package &mdash; SudachiPy 0.6.8 documentation</title>
+  <title>sudachipy package &mdash; SudachiPy 0.6.9-a1 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=80d5e7a1" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
 
@@ -15,7 +15,7 @@
   
         <script src="../_static/jquery.js?v=5d32c60e"></script>
         <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-        <script src="../_static/documentation_options.js?v=ac3b80e6"></script>
+        <script src="../_static/documentation_options.js?v=6cb8837e"></script>
         <script src="../_static/doctools.js?v=888ff710"></script>
         <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/js/theme.js"></script>
@@ -53,6 +53,16 @@
 <p class="caption" role="heading"><span class="caption-text">API Reference:</span></p>
 <ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="#">sudachipy package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#config-config">config.Config</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#sudachipy.config.Config"><code class="docutils literal notranslate"><span class="pre">Config</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#sudachipy.config.Config.as_jsons"><code class="docutils literal notranslate"><span class="pre">Config.as_jsons()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sudachipy.config.Config.projection"><code class="docutils literal notranslate"><span class="pre">Config.projection</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sudachipy.config.Config.system"><code class="docutils literal notranslate"><span class="pre">Config.system</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sudachipy.config.Config.user"><code class="docutils literal notranslate"><span class="pre">Config.user</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="#dictionary">Dictionary</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#sudachipy.Dictionary"><code class="docutils literal notranslate"><span class="pre">Dictionary</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#sudachipy.Dictionary.close"><code class="docutils literal notranslate"><span class="pre">Dictionary.close()</span></code></a></li>
@@ -60,6 +70,7 @@
 <li class="toctree-l4"><a class="reference internal" href="#sudachipy.Dictionary.lookup"><code class="docutils literal notranslate"><span class="pre">Dictionary.lookup()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#sudachipy.Dictionary.pos_matcher"><code class="docutils literal notranslate"><span class="pre">Dictionary.pos_matcher()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#sudachipy.Dictionary.pos_of"><code class="docutils literal notranslate"><span class="pre">Dictionary.pos_of()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sudachipy.Dictionary.pre_tokenizer"><code class="docutils literal notranslate"><span class="pre">Dictionary.pre_tokenizer()</span></code></a></li>
 </ul>
 </li>
 </ul>
@@ -155,6 +166,58 @@
              
   <section id="sudachipy-package">
 <h1>sudachipy package<a class="headerlink" href="#sudachipy-package" title="Link to this heading"></a></h1>
+<section id="config-config">
+<h2>config.Config<a class="headerlink" href="#config-config" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="sudachipy.config.Config">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">sudachipy.config.</span></span><span class="sig-name descname"><span class="pre">Config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">system</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">user</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">projection</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'surface'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">connectionCostPlugin</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">oovProviderPlugin</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pathRewritePlugin</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inputTextPlugin</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">characterDefinitionFile</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sudachipy/config.html#Config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sudachipy.config.Config" title="Link to this definition"></a></dt>
+<dd><p>SudachiPy rich configuration object.</p>
+<p>Fields passed here will override the fields in the default configuration.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="sudachipy.config.Config.as_jsons">
+<span class="sig-name descname"><span class="pre">as_jsons</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sudachipy/config.html#Config.as_jsons"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sudachipy.config.Config.as_jsons" title="Link to this definition"></a></dt>
+<dd><p>Convert this Config object to the json string</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="sudachipy.config.Config.projection">
+<span class="sig-name descname"><span class="pre">projection</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'surface'</span></em><a class="headerlink" href="#sudachipy.config.Config.projection" title="Link to this definition"></a></dt>
+<dd><p>Output the following field as the result of <a class="reference internal" href="#sudachipy.Morpheme.surface" title="sudachipy.Morpheme.surface"><code class="xref py py-func docutils literal notranslate"><span class="pre">sudachipy.Morpheme.surface()</span></code></a> instead of its value.
+This option works for pre-tokenizers created for a given dictionary as well.
+The original value is available as <a class="reference internal" href="#sudachipy.Morpheme.raw_surface" title="sudachipy.Morpheme.raw_surface"><code class="xref py py-func docutils literal notranslate"><span class="pre">sudachipy.Morpheme.raw_surface()</span></code></a>.</p>
+<p>This option is created for chiTra integration.</p>
+<p>Available options:</p>
+<ul class="simple">
+<li><p>surface</p></li>
+<li><p>normalized</p></li>
+<li><p>reading</p></li>
+<li><p>dictionary</p></li>
+<li><p>dictionary_and_surface</p></li>
+<li><p>normalized_and_surface</p></li>
+<li><p>normalized_nouns</p></li>
+</ul>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="sudachipy.config.Config.system">
+<span class="sig-name descname"><span class="pre">system</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#sudachipy.config.Config.system" title="Link to this definition"></a></dt>
+<dd><p>Path to dictionary or one of three strings: ‘small’, ‘core’, ‘notcore’.    
+If the file with the specified path does not exist and is not one of three special values, raise an error.
+If you want to use dictionary with one of predefined names, use relative paths e.g. ‘./core’ instead of ‘core’.</p>
+<p>If the value is one of three special values and there does not exist a file with the same name,
+we try to load the dictionary from the SudachiDict_{system} installed package.
+For example, for “core” we will try to load the dictionary from the installed SudachiDict_core package.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="sudachipy.config.Config.user">
+<span class="sig-name descname"><span class="pre">user</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#sudachipy.config.Config.user" title="Link to this definition"></a></dt>
+<dd><p>Paths to user dictionaries, maximum number of user dictionaries is 14</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
 <section id="dictionary">
 <h2>Dictionary<a class="headerlink" href="#dictionary" title="Link to this heading"></a></h2>
 <ul class="simple">
@@ -228,6 +291,29 @@ use None as a sentinel value that matches any POS.</p>
 <dt class="sig sig-object py" id="sudachipy.Dictionary.pos_of">
 <span class="sig-name descname"><span class="pre">pos_of</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#sudachipy.Dictionary.pos_of" title="Link to this definition"></a></dt>
 <dd><p>Get POS Tuple by its id</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sudachipy.Dictionary.pre_tokenizer">
+<span class="sig-name descname"><span class="pre">pre_tokenizer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">$self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fields</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">handler</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tokenizers.PreTokenizer</span></span></span><a class="headerlink" href="#sudachipy.Dictionary.pre_tokenizer" title="Link to this definition"></a></dt>
+<dd><p>–</p>
+<p>Creates HuggingFace Tokenizers-compatible PreTokenizer.
+Requires package <cite>tokenizers</cite> to be installed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>mode</strong> (<a class="reference internal" href="#sudachipy.SplitMode" title="sudachipy.SplitMode"><em>sudachipy.SplitMode</em></a>) – Use this split mode (C by default)</p></li>
+<li><p><strong>fields</strong> (<em>Set</em><em>[</em><em>str</em><em>]</em>) – ask Sudachi to load only a subset of fields.
+See <a class="reference external" href="https://worksapplications.github.io/sudachi.rs/python/topics/subsetting.html">https://worksapplications.github.io/sudachi.rs/python/topics/subsetting.html</a></p></li>
+<li><p><strong>handler</strong> – a custom callable to transform MorphemeList into list of tokens.
+It should be should be a <cite>function(index: int, original: NormalizedString, morphemes: MorphemeList) -&gt; List[NormalizedString]</cite>.
+See <a class="reference external" href="https://github.com/huggingface/tokenizers/blob/master/bindings/python/examples/custom_components.py">https://github.com/huggingface/tokenizers/blob/master/bindings/python/examples/custom_components.py</a>
+If nothing was passed, simply use surface as token representations.</p></li>
+<li><p><strong>projection</strong> – projection mode for a created PreTokenizer.
+See <a class="reference internal" href="#sudachipy.config.Config" title="sudachipy.config.Config"><code class="xref py py-class docutils literal notranslate"><span class="pre">sudachipy.config.Config</span></code></a> object documentation for supported projections.</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 </dd></dl>
