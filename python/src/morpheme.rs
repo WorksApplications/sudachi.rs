@@ -291,7 +291,7 @@ impl PyMorpheme {
         self.morph(py).end_c()
     }
 
-    /// Returns the substring of input text corresponding to the morpheme
+    /// Returns the substring of input text corresponding to the morpheme, or a projection if one is configured
     #[pyo3(text_signature = "($self) -> str")]
     fn surface<'py>(&'py self, py: Python<'py>) -> &'py PyString {
         let list = self.list(py);
@@ -302,7 +302,7 @@ impl PyMorpheme {
         }
     }
 
-    /// Returns the substring of input text corresponding to the morpheme
+    /// Returns the substring of input text corresponding to the morpheme regardless the configured projection
     #[pyo3(text_signature = "($self) -> str")]
     fn raw_surface<'py>(&'py self, py: Python<'py>) -> &'py PyString {
         PyString::new(py, self.morph(py).surface().deref())

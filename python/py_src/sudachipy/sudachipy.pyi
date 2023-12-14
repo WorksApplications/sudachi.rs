@@ -207,14 +207,15 @@ class Morpheme:
 
     def surface(self) -> str:
         """
-        Returns the projected string for the given morpheme (by default surface).
-        See Config.projection
+        Returns the substring of input text corresponding to the morpheme, or a projection if one is configured.
+        See `Config.projection`.
         """
         ...
 
     def raw_surface(self) -> str:
         """
-        Returns the surface string no matter the value of Config.projection
+        Returns the substring of input text corresponding to the morpheme regardless the configured projection.
+        See `Config.projection`.
         """
         ...
 
