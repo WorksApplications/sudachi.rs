@@ -477,7 +477,7 @@ Tuple elements are four POS levels, conjugation type and conjugation form.</p>
 <dt class="sig sig-object py" id="sudachipy.Morpheme.raw_surface">
 <span class="sig-name descname"><span class="pre">raw_surface</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">$self</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#sudachipy.Morpheme.raw_surface" title="Link to this definition"></a></dt>
 <dd><p>–</p>
-<p>Returns the substring of input text corresponding to the morpheme</p>
+<p>Returns the substring of input text corresponding to the morpheme regardless the configured projection</p>
 </dd></dl>
 
 <dl class="py method">
@@ -511,7 +511,7 @@ When False is passed, empty lists are returned instead.</p></li>
 <dt class="sig sig-object py" id="sudachipy.Morpheme.surface">
 <span class="sig-name descname"><span class="pre">surface</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">$self</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#sudachipy.Morpheme.surface" title="Link to this definition"></a></dt>
 <dd><p>–</p>
-<p>Returns the substring of input text corresponding to the morpheme</p>
+<p>Returns the substring of input text corresponding to the morpheme, or a projection if one is configured</p>
 </dd></dl>
 
 <dl class="py method">
