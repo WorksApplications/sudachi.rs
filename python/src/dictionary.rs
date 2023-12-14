@@ -268,13 +268,16 @@ impl PyDictionary {
     /// :param fields: ask Sudachi to load only a subset of fields.
     ///     See https://worksapplications.github.io/sudachi.rs/python/topics/subsetting.html
     /// :param handler: a custom callable to transform MorphemeList into list of tokens.
-    ///     It should be should be a function(index: int, original: NormalizedString, morphemes: MorphemeList) -> List[NormalizedString].
+    ///     It should be should be a `function(index: int, original: NormalizedString, morphemes: MorphemeList) -> List[NormalizedString]`.
     ///     See https://github.com/huggingface/tokenizers/blob/master/bindings/python/examples/custom_components.py
     ///     If nothing was passed, simply use surface as token representations.
+    /// :param projection: projection mode for a created PreTokenizer.
+    ///     See :class:`sudachipy.config.Config` object documentation for supported projections.
+    ///
     /// :type mode: sudachipy.SplitMode
     /// :type fields: Set[str]
     #[pyo3(
-        text_signature = "($self, mode, fields, handler) -> tokenizers.PreTokenizer)",
+        text_signature = "($self, mode, fields, handler) -> tokenizers.PreTokenizer",
         signature = (mode = None, fields = None, handler = None, *, projection = None)
     )]
     fn pre_tokenizer<'p>(

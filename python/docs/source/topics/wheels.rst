@@ -5,7 +5,7 @@ We provide wheel builds for following platforms:
 
 * Linux-amd64
 * Windows-x86_64
-* macOS-x86_64
+* macOS-universal2 (x86_64 + arm64)
 
 Wheels for Linux are supported (we will fix bugs and problems when reported).
 Wheels for Windows are supported in best-effort manner (we will try to fix bugs when reported, but that can take unspecified amount of time).
@@ -29,5 +29,5 @@ macOS
 ------
 
 The situation is similar to Windows, but these builds are tested even less.
-We don't provide aarch64 builds for Apple Silicon-based Macs, but would welcome a contribution which will add those builds.
-Builds from source should work on M1-based Macs.
+We provide universal2 builds which should work both on Intel and ARM-based Macs,
+but ARM-based builds are not tested in CI and are provided on best effort basis.

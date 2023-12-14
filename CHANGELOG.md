@@ -1,3 +1,43 @@
+# [0.6.8](https://github.com/WorksApplications/sudachi.rs/releases/tag/v0.6.8) (2023-12-14)
+
+## Highlights
+
+* Produce builds for Python 3.12  (#236)
+* Add a simple [configuration API](https://worksapplications.github.io/sudachi.rs/python/api/sudachipy.html#config-config)
+* Add surface projections (#230)
+
+## Surface Projections
+
+* For chiTra compatibility SudachiPy can now directly produce different tokens in the surface field.
+* Original surface is accessible via [`Morheme.raw_surface()`](https://worksapplications.github.io/sudachi.rs/python/api/sudachipy.html#sudachipy.Morpheme.raw_surface) method
+* It is possible to customize projection dictionary-wise, via Config object, passing it on a dictionary creation, or for a single pre-tokenizer.
+  * [Config API](https://worksapplications.github.io/sudachi.rs/python/api/sudachipy.html#sudachipy.config.Config.projection)
+  * [Pretokenizer API](https://worksapplications.github.io/sudachi.rs/python/api/sudachipy.html#sudachipy.Dictionary.pre_tokenizer)
+
+# [0.6.7](https://github.com/WorksApplications/sudachi.rs/releases/tag/v0.6.7) (2023-02-16)
+
+## Highlights
+
+* Provide binary wheels for Python 3.11
+* Add `Dictionary.lookup()` method which allows you to enumerate morphemes from the dictionary without performing analysis.
+
+# [0.6.6](https://github.com/WorksApplications/sudachi.rs/releases/tag/v0.6.6) (2022-07-25)
+
+## Highlights
+* Add [boundary matching mode](https://github.com/WorksApplications/Sudachi/blob/develop/docs/oov_handlers.md) to regex oov handler
+* macOS binary builds are now unversal2 (arm+x64)
+
+## MacOS
+* Binary builds are universal2
+* Caveat: we don't run tests on arm because there are no public arm instances, so builds may be broken without any warning
+
+# [0.6.5](https://github.com/WorksApplications/sudachi.rs/releases/tag/v0.6.5) (2022-06-21)
+
+## Highlights
+
+* Fixed invalid POS tags which appeared when using user-defined POS tags both in user dictionaries and OOV handlers. 
+  You are not affected by this bug if you did not use user-defined POS in OOV handlers.
+
 # [0.6.4](https://github.com/WorksApplications/sudachi.rs/releases/tag/v0.6.3) (2022-06-16)
 
 ## Highlights

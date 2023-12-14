@@ -2,11 +2,11 @@
 
 [![Rust](https://github.com/WorksApplications/sudachi.rs/actions/workflows/rust.yml/badge.svg)](https://github.com/WorksApplications/sudachi.rs/actions/workflows/rust.yml)
 
-**2023-02-10 UPDATE**: [0.6.7 Release](https://github.com/WorksApplications/sudachi.rs/releases/tag/v0.6.7)
+**2023-12-14 UPDATE**: [0.6.8 Release](https://github.com/WorksApplications/sudachi.rs/releases/tag/v0.6.7)
 
 Try it:
 ```shell
-pip install --upgrade 'sudachipy>=0.6.6'
+pip install --upgrade 'sudachipy>=0.6.8'
 ```
 
 
