@@ -24,4 +24,4 @@ jobs:
       - name: Run tests (Debug)
         run: cargo test --verbose
       - name: Run tests (Release)
-        run: cargo test --verbose
+        run: cargo test --release --verbose
