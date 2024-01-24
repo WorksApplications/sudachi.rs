@@ -22,7 +22,7 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: Download dictionary
-      run: bash fetch_dictionary.sh
+      run: bash fetch_dictionary.sh "20220519" "core"
 
     - uses: actions/cache@v3
       with:
