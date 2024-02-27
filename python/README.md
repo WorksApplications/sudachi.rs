@@ -309,18 +309,20 @@ You can build a user dictionary with the subcommand `ubuild`.
 
 ```bash
 $ sudachipy ubuild -h
-usage: sudachipy ubuild [-h] [-d string] [-o file] [-s file] file [file ...]
+usage: sudachipy ubuild [-h] [-o file] [-d string] -s file file [file ...]
 
 Build User Dictionary
 
 positional arguments:
   file        source files with CSV format (one or more)
 
-optional arguments:
+options:
   -h, --help  show this help message and exit
-  -d string   description comment to be embedded on dictionary
   -o file     output file (default: user.dic)
-  -s file     system dictionary path (default: system core dictionary path)
+  -d string   description comment to be embedded on dictionary
+
+required named arguments:
+  -s file     system dictionary path
 ```
 
 About the dictionary file format, please refer to [this document](https://github.com/WorksApplications/Sudachi/blob/develop/docs/user_dict.md) (written in Japanese, English version is not available yet).
