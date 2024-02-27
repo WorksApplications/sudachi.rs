@@ -20,7 +20,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Download dictionary
-        run: bash fetch_dictionary.sh
+        run: bash fetch_dictionary.sh "20220519" "core"
       - name: Run tests (Debug)
         run: cargo test --verbose
       - name: Run tests (Release)
