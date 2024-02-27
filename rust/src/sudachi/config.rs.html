@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `sudachi/src/config.rs`."><title>config.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="sudachi" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `sudachi/src/config.rs`."><title>config.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="sudachi" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -498,14 +499,14 @@
 </pre></div><pre class="rust"><code><span class="comment">/*
  * Copyright (c) 2021 Works Applications Co., Ltd.
  *
- * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
@@ -524,29 +525,29 @@
 <span class="kw">use </span>serde_json::Value;
 <span class="kw">use </span>thiserror::Error;
 
-<span class="kw">const </span>DEFAULT_RESOURCE_DIR: <span class="kw-2">&amp;</span>str = <span class="string">&quot;resources&quot;</span>;
-<span class="kw">const </span>DEFAULT_SETTING_FILE: <span class="kw-2">&amp;</span>str = <span class="string">&quot;sudachi.json&quot;</span>;
-<span class="kw">const </span>DEFAULT_CHAR_DEF_FILE: <span class="kw-2">&amp;</span>str = <span class="string">&quot;char.def&quot;</span>;
+<span class="kw">const </span>DEFAULT_RESOURCE_DIR: <span class="kw-2">&amp;</span>str = <span class="string">"resources"</span>;
+<span class="kw">const </span>DEFAULT_SETTING_FILE: <span class="kw-2">&amp;</span>str = <span class="string">"sudachi.json"</span>;
+<span class="kw">const </span>DEFAULT_CHAR_DEF_FILE: <span class="kw-2">&amp;</span>str = <span class="string">"char.def"</span>;
 
 <span class="doccomment">/// Sudachi Error
 </span><span class="attr">#[derive(Error, Debug)]
 </span><span class="kw">pub enum </span>ConfigError {
-    <span class="attr">#[error(<span class="string">&quot;IO Error: {0}&quot;</span>)]
+    <span class="attr">#[error(<span class="string">"IO Error: {0}"</span>)]
     </span>Io(<span class="attr">#[from] </span>std::io::Error),
 
-    <span class="attr">#[error(<span class="string">&quot;Serde error: {0}&quot;</span>)]
+    <span class="attr">#[error(<span class="string">"Serde error: {0}"</span>)]
     </span>SerdeError(<span class="attr">#[from] </span>serde_json::Error),
 
-    <span class="attr">#[error(<span class="string">&quot;Config file not found&quot;</span>)]
+    <span class="attr">#[error(<span class="string">"Config file not found"</span>)]
     </span>FileNotFound(String),
 
-    <span class="attr">#[error(<span class="string">&quot;Invalid format: {0}&quot;</span>)]
+    <span class="attr">#[error(<span class="string">"Invalid format: {0}"</span>)]
     </span>InvalidFormat(String),
 
-    <span class="attr">#[error(<span class="string">&quot;Argument {0} is missing&quot;</span>)]
+    <span class="attr">#[error(<span class="string">"Argument {0} is missing"</span>)]
     </span>MissingArgument(String),
 
-    <span class="attr">#[error(<span class="string">&quot;Failed to resolve relative path {0}, tried: {1:?}&quot;</span>)]
+    <span class="attr">#[error(<span class="string">"Failed to resolve relative path {0}, tried: {1:?}"</span>)]
     </span>PathResolution(String, Vec&lt;String&gt;),
 }
 
@@ -584,10 +585,10 @@
         ConfigError::PathResolution(path.as_ref().to_string_lossy().into_owned(), candidates)
     }
 
-    <span class="kw">pub fn </span>all_candidates&lt;<span class="lifetime">&#39;a</span>, P: AsRef&lt;Path&gt; + Clone + <span class="lifetime">&#39;a</span>&gt;(
-        <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>,
+    <span class="kw">pub fn </span>all_candidates&lt;<span class="lifetime">'a</span>, P: AsRef&lt;Path&gt; + Clone + <span class="lifetime">'a</span>&gt;(
+        <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">self</span>,
         path: P,
-    ) -&gt; <span class="kw">impl </span>Iterator&lt;Item = PathBuf&gt; + <span class="lifetime">&#39;a </span>{
+    ) -&gt; <span class="kw">impl </span>Iterator&lt;Item = PathBuf&gt; + <span class="lifetime">'a </span>{
         <span class="self">self</span>.roots.iter().map(<span class="kw">move </span>|root| root.join(path.clone()))
     }
 
@@ -597,7 +598,7 @@
 }
 
 <span class="attr">#[derive(Deserialize, Clone, Copy, Debug, Eq, PartialEq)]
-#[serde(rename_all = <span class="string">&quot;snake_case&quot;</span>)]
+#[serde(rename_all = <span class="string">"snake_case"</span>)]
 </span><span class="kw">pub enum </span>SurfaceProjection {
     Surface,
     Normalized,
@@ -634,14 +635,14 @@
 
     <span class="kw">fn </span>try_from(value: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Error&gt; {
         <span class="kw">match </span>value {
-            <span class="string">&quot;surface&quot; </span>=&gt; <span class="prelude-val">Ok</span>(SurfaceProjection::Surface),
-            <span class="string">&quot;normalized&quot; </span>=&gt; <span class="prelude-val">Ok</span>(SurfaceProjection::Normalized),
-            <span class="string">&quot;reading&quot; </span>=&gt; <span class="prelude-val">Ok</span>(SurfaceProjection::Reading),
-            <span class="string">&quot;dictionary&quot; </span>=&gt; <span class="prelude-val">Ok</span>(SurfaceProjection::Dictionary),
-            <span class="string">&quot;dictionary_and_surface&quot; </span>=&gt; <span class="prelude-val">Ok</span>(SurfaceProjection::DictionaryAndSurface),
-            <span class="string">&quot;normalized_and_surface&quot; </span>=&gt; <span class="prelude-val">Ok</span>(SurfaceProjection::NormalizedAndSurface),
-            <span class="string">&quot;normalized_nouns&quot; </span>=&gt; <span class="prelude-val">Ok</span>(SurfaceProjection::NormalizedNouns),
-            <span class="kw">_ </span>=&gt; <span class="prelude-val">Err</span>(ConfigError::InvalidFormat(<span class="macro">format!</span>(<span class="string">&quot;unknown projection: {value}&quot;</span>)).into()),
+            <span class="string">"surface" </span>=&gt; <span class="prelude-val">Ok</span>(SurfaceProjection::Surface),
+            <span class="string">"normalized" </span>=&gt; <span class="prelude-val">Ok</span>(SurfaceProjection::Normalized),
+            <span class="string">"reading" </span>=&gt; <span class="prelude-val">Ok</span>(SurfaceProjection::Reading),
+            <span class="string">"dictionary" </span>=&gt; <span class="prelude-val">Ok</span>(SurfaceProjection::Dictionary),
+            <span class="string">"dictionary_and_surface" </span>=&gt; <span class="prelude-val">Ok</span>(SurfaceProjection::DictionaryAndSurface),
+            <span class="string">"normalized_and_surface" </span>=&gt; <span class="prelude-val">Ok</span>(SurfaceProjection::NormalizedAndSurface),
+            <span class="string">"normalized_nouns" </span>=&gt; <span class="prelude-val">Ok</span>(SurfaceProjection::NormalizedNouns),
+            <span class="kw">_ </span>=&gt; <span class="prelude-val">Err</span>(ConfigError::InvalidFormat(<span class="macro">format!</span>(<span class="string">"unknown projection: {value}"</span>)).into()),
         }
     }
 }
@@ -678,9 +679,9 @@
     /// Is also automatically set on from_file
     </span><span class="attr">#[serde(skip)]
     </span>rootDirectory: <span class="prelude-ty">Option</span>&lt;PathBuf&gt;,
-    <span class="attr">#[serde(alias = <span class="string">&quot;system&quot;</span>)]
+    <span class="attr">#[serde(alias = <span class="string">"system"</span>)]
     </span>systemDict: <span class="prelude-ty">Option</span>&lt;PathBuf&gt;,
-    <span class="attr">#[serde(alias = <span class="string">&quot;user&quot;</span>)]
+    <span class="attr">#[serde(alias = <span class="string">"user"</span>)]
     </span>userDict: <span class="prelude-ty">Option</span>&lt;Vec&lt;PathBuf&gt;&gt;,
     characterDefinitionFile: <span class="prelude-ty">Option</span>&lt;PathBuf&gt;,
     connectionCostPlugin: <span class="prelude-ty">Option</span>&lt;Vec&lt;Value&gt;&gt;,
@@ -691,9 +692,9 @@
 }
 
 <span class="kw">pub fn </span>default_resource_dir() -&gt; PathBuf {
-    <span class="kw">let </span><span class="kw-2">mut </span>src_root_path = PathBuf::from(<span class="macro">env!</span>(<span class="string">&quot;CARGO_MANIFEST_DIR&quot;</span>));
+    <span class="kw">let </span><span class="kw-2">mut </span>src_root_path = PathBuf::from(<span class="macro">env!</span>(<span class="string">"CARGO_MANIFEST_DIR"</span>));
     <span class="kw">if </span>!src_root_path.pop() {
-        src_root_path.push(<span class="string">&quot;..&quot;</span>);
+        src_root_path.push(<span class="string">".."</span>);
     }
     src_root_path.push(DEFAULT_RESOURCE_DIR);
     src_root_path
@@ -738,7 +739,7 @@
     }
 
     <span class="kw">pub fn </span>empty() -&gt; <span class="self">Self </span>{
-        serde_json::from_slice(<span class="string">b&quot;{}&quot;</span>).unwrap()
+        serde_json::from_slice(<span class="string">b"{}"</span>).unwrap()
     }
 
     <span class="kw">pub fn </span>system_dict(<span class="kw-2">mut </span><span class="self">self</span>, dict: <span class="kw">impl </span>Into&lt;PathBuf&gt;) -&gt; <span class="self">Self </span>{
@@ -849,11 +850,11 @@
         resolver.add(resource);
         cfg.resolver = resolver;
         cfg.oov_provider_plugins = <span class="macro">vec!</span>[<span class="macro">serde_json::json!</span>(
-            { <span class="string">&quot;class&quot; </span>: <span class="string">&quot;com.worksap.nlp.sudachi.SimpleOovPlugin&quot;</span>,
-              <span class="string">&quot;oovPOS&quot; </span>: [ <span class="string">&quot;名詞&quot;</span>, <span class="string">&quot;普通名詞&quot;</span>, <span class="string">&quot;一般&quot;</span>, <span class="string">&quot;*&quot;</span>, <span class="string">&quot;*&quot;</span>, <span class="string">&quot;*&quot; </span>],
-              <span class="string">&quot;leftId&quot; </span>: <span class="number">0</span>,
-              <span class="string">&quot;rightId&quot; </span>: <span class="number">0</span>,
-              <span class="string">&quot;cost&quot; </span>: <span class="number">30000 </span>}
+            { <span class="string">"class" </span>: <span class="string">"com.worksap.nlp.sudachi.SimpleOovPlugin"</span>,
+              <span class="string">"oovPOS" </span>: [ <span class="string">"名詞"</span>, <span class="string">"普通名詞"</span>, <span class="string">"一般"</span>, <span class="string">"*"</span>, <span class="string">"*"</span>, <span class="string">"*" </span>],
+              <span class="string">"leftId" </span>: <span class="number">0</span>,
+              <span class="string">"rightId" </span>: <span class="number">0</span>,
+              <span class="string">"cost" </span>: <span class="number">30000 </span>}
         )];
         cfg
     }
@@ -865,18 +866,18 @@
     </span>}
 
     <span class="kw">pub fn </span>resolve_paths(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="kw-2">mut </span>path: String) -&gt; Vec&lt;String&gt; {
-        <span class="kw">if </span>path.starts_with(<span class="string">&quot;$exe&quot;</span>) {
+        <span class="kw">if </span>path.starts_with(<span class="string">"$exe"</span>) {
             path.replace_range(<span class="number">0</span>..<span class="number">4</span>, <span class="kw-2">&amp;</span>CURRENT_EXE_DIR);
 
             <span class="kw">let </span><span class="kw-2">mut </span>path2 = path.clone();
-            path2.insert_str(CURRENT_EXE_DIR.len(), <span class="string">&quot;/deps&quot;</span>);
+            path2.insert_str(CURRENT_EXE_DIR.len(), <span class="string">"/deps"</span>);
             <span class="kw">return </span><span class="macro">vec!</span>[path2, path];
         }
 
-        <span class="kw">if </span>path.starts_with(<span class="string">&quot;$cfg/&quot;</span>) || path.starts_with(<span class="string">&quot;$cfg\\&quot;</span>) {
+        <span class="kw">if </span>path.starts_with(<span class="string">"$cfg/"</span>) || path.starts_with(<span class="string">"$cfg\\"</span>) {
             <span class="kw">let </span>roots = <span class="self">self</span>.resolver.roots();
             <span class="kw">let </span><span class="kw-2">mut </span>result = Vec::with_capacity(roots.len());
-            path.replace_range(<span class="number">0</span>..<span class="number">5</span>, <span class="string">&quot;&quot;</span>);
+            path.replace_range(<span class="number">0</span>..<span class="number">5</span>, <span class="string">""</span>);
             <span class="kw">for </span>root <span class="kw">in </span>roots {
                 <span class="kw">let </span>subpath = root.join(<span class="kw-2">&amp;</span>path);
                 result.push(subpath.to_string_lossy().into_owned());
@@ -919,7 +920,7 @@
     <span class="kw">pub fn </span>resolved_system_dict(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;PathBuf, ConfigError&gt; {
         <span class="kw">match </span><span class="self">self</span>.system_dict.as_ref() {
             <span class="prelude-val">Some</span>(p) =&gt; <span class="self">self</span>.complete_path(p),
-            <span class="prelude-val">None </span>=&gt; <span class="prelude-val">Err</span>(ConfigError::MissingArgument(<span class="string">&quot;systemDict&quot;</span>.to_owned())),
+            <span class="prelude-val">None </span>=&gt; <span class="prelude-val">Err</span>(ConfigError::MissingArgument(<span class="string">"systemDict"</span>.to_owned())),
         }
     }
 
@@ -932,14 +933,14 @@
 }
 
 <span class="kw">fn </span>current_exe_dir() -&gt; String {
-    <span class="kw">let </span>exe = current_exe().unwrap_or_else(|e| <span class="macro">panic!</span>(<span class="string">&quot;Current exe is not available {:?}&quot;</span>, e));
+    <span class="kw">let </span>exe = current_exe().unwrap_or_else(|e| <span class="macro">panic!</span>(<span class="string">"Current exe is not available {:?}"</span>, e));
 
     <span class="kw">let </span>parent = exe
         .parent()
-        .unwrap_or_else(|| <span class="macro">panic!</span>(<span class="string">&quot;Path to executable must have a parent&quot;</span>));
+        .unwrap_or_else(|| <span class="macro">panic!</span>(<span class="string">"Path to executable must have a parent"</span>));
 
     parent.to_str().map(|s| s.to_owned()).unwrap_or_else(|| {
-        <span class="macro">panic!</span>(<span class="string">&quot;placing Sudachi in directories with non-utf paths is not supported&quot;</span>)
+        <span class="macro">panic!</span>(<span class="string">"placing Sudachi in directories with non-utf paths is not supported"</span>)
     })
 }
 
@@ -957,7 +958,7 @@
     <span class="attr">#[test]
     </span><span class="kw">fn </span>resolve_exe() -&gt; SudachiResult&lt;()&gt; {
         <span class="kw">let </span>cfg = Config::new(<span class="prelude-val">None</span>, <span class="prelude-val">None</span>, <span class="prelude-val">None</span>)<span class="question-mark">?</span>;
-        <span class="kw">let </span>npath = cfg.resolve_paths(<span class="string">&quot;$exe/data&quot;</span>.to_owned());
+        <span class="kw">let </span>npath = cfg.resolve_paths(<span class="string">"$exe/data"</span>.to_owned());
         <span class="kw">let </span>exe_dir: <span class="kw-2">&amp;</span>str = <span class="kw-2">&amp;</span>CURRENT_EXE_DIR;
         <span class="macro">assert_eq!</span>(npath.len(), <span class="number">2</span>);
         <span class="macro">assert!</span>(npath[<span class="number">0</span>].starts_with(exe_dir));
@@ -967,7 +968,7 @@
     <span class="attr">#[test]
     </span><span class="kw">fn </span>resolve_cfg() -&gt; SudachiResult&lt;()&gt; {
         <span class="kw">let </span>cfg = Config::new(<span class="prelude-val">None</span>, <span class="prelude-val">None</span>, <span class="prelude-val">None</span>)<span class="question-mark">?</span>;
-        <span class="kw">let </span>npath = cfg.resolve_paths(<span class="string">&quot;$cfg/data&quot;</span>.to_owned());
+        <span class="kw">let </span>npath = cfg.resolve_paths(<span class="string">"$cfg/data"</span>.to_owned());
         <span class="kw">let </span>def = default_resource_dir();
         <span class="kw">let </span>path_dir: <span class="kw-2">&amp;</span>str = def.to_str().unwrap();
         <span class="macro">assert_eq!</span>(<span class="number">1</span>, npath.len());
@@ -978,17 +979,17 @@
     <span class="attr">#[test]
     </span><span class="kw">fn </span>config_builder_fallback() {
         <span class="kw">let </span><span class="kw-2">mut </span>cfg = ConfigBuilder::empty();
-        cfg.path = <span class="prelude-val">Some</span>(<span class="string">&quot;test&quot;</span>.into());
+        cfg.path = <span class="prelude-val">Some</span>(<span class="string">"test"</span>.into());
         <span class="kw">let </span>cfg2 = ConfigBuilder::empty();
         <span class="kw">let </span>cfg2 = cfg2.fallback(<span class="kw-2">&amp;</span>cfg);
-        <span class="macro">assert_eq!</span>(cfg2.path, <span class="prelude-val">Some</span>(<span class="string">&quot;test&quot;</span>.into()));
+        <span class="macro">assert_eq!</span>(cfg2.path, <span class="prelude-val">Some</span>(<span class="string">"test"</span>.into()));
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>surface_projection_tryfrom() {
         <span class="macro">assert_eq!</span>(
             SurfaceProjection::Surface,
-            SurfaceProjection::try_from(<span class="string">&quot;surface&quot;</span>).unwrap()
+            SurfaceProjection::try_from(<span class="string">"surface"</span>).unwrap()
         );
     }
 }

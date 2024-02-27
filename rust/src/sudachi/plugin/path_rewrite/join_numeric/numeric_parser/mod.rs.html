@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `sudachi/src/plugin/path_rewrite/join_numeric/numeric_parser/mod.rs`."><title>mod.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../../../../../" data-static-root-path="../../../../../../static.files/" data-current-crate="sudachi" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../../../../src-files.js"></script><script defer src="../../../../../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../../../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `sudachi/src/plugin/path_rewrite/join_numeric/numeric_parser/mod.rs`."><title>mod.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../../../../../" data-static-root-path="../../../../../../static.files/" data-current-crate="sudachi" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../../../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../../../../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../../../../../src-files.js"></script><script defer src="../../../../../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../../../../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -370,14 +371,14 @@
 </pre></div><pre class="rust"><code><span class="comment">/*
  * Copyright (c) 2021 Works Applications Co., Ltd.
  *
- * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
@@ -418,22 +419,22 @@
 
 <span class="kw">fn </span>make_char_to_num_data() -&gt; HashMap&lt;char, i32, RoMu&gt; {
     <span class="kw">let </span>char_to_num_data = [
-        (<span class="string">&#39;〇&#39;</span>, <span class="number">0</span>),
-        (<span class="string">&#39;一&#39;</span>, <span class="number">1</span>),
-        (<span class="string">&#39;二&#39;</span>, <span class="number">2</span>),
-        (<span class="string">&#39;三&#39;</span>, <span class="number">3</span>),
-        (<span class="string">&#39;四&#39;</span>, <span class="number">4</span>),
-        (<span class="string">&#39;五&#39;</span>, <span class="number">5</span>),
-        (<span class="string">&#39;六&#39;</span>, <span class="number">6</span>),
-        (<span class="string">&#39;七&#39;</span>, <span class="number">7</span>),
-        (<span class="string">&#39;八&#39;</span>, <span class="number">8</span>),
-        (<span class="string">&#39;九&#39;</span>, <span class="number">9</span>),
-        (<span class="string">&#39;十&#39;</span>, -<span class="number">1</span>),
-        (<span class="string">&#39;百&#39;</span>, -<span class="number">2</span>),
-        (<span class="string">&#39;千&#39;</span>, -<span class="number">3</span>),
-        (<span class="string">&#39;万&#39;</span>, -<span class="number">4</span>),
-        (<span class="string">&#39;億&#39;</span>, -<span class="number">8</span>),
-        (<span class="string">&#39;兆&#39;</span>, -<span class="number">12</span>),
+        (<span class="string">'〇'</span>, <span class="number">0</span>),
+        (<span class="string">'一'</span>, <span class="number">1</span>),
+        (<span class="string">'二'</span>, <span class="number">2</span>),
+        (<span class="string">'三'</span>, <span class="number">3</span>),
+        (<span class="string">'四'</span>, <span class="number">4</span>),
+        (<span class="string">'五'</span>, <span class="number">5</span>),
+        (<span class="string">'六'</span>, <span class="number">6</span>),
+        (<span class="string">'七'</span>, <span class="number">7</span>),
+        (<span class="string">'八'</span>, <span class="number">8</span>),
+        (<span class="string">'九'</span>, <span class="number">9</span>),
+        (<span class="string">'十'</span>, -<span class="number">1</span>),
+        (<span class="string">'百'</span>, -<span class="number">2</span>),
+        (<span class="string">'千'</span>, -<span class="number">3</span>),
+        (<span class="string">'万'</span>, -<span class="number">4</span>),
+        (<span class="string">'億'</span>, -<span class="number">8</span>),
+        (<span class="string">'兆'</span>, -<span class="number">12</span>),
     ];
 
     <span class="kw">let </span>char_to_num: HashMap&lt;<span class="kw">_</span>, <span class="kw">_</span>, RoMu&gt; = char_to_num_data
@@ -471,7 +472,7 @@
     }
 
     <span class="kw">pub fn </span>append(<span class="kw-2">&amp;mut </span><span class="self">self</span>, c: <span class="kw-2">&amp;</span>char) -&gt; bool {
-        <span class="kw">if </span><span class="kw-2">*</span>c == <span class="string">&#39;.&#39; </span>{
+        <span class="kw">if </span><span class="kw-2">*</span>c == <span class="string">'.' </span>{
             <span class="self">self</span>.has_hanging_point = <span class="bool-val">true</span>;
             <span class="kw">if </span><span class="self">self</span>.is_first_digit {
                 <span class="self">self</span>.error_state = Error::POINT;
@@ -488,7 +489,7 @@
             <span class="self">self</span>.has_comma = <span class="bool-val">false</span>;
             <span class="kw">return </span><span class="bool-val">true</span>;
         }
-        <span class="kw">if </span><span class="kw-2">*</span>c == <span class="string">&#39;,&#39; </span>{
+        <span class="kw">if </span><span class="kw-2">*</span>c == <span class="string">',' </span>{
             <span class="kw">if </span>!<span class="self">self</span>.check_comma() {
                 <span class="self">self</span>.error_state = Error::COMMA;
                 <span class="kw">return </span><span class="bool-val">false</span>;
@@ -585,154 +586,154 @@
     <span class="attr">#[test]
     </span><span class="kw">fn </span>digits() {
         <span class="kw">let </span><span class="kw-2">mut </span>parser = NumericParser::new();
-        <span class="macro">assert!</span>(parse(<span class="kw-2">&amp;mut </span>parser, <span class="string">&quot;1000&quot;</span>));
-        <span class="macro">assert_eq!</span>(<span class="string">&quot;1000&quot;</span>, parser.get_normalized());
+        <span class="macro">assert!</span>(parse(<span class="kw-2">&amp;mut </span>parser, <span class="string">"1000"</span>));
+        <span class="macro">assert_eq!</span>(<span class="string">"1000"</span>, parser.get_normalized());
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>starts_with_zero() {
         <span class="kw">let </span><span class="kw-2">mut </span>parser = NumericParser::new();
-        <span class="macro">assert!</span>(parse(<span class="kw-2">&amp;mut </span>parser, <span class="string">&quot;001000&quot;</span>));
-        <span class="macro">assert_eq!</span>(<span class="string">&quot;001000&quot;</span>, parser.get_normalized());
+        <span class="macro">assert!</span>(parse(<span class="kw-2">&amp;mut </span>parser, <span class="string">"001000"</span>));
+        <span class="macro">assert_eq!</span>(<span class="string">"001000"</span>, parser.get_normalized());
 
         parser.clear();
-        <span class="macro">assert!</span>(parse(<span class="kw-2">&amp;mut </span>parser, <span class="string">&quot;〇一〇〇〇&quot;</span>));
-        <span class="macro">assert_eq!</span>(<span class="string">&quot;01000&quot;</span>, parser.get_normalized());
+        <span class="macro">assert!</span>(parse(<span class="kw-2">&amp;mut </span>parser, <span class="string">"〇一〇〇〇"</span>));
+        <span class="macro">assert_eq!</span>(<span class="string">"01000"</span>, parser.get_normalized());
 
         parser.clear();
-        <span class="macro">assert!</span>(parse(<span class="kw-2">&amp;mut </span>parser, <span class="string">&quot;00.1000&quot;</span>));
-        <span class="macro">assert_eq!</span>(<span class="string">&quot;00.1&quot;</span>, parser.get_normalized());
+        <span class="macro">assert!</span>(parse(<span class="kw-2">&amp;mut </span>parser, <span class="string">"00.1000"</span>));
+        <span class="macro">assert_eq!</span>(<span class="string">"00.1"</span>, parser.get_normalized());
 
         parser.clear();
-        <span class="macro">assert!</span>(parse(<span class="kw-2">&amp;mut </span>parser, <span class="string">&quot;000&quot;</span>));
-        <span class="macro">assert_eq!</span>(<span class="string">&quot;000&quot;</span>, parser.get_normalized());
+        <span class="macro">assert!</span>(parse(<span class="kw-2">&amp;mut </span>parser, <span class="string">"000"</span>));
+        <span class="macro">assert_eq!</span>(<span class="string">"000"</span>, parser.get_normalized());
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>use_small_unit() {
         <span class="kw">let </span><span class="kw-2">mut </span>parser = NumericParser::new();
-        <span class="macro">assert!</span>(parse(<span class="kw-2">&amp;mut </span>parser, <span class="string">&quot;二十七&quot;</span>));
-        <span class="macro">assert_eq!</span>(<span class="string">&quot;27&quot;</span>, parser.get_normalized());
+        <span class="macro">assert!</span>(parse(<span class="kw-2">&amp;mut </span>parser, <span class="string">"二十七"</span>));
+        <span class="macro">assert_eq!</span>(<span class="string">"27"</span>, parser.get_normalized());
 
         parser.clear();
-        <span class="macro">assert!</span>(parse(<span class="kw-2">&amp;mut </span>parser, <span class="string">&quot;千三百二十七&quot;</span>));
-        <span class="macro">assert_eq!</span>(<span class="string">&quot;1327&quot;</span>, parser.get_normalized());
+        <span class="macro">assert!</span>(parse(<span class="kw-2">&amp;mut </span>parser, <span class="string">"千三百二十七"</span>));
+        <span class="macro">assert_eq!</span>(<span class="string">"1327"</span>, parser.get_normalized());
 
         parser.clear();
-        <span class="macro">assert!</span>(parse(<span class="kw-2">&amp;mut </span>parser, <span class="string">&quot;千十七&quot;</span>));
-        <span class="macro">assert_eq!</span>(<span class="string">&quot;1017&quot;</span>, parser.get_normalized());
+        <span class="macro">assert!</span>(parse(<span class="kw-2">&amp;mut </span>parser, <span class="string">"千十七"</span>));
+        <span class="macro">assert_eq!</span>(<span class="string">"1017"</span>, parser.get_normalized());
 
         parser.clear();
-        <span class="macro">assert!</span>(parse(<span class="kw-2">&amp;mut </span>parser, <span class="string">&quot;千三百二十七.〇五&quot;</span>));
-        <span class="macro">assert_eq!</span>(<span class="string">&quot;1327.05&quot;</span>, parser.get_normalized());
+        <span class="macro">assert!</span>(parse(<span class="kw-2">&amp;mut </span>parser, <span class="string">"千三百二十七.〇五"</span>));
+        <span class="macro">assert_eq!</span>(<span class="string">"1327.05"</span>, parser.get_normalized());
 
         parser.clear();
-        <span class="macro">assert!</span>(!parse(<span class="kw-2">&amp;mut </span>parser, <span class="string">&quot;三百二十百&quot;</span>));
+        <span class="macro">assert!</span>(!parse(<span class="kw-2">&amp;mut </span>parser, <span class="string">"三百二十百"</span>));
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>use_large_unit() {
         <span class="kw">let </span><span class="kw-2">mut </span>parser = NumericParser::new();
-        <span class="macro">assert!</span>(parse(<span class="kw-2">&amp;mut </span>parser, <span class="string">&quot;1万&quot;</span>));
-        <span class="macro">assert_eq!</span>(<span class="string">&quot;10000&quot;</span>, parser.get_normalized());
+        <span class="macro">assert!</span>(parse(<span class="kw-2">&amp;mut </span>parser, <span class="string">"1万"</span>));
+        <span class="macro">assert_eq!</span>(<span class="string">"10000"</span>, parser.get_normalized());
 
         parser.clear();
-        <span class="macro">assert!</span>(parse(<span class="kw-2">&amp;mut </span>parser, <span class="string">&quot;千三百二十七万&quot;</span>));
-        <span class="macro">assert_eq!</span>(<span class="string">&quot;13270000&quot;</span>, parser.get_normalized());
+        <span class="macro">assert!</span>(parse(<span class="kw-2">&amp;mut </span>parser, <span class="string">"千三百二十七万"</span>));
+        <span class="macro">assert_eq!</span>(<span class="string">"13270000"</span>, parser.get_normalized());
 
         parser.clear();
-        <span class="macro">assert!</span>(parse(<span class="kw-2">&amp;mut </span>parser, <span class="string">&quot;千三百二十七万一四&quot;</span>));
-        <span class="macro">assert_eq!</span>(<span class="string">&quot;13270014&quot;</span>, parser.get_normalized());
+        <span class="macro">assert!</span>(parse(<span class="kw-2">&amp;mut </span>parser, <span class="string">"千三百二十七万一四"</span>));
+        <span class="macro">assert_eq!</span>(<span class="string">"13270014"</span>, parser.get_normalized());
 
         parser.clear();
-        <span class="macro">assert!</span>(parse(<span class="kw-2">&amp;mut </span>parser, <span class="string">&quot;千三百二十七万一四.〇五&quot;</span>));
-        <span class="macro">assert_eq!</span>(<span class="string">&quot;13270014.05&quot;</span>, parser.get_normalized());
+        <span class="macro">assert!</span>(parse(<span class="kw-2">&amp;mut </span>parser, <span class="string">"千三百二十七万一四.〇五"</span>));
+        <span class="macro">assert_eq!</span>(<span class="string">"13270014.05"</span>, parser.get_normalized());
 
         parser.clear();
-        <span class="macro">assert!</span>(parse(<span class="kw-2">&amp;mut </span>parser, <span class="string">&quot;三兆2千億千三百二十七万一四.〇五&quot;</span>));
-        <span class="macro">assert_eq!</span>(<span class="string">&quot;3200013270014.05&quot;</span>, parser.get_normalized());
+        <span class="macro">assert!</span>(parse(<span class="kw-2">&amp;mut </span>parser, <span class="string">"三兆2千億千三百二十七万一四.〇五"</span>));
+        <span class="macro">assert_eq!</span>(<span class="string">"3200013270014.05"</span>, parser.get_normalized());
 
         parser.clear();
-        <span class="macro">assert!</span>(!parse(<span class="kw-2">&amp;mut </span>parser, <span class="string">&quot;億万&quot;</span>));
+        <span class="macro">assert!</span>(!parse(<span class="kw-2">&amp;mut </span>parser, <span class="string">"億万"</span>));
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>float_with_unit() {
         <span class="kw">let </span><span class="kw-2">mut </span>parser = NumericParser::new();
-        <span class="macro">assert!</span>(parse(<span class="kw-2">&amp;mut </span>parser, <span class="string">&quot;1.5千&quot;</span>));
-        <span class="macro">assert_eq!</span>(<span class="string">&quot;1500&quot;</span>, parser.get_normalized());
+        <span class="macro">assert!</span>(parse(<span class="kw-2">&amp;mut </span>parser, <span class="string">"1.5千"</span>));
+        <span class="macro">assert_eq!</span>(<span class="string">"1500"</span>, parser.get_normalized());
 
         parser.clear();
-        <span class="macro">assert!</span>(parse(<span class="kw-2">&amp;mut </span>parser, <span class="string">&quot;1.5百万&quot;</span>));
-        <span class="macro">assert_eq!</span>(<span class="string">&quot;1500000&quot;</span>, parser.get_normalized());
+        <span class="macro">assert!</span>(parse(<span class="kw-2">&amp;mut </span>parser, <span class="string">"1.5百万"</span>));
+        <span class="macro">assert_eq!</span>(<span class="string">"1500000"</span>, parser.get_normalized());
 
         parser.clear();
-        <span class="macro">assert!</span>(parse(<span class="kw-2">&amp;mut </span>parser, <span class="string">&quot;1.5百万1.5千20&quot;</span>));
-        <span class="macro">assert_eq!</span>(<span class="string">&quot;1501520&quot;</span>, parser.get_normalized());
+        <span class="macro">assert!</span>(parse(<span class="kw-2">&amp;mut </span>parser, <span class="string">"1.5百万1.5千20"</span>));
+        <span class="macro">assert_eq!</span>(<span class="string">"1501520"</span>, parser.get_normalized());
 
         parser.clear();
-        <span class="macro">assert!</span>(!parse(<span class="kw-2">&amp;mut </span>parser, <span class="string">&quot;1.5千5百&quot;</span>));
+        <span class="macro">assert!</span>(!parse(<span class="kw-2">&amp;mut </span>parser, <span class="string">"1.5千5百"</span>));
 
         parser.clear();
-        <span class="macro">assert!</span>(!parse(<span class="kw-2">&amp;mut </span>parser, <span class="string">&quot;1.5千500&quot;</span>));
+        <span class="macro">assert!</span>(!parse(<span class="kw-2">&amp;mut </span>parser, <span class="string">"1.5千500"</span>));
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>log_numeric() {
         <span class="kw">let </span><span class="kw-2">mut </span>parser = NumericParser::new();
-        <span class="macro">assert!</span>(parse(<span class="kw-2">&amp;mut </span>parser, <span class="string">&quot;200000000000000000000万&quot;</span>));
-        <span class="macro">assert_eq!</span>(<span class="string">&quot;2000000000000000000000000&quot;</span>, parser.get_normalized());
+        <span class="macro">assert!</span>(parse(<span class="kw-2">&amp;mut </span>parser, <span class="string">"200000000000000000000万"</span>));
+        <span class="macro">assert_eq!</span>(<span class="string">"2000000000000000000000000"</span>, parser.get_normalized());
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>with_comma() {
         <span class="kw">let </span><span class="kw-2">mut </span>parser = NumericParser::new();
-        <span class="macro">assert!</span>(parse(<span class="kw-2">&amp;mut </span>parser, <span class="string">&quot;2,000,000&quot;</span>));
-        <span class="macro">assert_eq!</span>(<span class="string">&quot;2000000&quot;</span>, parser.get_normalized());
+        <span class="macro">assert!</span>(parse(<span class="kw-2">&amp;mut </span>parser, <span class="string">"2,000,000"</span>));
+        <span class="macro">assert_eq!</span>(<span class="string">"2000000"</span>, parser.get_normalized());
 
         parser.clear();
-        <span class="macro">assert!</span>(parse(<span class="kw-2">&amp;mut </span>parser, <span class="string">&quot;259万2,300&quot;</span>));
-        <span class="macro">assert_eq!</span>(<span class="string">&quot;2592300&quot;</span>, parser.get_normalized());
+        <span class="macro">assert!</span>(parse(<span class="kw-2">&amp;mut </span>parser, <span class="string">"259万2,300"</span>));
+        <span class="macro">assert_eq!</span>(<span class="string">"2592300"</span>, parser.get_normalized());
 
         parser.clear();
-        <span class="macro">assert!</span>(!parse(<span class="kw-2">&amp;mut </span>parser, <span class="string">&quot;200,00,000&quot;</span>));
+        <span class="macro">assert!</span>(!parse(<span class="kw-2">&amp;mut </span>parser, <span class="string">"200,00,000"</span>));
         <span class="macro">assert_eq!</span>(Error::COMMA, parser.error_state);
 
         parser.clear();
-        <span class="macro">assert!</span>(!parse(<span class="kw-2">&amp;mut </span>parser, <span class="string">&quot;2,4&quot;</span>));
+        <span class="macro">assert!</span>(!parse(<span class="kw-2">&amp;mut </span>parser, <span class="string">"2,4"</span>));
         <span class="macro">assert_eq!</span>(Error::COMMA, parser.error_state);
 
         parser.clear();
-        <span class="macro">assert!</span>(!parse(<span class="kw-2">&amp;mut </span>parser, <span class="string">&quot;000,000&quot;</span>));
+        <span class="macro">assert!</span>(!parse(<span class="kw-2">&amp;mut </span>parser, <span class="string">"000,000"</span>));
         <span class="macro">assert_eq!</span>(Error::COMMA, parser.error_state);
 
         parser.clear();
-        <span class="macro">assert!</span>(!parse(<span class="kw-2">&amp;mut </span>parser, <span class="string">&quot;,000&quot;</span>));
+        <span class="macro">assert!</span>(!parse(<span class="kw-2">&amp;mut </span>parser, <span class="string">",000"</span>));
         <span class="macro">assert_eq!</span>(Error::COMMA, parser.error_state);
 
         parser.clear();
-        <span class="macro">assert!</span>(!parse(<span class="kw-2">&amp;mut </span>parser, <span class="string">&quot;256,55.1&quot;</span>));
+        <span class="macro">assert!</span>(!parse(<span class="kw-2">&amp;mut </span>parser, <span class="string">"256,55.1"</span>));
         <span class="macro">assert_eq!</span>(Error::COMMA, parser.error_state);
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>not_digit() {
         <span class="kw">let </span><span class="kw-2">mut </span>parser = NumericParser::new();
-        <span class="macro">assert!</span>(!parse(<span class="kw-2">&amp;mut </span>parser, <span class="string">&quot;@@@&quot;</span>));
+        <span class="macro">assert!</span>(!parse(<span class="kw-2">&amp;mut </span>parser, <span class="string">"@@@"</span>));
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>float_point() {
         <span class="kw">let </span><span class="kw-2">mut </span>parser = NumericParser::new();
-        <span class="macro">assert!</span>(parse(<span class="kw-2">&amp;mut </span>parser, <span class="string">&quot;6.0&quot;</span>));
-        <span class="macro">assert_eq!</span>(<span class="string">&quot;6&quot;</span>, parser.get_normalized());
+        <span class="macro">assert!</span>(parse(<span class="kw-2">&amp;mut </span>parser, <span class="string">"6.0"</span>));
+        <span class="macro">assert_eq!</span>(<span class="string">"6"</span>, parser.get_normalized());
 
         parser.clear();
-        <span class="macro">assert!</span>(!parse(<span class="kw-2">&amp;mut </span>parser, <span class="string">&quot;6.&quot;</span>));
+        <span class="macro">assert!</span>(!parse(<span class="kw-2">&amp;mut </span>parser, <span class="string">"6."</span>));
         <span class="macro">assert_eq!</span>(Error::POINT, parser.error_state);
 
         parser.clear();
-        <span class="macro">assert!</span>(!parse(<span class="kw-2">&amp;mut </span>parser, <span class="string">&quot;1.2.3&quot;</span>));
+        <span class="macro">assert!</span>(!parse(<span class="kw-2">&amp;mut </span>parser, <span class="string">"1.2.3"</span>));
         <span class="macro">assert_eq!</span>(Error::POINT, parser.error_state);
     }
 }

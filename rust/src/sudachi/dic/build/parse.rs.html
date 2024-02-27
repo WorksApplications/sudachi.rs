@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `sudachi/src/dic/build/parse.rs`."><title>parse.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="sudachi" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `sudachi/src/dic/build/parse.rs`."><title>parse.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="sudachi" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -266,14 +267,14 @@
 </pre></div><pre class="rust"><code><span class="comment">/*
  *  Copyright (c) 2021 Works Applications Co., Ltd.
  *
- *  Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
  *  You may obtain a copy of the License at
  *
  *      http://www.apache.org/licenses/LICENSE-2.0
  *
  *   Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ *  distributed under the License is distributed on an "AS IS" BASIS,
  *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
@@ -291,16 +292,16 @@
 <span class="kw">use </span><span class="kw">crate</span>::dic::word_id::WordId;
 
 <span class="attr">#[inline(always)]
-</span><span class="kw">pub fn </span>it_next&lt;<span class="lifetime">&#39;a</span>, I, T, F&gt;(
-    orig: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>str,
+</span><span class="kw">pub fn </span>it_next&lt;<span class="lifetime">'a</span>, I, T, F&gt;(
+    orig: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>str,
     data: <span class="kw-2">&amp;mut </span>I,
-    field: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str,
+    field: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str,
     f: F,
 ) -&gt; DicWriteResult&lt;T&gt;
 <span class="kw">where
-    </span>I: Iterator&lt;Item = <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>str&gt;,
-    F: FnOnce(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>str) -&gt; DicWriteResult&lt;T&gt;,
-    T: <span class="lifetime">&#39;a</span>,
+    </span>I: Iterator&lt;Item = <span class="kw-2">&amp;</span><span class="lifetime">'a </span>str&gt;,
+    F: FnOnce(<span class="kw-2">&amp;</span><span class="lifetime">'a </span>str) -&gt; DicWriteResult&lt;T&gt;,
+    T: <span class="lifetime">'a</span>,
 {
     <span class="kw">match </span>data.next() {
         <span class="prelude-val">Some</span>(s) =&gt; f(s),
@@ -325,10 +326,10 @@
 <span class="attr">#[inline]
 </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>parse_mode(data: <span class="kw-2">&amp;</span>str) -&gt; DicWriteResult&lt;Mode&gt; {
     <span class="kw">match </span>data.trim() {
-        <span class="string">&quot;a&quot; </span>| <span class="string">&quot;A&quot; </span>=&gt; <span class="prelude-val">Ok</span>(Mode::A),
-        <span class="string">&quot;b&quot; </span>| <span class="string">&quot;B&quot; </span>=&gt; <span class="prelude-val">Ok</span>(Mode::B),
-        <span class="string">&quot;c&quot; </span>| <span class="string">&quot;C&quot; </span>| <span class="string">&quot;*&quot; </span>=&gt; <span class="prelude-val">Ok</span>(Mode::C),
-        <span class="string">&quot;BC&quot; </span>=&gt; <span class="prelude-val">Ok</span>(Mode::B),
+        <span class="string">"a" </span>| <span class="string">"A" </span>=&gt; <span class="prelude-val">Ok</span>(Mode::A),
+        <span class="string">"b" </span>| <span class="string">"B" </span>=&gt; <span class="prelude-val">Ok</span>(Mode::B),
+        <span class="string">"c" </span>| <span class="string">"C" </span>| <span class="string">"*" </span>=&gt; <span class="prelude-val">Ok</span>(Mode::C),
+        <span class="string">"BC" </span>=&gt; <span class="prelude-val">Ok</span>(Mode::B),
         <span class="kw">_ </span>=&gt; <span class="prelude-val">Err</span>(BuildFailure::InvalidSplit(data.to_owned())),
     }
 }
@@ -351,7 +352,7 @@
 
 <span class="attr">#[inline]
 </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>parse_dic_form(data: <span class="kw-2">&amp;</span>str) -&gt; DicWriteResult&lt;WordId&gt; {
-    <span class="kw">if </span>data == <span class="string">&quot;*&quot; </span>{
+    <span class="kw">if </span>data == <span class="string">"*" </span>{
         <span class="prelude-val">Ok</span>(WordId::INVALID)
     } <span class="kw">else </span>{
         parse_wordid(data)
@@ -360,7 +361,7 @@
 
 <span class="attr">#[inline]
 </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>parse_wordid(data: <span class="kw-2">&amp;</span>str) -&gt; DicWriteResult&lt;WordId&gt; {
-    <span class="kw">if </span>data.starts_with(<span class="string">&quot;U&quot;</span>) {
+    <span class="kw">if </span>data.starts_with(<span class="string">"U"</span>) {
         <span class="kw">let </span>wid = parse_wordid_raw(<span class="kw-2">&amp;</span>data[<span class="number">1</span>..]);
         wid.map(|w| WordId::new(<span class="number">1</span>, w.word()))
     } <span class="kw">else </span>{
@@ -381,7 +382,7 @@
 
 <span class="attr">#[inline]
 </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>parse_wordid_list(data: <span class="kw-2">&amp;</span>str) -&gt; DicWriteResult&lt;Vec&lt;WordId&gt;&gt; {
-    <span class="kw">if </span>data.is_empty() || data == <span class="string">&quot;*&quot; </span>{
+    <span class="kw">if </span>data.is_empty() || data == <span class="string">"*" </span>{
         <span class="kw">return </span><span class="prelude-val">Ok</span>(Vec::new());
     }
 
@@ -390,7 +391,7 @@
 
 <span class="attr">#[inline]
 </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>parse_u32_list(data: <span class="kw-2">&amp;</span>str) -&gt; DicWriteResult&lt;Vec&lt;u32&gt;&gt; {
-    <span class="kw">if </span>data.is_empty() || data == <span class="string">&quot;*&quot; </span>{
+    <span class="kw">if </span>data.is_empty() || data == <span class="string">"*" </span>{
         <span class="kw">return </span><span class="prelude-val">Ok</span>(Vec::new());
     }
 
@@ -398,7 +399,7 @@
 }
 
 <span class="macro">lazy_static! </span>{
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">static </span><span class="kw-2">ref </span>WORD_ID_LITERAL: Regex = Regex::new(<span class="string">r&quot;^U?\d+$&quot;</span>).unwrap();
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">static </span><span class="kw-2">ref </span>WORD_ID_LITERAL: Regex = Regex::new(<span class="string">r"^U?\d+$"</span>).unwrap();
 }
 
 <span class="attr">#[inline]
@@ -408,7 +409,7 @@
 {
     <span class="kw">let </span><span class="kw-2">mut </span>result = Vec::with_capacity(<span class="number">4</span>);
 
-    <span class="kw">for </span>part <span class="kw">in </span>data.split(<span class="string">&quot;/&quot;</span>) {
+    <span class="kw">for </span>part <span class="kw">in </span>data.split(<span class="string">"/"</span>) {
         result.push(f(part)<span class="question-mark">?</span>);
     }
 
@@ -424,7 +425,7 @@
 
 <span class="macro">lazy_static! </span>{
     <span class="kw">static </span><span class="kw-2">ref </span>UNICODE_LITERAL: Regex =
-        Regex::new(<span class="string">r&quot;\\u(?:\{([0-9a-fA-F]{1,6})\}|([0-9a-fA-F]{4}))&quot;</span>).unwrap();
+        Regex::new(<span class="string">r"\\u(?:\{([0-9a-fA-F]{1,6})\}|([0-9a-fA-F]{4}))"</span>).unwrap();
 }
 
 <span class="kw">fn </span>check_str_len(data: <span class="kw-2">&amp;</span>str) -&gt; DicWriteResult&lt;()&gt; {
@@ -485,47 +486,47 @@
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>decode_plain() {
-        <span class="macro">assert_eq!</span>(unescape(<span class="string">&quot;&quot;</span>).unwrap(), <span class="string">&quot;&quot;</span>);
-        <span class="macro">assert_eq!</span>(unescape(<span class="string">&quot;a&quot;</span>).unwrap(), <span class="string">&quot;a&quot;</span>);
-        <span class="macro">assert_eq!</span>(unescape(<span class="string">&quot;あ&quot;</span>).unwrap(), <span class="string">&quot;あ&quot;</span>);
+        <span class="macro">assert_eq!</span>(unescape(<span class="string">""</span>).unwrap(), <span class="string">""</span>);
+        <span class="macro">assert_eq!</span>(unescape(<span class="string">"a"</span>).unwrap(), <span class="string">"a"</span>);
+        <span class="macro">assert_eq!</span>(unescape(<span class="string">"あ"</span>).unwrap(), <span class="string">"あ"</span>);
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>decode_escape_1() {
-        <span class="macro">assert_eq!</span>(unescape(<span class="string">&quot;\\u0020&quot;</span>).unwrap(), <span class="string">&quot;\u{20}&quot;</span>);
-        <span class="macro">assert_eq!</span>(unescape(<span class="string">&quot;\\u{20}&quot;</span>).unwrap(), <span class="string">&quot;\u{20}&quot;</span>);
-        <span class="macro">assert_eq!</span>(unescape(<span class="string">&quot;\\u{1f49e}&quot;</span>).unwrap(), <span class="string">&quot;💞&quot;</span>);
+        <span class="macro">assert_eq!</span>(unescape(<span class="string">"\\u0020"</span>).unwrap(), <span class="string">"\u{20}"</span>);
+        <span class="macro">assert_eq!</span>(unescape(<span class="string">"\\u{20}"</span>).unwrap(), <span class="string">"\u{20}"</span>);
+        <span class="macro">assert_eq!</span>(unescape(<span class="string">"\\u{1f49e}"</span>).unwrap(), <span class="string">"💞"</span>);
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>decode_escape_2() {
-        <span class="macro">assert_eq!</span>(unescape(<span class="string">&quot;\\u020f&quot;</span>).unwrap(), <span class="string">&quot;\u{20f}&quot;</span>);
-        <span class="macro">assert_eq!</span>(unescape(<span class="string">&quot;\\u{20}f&quot;</span>).unwrap(), <span class="string">&quot;\u{20}f&quot;</span>);
+        <span class="macro">assert_eq!</span>(unescape(<span class="string">"\\u020f"</span>).unwrap(), <span class="string">"\u{20f}"</span>);
+        <span class="macro">assert_eq!</span>(unescape(<span class="string">"\\u{20}f"</span>).unwrap(), <span class="string">"\u{20}f"</span>);
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>decode_escape_3() {
-        <span class="macro">assert_eq!</span>(unescape(<span class="string">&quot;f\\u0020&quot;</span>).unwrap(), <span class="string">&quot;f\u{20}&quot;</span>);
-        <span class="macro">assert_eq!</span>(unescape(<span class="string">&quot;f\\u{20}&quot;</span>).unwrap(), <span class="string">&quot;f\u{20}&quot;</span>);
+        <span class="macro">assert_eq!</span>(unescape(<span class="string">"f\\u0020"</span>).unwrap(), <span class="string">"f\u{20}"</span>);
+        <span class="macro">assert_eq!</span>(unescape(<span class="string">"f\\u{20}"</span>).unwrap(), <span class="string">"f\u{20}"</span>);
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>decode_escape_4() {
-        <span class="macro">assert_eq!</span>(unescape(<span class="string">&quot;\\u100056&quot;</span>).unwrap(), <span class="string">&quot;\u{1000}56&quot;</span>);
+        <span class="macro">assert_eq!</span>(unescape(<span class="string">"\\u100056"</span>).unwrap(), <span class="string">"\u{1000}56"</span>);
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>decode_escape_ported() {
-        <span class="macro">assert_eq!</span>(unescape(<span class="string">&quot;a\\u002cc&quot;</span>).unwrap(), <span class="string">&quot;a,c&quot;</span>);
-        <span class="macro">assert_eq!</span>(unescape(<span class="string">&quot;a\\u{2c}c&quot;</span>).unwrap(), <span class="string">&quot;a,c&quot;</span>);
+        <span class="macro">assert_eq!</span>(unescape(<span class="string">"a\\u002cc"</span>).unwrap(), <span class="string">"a,c"</span>);
+        <span class="macro">assert_eq!</span>(unescape(<span class="string">"a\\u{2c}c"</span>).unwrap(), <span class="string">"a,c"</span>);
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>decode_escape_fail() {
-        <span class="macro">assert_eq!</span>(unescape(<span class="string">&quot;\\u{10FFFF}&quot;</span>).unwrap(), <span class="string">&quot;\u{10FFFF}&quot;</span>);
+        <span class="macro">assert_eq!</span>(unescape(<span class="string">"\\u{10FFFF}"</span>).unwrap(), <span class="string">"\u{10FFFF}"</span>);
         <span class="comment">// max character
-        </span><span class="macro">claim::assert_matches!</span>(unescape(<span class="string">&quot;\\u{110000}&quot;</span>), <span class="prelude-val">Err</span>(<span class="kw">_</span>));
-        <span class="macro">claim::assert_matches!</span>(unescape(<span class="string">&quot;\\u{FFFFFF}&quot;</span>), <span class="prelude-val">Err</span>(<span class="kw">_</span>));
+        </span><span class="macro">claim::assert_matches!</span>(unescape(<span class="string">"\\u{110000}"</span>), <span class="prelude-val">Err</span>(<span class="kw">_</span>));
+        <span class="macro">claim::assert_matches!</span>(unescape(<span class="string">"\\u{FFFFFF}"</span>), <span class="prelude-val">Err</span>(<span class="kw">_</span>));
     }
 }
 </code></pre></div></section></main></body></html>

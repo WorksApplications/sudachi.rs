@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `sudachi/src/dic/build/mod.rs`."><title>mod.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="sudachi" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `sudachi/src/dic/build/mod.rs`."><title>mod.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="sudachi" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -347,14 +348,14 @@
 </pre></div><pre class="rust"><code><span class="comment">/*
  *  Copyright (c) 2021 Works Applications Co., Ltd.
  *
- *  Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
  *  You may obtain a copy of the License at
  *
  *      http://www.apache.org/licenses/LICENSE-2.0
  *
  *   Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ *  distributed under the License is distributed on an "AS IS" BASIS,
  *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
@@ -393,31 +394,31 @@
 <span class="kw">const </span>MAX_DIC_STRING_LEN: usize = MAX_POS_IDS;
 <span class="kw">const </span>MAX_ARRAY_LEN: usize = i8::MAX <span class="kw">as </span>usize;
 
-<span class="kw">pub enum </span>DataSource&lt;<span class="lifetime">&#39;a</span>&gt; {
-    File(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Path),
-    Data(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[u8]),
+<span class="kw">pub enum </span>DataSource&lt;<span class="lifetime">'a</span>&gt; {
+    File(<span class="kw-2">&amp;</span><span class="lifetime">'a </span>Path),
+    Data(<span class="kw-2">&amp;</span><span class="lifetime">'a </span>[u8]),
 }
 
-<span class="kw">pub trait </span>AsDataSource&lt;<span class="lifetime">&#39;a</span>&gt; {
-    <span class="kw">fn </span>convert(<span class="self">self</span>) -&gt; DataSource&lt;<span class="lifetime">&#39;a</span>&gt;;
+<span class="kw">pub trait </span>AsDataSource&lt;<span class="lifetime">'a</span>&gt; {
+    <span class="kw">fn </span>convert(<span class="self">self</span>) -&gt; DataSource&lt;<span class="lifetime">'a</span>&gt;;
     <span class="kw">fn </span>name(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; String;
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; AsDataSource&lt;<span class="lifetime">&#39;a</span>&gt; <span class="kw">for </span>DataSource&lt;<span class="lifetime">&#39;a</span>&gt; {
-    <span class="kw">fn </span>convert(<span class="self">self</span>) -&gt; DataSource&lt;<span class="lifetime">&#39;a</span>&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; AsDataSource&lt;<span class="lifetime">'a</span>&gt; <span class="kw">for </span>DataSource&lt;<span class="lifetime">'a</span>&gt; {
+    <span class="kw">fn </span>convert(<span class="self">self</span>) -&gt; DataSource&lt;<span class="lifetime">'a</span>&gt; {
         <span class="self">self
     </span>}
 
     <span class="kw">fn </span>name(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; String {
         <span class="kw">match </span><span class="self">self </span>{
             DataSource::File(p) =&gt; p.to_str().map(|s| s.to_owned()).unwrap_or_default(),
-            DataSource::Data(d) =&gt; <span class="macro">format!</span>(<span class="string">&quot;memory ({} bytes)&quot;</span>, d.len()),
+            DataSource::Data(d) =&gt; <span class="macro">format!</span>(<span class="string">"memory ({} bytes)"</span>, d.len()),
         }
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; AsDataSource&lt;<span class="lifetime">&#39;a</span>&gt; <span class="kw">for </span><span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Path {
-    <span class="kw">fn </span>convert(<span class="self">self</span>) -&gt; DataSource&lt;<span class="lifetime">&#39;a</span>&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; AsDataSource&lt;<span class="lifetime">'a</span>&gt; <span class="kw">for </span><span class="kw-2">&amp;</span><span class="lifetime">'a </span>Path {
+    <span class="kw">fn </span>convert(<span class="self">self</span>) -&gt; DataSource&lt;<span class="lifetime">'a</span>&gt; {
         DataSource::File(<span class="self">self</span>)
     }
     <span class="kw">fn </span>name(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; String {
@@ -425,33 +426,33 @@
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; AsDataSource&lt;<span class="lifetime">&#39;a</span>&gt; <span class="kw">for </span><span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[u8] {
-    <span class="kw">fn </span>convert(<span class="self">self</span>) -&gt; DataSource&lt;<span class="lifetime">&#39;a</span>&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; AsDataSource&lt;<span class="lifetime">'a</span>&gt; <span class="kw">for </span><span class="kw-2">&amp;</span><span class="lifetime">'a </span>[u8] {
+    <span class="kw">fn </span>convert(<span class="self">self</span>) -&gt; DataSource&lt;<span class="lifetime">'a</span>&gt; {
         DataSource::Data(<span class="self">self</span>)
     }
     <span class="kw">fn </span>name(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; String {
-        <span class="macro">format!</span>(<span class="string">&quot;memory ({} bytes)&quot;</span>, <span class="self">self</span>.len())
+        <span class="macro">format!</span>(<span class="string">"memory ({} bytes)"</span>, <span class="self">self</span>.len())
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, <span class="kw">const </span>N: usize&gt; AsDataSource&lt;<span class="lifetime">&#39;a</span>&gt; <span class="kw">for </span><span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[u8; N] {
-    <span class="kw">fn </span>convert(<span class="self">self</span>) -&gt; DataSource&lt;<span class="lifetime">&#39;a</span>&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, <span class="kw">const </span>N: usize&gt; AsDataSource&lt;<span class="lifetime">'a</span>&gt; <span class="kw">for </span><span class="kw-2">&amp;</span><span class="lifetime">'a </span>[u8; N] {
+    <span class="kw">fn </span>convert(<span class="self">self</span>) -&gt; DataSource&lt;<span class="lifetime">'a</span>&gt; {
         DataSource::Data(<span class="kw-2">&amp;</span><span class="self">self</span>[..])
     }
     <span class="kw">fn </span>name(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; String {
-        <span class="macro">format!</span>(<span class="string">&quot;memory ({} bytes)&quot;</span>, <span class="self">self</span>.len())
+        <span class="macro">format!</span>(<span class="string">"memory ({} bytes)"</span>, <span class="self">self</span>.len())
     }
 }
 
 <span class="kw">pub enum </span>NoDic {}
 
 <span class="kw">impl </span>DictionaryAccess <span class="kw">for </span>NoDic {
-    <span class="kw">fn </span>grammar(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Grammar&lt;<span class="lifetime">&#39;_</span>&gt; {
-        <span class="macro">panic!</span>(<span class="string">&quot;there is no grammar here&quot;</span>)
+    <span class="kw">fn </span>grammar(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Grammar&lt;<span class="lifetime">'_</span>&gt; {
+        <span class="macro">panic!</span>(<span class="string">"there is no grammar here"</span>)
     }
 
-    <span class="kw">fn </span>lexicon(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>LexiconSet&lt;<span class="lifetime">&#39;_</span>&gt; {
-        <span class="macro">panic!</span>(<span class="string">&quot;there is no lexicon here&quot;</span>)
+    <span class="kw">fn </span>lexicon(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>LexiconSet&lt;<span class="lifetime">'_</span>&gt; {
+        <span class="macro">panic!</span>(<span class="string">"there is no lexicon here"</span>)
     }
 
     <span class="kw">fn </span>input_text_plugins(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[Box&lt;<span class="kw">dyn </span>InputTextPlugin + Sync + Send&gt;] {
@@ -529,7 +530,7 @@
     }
 
     <span class="doccomment">/// Read the csv lexicon from either a file or an in-memory buffer
-    </span><span class="kw">pub fn </span>read_lexicon&lt;<span class="lifetime">&#39;a</span>, T: AsDataSource&lt;<span class="lifetime">&#39;a</span>&gt; + <span class="lifetime">&#39;a</span>&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, data: T) -&gt; SudachiResult&lt;usize&gt; {
+    </span><span class="kw">pub fn </span>read_lexicon&lt;<span class="lifetime">'a</span>, T: AsDataSource&lt;<span class="lifetime">'a</span>&gt; + <span class="lifetime">'a</span>&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, data: T) -&gt; SudachiResult&lt;usize&gt; {
         <span class="kw">let </span>report = ReportBuilder::new(data.name()).read();
         <span class="kw">let </span>result = <span class="kw">match </span>data.convert() {
             DataSource::File(p) =&gt; <span class="self">self</span>.lexicon.read_file(p),
@@ -539,7 +540,7 @@
     }
 
     <span class="doccomment">/// Read the connection matrix from either a file or an in-memory buffer
-    </span><span class="kw">pub fn </span>read_conn&lt;<span class="lifetime">&#39;a</span>, T: AsDataSource&lt;<span class="lifetime">&#39;a</span>&gt; + <span class="lifetime">&#39;a</span>&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, data: T) -&gt; SudachiResult&lt;()&gt; {
+    </span><span class="kw">pub fn </span>read_conn&lt;<span class="lifetime">'a</span>, T: AsDataSource&lt;<span class="lifetime">'a</span>&gt; + <span class="lifetime">'a</span>&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, data: T) -&gt; SudachiResult&lt;()&gt; {
         <span class="kw">let </span>report = ReportBuilder::new(data.name()).read();
         <span class="kw">match </span>data.convert() {
             DataSource::File(p) =&gt; <span class="self">self</span>.conn.read_file(p),
@@ -557,7 +558,7 @@
     <span class="doccomment">/// Compile the binary dictionary and write it to the specified sink
     </span><span class="kw">pub fn </span>compile&lt;W: Write&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, w: <span class="kw-2">&amp;mut </span>W) -&gt; SudachiResult&lt;()&gt; {
         <span class="self">self</span>.check_if_resolved()<span class="question-mark">?</span>;
-        <span class="kw">let </span>report = ReportBuilder::new(<span class="string">&quot;validate&quot;</span>).read();
+        <span class="kw">let </span>report = ReportBuilder::new(<span class="string">"validate"</span>).read();
         <span class="self">self</span>.lexicon.validate_entries()<span class="question-mark">?</span>;
         <span class="self">self</span>.reporter.collect(<span class="self">self</span>.lexicon.entries().len(), report);
         <span class="kw">let </span><span class="kw-2">mut </span>written = <span class="self">self</span>.header.write_to(w)<span class="question-mark">?</span>;
@@ -592,10 +593,10 @@
 
     <span class="kw">fn </span>write_grammar&lt;W: Write&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, w: <span class="kw-2">&amp;mut </span>W) -&gt; SudachiResult&lt;usize&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>size = <span class="number">0</span>;
-        <span class="kw">let </span>r1 = ReportBuilder::new(<span class="string">&quot;pos_table&quot;</span>);
+        <span class="kw">let </span>r1 = ReportBuilder::new(<span class="string">"pos_table"</span>);
         size += <span class="self">self</span>.lexicon.write_pos_table(w)<span class="question-mark">?</span>;
         <span class="self">self</span>.reporter.collect(size, r1);
-        <span class="kw">let </span>r2 = ReportBuilder::new(<span class="string">&quot;conn_matrix&quot;</span>);
+        <span class="kw">let </span>r2 = ReportBuilder::new(<span class="string">"conn_matrix"</span>);
         size += <span class="self">self</span>.conn.write_to(w)<span class="question-mark">?</span>;
         <span class="self">self</span>.reporter.collect(size, r2);
         <span class="prelude-val">Ok</span>(size)
@@ -611,7 +612,7 @@
             }
         }
 
-        <span class="kw">let </span>report = ReportBuilder::new(<span class="string">&quot;trie&quot;</span>);
+        <span class="kw">let </span>report = ReportBuilder::new(<span class="string">"trie"</span>);
         <span class="kw">let </span>word_id_table = index.build_word_id_table()<span class="question-mark">?</span>;
         <span class="kw">let </span>trie = index.build_trie()<span class="question-mark">?</span>;
 
@@ -624,7 +625,7 @@
         </span><span class="self">self</span>.reporter.collect(size, report);
         <span class="kw">let </span>cur_size = size;
 
-        <span class="kw">let </span>report = ReportBuilder::new(<span class="string">&quot;word_id table&quot;</span>);
+        <span class="kw">let </span>report = ReportBuilder::new(<span class="string">"word_id table"</span>);
         w.write_all(<span class="kw-2">&amp;</span>(word_id_table.len() <span class="kw">as </span>u32).to_le_bytes())<span class="question-mark">?</span>;
         size += <span class="number">4</span>;
         w.write_all(<span class="kw-2">&amp;</span>word_id_table)<span class="question-mark">?</span>;
@@ -651,7 +652,7 @@
     }
 
     <span class="doccomment">/// this function must only be used in resolve_impl
-    </span><span class="kw">fn </span>unsafe_make_resolver&lt;<span class="lifetime">&#39;a</span>, <span class="lifetime">&#39;b</span>&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>) -&gt; RawDictResolver&lt;<span class="lifetime">&#39;b</span>&gt; {
+    </span><span class="kw">fn </span>unsafe_make_resolver&lt;<span class="lifetime">'a</span>, <span class="lifetime">'b</span>&gt;(<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">self</span>) -&gt; RawDictResolver&lt;<span class="lifetime">'b</span>&gt; {
         <span class="kw">let </span>resolver = RawDictResolver::new(<span class="self">self</span>.lexicon.entries(), <span class="self">self</span>.user);
         <span class="comment">// resolver borrows parts of entries, but it does not touch splits
         // resolve function only modifies splits
@@ -665,7 +666,7 @@
         }
 
         <span class="kw">let </span>this_resolver = <span class="self">self</span>.unsafe_make_resolver();
-        <span class="kw">let </span>report = ReportBuilder::new(<span class="string">&quot;resolve&quot;</span>);
+        <span class="kw">let </span>report = ReportBuilder::new(<span class="string">"resolve"</span>);
 
         <span class="kw">let </span>cnt = <span class="kw">match </span><span class="self">self</span>.prebuilt.as_ref() {
             <span class="prelude-val">Some</span>(d) =&gt; {
@@ -682,7 +683,7 @@
                 <span class="prelude-val">Ok</span>(cnt)
             }
             <span class="prelude-val">Err</span>((split_info, line)) =&gt; <span class="prelude-val">Err</span>(DicBuildError {
-                file: <span class="string">&quot;&lt;entries&gt;&quot;</span>.to_owned(),
+                file: <span class="string">"&lt;entries&gt;"</span>.to_owned(),
                 line,
                 cause: BuildFailure::InvalidSplitWordReference(split_info),
             }

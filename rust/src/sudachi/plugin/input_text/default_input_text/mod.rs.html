@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `sudachi/src/plugin/input_text/default_input_text/mod.rs`."><title>mod.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../../../../" data-static-root-path="../../../../../static.files/" data-current-crate="sudachi" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../../../src-files.js"></script><script defer src="../../../../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `sudachi/src/plugin/input_text/default_input_text/mod.rs`."><title>mod.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../../../../" data-static-root-path="../../../../../static.files/" data-current-crate="sudachi" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../../../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../../../../src-files.js"></script><script defer src="../../../../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../../../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -297,14 +298,14 @@
 </pre></div><pre class="rust"><code><span class="comment">/*
  * Copyright (c) 2021 Works Applications Co., Ltd.
  *
- * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
@@ -332,7 +333,7 @@
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>tests;
 
-<span class="kw">const </span>DEFAULT_REWRITE_DEF_FILE: <span class="kw-2">&amp;</span>str = <span class="string">&quot;rewrite.def&quot;</span>;
+<span class="kw">const </span>DEFAULT_REWRITE_DEF_FILE: <span class="kw-2">&amp;</span>str = <span class="string">"rewrite.def"</span>;
 
 <span class="doccomment">/// Provides basic normalization of the input text
 </span><span class="attr">#[derive(Default)]
@@ -365,7 +366,7 @@
     ///         Each line contains two strings separated by white spaces
     ///         Plugin replaces the first by the second
     ///         Same target string cannot be defined multiple times
-    ///     Empty or line starts with &quot;#&quot; will be ignored
+    ///     Empty or line starts with "#" will be ignored
     </span><span class="kw">fn </span>read_rewrite_lists&lt;T: BufRead&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, reader: T) -&gt; SudachiResult&lt;()&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>ignore_normalize_set = HashSet::with_hasher(RoMu::new());
         <span class="kw">let </span><span class="kw-2">mut </span>key_lengths = HashMap::new();
@@ -373,7 +374,7 @@
         <span class="kw">for </span>(i, line) <span class="kw">in </span>reader.lines().enumerate() {
             <span class="kw">let </span>line = line<span class="question-mark">?</span>;
             <span class="kw">let </span>line = line.trim();
-            <span class="kw">if </span>line.is_empty() || line.chars().next().unwrap() == <span class="string">&#39;#&#39; </span>{
+            <span class="kw">if </span>line.is_empty() || line.chars().next().unwrap() == <span class="string">'#' </span>{
                 <span class="kw">continue</span>;
             }
             <span class="kw">let </span>cols: Vec&lt;<span class="kw">_</span>&gt; = line.split_whitespace().collect();
@@ -383,7 +384,7 @@
                 <span class="kw">if </span>cols[<span class="number">0</span>].chars().count() != <span class="number">1 </span>{
                     <span class="kw">return </span><span class="prelude-val">Err</span>(SudachiError::InvalidDataFormat(
                         i,
-                        <span class="macro">format!</span>(<span class="string">&quot;{} is not character&quot;</span>, cols[<span class="number">0</span>]),
+                        <span class="macro">format!</span>(<span class="string">"{} is not character"</span>, cols[<span class="number">0</span>]),
                     ));
                 }
                 ignore_normalize_set.insert(cols[<span class="number">0</span>].chars().next().unwrap());
@@ -394,7 +395,7 @@
                 <span class="kw">if </span>replace_char_map.contains_key(cols[<span class="number">0</span>]) {
                     <span class="kw">return </span><span class="prelude-val">Err</span>(SudachiError::InvalidDataFormat(
                         i,
-                        <span class="macro">format!</span>(<span class="string">&quot;{} is already defined&quot;</span>, cols[<span class="number">0</span>]),
+                        <span class="macro">format!</span>(<span class="string">"{} is already defined"</span>, cols[<span class="number">0</span>]),
                     ));
                 }
                 <span class="kw">let </span>first_char = cols[<span class="number">0</span>].chars().next().unwrap();
@@ -405,7 +406,7 @@
                 replace_char_map.insert(cols[<span class="number">0</span>].to_string(), cols[<span class="number">1</span>].to_string());
                 <span class="kw">continue</span>;
             }
-            <span class="kw">return </span><span class="prelude-val">Err</span>(SudachiError::InvalidDataFormat(i, <span class="string">&quot;&quot;</span>.to_string()));
+            <span class="kw">return </span><span class="prelude-val">Err</span>(SudachiError::InvalidDataFormat(i, <span class="string">""</span>.to_string()));
         }
 
         <span class="self">self</span>.ignore_normalize_set = ignore_normalize_set;
@@ -427,7 +428,7 @@
                 .start_kind(StartKind::Both)
                 .build(keys.clone())
                 .map_err(|e| {
-                    ConfigError::InvalidFormat(<span class="macro">format!</span>(<span class="string">&quot;failed to parse rewrite.def: {e:?}&quot;</span>))
+                    ConfigError::InvalidFormat(<span class="macro">format!</span>(<span class="string">"failed to parse rewrite.def: {e:?}"</span>))
                 })<span class="question-mark">?</span>,
         );
 
@@ -446,11 +447,11 @@
     ///
     /// Ignores are not used here, forced replacements have higher priority
     /// Fast version does not need to walk every character!
-    </span><span class="kw">fn </span>replace_fast&lt;<span class="lifetime">&#39;a</span>&gt;(
-        <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>,
+    </span><span class="kw">fn </span>replace_fast&lt;<span class="lifetime">'a</span>&gt;(
+        <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">self</span>,
         buffer: <span class="kw-2">&amp;</span>InputBuffer,
-        <span class="kw-2">mut </span>replacer: InputEditor&lt;<span class="lifetime">&#39;a</span>&gt;,
-    ) -&gt; SudachiResult&lt;InputEditor&lt;<span class="lifetime">&#39;a</span>&gt;&gt; {
+        <span class="kw-2">mut </span>replacer: InputEditor&lt;<span class="lifetime">'a</span>&gt;,
+    ) -&gt; SudachiResult&lt;InputEditor&lt;<span class="lifetime">'a</span>&gt;&gt; {
         <span class="kw">let </span>cur = buffer.current();
         <span class="kw">let </span>checker = <span class="self">self</span>.checker.as_ref().unwrap();
 
@@ -466,11 +467,11 @@
 
     <span class="doccomment">/// Slow case: need to handle lowercasing or NFKC normalization
     /// Slow version needs to walk every character
-    </span><span class="kw">fn </span>replace_slow&lt;<span class="lifetime">&#39;a</span>&gt;(
-        <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>,
+    </span><span class="kw">fn </span>replace_slow&lt;<span class="lifetime">'a</span>&gt;(
+        <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">self</span>,
         buffer: <span class="kw-2">&amp;</span>InputBuffer,
-        <span class="kw-2">mut </span>replacer: InputEditor&lt;<span class="lifetime">&#39;a</span>&gt;,
-    ) -&gt; SudachiResult&lt;InputEditor&lt;<span class="lifetime">&#39;a</span>&gt;&gt; {
+        <span class="kw-2">mut </span>replacer: InputEditor&lt;<span class="lifetime">'a</span>&gt;,
+    ) -&gt; SudachiResult&lt;InputEditor&lt;<span class="lifetime">'a</span>&gt;&gt; {
         <span class="kw">let </span>cur = buffer.current();
         <span class="kw">let </span>checker = <span class="self">self</span>.checker.as_ref().unwrap();
         <span class="kw">let </span><span class="kw-2">mut </span>min_offset = <span class="number">0</span>;
@@ -501,7 +502,7 @@
                     <span class="kw">_ </span>=&gt; <span class="bool-val">true</span>,
                 };
 
-            <span class="comment">// iterator types are incompatible, so calls can&#39;t be moved outside branches
+            <span class="comment">// iterator types are incompatible, so calls can't be moved outside branches
             </span><span class="kw">match </span>(need_lowercase, need_nkfc) {
                 <span class="comment">//no need to do anything
                 </span>(<span class="bool-val">false</span>, <span class="bool-val">false</span>) =&gt; <span class="kw">continue</span>,
@@ -525,10 +526,10 @@
         <span class="prelude-val">Ok</span>(replacer)
     }
 
-    <span class="kw">fn </span>handle_normalization_slow&lt;<span class="lifetime">&#39;a</span>, I: Iterator&lt;Item = char&gt;&gt;(
-        <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>,
+    <span class="kw">fn </span>handle_normalization_slow&lt;<span class="lifetime">'a</span>, I: Iterator&lt;Item = char&gt;&gt;(
+        <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">self</span>,
         <span class="kw-2">mut </span>data: I,
-        replacer: <span class="kw-2">&amp;mut </span>InputEditor&lt;<span class="lifetime">&#39;a</span>&gt;,
+        replacer: <span class="kw-2">&amp;mut </span>InputEditor&lt;<span class="lifetime">'a</span>&gt;,
         start: usize,
         len: usize,
         ch: char,
@@ -570,11 +571,11 @@
         <span class="bool-val">true
     </span>}
 
-    <span class="kw">fn </span>rewrite_impl&lt;<span class="lifetime">&#39;a</span>&gt;(
-        <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>,
+    <span class="kw">fn </span>rewrite_impl&lt;<span class="lifetime">'a</span>&gt;(
+        <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">self</span>,
         buffer: <span class="kw-2">&amp;</span>InputBuffer,
-        edit: InputEditor&lt;<span class="lifetime">&#39;a</span>&gt;,
-    ) -&gt; SudachiResult&lt;InputEditor&lt;<span class="lifetime">&#39;a</span>&gt;&gt; {
+        edit: InputEditor&lt;<span class="lifetime">'a</span>&gt;,
+    ) -&gt; SudachiResult&lt;InputEditor&lt;<span class="lifetime">'a</span>&gt;&gt; {
         <span class="kw">let </span>chars = buffer.current_chars();
         <span class="kw">let </span>need_nkfc = <span class="kw">match </span>is_nfkc_quick(chars.iter().cloned()) {
             IsNormalized::Yes =&gt; <span class="bool-val">false</span>,
