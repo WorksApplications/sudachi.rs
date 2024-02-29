@@ -88,7 +88,7 @@ impl<D: DictionaryAccess> StatefulTokenizer<D> {
 
     /// Return current analysis mode
     pub fn mode(&self) -> Mode {
-        return self.mode
+        return self.mode;
     }
 
     /// Analyzer will read only following [`WordInfo`] field subset

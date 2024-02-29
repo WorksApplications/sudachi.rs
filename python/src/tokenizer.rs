@@ -26,8 +26,8 @@ use sudachi::dic::subset::InfoSubset;
 use sudachi::prelude::*;
 
 use crate::dictionary::{extract_mode, PyDicData};
+use crate::errors::SudachiError as SudachiPyErr;
 use crate::morpheme::{PyMorphemeListWrapper, PyProjector};
-use crate::errors::{SudachiError as SudachiPyErr};
 
 /// Unit to split text
 ///
@@ -72,16 +72,15 @@ impl PySplitMode {
     fn new(mode: Option<&str>) -> PyResult<PySplitMode> {
         let mode = match mode {
             Some(m) => m,
-            None => return Ok(PySplitMode::C)
+            None => return Ok(PySplitMode::C),
         };
 
         match Mode::from_str(mode) {
             Ok(m) => Ok(m.into()),
-            Err(e) => Err(SudachiPyErr::new_err(e.to_string()))
+            Err(e) => Err(SudachiPyErr::new_err(e.to_string())),
         }
     }
 }
-
 
 /// Sudachi Tokenizer, Python version
 #[pyclass(module = "sudachipy.tokenizer", name = "Tokenizer")]
@@ -141,11 +140,10 @@ impl PyTokenizer {
         logger: Option<PyObject>,
         out: Option<&'py PyCell<PyMorphemeListWrapper>>,
     ) -> PyResult<&'py PyCell<PyMorphemeListWrapper>> {
-
         // restore default mode on scope exit
         let mode = match mode {
             None => None,
-            Some(m) => Some(extract_mode(py, m)?)
+            Some(m) => Some(extract_mode(py, m)?),
         };
         let default_mode = mode.map(|m| self.tokenizer.set_mode(m.into()));
         let mut tokenizer = scopeguard::guard(&mut self.tokenizer, |t| {
