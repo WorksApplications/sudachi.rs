@@ -13,6 +13,7 @@ README*.html
 python/dist/
 __pycache__/
 .env
+.venv
 *.egg-info
 *.so
 python/py_src/sudachipy/*.pyd

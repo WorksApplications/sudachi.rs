@@ -1,5 +1,5 @@
 from typing import ClassVar, Iterator, List, Tuple, Union, Callable, Iterable, Optional, Literal, Set
-from sudachipy.config import Config
+from .config import Config
 
 POS = Tuple[str, str, str, str, str, str]
 # POS element
@@ -32,7 +32,12 @@ class SplitMode:
     B: ClassVar[SplitMode] = ...
     C: ClassVar[SplitMode] = ...
     @classmethod
-    def __init__(cls) -> None: ...
+    def __init__(cls, mode: str = "C") -> None:
+        """
+        Creates a split mode from a string value
+        :param mode: string representation of the split mode
+        """
+        ...
 
 
 class Dictionary:
@@ -65,7 +70,7 @@ class Dictionary:
         ...
 
     def create(self,
-               mode: SplitMode = SplitMode.C,
+               mode: Union[SplitMode, Literal["A"], Literal["B"], Literal["C"]] = SplitMode.C,
                fields: FieldSet = None,
                *,
                projection: str = None) -> Tokenizer:
@@ -191,7 +196,7 @@ class Morpheme:
         """
         ...
 
-    def split(self, mode: SplitMode, out: Optional[MorphemeList] = None, add_single: bool = True) -> MorphemeList:
+    def split(self, mode: Union[SplitMode, Literal["A", "B", "C"]], out: Optional[MorphemeList] = None, add_single: bool = True) -> MorphemeList:
         """
         Returns sub-morphemes in the provided split mode.
 
@@ -278,7 +283,7 @@ class Tokenizer:
     def __init__(cls) -> None: ...
 
     def tokenize(self, text: str,
-                 mode: SplitMode = ...,
+                 mode: Union[SplitMode, Literal["A", "B", "C"]] = ...,
                  out: Optional[MorphemeList] = None) -> MorphemeList:
         """
         Break text into morphemes.
@@ -292,6 +297,14 @@ class Tokenizer:
             If you need multi-level splitting, prefer using :py:meth:`Morpheme.split` method instead.
         :param out: tokenization results will be written into this MorphemeList, a new one will be created instead.
             See https://worksapplications.github.io/sudachi.rs/python/topics/out_param.html for details.
+        """
+        ...
+
+    @property
+    def mode(self) -> SplitMode:
+        """
+        Get the current analysis mode
+        :return: current analysis mode
         """
         ...
 

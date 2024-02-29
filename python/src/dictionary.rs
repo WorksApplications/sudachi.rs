@@ -20,7 +20,9 @@ use std::convert::TryFrom;
 use std::fmt::Write;
 use std::ops::Deref;
 use std::path::{Path, PathBuf};
+use std::str::FromStr;
 use std::sync::Arc;
+use sudachi::analysis::Mode;
 
 use crate::errors::{wrap, wrap_ctx, SudachiError as SudachiErr};
 use sudachi::analysis::stateless_tokenizer::DictionaryAccess;
@@ -218,16 +220,20 @@ impl PyDictionary {
     /// :param fields: load only a subset of fields.
     ///     See https://worksapplications.github.io/sudachi.rs/python/topics/subsetting.html
     #[pyo3(
-        text_signature = "($self, mode: sudachipy.SplitMode = sudachipy.SplitMode.C) -> sudachipy.Tokenizer",
+        text_signature = "($self, mode = 'C') -> sudachipy.Tokenizer",
         signature = (mode = None, fields = None, *, projection = None)
     )]
-    fn create(
-        &self,
-        mode: Option<PySplitMode>,
-        fields: Option<&PySet>,
-        projection: Option<&PyString>,
+    fn create<'py>(
+        &'py self,
+        py: Python<'py>,
+        mode: Option<&'py PyAny>,
+        fields: Option<&'py PySet>,
+        projection: Option<&'py PyString>,
     ) -> PyResult<PyTokenizer> {
-        let mode = mode.unwrap_or(PySplitMode::C).into();
+        let mode = match mode {
+            Some(m) => extract_mode(py, m)?,
+            None => Mode::C,
+        };
         let fields = parse_field_subset(fields)?;
         let mut required_fields = self.config.projection.required_subset();
         let dict = self.dictionary.as_ref().unwrap().clone();
@@ -399,6 +405,18 @@ fn config_repr(cfg: &Config) -> Result<String, std::fmt::Error> {
 
     write!(result, ")>")?;
     Ok(result)
+}
+
+pub(crate) fn extract_mode<'py>(py: Python<'py>, mode: &'py PyAny) -> PyResult<Mode> {
+    if mode.is_instance_of::<PyString>() {
+        let mode = mode.str()?.to_str()?;
+        Mode::from_str(mode).map_err(|e| SudachiErr::new_err(e).into())
+    } else if mode.is_instance_of::<PySplitMode>() {
+        let mode = mode.extract::<PySplitMode>()?;
+        Ok(Mode::from(mode))
+    } else {
+        Err(SudachiErr::new_err(("unknown mode", mode.into_py(py))))
+    }
 }
 
 fn read_config_from_fs(path: Option<&Path>) -> PyResult<ConfigBuilder> {

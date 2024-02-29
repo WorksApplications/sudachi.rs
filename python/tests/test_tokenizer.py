@@ -27,8 +27,25 @@ class TestTokenizer(unittest.TestCase):
             resource_dir, 'sudachi.json'), resource_dir)
         self.tokenizer_obj = self.dict_.create()
 
-    def test_nothing(self):
-        pass
+    def test_split_mode_default(self):
+        mode_c = SplitMode()
+        self.assertEqual(mode_c, SplitMode.C)
+
+    def test_split_mode_from_string_a(self):
+        mode = SplitMode("A")
+        self.assertEqual(mode, SplitMode.A)
+
+    def test_split_mode_from_string_b(self):
+        mode = SplitMode("B")
+        self.assertEqual(mode, SplitMode.B)
+
+    def test_split_mode_from_string_c(self):
+        mode = SplitMode("C")
+        self.assertEqual(mode, SplitMode.C)
+
+    def test_tokenizer_with_split_mode_str(self):
+        tok_a = self.dict_.create("A")
+        self.assertEqual(tok_a.mode, SplitMode.A)
 
     def test_tokenize_small_katanana_only(self):
         ms = self.tokenizer_obj.tokenize('ァ')
@@ -106,6 +123,16 @@ class TestTokenizer(unittest.TestCase):
         self.assertEqual(ms[0].surface(), '東京都')
 
         ms_a = ms[0].split(SplitMode.A)
+        self.assertEqual(2, ms_a.size())
+        self.assertEqual(ms_a[0].surface(), '東京')
+        self.assertEqual(ms_a[1].surface(), '都')
+
+    def test_tokenizer_morpheme_split_strings(self):
+        ms = self.tokenizer_obj.tokenize('東京都', 'C')
+        self.assertEqual(1, ms.size())
+        self.assertEqual(ms[0].surface(), '東京都')
+
+        ms_a = ms[0].split('A')
         self.assertEqual(2, ms_a.size())
         self.assertEqual(ms_a[0].surface(), '東京')
         self.assertEqual(ms_a[1].surface(), '都')

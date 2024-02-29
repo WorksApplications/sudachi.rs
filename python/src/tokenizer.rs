@@ -14,9 +14,10 @@
  *  limitations under the License.
  */
 
+use std::ops::DerefMut;
+use std::str::FromStr;
 use std::sync::Arc;
 
-use pyo3::exceptions::PyException;
 use pyo3::prelude::*;
 
 use sudachi::analysis::stateful_tokenizer::StatefulTokenizer;
@@ -24,8 +25,9 @@ use sudachi::analysis::stateful_tokenizer::StatefulTokenizer;
 use sudachi::dic::subset::InfoSubset;
 use sudachi::prelude::*;
 
-use crate::dictionary::PyDicData;
+use crate::dictionary::{extract_mode, PyDicData};
 use crate::morpheme::{PyMorphemeListWrapper, PyProjector};
+use crate::errors::{SudachiError as SudachiPyErr};
 
 /// Unit to split text
 ///
@@ -35,25 +37,13 @@ use crate::morpheme::{PyMorphemeListWrapper, PyProjector};
 ///
 /// C == long mode
 //
-// This implementation is a workaround. Waiting for the pyo3 enum feature.
-// ref: [PyO3 issue #834](https://github.com/PyO3/pyo3/issues/834).
-#[pyclass(module = "sudachipy.tokenizer", name = "SplitMode")]
-#[derive(Clone, PartialEq, Eq)]
-#[repr(transparent)]
-pub struct PySplitMode {
-    mode: u8,
-}
-
-#[pymethods]
-impl PySplitMode {
-    #[classattr]
-    pub const A: Self = Self { mode: 0 };
-
-    #[classattr]
-    pub const B: Self = Self { mode: 1 };
-
-    #[classattr]
-    pub const C: Self = Self { mode: 2 };
+#[pyclass(module = "sudachipy.tokenizer", name = "SplitMode", frozen)]
+#[derive(Clone, PartialEq, Eq, Copy, Debug)]
+#[repr(u8)]
+pub enum PySplitMode {
+    A,
+    B,
+    C,
 }
 
 impl From<PySplitMode> for Mode {
@@ -61,10 +51,37 @@ impl From<PySplitMode> for Mode {
         match mode {
             PySplitMode::A => Mode::A,
             PySplitMode::B => Mode::B,
-            _ => Mode::C,
+            PySplitMode::C => Mode::C,
         }
     }
 }
+
+impl From<Mode> for PySplitMode {
+    fn from(value: Mode) -> Self {
+        match value {
+            Mode::A => PySplitMode::A,
+            Mode::B => PySplitMode::B,
+            Mode::C => PySplitMode::C,
+        }
+    }
+}
+
+#[pymethods]
+impl PySplitMode {
+    #[new]
+    fn new(mode: Option<&str>) -> PyResult<PySplitMode> {
+        let mode = match mode {
+            Some(m) => m,
+            None => return Ok(PySplitMode::C)
+        };
+
+        match Mode::from_str(mode) {
+            Ok(m) => Ok(m.into()),
+            Err(e) => Err(SudachiPyErr::new_err(e.to_string()))
+        }
+    }
+}
+
 
 /// Sudachi Tokenizer, Python version
 #[pyclass(module = "sudachipy.tokenizer", name = "Tokenizer")]
@@ -112,7 +129,7 @@ impl PyTokenizer {
     /// :type mode: sudachipy.SplitMode
     /// :type out: sudachipy.MorphemeList
     #[pyo3(
-        text_signature = "($self, text: str, mode: SplitMode = None, logger = None, out = None) -> sudachipy.MorphemeList",
+        text_signature = "($self, text: str, mode = None, logger = None, out = None) -> sudachipy.MorphemeList",
         signature = (text, mode = None, logger = None, out = None)
     )]
     #[allow(unused_variables)]
@@ -120,21 +137,34 @@ impl PyTokenizer {
         &'py mut self,
         py: Python<'py>,
         text: &'py str,
-        mode: Option<PySplitMode>,
+        mode: Option<&PyAny>,
         logger: Option<PyObject>,
         out: Option<&'py PyCell<PyMorphemeListWrapper>>,
     ) -> PyResult<&'py PyCell<PyMorphemeListWrapper>> {
-        // keep default mode to restore later
-        let default_mode = mode.map(|m| self.tokenizer.set_mode(m.into()));
 
-        self.tokenizer.reset().push_str(text);
-        self.tokenizer
-            .do_tokenize()
-            .map_err(|e| PyException::new_err(format!("Tokenization error: {}", e.to_string())))?;
+        // restore default mode on scope exit
+        let mode = match mode {
+            None => None,
+            Some(m) => Some(extract_mode(py, m)?)
+        };
+        let default_mode = mode.map(|m| self.tokenizer.set_mode(m.into()));
+        let mut tokenizer = scopeguard::guard(&mut self.tokenizer, |t| {
+            default_mode.map(|m| t.set_mode(m));
+        });
+
+        // this needs to be in GIL as it references Python memory
+        tokenizer.reset().push_str(text);
+        // analysis can be done without GIL
+        let err = {
+            let tokenizer = tokenizer.deref_mut();
+            py.allow_threads(|| tokenizer.do_tokenize())
+        };
+
+        err.map_err(|e| SudachiPyErr::new_err(format!("Tokenization error: {}", e.to_string())))?;
 
         let out_list = match out {
             None => {
-                let dict = self.tokenizer.dict_clone();
+                let dict = tokenizer.dict_clone();
                 let morphemes = MorphemeList::empty(dict);
                 let wrapper =
                     PyMorphemeListWrapper::from_components(morphemes, self.projection.clone());
@@ -146,16 +176,18 @@ impl PyTokenizer {
         let mut borrow = out_list.try_borrow_mut();
         let morphemes = match borrow {
             Ok(ref mut ms) => ms.internal_mut(py),
-            Err(e) => return Err(PyException::new_err("out was used twice at the same time")),
+            Err(e) => return Err(SudachiPyErr::new_err("out was used twice at the same time")),
         };
 
         morphemes
-            .collect_results(&mut self.tokenizer)
-            .map_err(|e| PyException::new_err(format!("Tokenization error: {}", e.to_string())))?;
-
-        // restore default mode
-        default_mode.map(|m| self.tokenizer.set_mode(m));
+            .collect_results(tokenizer.deref_mut())
+            .map_err(|e| SudachiPyErr::new_err(format!("Tokenization error: {}", e.to_string())))?;
 
         Ok(out_list)
+    }
+
+    #[getter]
+    fn mode(&self) -> PySplitMode {
+        self.tokenizer.mode().into()
     }
 }
