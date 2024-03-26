@@ -70,7 +70,7 @@ class Dictionary:
         ...
 
     def create(self,
-               mode: Union[SplitMode, Literal["A"], Literal["B"], Literal["C"]] = SplitMode.C,
+               mode: Union[SplitMode, Literal["A", "B", "C"]] = SplitMode.C,
                fields: FieldSet = None,
                *,
                projection: str = None) -> Tokenizer:
@@ -101,7 +101,7 @@ class Dictionary:
         ...
 
     def pre_tokenizer(self,
-                      mode: SplitMode = SplitMode.C,
+                      mode: Union[SplitMode, Literal["A", "B", "C"]] = "C",
                       fields: FieldSet = None,
                       handler: Optional[Callable[[int, object, MorphemeList], list]] = None,
                       *,

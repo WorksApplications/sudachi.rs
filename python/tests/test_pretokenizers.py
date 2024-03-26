@@ -58,6 +58,21 @@ class PretokenizerTestCase(unittest.TestCase):
         res = tok.encode("外国人参政権")
         self.assertEqual(res.ids, [1, 5, 2, 3])
 
+    def test_works_with_different_split_mode_str(self):
+        pretok = self.dict.pre_tokenizer(mode='A')
+        vocab = {
+            "[UNK]": 0,
+            "外国": 1,
+            "参政": 2,
+            "権": 3,
+            "人": 5,
+            "外国人参政権": 4
+        }
+        tok = tokenizers.Tokenizer(WordLevel(vocab, unk_token="[UNK]"))
+        tok.pre_tokenizer = pretok
+        res = tok.encode("外国人参政権")
+        self.assertEqual(res.ids, [1, 5, 2, 3])
+
     def test_with_handler(self):
         def _handler(index, sentence: tokenizers.NormalizedString, ml: MorphemeList):
             return [tokenizers.NormalizedString(ml[0].part_of_speech()[0]), tokenizers.NormalizedString(str(len(ml)))]

@@ -289,12 +289,15 @@ impl PyDictionary {
     fn pre_tokenizer<'p>(
         &'p self,
         py: Python<'p>,
-        mode: Option<PySplitMode>,
+        mode: Option<&PyAny>,
         fields: Option<&PySet>,
         handler: Option<Py<PyAny>>,
         projection: Option<&PyString>,
     ) -> PyResult<&'p PyAny> {
-        let mode = mode.unwrap_or(PySplitMode::C).into();
+        let mode = match mode {
+            Some(m) => extract_mode(py, m)?,
+            None => Mode::C,
+        };
         let subset = parse_field_subset(fields)?;
         if let Some(h) = handler.as_ref() {
             if !h.as_ref(py).is_callable() {
