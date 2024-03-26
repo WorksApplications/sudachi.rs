@@ -150,13 +150,11 @@ impl PyTokenizer {
             default_mode.map(|m| t.set_mode(m));
         });
 
-        // this needs to be in GIL as it references Python memory
-        tokenizer.reset().push_str(text);
         // analysis can be done without GIL
-        let err = {
-            let tokenizer = tokenizer.deref_mut();
-            py.allow_threads(|| tokenizer.do_tokenize())
-        };
+        let err = py.allow_threads(|| {
+            tokenizer.reset().push_str(text);
+            tokenizer.do_tokenize()
+        });
 
         err.map_err(|e| SudachiPyErr::new_err(format!("Tokenization error: {}", e.to_string())))?;
 
