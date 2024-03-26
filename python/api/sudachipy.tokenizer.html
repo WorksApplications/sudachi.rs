@@ -59,6 +59,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#module-sudachipy.tokenizer">Module contents</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#sudachipy.tokenizer.Tokenizer"><code class="docutils literal notranslate"><span class="pre">Tokenizer</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#sudachipy.tokenizer.Tokenizer.SplitMode"><code class="docutils literal notranslate"><span class="pre">Tokenizer.SplitMode</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sudachipy.tokenizer.Tokenizer.mode"><code class="docutils literal notranslate"><span class="pre">Tokenizer.mode</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#sudachipy.tokenizer.Tokenizer.tokenize"><code class="docutils literal notranslate"><span class="pre">Tokenizer.tokenize()</span></code></a></li>
 </ul>
 </li>
@@ -117,12 +118,17 @@
 <dd><p>Sudachi Tokenizer, Python version</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="sudachipy.tokenizer.Tokenizer.SplitMode">
-<span class="sig-name descname"><span class="pre">SplitMode</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;sudachipy.tokenizer.SplitMode</span> <span class="pre">object&gt;</span></em><a class="headerlink" href="#sudachipy.tokenizer.Tokenizer.SplitMode" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">SplitMode</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">SplitMode.C</span></em><a class="headerlink" href="#sudachipy.tokenizer.Tokenizer.SplitMode" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="sudachipy.tokenizer.Tokenizer.mode">
+<span class="sig-name descname"><span class="pre">mode</span></span><a class="headerlink" href="#sudachipy.tokenizer.Tokenizer.mode" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="sudachipy.tokenizer.Tokenizer.tokenize">
-<span class="sig-name descname"><span class="pre">tokenize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">$self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">text:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode:</span> <span class="pre">SplitMode</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out</span> <span class="pre">=</span> <span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="sudachipy.html#sudachipy.MorphemeList" title="sudachipy.MorphemeList"><span class="pre">sudachipy.MorphemeList</span></a></span></span><a class="headerlink" href="#sudachipy.tokenizer.Tokenizer.tokenize" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">tokenize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">$self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">text:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out</span> <span class="pre">=</span> <span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="sudachipy.html#sudachipy.MorphemeList" title="sudachipy.MorphemeList"><span class="pre">sudachipy.MorphemeList</span></a></span></span><a class="headerlink" href="#sudachipy.tokenizer.Tokenizer.tokenize" title="Link to this definition"></a></dt>
 <dd><p>–</p>
 <p>Break text into morphemes.</p>
 <p>SudachiPy 0.5.* had logger parameter, it is accepted, but ignored.</p>
