@@ -86,6 +86,11 @@ impl<D: DictionaryAccess> StatefulTokenizer<D> {
         std::mem::replace(&mut self.mode, mode)
     }
 
+    /// Return current analysis mode
+    pub fn mode(&self) -> Mode {
+        return self.mode;
+    }
+
     /// Analyzer will read only following [`WordInfo`] field subset
     pub fn set_subset(&mut self, subset: InfoSubset) -> InfoSubset {
         let mode_subset = match self.mode {

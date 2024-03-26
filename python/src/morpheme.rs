@@ -24,9 +24,8 @@ use pyo3::types::{PyList, PyString, PyTuple, PyType};
 
 use sudachi::prelude::{Morpheme, MorphemeList};
 
-use crate::dictionary::{PyDicData, PyDictionary};
+use crate::dictionary::{extract_mode, PyDicData, PyDictionary};
 use crate::projection::MorphemeProjection;
-use crate::tokenizer::PySplitMode;
 use crate::word_info::PyWordInfo;
 
 pub(crate) type PyMorphemeList = MorphemeList<Arc<PyDicData>>;
@@ -362,11 +361,13 @@ impl PyMorpheme {
     fn split<'py>(
         &'py self,
         py: Python<'py>,
-        mode: PySplitMode,
+        mode: &PyAny,
         out: Option<&'py PyCell<PyMorphemeListWrapper>>,
         add_single: Option<bool>,
     ) -> PyResult<&'py PyCell<PyMorphemeListWrapper>> {
         let list = self.list(py);
+
+        let mode = extract_mode(py, mode)?;
 
         let out_cell = match out {
             None => {
@@ -385,7 +386,7 @@ impl PyMorpheme {
         out_ref.clear();
         let splitted = list
             .internal(py)
-            .split_into(mode.into(), self.index, out_ref)
+            .split_into(mode, self.index, out_ref)
             .map_err(|e| {
                 PyException::new_err(format!("Error while splitting morpheme: {}", e.to_string()))
             })?;
