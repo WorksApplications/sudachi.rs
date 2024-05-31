@@ -179,7 +179,7 @@ impl NumericParser {
     }
 
     pub fn get_normalized(&mut self) -> String {
-        self.total.to_string()
+        self.total.get_normalized()
     }
 
     fn check_comma(&self) -> bool {
