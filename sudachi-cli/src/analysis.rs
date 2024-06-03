@@ -51,14 +51,14 @@ impl<'a> Analysis for SplitSentencesOnly<'a> {
     }
 }
 
-pub struct AnalyzeNonSplitted<D: DictionaryAccess, O: SudachiOutput<D>> {
-    output: O,
+pub struct AnalyzeNonSplitted<D: DictionaryAccess, O: SudachiOutput<D> + ?Sized> {
+    output: Box<O>,
     analyzer: StatefulTokenizer<D>,
     morphemes: MorphemeList<D>,
 }
 
-impl<D: DictionaryAccess + Clone, O: SudachiOutput<D>> AnalyzeNonSplitted<D, O> {
-    pub fn new(output: O, dict: D, mode: Mode, enable_debug: bool) -> Self {
+impl<D: DictionaryAccess + Clone, O: SudachiOutput<D> + ?Sized> AnalyzeNonSplitted<D, O> {
+    pub fn new(output: Box<O>, dict: D, mode: Mode, enable_debug: bool) -> Self {
         Self {
             output,
             morphemes: MorphemeList::empty(dict.clone()),
@@ -67,7 +67,7 @@ impl<D: DictionaryAccess + Clone, O: SudachiOutput<D>> AnalyzeNonSplitted<D, O> 
     }
 }
 
-impl<D: DictionaryAccess, O: SudachiOutput<D>> Analysis for AnalyzeNonSplitted<D, O> {
+impl<D: DictionaryAccess, O: SudachiOutput<D> + ?Sized> Analysis for AnalyzeNonSplitted<D, O> {
     fn analyze(&mut self, input: &str, writer: &mut Writer) {
         self.analyzer.reset().push_str(input);
         self.analyzer
@@ -86,13 +86,13 @@ impl<D: DictionaryAccess, O: SudachiOutput<D>> Analysis for AnalyzeNonSplitted<D
     }
 }
 
-pub struct AnalyzeSplitted<'a, D: DictionaryAccess + 'a, O: SudachiOutput<&'a D>> {
+pub struct AnalyzeSplitted<'a, D: DictionaryAccess + 'a, O: SudachiOutput<&'a D> + ?Sized> {
     splitter: SentenceSplitter<'a>,
     inner: AnalyzeNonSplitted<&'a D, O>,
 }
 
-impl<'a, D: DictionaryAccess + 'a, O: SudachiOutput<&'a D>> AnalyzeSplitted<'a, D, O> {
-    pub fn new(output: O, dict: &'a D, mode: Mode, enable_debug: bool) -> Self {
+impl<'a, D: DictionaryAccess + 'a, O: SudachiOutput<&'a D> + ?Sized> AnalyzeSplitted<'a, D, O> {
+    pub fn new(output: Box<O>, dict: &'a D, mode: Mode, enable_debug: bool) -> Self {
         Self {
             inner: AnalyzeNonSplitted::new(output, dict, mode, enable_debug),
             splitter: SentenceSplitter::new().with_checker(dict.lexicon()),
@@ -100,7 +100,9 @@ impl<'a, D: DictionaryAccess + 'a, O: SudachiOutput<&'a D>> AnalyzeSplitted<'a, 
     }
 }
 
-impl<'a, D: DictionaryAccess + 'a, O: SudachiOutput<&'a D>> Analysis for AnalyzeSplitted<'a, D, O> {
+impl<'a, D: DictionaryAccess + 'a, O: SudachiOutput<&'a D> + ?Sized> Analysis
+    for AnalyzeSplitted<'a, D, O>
+{
     fn analyze(&mut self, input: &str, writer: &mut Writer) {
         for (_, sent) in self.splitter.split(input) {
             self.inner.analyze(sent, writer);
