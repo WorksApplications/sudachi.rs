@@ -85,7 +85,7 @@ impl StrPosEntry {
         Self { data: owned }
     }
 
-    pub fn from_built_pos(data: &Vec<String>) -> Self {
+    pub fn from_built_pos(data: &[String]) -> Self {
         let mut iter = data.iter().map(|x| x.as_str());
         let p1 = Cow::Borrowed(iter.next().unwrap());
         let p2 = Cow::Borrowed(iter.next().unwrap());
