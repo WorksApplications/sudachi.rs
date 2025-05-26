@@ -13,6 +13,7 @@
 #   limitations under the License.
 import dataclasses as _dataclasses
 from json import dumps as _dumps
+from typing import List
 
 
 @_dataclasses.dataclass
@@ -32,7 +33,7 @@ class Config:
     we try to load the dictionary from the SudachiDict_{system} installed package.
     For example, for "core" we will try to load the dictionary from the installed SudachiDict_core package.
     """
-    user: list[str] = None
+    user: List[str] = None
     """
     Paths to user dictionaries, maximum number of user dictionaries is 14
     """
