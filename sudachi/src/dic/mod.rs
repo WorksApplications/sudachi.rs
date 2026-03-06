@@ -28,6 +28,7 @@ use crate::plugin::oov::OovProviderPlugin;
 use crate::plugin::path_rewrite::PathRewritePlugin;
 use crate::prelude::*;
 
+#[cfg(feature = "build-dictionary")]
 pub mod build;
 pub mod category_type;
 pub mod character_category;

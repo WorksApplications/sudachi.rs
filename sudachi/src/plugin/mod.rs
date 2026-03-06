@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#[cfg(not(target_family = "wasm"))]
 use libloading::Error as LLError;
 use thiserror::Error;
 
@@ -40,6 +41,7 @@ pub enum PluginError {
     #[error("IO Error: {0}")]
     Io(#[from] std::io::Error),
 
+    #[cfg(not(target_family = "wasm"))]
     #[error("Libloading Error: {message} ; {source}")]
     Libloading { source: LLError, message: String },
 
@@ -50,6 +52,7 @@ pub enum PluginError {
     InvalidDataFormat(String),
 }
 
+#[cfg(not(target_family = "wasm"))]
 impl From<LLError> for PluginError {
     fn from(e: LLError) -> Self {
         PluginError::Libloading {

@@ -61,6 +61,31 @@ fn load_system_dic(cfg: &Config) -> SudachiResult<Storage> {
 }
 
 impl JapaneseDictionary {
+    /// Creates a dictionary from system dictionary bytes, using the embedded character definition.
+    /// Suitable for WASM and other environments without filesystem access.
+    ///
+    /// # Example
+    /// ```no_run
+    /// # use sudachi::dic::dictionary::JapaneseDictionary;
+    /// let dict_bytes = std::fs::read("system.dic").unwrap();
+    /// let dict = JapaneseDictionary::from_system_bytes(dict_bytes).unwrap();
+    /// ```
+    pub fn from_system_bytes(system_dict: Vec<u8>) -> SudachiResult<JapaneseDictionary> {
+        let cfg = Config::new_embedded()?;
+        let storage = SudachiDicData::new(Storage::Owned(system_dict));
+        Self::from_cfg_storage_with_embedded_chardef(&cfg, storage)
+    }
+
+    /// Creates a dictionary from a static system dictionary slice, using the embedded character
+    /// definition. Suitable for dictionaries embedded with `include_bytes!`.
+    pub fn from_system_static_bytes(
+        system_dict: &'static [u8],
+    ) -> SudachiResult<JapaneseDictionary> {
+        let cfg = Config::new_embedded()?;
+        let storage = SudachiDicData::new(Storage::Borrowed(system_dict));
+        Self::from_cfg_storage_with_embedded_chardef(&cfg, storage)
+    }
+
     /// Creates a dictionary from the specified configuration
     /// Dictionaries will be read from disk
     pub fn from_cfg(cfg: &Config) -> SudachiResult<JapaneseDictionary> {
