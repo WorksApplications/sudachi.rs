@@ -178,20 +178,28 @@ impl InputBuffer {
         if self.mod_chars.is_empty() {
             return;
         }
-        // single pass algorithm
-        // by default continuity is 1 codepoint
-        // go from the back and set it prev + 1 when chars are compatible
-        self.mod_cat_continuity.resize(self.mod_chars.len(), 1);
-        let mut cat = *self.mod_cat.last().unwrap_or(&CategoryType::all());
-        for i in (0..self.mod_cat.len() - 1).rev() {
-            let cur = self.mod_cat[i];
-            let common = cur & cat;
-            if !common.is_empty() {
-                self.mod_cat_continuity[i] = self.mod_cat_continuity[i + 1] + 1;
-                cat = common;
-            } else {
-                cat = cur;
+        self.mod_cat_continuity.clear();
+        self.mod_cat_continuity.reserve(self.mod_cat.len());
+
+        let mut length = 1;
+        for start in 0..self.mod_cat.len() {
+            // skip intermediate to align with Java implementation
+            if length > 1 {
+                length -= 1;
+                self.mod_cat_continuity.push(length);
+                continue;
             }
+
+            let mut common = self.mod_cat[start];
+            length = 1;
+            while start + length < self.mod_cat.len() {
+                common &= self.mod_cat[start + length];
+                if common.is_empty() {
+                    break;
+                }
+                length += 1;
+            }
+            self.mod_cat_continuity.push(length);
         }
     }
 

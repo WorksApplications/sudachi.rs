@@ -77,6 +77,18 @@ fn get_char_category_continuous_length() {
 }
 
 #[test]
+fn get_char_category_continuous_length_with_multi_category_char() {
+    let grammar = cat_grammar();
+    // categories are: KANJI / KANJI|SYMBOL / SYMBOL
+    let mut input = InputBuffer::from("漢々！");
+    input.build(&grammar).expect("works");
+    // we expect continuous length to be 2/1/1, not 2/2/1 respecting Java implementation
+    assert_eq!(2, input.cat_continuous_len(0)); // 漢
+    assert_eq!(1, input.cat_continuous_len(1)); // 々
+    assert_eq!(1, input.cat_continuous_len(2)); // ！
+}
+
+#[test]
 fn range_cat() {
     let grammar = cat_grammar();
     let mut input = InputBuffer::from("âｂC1あ234漢字𡈽アｺﾞ");

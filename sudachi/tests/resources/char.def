@@ -12,7 +12,7 @@ ALPHA           1 1 0
 0xFF9E..0xFF9F  KATAKANA
 0x2E80..0x2EF3  KANJI # CJK Raidcals Supplement
 0x2F00..0x2FD5  KANJI
-0x3005          KANJI
+0x3005          KANJI SYMBOL # 々
 0x3007          KANJI
 0x3400..0x4DB5  KANJI # CJK Unified Ideographs Extention
 0x4E00..0x9FA5  KANJI
