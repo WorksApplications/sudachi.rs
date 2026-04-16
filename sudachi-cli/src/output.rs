@@ -128,14 +128,12 @@ fn write_morpheme_extended<T: DictionaryAccess>(
 ) -> SudachiResult<()> {
     write!(
         writer,
-        "\t{}\t{}\t{}\t{:?}",
+        "\t{}\t{}\t{}\t{:?}\t{}",
         morpheme.dictionary_form(),
         morpheme.reading_form(),
         morpheme.dictionary_id(),
         morpheme.synonym_group_ids(),
+        if morpheme.is_oov() { "(OOV)" } else { "" },
     )?;
-    if morpheme.is_oov() {
-        writer.write_all(b"\t(OOV)")?;
-    }
     Ok(())
 }
