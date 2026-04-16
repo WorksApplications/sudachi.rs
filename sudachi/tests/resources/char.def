@@ -33,4 +33,4 @@ ALPHA           1 1 0
 0x1F3FB..0x1F3FE ALL NOOOVBOW # emoji skin tone modifiers https://codepoints.net/U+1F3FF
 
 # Combination marks
-0x200C..0x200D ALL NOOOVBOW2 # Zero Width Non-Joiner/Joiner
+0x200C..0x200D ALL NOOOVBOW NOOOVEOW # Zero Width Non-Joiner/Joiner

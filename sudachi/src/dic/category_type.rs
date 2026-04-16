@@ -58,10 +58,10 @@ bitflags! {
         const USER4 = (1 << 14);
         /** This character cannot be the beginning of an OOV word */
         const NOOOVBOW = (1 << 30);
-        /** This and next characters cannot be the beginning of an OOV word */
-        const NOOOVBOW2 = (1 << 31);
+        /** This character cannot be the end of an OOV word */
+        const NOOOVEOW = (1 << 31);
 
-        /** All categories at once except NOOOVBOW/2 */
+        /** All categories at once except NOOOVBOW/EOW */
         const ALL = 0b00111111_11111111_11111111_11111111;
     }
 }

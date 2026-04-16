@@ -135,11 +135,11 @@ impl InputBuffer {
         let mut last_offset = 0;
         let mut last_chidx = 0;
 
-        // Special cases for BOW logic
+        // Match the Java implementation: only continuation bytes and
+        // same-script alphabetic runs suppress BOW.
         let non_starting = CategoryType::ALPHA | CategoryType::GREEK | CategoryType::CYRILLIC;
         let mut prev_cat = CategoryType::empty();
         self.mod_bow.resize(self.modified.len(), false);
-        let mut next_bow = true;
 
         for (chidx, (bidx, ch)) in self.modified.char_indices().enumerate() {
             self.mod_chars.push(ch);
@@ -151,19 +151,7 @@ impl InputBuffer {
             last_offset = bidx;
             last_chidx = chidx;
 
-            let can_bow = if !next_bow {
-                // this char was forbidden by the previous one
-                next_bow = true;
-                false
-            } else if cat.intersects(CategoryType::NOOOVBOW2) {
-                // this rule is stronger than the next one and must come before
-                // this and next are forbidden
-                next_bow = false;
-                false
-            } else if cat.intersects(CategoryType::NOOOVBOW) {
-                // this char is forbidden
-                false
-            } else if cat.intersects(non_starting) {
+            let can_bow = if cat.intersects(non_starting) {
                 // the previous char is compatible
                 !cat.intersects(prev_cat)
             } else {
@@ -380,6 +368,15 @@ impl InputBuffer {
     pub fn can_bow(&self, offset: usize) -> bool {
         debug_assert_eq!(self.state, BufferState::RO);
         self.mod_bow[offset]
+    }
+
+    /// Whether the character can start a new OOV word.
+    #[inline]
+    pub fn can_oov_bow(&self, offset: usize) -> bool {
+        debug_assert_eq!(self.state, BufferState::RO);
+        let cat = self.mod_cat[offset];
+        !cat.contains(CategoryType::NOOOVBOW)
+            && (offset == 0 || !self.mod_cat[offset - 1].contains(CategoryType::NOOOVEOW))
     }
 
     /// Returns char length to the next can_bow point

@@ -20,7 +20,6 @@ use crate::analysis::lattice::Lattice;
 use crate::analysis::node::{LatticeNode, ResultNode};
 use crate::analysis::stateless_tokenizer::{dump_path, split_path};
 use crate::analysis::Mode;
-use crate::dic::category_type::CategoryType;
 use crate::dic::connect::ConnectionMatrix;
 use crate::dic::lexicon_set::LexiconSet;
 use crate::dic::subset::InfoSubset;
@@ -28,7 +27,6 @@ use crate::dic::word_info::WordInfo;
 use crate::dic::DictionaryAccess;
 use crate::error::{SudachiError, SudachiResult};
 use crate::input_text::InputBuffer;
-use crate::input_text::InputTextIndex;
 use crate::plugin::oov::OovProviderPlugin;
 use crate::prelude::MorphemeList;
 
@@ -293,11 +291,7 @@ impl<'a> LatticeBuilder<'a> {
             }
 
             // OOV
-            if !self
-                .input
-                .cat_at_char(ch_off)
-                .intersects(CategoryType::NOOOVBOW | CategoryType::NOOOVBOW2)
-            {
+            if self.input.can_oov_bow(ch_off) {
                 for provider in self.oov_providers {
                     created = self.provide_oovs(ch_off, created, provider.as_ref())?;
                 }
