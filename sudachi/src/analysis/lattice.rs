@@ -173,20 +173,15 @@ impl Lattice {
     }
 
     /// Returns the lowest-cost node with the specified span, if present.
+    /// Also returns the total cost for the node.
     pub fn get_minimum_node(&self, begin: usize, end: usize) -> Option<(&Node, i32)> {
-        let mut result = None;
-        for (idx, node) in self.ends_full.get(end)?.iter().enumerate() {
-            if node.begin() != begin {
-                continue;
-            }
-
-            let cost = self.ends[end][idx].total_cost;
-            match result {
-                Some((_, best_cost)) if best_cost <= cost => {}
-                _ => result = Some((node, cost)),
-            }
-        }
-        result
+        self.ends_full
+            .get(end)?
+            .iter()
+            .enumerate()
+            .filter(|(_, node)| node.begin() == begin)
+            .min_by_key(|(_, node)| node.cost())
+            .map(|(i, n)| (n, self.ends[end][i].total_cost))
     }
 
     /// Fill the path with the minimum cost (indices only).
