@@ -230,7 +230,7 @@ impl LexiconReader {
                 "{},{:?},{}{}",
                 headword,
                 self.pos_obj(*pos).unwrap(),
-                reading.as_ref().unwrap_or(headword),
+                reading,
                 reference_id
                     .as_ref()
                     .map(|rid| format!(",{}", rid))

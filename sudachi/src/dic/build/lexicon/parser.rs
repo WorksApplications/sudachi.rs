@@ -128,6 +128,7 @@ impl LexiconReader {
         let p5 = rec.get_col_or_empty(layout, Column::Pos5, unescape_cow)?;
         let p6 = rec.get_col_or_empty(layout, Column::Pos6, unescape_cow)?;
 
+        let reading = rec.get_col(layout, Column::ReadingForm, unescape)?;
         let normalized = rec.get_col(layout, Column::NormalizedForm, |s| Ok(s.to_owned()))?;
         let dic_form_ref = rec.get_col_or(layout, Column::DictionaryForm, "".to_owned(), |s| {
             Ok(s.to_owned())
@@ -214,8 +215,6 @@ impl LexiconReader {
             headword
         };
 
-        let reading = rec.get_col(layout, Column::ReadingForm, unescape_cow)?;
-        let reading_field = none_if_equal(effective_headword.as_ref(), reading);
         let dic_form = rec
             .ctx
             .transform(self.parse_dic_form(&dic_form_ref, allow_word_id_ref))?;
@@ -223,7 +222,7 @@ impl LexiconReader {
             &normalized,
             effective_headword.as_ref(),
             pos,
-            reading_field.as_deref(),
+            &reading,
             if reference_id.is_empty() {
                 None
             } else {
@@ -244,7 +243,7 @@ impl LexiconReader {
             cost,
             dic_form,
             norm_form,
-            reading: reading_field,
+            reading,
             headword: none_if_equal(&index_form, effective_headword),
             reference_id: if reference_id.is_empty() {
                 None
@@ -359,7 +358,7 @@ impl LexiconReader {
         data: &str,
         headword: &str,
         pos: u16,
-        reading: Option<&str>,
+        reading: &str,
         reference_id: Option<&str>,
         allow_asterisk: bool,
     ) -> DicWriteResult<WordRef> {
@@ -391,13 +390,13 @@ impl LexiconReader {
         reading: Cow<'_, str>,
         reference_id: Option<String>,
     ) -> DicWriteResult<WordRef> {
-        if headword.is_empty() || reading.is_empty() {
+        if headword.is_empty() {
             return Err(BuildFailure::InvalidSplit(original.to_owned()));
         }
 
         Ok(WordRef::EntryKey {
             pos,
-            reading: none_if_equal(&headword, reading),
+            reading: reading.into_owned(),
             headword,
             reference_id,
         })

@@ -40,7 +40,7 @@ pub(crate) struct ParsedLexiconEntry {
     pub splits_b: Vec<WordRef>,
     #[allow(unused)]
     pub splits_c: Vec<WordRef>,
-    pub reading: Option<String>,
+    pub reading: String,
     #[allow(unused)]
     pub splitting: Mode,
     pub word_structure: Vec<WordRef>,
@@ -67,7 +67,7 @@ pub(crate) struct ResolvedLexiconEntry {
     pub splits_b: Vec<DicWordRef>,
     #[allow(unused)]
     pub splits_c: Vec<DicWordRef>,
-    pub reading: Option<String>,
+    pub reading: String,
     #[allow(unused)]
     pub splitting: Mode,
     pub word_structure: Vec<DicWordRef>,
@@ -99,7 +99,7 @@ impl ParsedLexiconEntry {
     }
 
     pub fn reading(&self) -> &str {
-        self.reading.as_deref().unwrap_or_else(|| self.headword())
+        &self.reading
     }
 
     pub fn reference_id(&self) -> Option<&str> {
@@ -178,7 +178,7 @@ impl ResolvedLexiconEntry {
     }
 
     pub fn reading(&self) -> &str {
-        self.reading.as_deref().unwrap_or_else(|| self.headword())
+        &self.reading
     }
 
     pub fn reference_id(&self) -> Option<&str> {
@@ -302,7 +302,7 @@ mod tests {
             splits_a: vec![DicWordRef::new(true, 5), DicWordRef::new(true, 6)],
             splits_b: vec![DicWordRef::new(true, 7)],
             splits_c: vec![],
-            reading: Some("キョウト".to_string()),
+            reading: "キョウト".to_string(),
             splitting: Mode::B,
             word_structure: vec![DicWordRef::new(true, 8)],
             synonym_groups: vec![10, 11],

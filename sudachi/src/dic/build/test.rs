@@ -210,6 +210,30 @@ fn build_system_1word() {
 }
 
 #[test]
+fn build_system_preserves_empty_and_explicit_equal_reading() {
+    let mut bldr = DictBuilder::new_system();
+    bldr.read_conn(MATRIX_10_10).unwrap();
+    let lex = concat!(
+        "index_form,left_id,right_id,cost,headword,pos1,pos2,pos3,pos4,pos5,pos6,reading_form,normalized_form,dictionary_form,split_a,split_b,split_c,word_structure,synonym_groups\n",
+        "空読,6,6,5293,空読,名詞,普通名詞,一般,*,*,*,,,,,,,,\n",
+        "同読,6,6,5293,同読,名詞,普通名詞,一般,*,*,*,同読,,,,,,,\n"
+    );
+    assert_eq!(2, bldr.read_lexicon(lex.as_bytes()).unwrap());
+    bldr.resolve().unwrap();
+    let mut built = Vec::new();
+    bldr.compile(&mut built).unwrap();
+    let dic = LoadedDictionary::load_system(&built).unwrap();
+
+    let empty = dic.lexicon().lookup("空読".as_bytes(), 0).next().unwrap();
+    let empty_info = dic.lexicon().get_word_info(empty.word_id).unwrap();
+    assert_eq!(empty_info.reading_form(&dic), "");
+
+    let explicit = dic.lexicon().lookup("同読".as_bytes(), 0).next().unwrap();
+    let explicit_info = dic.lexicon().get_word_info(explicit.word_id).unwrap();
+    assert_eq!(explicit_info.reading_form(&dic), "同読");
+}
+
+#[test]
 fn build_system_sets_default_signature() {
     let mut bldr = DictBuilder::new_system();
     bldr.set_compile_time(UNIX_EPOCH + Duration::from_secs(1));

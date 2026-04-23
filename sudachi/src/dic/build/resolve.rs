@@ -31,7 +31,7 @@ type ReferenceIdIndex = HashMap<String, ResolutionCandidate, FxBuildHasher>;
 struct ResolutionCandidate {
     headword: String,
     pos_id: u16,
-    reading: Option<String>,
+    reading: String,
     wref: WordRef,
 }
 
@@ -104,7 +104,7 @@ impl<D: DictionaryAccess + ReferenceIdAccess> BinDictResolver<D> {
                 InfoSubset::HEADWORD | InfoSubset::READING_FORM | InfoSubset::POS_ID,
             )?;
             let headword = winfo.headword(&dict).to_string();
-            let reading = normalized_reading(&headword, winfo.reading_form(&dict));
+            let reading = winfo.reading_form(&dict).to_string();
             let wref = WordRef::new(true, wid.entry().as_raw());
             headword_index
                 .entry(headword.clone())
@@ -151,7 +151,7 @@ impl<D: DictionaryAccess + ReferenceIdAccess> WordRefResolver for BinDictResolve
         &self,
         headword: &str,
         pos: u16,
-        reading: Option<&str>,
+        reading: &str,
         reference_id: Option<&str>,
     ) -> Option<WordRef> {
         match reference_id {
@@ -167,11 +167,10 @@ impl<D: DictionaryAccess + ReferenceIdAccess> WordRefResolver for BinDictResolve
                     )
                     .ok()?;
                 let actual_headword = winfo.headword(&self.dict);
-                let actual_reading =
-                    normalized_reading(actual_headword, winfo.reading_form(&self.dict));
+                let actual_reading = winfo.reading_form(&self.dict);
                 if actual_headword == headword
                     && winfo.pos_id() == pos
-                    && actual_reading.as_deref() == reading
+                    && actual_reading == reading
                 {
                     Some(wref)
                 } else {
@@ -180,9 +179,7 @@ impl<D: DictionaryAccess + ReferenceIdAccess> WordRefResolver for BinDictResolve
             }
             None => self.headword_index.get(headword).and_then(|v| {
                 v.iter()
-                    .find(|candidate| {
-                        candidate.pos_id == pos && candidate.reading.as_deref() == reading
-                    })
+                    .find(|candidate| candidate.pos_id == pos && candidate.reading == reading)
                     .map(|candidate| candidate.wref)
             }),
         }
@@ -212,7 +209,7 @@ impl RawDictResolver {
             let candidate = ResolutionCandidate {
                 headword: headword.clone(),
                 pos_id: e.pos_id(),
-                reading: normalized_reading(e.headword(), e.reading()),
+                reading: e.reading().to_owned(),
                 wref,
             };
 
@@ -259,7 +256,7 @@ impl WordRefResolver for RawDictResolver {
         &self,
         headword: &str,
         pos: u16,
-        reading: Option<&str>,
+        reading: &str,
         reference_id: Option<&str>,
     ) -> Option<WordRef> {
         match reference_id {
@@ -269,7 +266,7 @@ impl WordRefResolver for RawDictResolver {
                 .and_then(|candidate| {
                     if candidate.headword == headword
                         && candidate.pos_id == pos
-                        && candidate.reading.as_deref() == reading
+                        && candidate.reading == reading
                     {
                         Some(candidate.wref)
                     } else {
@@ -278,9 +275,7 @@ impl WordRefResolver for RawDictResolver {
                 }),
             None => self.headword_index.get(headword).and_then(|data| {
                 data.iter()
-                    .find(|candidate| {
-                        candidate.pos_id == pos && candidate.reading.as_deref() == reading
-                    })
+                    .find(|candidate| candidate.pos_id == pos && candidate.reading == reading)
                     .map(|candidate| candidate.wref)
             }),
         }
@@ -315,7 +310,7 @@ impl<A: WordRefResolver, B: WordRefResolver> WordRefResolver for ChainedResolver
         &self,
         headword: &str,
         pos: u16,
-        reading: Option<&str>,
+        reading: &str,
         reference_id: Option<&str>,
     ) -> Option<WordRef> {
         self.a
@@ -324,14 +319,6 @@ impl<A: WordRefResolver, B: WordRefResolver> WordRefResolver for ChainedResolver
                 self.b
                     .resolve_entry_key(headword, pos, reading, reference_id)
             })
-    }
-}
-
-fn normalized_reading(headword: &str, reading: &str) -> Option<String> {
-    if reading.is_empty() || headword == reading {
-        None
-    } else {
-        Some(reading.to_owned())
     }
 }
 
@@ -385,7 +372,7 @@ mod tests {
             &self,
             _headword: &str,
             _pos: u16,
-            _reading: Option<&str>,
+            _reading: &str,
             _reference_id: Option<&str>,
         ) -> Option<DicWordRef> {
             self.by_entry_key
@@ -418,7 +405,7 @@ mod tests {
             chained.resolve(&BuildWordRef::EntryKey {
                 headword: "京都".to_string(),
                 pos: 0,
-                reading: Some("キョウト".to_string()),
+                reading: "キョウト".to_string(),
                 reference_id: Some("kyoto".to_string()),
             }),
             Some(DicWordRef::new(true, 2))
@@ -455,8 +442,34 @@ mod tests {
         let resolver = RawDictResolver::new(&entries, line_to_wref.clone(), false).unwrap();
 
         assert_eq!(
-            resolver.resolve_entry_key("京都", 0, Some("キョウト"), None),
+            resolver.resolve_entry_key("京都", 0, "キョウト", None),
             Some(line_to_wref[0])
+        );
+    }
+
+    #[test]
+    fn raw_resolver_distinguishes_empty_and_explicit_equal_reading() {
+        let entries = vec![
+            TestEntry {
+                headword: "あ",
+                reading: "",
+                pos_id: 0,
+                reference_id: None,
+            },
+            TestEntry {
+                headword: "あ",
+                reading: "あ",
+                pos_id: 0,
+                reference_id: None,
+            },
+        ];
+        let line_to_wref = vec![DicWordRef::new(true, 11), DicWordRef::new(true, 27)];
+        let resolver = RawDictResolver::new(&entries, line_to_wref.clone(), false).unwrap();
+
+        assert_eq!(resolver.resolve_entry_key("あ", 0, "", None), Some(line_to_wref[0]));
+        assert_eq!(
+            resolver.resolve_entry_key("あ", 0, "あ", None),
+            Some(line_to_wref[1])
         );
     }
 
@@ -555,7 +568,7 @@ mod tests {
         let resolver = RawDictResolver::new(&entries, line_to_wref.clone(), false).unwrap();
 
         assert_eq!(
-            resolver.resolve_entry_key("京都", 0, Some("キョウト"), Some("kyoto-2")),
+            resolver.resolve_entry_key("京都", 0, "キョウト", Some("kyoto-2")),
             Some(line_to_wref[1])
         );
     }

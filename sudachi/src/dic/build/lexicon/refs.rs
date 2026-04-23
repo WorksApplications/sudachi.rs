@@ -25,7 +25,7 @@ pub(crate) enum WordRef {
     EntryKey {
         headword: String,
         pos: u16,
-        reading: Option<String>,
+        reading: String,
         reference_id: Option<String>,
     },
 }
@@ -41,7 +41,7 @@ impl WordRef {
         &self,
         headword: &str,
         pos: u16,
-        reading: Option<&str>,
+        reading: &str,
         reference_id: Option<&str>,
     ) -> bool {
         match self {
@@ -53,7 +53,7 @@ impl WordRef {
             } => {
                 h == headword
                     && *p == pos
-                    && r.as_deref() == reading
+                    && r == reading
                     && rid.as_deref() == reference_id
             }
             _ => false,
@@ -72,9 +72,7 @@ pub(crate) trait WordRefResolver {
                 pos,
                 reading,
                 reference_id,
-            } => {
-                self.resolve_entry_key(headword, *pos, reading.as_deref(), reference_id.as_deref())
-            }
+            } => self.resolve_entry_key(headword, *pos, reading, reference_id.as_deref()),
         }
     }
 
@@ -86,7 +84,7 @@ pub(crate) trait WordRefResolver {
         &self,
         headword: &str,
         pos: u16,
-        reading: Option<&str>,
+        reading: &str,
         reference_id: Option<&str>,
     ) -> Option<DicWordRef>;
 }

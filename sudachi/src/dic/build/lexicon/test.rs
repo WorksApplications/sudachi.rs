@@ -65,7 +65,7 @@ fn parse_split_inline() {
         WordRef::EntryKey {
             headword: "あ".to_string(),
             pos: 0,
-            reading: None,
+            reading: "あ".to_string(),
             reference_id: None,
         }
     );
@@ -83,7 +83,7 @@ fn parse_split_inline_pos_id() {
         WordRef::EntryKey {
             headword: "あ".to_string(),
             pos: 0,
-            reading: None,
+            reading: "あ".to_string(),
             reference_id: None,
         }
     );
@@ -101,8 +101,26 @@ fn parse_split_inline_pos_id_with_reference_id() {
         WordRef::EntryKey {
             headword: "あ".to_string(),
             pos: 0,
-            reading: None,
+            reading: "あ".to_string(),
             reference_id: Some("ref-1".to_string()),
+        }
+    );
+    assert_eq!(splits[2], WordRef::LineRef(DicWordRef::new(true, 2)));
+}
+
+#[test]
+fn parse_split_inline_pos_id_with_empty_reading() {
+    let mut rdr = LexiconReader::new();
+    let splits = rdr.parse_splits("0/あ,0,/2", true).unwrap();
+    assert_eq!(splits.len(), 3);
+    assert_eq!(splits[0], WordRef::LineRef(DicWordRef::new(true, 0)));
+    assert_eq!(
+        splits[1],
+        WordRef::EntryKey {
+            headword: "あ".to_string(),
+            pos: 0,
+            reading: "".to_string(),
+            reference_id: None,
         }
     );
     assert_eq!(splits[2], WordRef::LineRef(DicWordRef::new(true, 2)));
@@ -147,7 +165,7 @@ fn parse_kyoto() {
     assert_eq!(6, kyoto.right_id);
     assert_eq!(5293, kyoto.cost);
     assert_eq!("キョウト", kyoto.reading());
-    assert_eq!(Some("キョウト"), kyoto.reading.as_deref());
+    assert_eq!("キョウト", kyoto.reading);
     assert_eq!("京都", kyoto.norm_form());
     assert_eq!(WordRef::SelfRef, kyoto.norm_form);
     assert_eq!(Mode::A, kyoto.splitting);
@@ -203,7 +221,7 @@ fn parse_header_word_structure_triple_ref_with_reference_id() {
         WordRef::EntryKey {
             headword: "東京".to_string(),
             pos: 0,
-            reading: Some("トウキョウ".to_string()),
+            reading: "トウキョウ".to_string(),
             reference_id: Some("ref-1".to_string()),
         }
     );
@@ -305,7 +323,7 @@ fn parse_dictionary_form_inline_self_reference_is_not_rewritten_to_selfref() {
         WordRef::EntryKey {
             headword: "京都".to_string(),
             pos: 0,
-            reading: Some("キョウト".to_string()),
+            reading: "キョウト".to_string(),
             reference_id: None,
         }
     );
@@ -485,7 +503,7 @@ fn parse_normalized_form_self_reference_respects_reference_id() {
         WordRef::EntryKey {
             headword: "京都".to_string(),
             pos: 0,
-            reading: Some("キョウト".to_string()),
+            reading: "キョウト".to_string(),
             reference_id: Some("kyoto-1".to_string()),
         }
     );
