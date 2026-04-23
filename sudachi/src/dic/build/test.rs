@@ -435,38 +435,83 @@ fn fail_matrix_size_validation() {
 fn various_word_references_system() {
     let mut bldr = DictBuilder::new_system();
     bldr.read_conn(MATRIX_10_10).unwrap();
-    assert_eq!(8, bldr.read_lexicon(WORDREF_SYSTEM).unwrap());
+    assert_eq!(11, bldr.read_lexicon(WORDREF_SYSTEM).unwrap());
     bldr.resolve().unwrap();
     let mut data = Vec::new();
     bldr.compile(&mut data).unwrap();
     let dic = LoadedDictionary::load_system(&data).unwrap();
-    assert_eq!(8, dic.lexicon().size());
+    assert_eq!(11, dic.lexicon().size());
+
+    let tokyo = dic.lexicon().lookup("トウキョウ".as_bytes(), 0).next().unwrap();
+    let tokyo_info = dic.lexicon().get_word_info(tokyo.word_id).unwrap();
+    assert_eq!("東京", tokyo_info.normalized_form(&dic));
+    assert_eq!("東京", tokyo_info.dictionary_form(&dic));
+
+    let east_tokyo = dic
+        .lexicon()
+        .lookup("東トウキョウ".as_bytes(), 0)
+        .filter(|entry| entry.end == "東トウキョウ".len())
+        .next()
+        .unwrap();
+    let east_tokyo_info = dic.lexicon().get_word_info(east_tokyo.word_id).unwrap();
+    let structure = east_tokyo_info.c_unit_split();
+    assert_eq!(2, structure.len());
+    assert_eq!(
+        "東",
+        dic.lexicon().get_word_info(structure[0]).unwrap().headword(&dic)
+    );
+    assert_eq!(
+        "東京B",
+        dic.lexicon()
+            .get_word_info(structure[1])
+            .unwrap()
+            .normalized_form(&dic)
+    );
 }
 
 #[test]
 fn various_word_references_user() {
     let mut bldr = DictBuilder::new_system();
     bldr.read_conn(MATRIX_10_10).unwrap();
-    assert_eq!(8, bldr.read_lexicon(WORDREF_SYSTEM).unwrap());
+    assert_eq!(11, bldr.read_lexicon(WORDREF_SYSTEM).unwrap());
     bldr.resolve().unwrap();
     let mut data = Vec::new();
     bldr.compile(&mut data).unwrap();
     let sys = LoadedDictionary::load_system(&data).unwrap();
 
     let mut user = DictBuilder::new_user(&sys);
-    assert_eq!(2, user.read_lexicon(WORDREF_USER).unwrap());
+    assert_eq!(5, user.read_lexicon(WORDREF_USER).unwrap());
     user.resolve().unwrap();
     let mut user_data = Vec::new();
     user.compile(&mut user_data).unwrap();
 
     let user_bin = BinaryDictionary::load_user(&user_data).unwrap();
     let merged = sys.merge_dictionary(user_bin).unwrap();
-    let entry = merged
+    let entries: Vec<_> = merged
         .lexicon_set
         .lookup("東京府".as_bytes(), 0)
-        .next()
-        .unwrap();
-    assert_eq!(entry.word_id.dict().as_raw(), 1);
+        .filter(|entry| entry.end == "東京府".len())
+        .collect();
+    assert_eq!(3, entries.len());
+    for entry in &entries {
+        assert_eq!(entry.word_id.dict().as_raw(), 1);
+    }
+
+    let normalized: Vec<_> = entries
+        .iter()
+        .map(|entry| {
+            let wi = merged.lexicon_set.get_word_info(entry.word_id).unwrap();
+            let splits = wi.a_unit_split();
+            assert_eq!(2, splits.len());
+            merged
+                .lexicon_set
+                .get_word_info(splits[1])
+                .unwrap()
+                .normalized_form(&merged)
+                .to_owned()
+        })
+        .collect();
+    assert_eq!(vec!["府", "府2u", "府3"], normalized);
 }
 
 #[test]
