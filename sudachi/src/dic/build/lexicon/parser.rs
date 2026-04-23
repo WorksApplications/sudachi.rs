@@ -128,7 +128,6 @@ impl LexiconReader {
         let p5 = rec.get_col_or_empty(layout, Column::Pos5, unescape_cow)?;
         let p6 = rec.get_col_or_empty(layout, Column::Pos6, unescape_cow)?;
 
-        let reading = rec.get_col(layout, Column::ReadingForm, unescape_cow)?;
         let normalized = rec.get_col(layout, Column::NormalizedForm, |s| Ok(s.to_owned()))?;
         let dic_form_ref = rec.get_col_or(layout, Column::DictionaryForm, "".to_owned(), |s| {
             Ok(s.to_owned())
@@ -158,6 +157,9 @@ impl LexiconReader {
             } else {
                 parse_i16(s)
             }
+        })?;
+        let reference_id = rec.get_col_or(layout, Column::ReferenceId, String::new(), |s| {
+            Ok(s.to_owned())
         })?;
 
         let pos = if !p1.is_empty() {
@@ -212,12 +214,21 @@ impl LexiconReader {
             headword
         };
 
+        let reading = rec.get_col(layout, Column::ReadingForm, unescape_cow)?;
+        let reading_field = none_if_equal(effective_headword.as_ref(), reading);
         let dic_form = rec
             .ctx
             .transform(self.parse_dic_form(&dic_form_ref, allow_word_id_ref))?;
         let norm_form = rec.ctx.transform(self.parse_norm_form(
             &normalized,
             effective_headword.as_ref(),
+            pos,
+            reading_field.as_deref(),
+            if reference_id.is_empty() {
+                None
+            } else {
+                Some(reference_id.as_str())
+            },
             layout.is_legacy(),
         ))?;
 
@@ -233,8 +244,13 @@ impl LexiconReader {
             cost,
             dic_form,
             norm_form,
-            reading: none_if_equal(effective_headword.as_ref(), reading),
+            reading: reading_field,
             headword: none_if_equal(&index_form, effective_headword),
+            reference_id: if reference_id.is_empty() {
+                None
+            } else {
+                Some(reference_id)
+            },
             index_form,
             pos,
             splitting,
@@ -295,18 +311,19 @@ impl LexiconReader {
                 return Err(BuildFailure::InvalidSplit(data.to_owned()));
             }
             Ok(WordRef::LineRef(parse_legacy_line_ref(data)?))
-        } else if data.matches(',').count() == 2 {
-            let mut iter = data.splitn(3, ',');
+        } else if matches!(data.matches(',').count(), 2 | 3) {
+            let mut iter = data.splitn(4, ',');
             let headword = it_next(data, &mut iter, "(1) headword", unescape)?;
             let pos = it_next(data, &mut iter, "(2) pos-id", parse_i16)?;
             let reading = it_next(data, &mut iter, "(3) reading", unescape_cow)?;
-            Ok(WordRef::Inline {
-                pos: pos as u16,
-                reading: none_if_equal(&headword, reading),
-                headword,
-            })
+            let reference_id = match iter.next() {
+                None => None,
+                Some("") => return Err(BuildFailure::InvalidSplit(data.to_owned())),
+                Some(value) => Some(unescape(value)?),
+            };
+            self.make_entry_key(data, headword, pos as u16, reading, reference_id)
         } else {
-            let mut iter = data.splitn(8, ',');
+            let mut iter = data.splitn(9, ',');
             let headword = it_next(data, &mut iter, "(1) headword", unescape)?;
             let p1 = it_next(data, &mut iter, "(2) pos-1", unescape_cow)?;
             let p2 = it_next(data, &mut iter, "(3) pos-2", unescape_cow)?;
@@ -315,13 +332,14 @@ impl LexiconReader {
             let p5 = it_next(data, &mut iter, "(6) pos-conj-1", unescape_cow)?;
             let p6 = it_next(data, &mut iter, "(7) pos-conj-2", unescape_cow)?;
             let reading = it_next(data, &mut iter, "(8) reading", unescape_cow)?;
+            let reference_id = match iter.next() {
+                None => None,
+                Some("") => return Err(BuildFailure::InvalidSplit(data.to_owned())),
+                Some(value) => Some(unescape(value)?),
+            };
 
             let pos = self.pos_id_of([p1, p2, p3, p4, p5, p6])?;
-            Ok(WordRef::Inline {
-                pos,
-                reading: none_if_equal(&headword, reading),
-                headword,
-            })
+            self.make_entry_key(data, headword, pos, reading, reference_id)
         }
     }
 
@@ -340,14 +358,21 @@ impl LexiconReader {
         &mut self,
         data: &str,
         headword: &str,
+        pos: u16,
+        reading: Option<&str>,
+        reference_id: Option<&str>,
         allow_asterisk: bool,
     ) -> DicWriteResult<WordRef> {
         if data.is_empty() || (allow_asterisk && data == "*") {
             return Ok(WordRef::SelfRef);
         }
 
-        if data.matches(',').count() == 2 || data.matches(',').count() == 7 {
-            return self.parse_split(data, false);
+        if matches!(data.matches(',').count(), 2 | 3 | 7 | 8) {
+            let word_ref = self.parse_split(data, false)?;
+            if word_ref.matches(headword, pos, reading, reference_id) {
+                return Ok(WordRef::SelfRef);
+            }
+            return Ok(word_ref);
         }
 
         let normalized = unescape(data)?;
@@ -356,5 +381,25 @@ impl LexiconReader {
         } else {
             Ok(WordRef::Headword(normalized))
         }
+    }
+
+    fn make_entry_key(
+        &self,
+        original: &str,
+        headword: String,
+        pos: u16,
+        reading: Cow<'_, str>,
+        reference_id: Option<String>,
+    ) -> DicWriteResult<WordRef> {
+        if headword.is_empty() || reading.is_empty() {
+            return Err(BuildFailure::InvalidSplit(original.to_owned()));
+        }
+
+        Ok(WordRef::EntryKey {
+            pos,
+            reading: none_if_equal(&headword, reading),
+            headword,
+            reference_id,
+        })
     }
 }

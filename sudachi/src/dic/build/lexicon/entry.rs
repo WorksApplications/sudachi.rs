@@ -32,6 +32,7 @@ pub(crate) struct ParsedLexiconEntry {
     pub cost: i16,
     pub index_form: String,
     pub headword: Option<String>,
+    pub reference_id: Option<String>,
     pub dic_form: WordRef,
     pub norm_form: WordRef,
     pub pos: u16,
@@ -58,6 +59,7 @@ pub(crate) struct ResolvedLexiconEntry {
     pub cost: i16,
     pub index_form: String,
     pub headword: Option<String>,
+    pub reference_id: Option<String>,
     pub dic_form: ResolvedWordRef,
     pub norm_form: ResolvedWordRef,
     pub pos: u16,
@@ -100,6 +102,10 @@ impl ParsedLexiconEntry {
         self.reading.as_deref().unwrap_or_else(|| self.headword())
     }
 
+    pub fn reference_id(&self) -> Option<&str> {
+        self.reference_id.as_deref()
+    }
+
     #[cfg_attr(not(test), allow(dead_code))]
     pub fn should_index(&self) -> bool {
         self.left_id >= 0
@@ -129,6 +135,7 @@ impl ResolvedLexiconEntry {
         Self {
             index_form: String::new(),
             headword: Some(headword),
+            reference_id: None,
             left_id: -1,
             right_id: -1,
             cost: i16::MAX,
@@ -172,6 +179,10 @@ impl ResolvedLexiconEntry {
 
     pub fn reading(&self) -> &str {
         self.reading.as_deref().unwrap_or_else(|| self.headword())
+    }
+
+    pub fn reference_id(&self) -> Option<&str> {
+        self.reference_id.as_deref()
     }
 
     pub fn should_index(&self) -> bool {
@@ -284,6 +295,7 @@ mod tests {
             cost: 3,
             index_form: "東京".to_string(),
             headword: Some("京都".to_string()),
+            reference_id: None,
             dic_form: ResolvedWordRef::SelfRef,
             norm_form: ResolvedWordRef::Ref(DicWordRef::new(true, 13)),
             pos: 4,

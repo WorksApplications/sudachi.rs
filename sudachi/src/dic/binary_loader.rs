@@ -25,15 +25,19 @@ use crate::dic::lexicon::word_params::WordParams;
 use crate::dic::lexicon::Lexicon;
 use crate::dic::lexicon_set::LexiconSet;
 use crate::dic::pos::PosList;
+use crate::dic::read::utf8_string::utf8_string;
+use crate::dic::read::varint::varint32;
 use crate::dic::word_info::WordInfos;
-use crate::dic::{DescriptionAccess, DictionaryAccess, LexiconAccess};
+use crate::dic::{DescriptionAccess, DictionaryAccess, LexiconAccess, ReferenceIdAccess};
 use crate::plugin::input_text::InputTextPlugin;
 use crate::plugin::oov::OovProviderPlugin;
 use crate::plugin::path_rewrite::PathRewritePlugin;
 use crate::prelude::*;
+use std::collections::HashMap;
 
 /// A single system or user dictionary
 pub struct BinaryDictionary<'a> {
+    raw_bytes: &'a [u8],
     pub description: Description,
     pub grammar: BinaryGrammar<'a>,
     pub lexicon: BinaryLexicon<'a>,
@@ -50,6 +54,7 @@ impl<'a> BinaryDictionary<'a> {
         let lexicon = BinaryLexicon::load(buf, &description)?;
 
         Ok(BinaryDictionary {
+            raw_bytes: buf,
             description,
             grammar,
             lexicon,
@@ -80,6 +85,18 @@ impl<'a> BinaryDictionary<'a> {
                 HeaderError::InvalidUserDictVersion,
             ))
         }
+    }
+
+    /// Build-time helper for dictionary builders and dump tooling.
+    /// Runtime tokenization does not use this table.
+    pub fn reference_id_table(&self) -> SudachiResult<HashMap<u32, String>> {
+        let Some(bytes) = self
+            .description
+            .slice_or_none(self.raw_bytes, Block::ReferenceIdTable)?
+        else {
+            return Ok(HashMap::with_capacity(0));
+        };
+        parse_reference_id_table(bytes)
     }
 }
 
@@ -164,11 +181,13 @@ pub struct LoadedDictionary<'a> {
     pub description: Description,
     pub grammar: Grammar<'a>,
     pub lexicon_set: LexiconSet<'a>,
+    system_reference_ids: HashMap<u32, String>,
 }
 
 impl<'a> LoadedDictionary<'a> {
     /// Convert to Loaded dictionary
     pub fn from_system_binary(binary: BinaryDictionary<'a>) -> SudachiResult<Self> {
+        let system_reference_ids = binary.reference_id_table()?;
         let description = binary.description;
         let grammar = Grammar::from_system_binary(binary.grammar)?;
         let lexicon_set = LexiconSet::from_system_binary(binary.lexicon, grammar.pos_list.len());
@@ -176,6 +195,7 @@ impl<'a> LoadedDictionary<'a> {
             description,
             grammar,
             lexicon_set,
+            system_reference_ids,
         })
     }
 
@@ -225,4 +245,28 @@ impl DescriptionAccess for LoadedDictionary<'_> {
     fn description(&self) -> &Description {
         &self.description
     }
+}
+
+impl ReferenceIdAccess for BinaryDictionary<'_> {
+    fn reference_ids(&self) -> HashMap<u32, String> {
+        self.reference_id_table().unwrap_or_default()
+    }
+}
+
+impl ReferenceIdAccess for LoadedDictionary<'_> {
+    fn reference_ids(&self) -> HashMap<u32, String> {
+        self.system_reference_ids.clone()
+    }
+}
+
+fn parse_reference_id_table(bytes: &[u8]) -> SudachiResult<HashMap<u32, String>> {
+    let (mut rest, count) = varint32(bytes)?;
+    let mut result = HashMap::with_capacity(count as usize);
+    for _ in 0..count {
+        let (new_rest, entry_id) = varint32(rest)?;
+        let (new_rest, reference_id) = utf8_string(new_rest)?;
+        result.insert(entry_id, reference_id);
+        rest = new_rest;
+    }
+    Ok(result)
 }

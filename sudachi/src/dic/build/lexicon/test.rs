@@ -62,10 +62,11 @@ fn parse_split_inline() {
     assert_eq!(splits[0], WordRef::LineRef(DicWordRef::new(true, 0)));
     assert_eq!(
         splits[1],
-        WordRef::Inline {
+        WordRef::EntryKey {
             headword: "あ".to_string(),
             pos: 0,
-            reading: None
+            reading: None,
+            reference_id: None,
         }
     );
     assert_eq!(splits[2], WordRef::LineRef(DicWordRef::new(true, 2)));
@@ -79,13 +80,41 @@ fn parse_split_inline_pos_id() {
     assert_eq!(splits[0], WordRef::LineRef(DicWordRef::new(true, 0)));
     assert_eq!(
         splits[1],
-        WordRef::Inline {
+        WordRef::EntryKey {
             headword: "あ".to_string(),
             pos: 0,
-            reading: None
+            reading: None,
+            reference_id: None,
         }
     );
     assert_eq!(splits[2], WordRef::LineRef(DicWordRef::new(true, 2)));
+}
+
+#[test]
+fn parse_split_inline_pos_id_with_reference_id() {
+    let mut rdr = LexiconReader::new();
+    let splits = rdr.parse_splits("0/あ,0,あ,ref-1/2", true).unwrap();
+    assert_eq!(splits.len(), 3);
+    assert_eq!(splits[0], WordRef::LineRef(DicWordRef::new(true, 0)));
+    assert_eq!(
+        splits[1],
+        WordRef::EntryKey {
+            headword: "あ".to_string(),
+            pos: 0,
+            reading: None,
+            reference_id: Some("ref-1".to_string()),
+        }
+    );
+    assert_eq!(splits[2], WordRef::LineRef(DicWordRef::new(true, 2)));
+}
+
+#[test]
+fn parse_split_inline_empty_reference_id_fails() {
+    let mut rdr = LexiconReader::new();
+    assert_matches!(
+        rdr.parse_splits("あ,0,あ,", true),
+        Err(BuildFailure::InvalidSplit(_))
+    );
 }
 
 #[test]
@@ -156,7 +185,28 @@ fn parse_header_word_structure_triple_ref() {
     assert_eq!(e.splits_a.len(), 2);
     assert_eq!(e.splits_b.len(), 2);
     assert_eq!(e.word_structure.len(), 2);
-    assert!(matches!(e.word_structure[0], WordRef::Inline { .. }));
+    assert!(matches!(e.word_structure[0], WordRef::EntryKey { .. }));
+}
+
+#[test]
+fn parse_header_word_structure_triple_ref_with_reference_id() {
+    let mut rdr = LexiconReader::new();
+    let data = concat!(
+        "index_form,left_id,right_id,cost,pos1,pos2,pos3,pos4,pos5,pos6,reading_form,normalized_form,dictionary_form,mode,split_a,split_b,word_structure,reference_id\n",
+        "東京都,6,8,5320,名詞,固有名詞,地名,一般,*,*,トウキョウト,,,B,\"東京,0,トウキョウ,ref-1\",\"東京,0,トウキョウ,ref-1\",\"東京,0,トウキョウ,ref-1\",tokyo-metropolis\n"
+    );
+    rdr.read_bytes(data.as_bytes()).unwrap();
+    let e = &rdr.entries()[0];
+    assert_eq!(e.reference_id(), Some("tokyo-metropolis"));
+    assert_eq!(
+        e.word_structure[0],
+        WordRef::EntryKey {
+            headword: "東京".to_string(),
+            pos: 0,
+            reading: Some("トウキョウ".to_string()),
+            reference_id: Some("ref-1".to_string()),
+        }
+    );
 }
 
 #[test]
@@ -252,10 +302,11 @@ fn parse_dictionary_form_inline_self_reference_is_not_rewritten_to_selfref() {
 
     assert_eq!(
         rdr.entries()[1].dic_form,
-        WordRef::Inline {
+        WordRef::EntryKey {
             headword: "京都".to_string(),
             pos: 0,
             reading: Some("キョウト".to_string()),
+            reference_id: None,
         }
     );
 }
@@ -357,6 +408,20 @@ fn parse_header_reads_split_c_and_user_data() {
 }
 
 #[test]
+fn parse_header_reference_id_empty_is_none() {
+    let mut rdr = LexiconReader::new();
+    let data = concat!(
+        "index_form,left_id,right_id,cost,headword,pos_id,reading_form,normalized_form,dictionary_form,mode,split_a,split_b,word_structure,synonym_groups,reference_id\n",
+        "京都,6,6,5293,京都,0,キョウト,京都,,A,,,,,\n"
+    );
+    let old = "京都,6,6,5293,京都,名詞,固有名詞,地名,一般,*,*,キョウト,京都,*,A,*,*,*,*";
+    rdr.read_bytes(old.as_bytes()).unwrap();
+    let before = rdr.entries().len();
+    rdr.read_bytes(data.as_bytes()).unwrap();
+    assert_eq!(rdr.entries()[before].reference_id(), None);
+}
+
+#[test]
 fn parse_header_user_data_multibyte_within_char_limit() {
     let mut rdr = LexiconReader::new();
     let user_data = "あ".repeat(11_000);
@@ -402,6 +467,28 @@ fn resolve_header_normalized_form_literal_without_target() {
     let phantom = &bldr.lexicon.resolved_entries()[1];
     assert_eq!(phantom.headword(), "舞台芸術");
     assert!(!phantom.should_index());
+}
+
+#[test]
+fn parse_normalized_form_self_reference_respects_reference_id() {
+    let mut rdr = LexiconReader::new();
+    let data = concat!(
+        "index_form,left_id,right_id,cost,headword,pos1,pos2,pos3,pos4,pos5,pos6,reading_form,normalized_form,dictionary_form,mode,split_a,split_b,word_structure,reference_id\n",
+        "京都,1,1,100,京都,名詞,固有名詞,地名,一般,*,*,キョウト,\"京都,0,キョウト,kyoto-1\",,A,,,,kyoto-1\n",
+        "京都,1,1,100,京都,名詞,固有名詞,地名,一般,*,*,キョウト,\"京都,0,キョウト,kyoto-1\",,A,,,,kyoto-2\n"
+    );
+    rdr.read_bytes(data.as_bytes()).unwrap();
+
+    assert_eq!(rdr.entries()[0].norm_form, WordRef::SelfRef);
+    assert_eq!(
+        rdr.entries()[1].norm_form,
+        WordRef::EntryKey {
+            headword: "京都".to_string(),
+            pos: 0,
+            reading: Some("キョウト".to_string()),
+            reference_id: Some("kyoto-1".to_string()),
+        }
+    );
 }
 
 #[test]
