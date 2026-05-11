@@ -109,7 +109,7 @@ pub(crate) enum BuildCli {
         system: Option<PathBuf>,
 
         /// Use POS_ID instead of POS1..POS6 in dump winfo output.
-        /// Inline references in dictionary_form and split columns also use POS_ID.
+        /// entrykey references also use POS_ID.
         #[arg(long = "pos-id")]
         pos_id: bool,
     },
@@ -486,7 +486,7 @@ fn unicode_escape(raw: &str) -> String {
     raw.replace('"', "\\u0022")
 }
 
-fn inline_ref_escape(raw: &str) -> String {
+fn entrykey_ref_escape(raw: &str) -> String {
     raw.replace('"', "\\u0022")
         .replace(',', "\\u002c")
         .replace('/', "\\u002f")
@@ -524,12 +524,12 @@ fn pos_string(grammar: &Grammar, posid: u16, pos_format: PosDumpFormat) -> Strin
     }
 }
 
-fn pos_string_for_inline(grammar: &Grammar, posid: u16, pos_format: PosDumpFormat) -> String {
+fn pos_string_for_entrykey(grammar: &Grammar, posid: u16, pos_format: PosDumpFormat) -> String {
     match pos_format {
         PosDumpFormat::Components => grammar
             .pos_components(posid)
             .into_iter()
-            .map(|p| inline_ref_escape(p))
+            .map(|p| entrykey_ref_escape(p))
             .collect::<Vec<_>>()
             .join(","),
         PosDumpFormat::Id => posid.to_string(),
@@ -552,7 +552,7 @@ fn dictionary_form_string(
     let dict_form_wi = lex.get_word_info(wid)?;
     Ok(format!(
         "\"{}\"",
-        inline_ref_string(
+        entrykey_ref_string(
             grammar,
             wid,
             dict_form_wi.headword(lex),
@@ -565,7 +565,7 @@ fn dictionary_form_string(
     ))
 }
 
-fn inline_ref_string(
+fn entrykey_ref_string(
     grammar: &Grammar,
     wid: WordId,
     headword: &str,
@@ -577,14 +577,14 @@ fn inline_ref_string(
 ) -> String {
     let mut data = format!(
         "{},{},{}",
-        inline_ref_escape(headword),
-        pos_string_for_inline(grammar, pos_id, pos_format),
-        inline_ref_escape(reading),
+        entrykey_ref_escape(headword),
+        pos_string_for_entrykey(grammar, pos_id, pos_format),
+        entrykey_ref_escape(reading),
     );
     let reference_id = reference_id_for_word_id(wid, system_reference_ids, user_reference_ids);
     if !reference_id.is_empty() {
         data.push(',');
-        data.push_str(&inline_ref_escape(&reference_id));
+        data.push_str(&entrykey_ref_escape(&reference_id));
     }
     data
 }
@@ -605,7 +605,7 @@ fn dump_wids<W: Write>(
     let mut refs = Vec::with_capacity(data.len());
     for wid in data {
         let wi = lex.get_word_info(*wid)?;
-        refs.push(inline_ref_string(
+        refs.push(entrykey_ref_string(
             grammar,
             *wid,
             wi.headword(lex),
@@ -794,8 +794,8 @@ mod tests {
     }
 
     #[test]
-    fn inline_ref_escape_replaces_inline_separators() {
-        assert_eq!(inline_ref_escape("a,b/c\"d"), "a\\u002cb\\u002fc\\u0022d");
+    fn entrykey_ref_escape_replaces_entrykey_separators() {
+        assert_eq!(entrykey_ref_escape("a,b/c\"d"), "a\\u002cb\\u002fc\\u0022d");
     }
 
     fn parse_dump_csv(data: &[u8]) -> Vec<Vec<String>> {
@@ -909,7 +909,7 @@ mod tests {
     }
 
     #[test]
-    fn dump_word_info_uses_pos_id_for_columns_and_inline_refs() {
+    fn dump_word_info_uses_pos_id_for_columns_and_entrykey_refs() {
         let pos = concat!(
             "POS_ID,POS1,POS2,POS3,POS4,POS5,POS6\n",
             "0,名詞,固有名詞,地名,一般,*,*\n",
@@ -1011,7 +1011,7 @@ mod tests {
     }
 
     #[test]
-    fn dump_word_info_outputs_reference_id_column_and_inline_refs() {
+    fn dump_word_info_outputs_reference_id_column_and_entrykey_refs() {
         let mut builder = DictBuilder::new_system();
         builder.read_conn(MATRIX_10_10).unwrap();
         builder
@@ -1042,7 +1042,7 @@ mod tests {
     }
 
     #[test]
-    fn dump_word_info_pos_id_outputs_reference_id_inline_refs() {
+    fn dump_word_info_pos_id_outputs_reference_id_entrykey_refs() {
         let pos = concat!(
             "POS_ID,POS1,POS2,POS3,POS4,POS5,POS6\n",
             "0,名詞,固有名詞,地名,一般,*,*\n"

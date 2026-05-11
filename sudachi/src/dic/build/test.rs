@@ -171,7 +171,7 @@ fn different_headword_resolves_normalized_and_dictionary_form_to_headword() {
 }
 
 #[test]
-fn dictionary_form_inline_self_reference_resolves_to_previous_duplicate() {
+fn dictionary_form_entrykey_self_reference_resolves_to_previous_duplicate() {
     let mut bldr = DictBuilder::new_system();
     bldr.read_conn(MATRIX_10_10).unwrap();
     let lex = concat!(
@@ -466,7 +466,11 @@ fn various_word_references_system() {
     let dic = LoadedDictionary::load_system(&data).unwrap();
     assert_eq!(11, dic.lexicon().size());
 
-    let tokyo = dic.lexicon().lookup("トウキョウ".as_bytes(), 0).next().unwrap();
+    let tokyo = dic
+        .lexicon()
+        .lookup("トウキョウ".as_bytes(), 0)
+        .next()
+        .unwrap();
     let tokyo_info = dic.lexicon().get_word_info(tokyo.word_id).unwrap();
     assert_eq!("東京", tokyo_info.normalized_form(&dic));
     assert_eq!("東京", tokyo_info.dictionary_form(&dic));
@@ -482,7 +486,10 @@ fn various_word_references_system() {
     assert_eq!(2, structure.len());
     assert_eq!(
         "東",
-        dic.lexicon().get_word_info(structure[0]).unwrap().headword(&dic)
+        dic.lexicon()
+            .get_word_info(structure[0])
+            .unwrap()
+            .headword(&dic)
     );
     assert_eq!(
         "東京B",

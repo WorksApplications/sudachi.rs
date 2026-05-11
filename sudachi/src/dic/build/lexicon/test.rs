@@ -55,7 +55,7 @@ fn parse_split_user_ids() {
 }
 
 #[test]
-fn parse_split_inline() {
+fn parse_split_entrykey() {
     let mut rdr = LexiconReader::new();
     let splits = rdr.parse_splits("0/あ,0,1,2,3,4,5,あ/2", true).unwrap();
     assert_eq!(splits.len(), 3);
@@ -73,7 +73,7 @@ fn parse_split_inline() {
 }
 
 #[test]
-fn parse_split_inline_pos_id() {
+fn parse_split_entrykey_pos_id() {
     let mut rdr = LexiconReader::new();
     let splits = rdr.parse_splits("0/あ,0,あ/2", true).unwrap();
     assert_eq!(splits.len(), 3);
@@ -91,7 +91,7 @@ fn parse_split_inline_pos_id() {
 }
 
 #[test]
-fn parse_split_inline_pos_id_with_reference_id() {
+fn parse_split_entrykey_pos_id_with_reference_id() {
     let mut rdr = LexiconReader::new();
     let splits = rdr.parse_splits("0/あ,0,あ,ref-1/2", true).unwrap();
     assert_eq!(splits.len(), 3);
@@ -109,7 +109,7 @@ fn parse_split_inline_pos_id_with_reference_id() {
 }
 
 #[test]
-fn parse_split_inline_pos_id_with_empty_reading() {
+fn parse_split_entrykey_pos_id_with_empty_reading() {
     let mut rdr = LexiconReader::new();
     let splits = rdr.parse_splits("0/あ,0,/2", true).unwrap();
     assert_eq!(splits.len(), 3);
@@ -127,7 +127,7 @@ fn parse_split_inline_pos_id_with_empty_reading() {
 }
 
 #[test]
-fn parse_split_inline_empty_reference_id_fails() {
+fn parse_split_entrykey_empty_reference_id_fails() {
     let mut rdr = LexiconReader::new();
     assert_matches!(
         rdr.parse_splits("あ,0,あ,", true),
@@ -309,7 +309,7 @@ fn resolve_header_normalized_form_headword_ref() {
 }
 
 #[test]
-fn parse_dictionary_form_inline_self_reference_is_not_rewritten_to_selfref() {
+fn parse_dictionary_form_entrykey_self_reference_is_not_rewritten_to_selfref() {
     let mut rdr = LexiconReader::new();
     let data = concat!(
         "index_form,left_id,right_id,cost,headword,pos1,pos2,pos3,pos4,pos5,pos6,reading_form,normalized_form,dictionary_form,mode,split_a,split_b,word_structure\n",
@@ -599,10 +599,10 @@ fn parse_pos_exhausted() {
 }
 
 #[test]
-fn resolve_inline_same_dict() {
+fn resolve_entrykey_same_dict() {
     let mut rdr = DictBuilder::new_system();
     let nread = rdr
-        .read_lexicon(include_bytes!("data_kyoto_inline.csv"))
+        .read_lexicon(include_bytes!("data_kyoto_entrykey.csv"))
         .unwrap();
     assert_eq!(nread, 3);
     let nresolved = rdr.resolve().unwrap();
@@ -617,7 +617,7 @@ fn word_info_rw() {
     let mut bldr = DictBuilder::new_system();
     bldr.read_conn(include_bytes!("../test/matrix_10x10.def"))
         .unwrap();
-    bldr.read_lexicon(include_bytes!("data_kyoto_inline.csv"))
+    bldr.read_lexicon(include_bytes!("data_kyoto_entrykey.csv"))
         .unwrap();
     bldr.resolve().unwrap();
 

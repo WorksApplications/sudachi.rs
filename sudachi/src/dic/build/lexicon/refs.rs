@@ -50,12 +50,7 @@ impl WordRef {
                 pos: p,
                 reading: r,
                 reference_id: rid,
-            } => {
-                h == headword
-                    && *p == pos
-                    && r == reading
-                    && rid.as_deref() == reference_id
-            }
+            } => h == headword && *p == pos && r == reading && rid.as_deref() == reference_id,
             _ => false,
         }
     }

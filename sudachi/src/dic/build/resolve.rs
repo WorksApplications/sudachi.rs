@@ -168,9 +168,7 @@ impl<D: DictionaryAccess + ReferenceIdAccess> WordRefResolver for BinDictResolve
                     .ok()?;
                 let actual_headword = winfo.headword(&self.dict);
                 let actual_reading = winfo.reading_form(&self.dict);
-                if actual_headword == headword
-                    && winfo.pos_id() == pos
-                    && actual_reading == reading
+                if actual_headword == headword && winfo.pos_id() == pos && actual_reading == reading
                 {
                     Some(wref)
                 } else {
@@ -466,7 +464,10 @@ mod tests {
         let line_to_wref = vec![DicWordRef::new(true, 11), DicWordRef::new(true, 27)];
         let resolver = RawDictResolver::new(&entries, line_to_wref.clone(), false).unwrap();
 
-        assert_eq!(resolver.resolve_entry_key("あ", 0, "", None), Some(line_to_wref[0]));
+        assert_eq!(
+            resolver.resolve_entry_key("あ", 0, "", None),
+            Some(line_to_wref[0])
+        );
         assert_eq!(
             resolver.resolve_entry_key("あ", 0, "あ", None),
             Some(line_to_wref[1])
