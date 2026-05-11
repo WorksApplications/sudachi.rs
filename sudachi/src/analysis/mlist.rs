@@ -226,6 +226,7 @@ impl<D: DictionaryAccess> MorphemeList<D> {
     /// surface, so it preserves homograph identity.
     #[allow(clippy::result_large_err)]
     pub fn reset_with_word_id(&mut self, word_id: WordId, subset: InfoSubset) -> SudachiResult<()> {
+        let subset = (subset | InfoSubset::HEADWORD).normalize();
         let lex = self.dict.lexicon();
         let info = lex.get_word_info_subset(word_id, subset)?;
         let headword = info.headword(lex).to_owned();
@@ -233,7 +234,9 @@ impl<D: DictionaryAccess> MorphemeList<D> {
         let end_bytes = headword.len();
 
         let end_chars = {
-            let input = &mut self.input.borrow_mut().input;
+            let mut input_part = self.input.borrow_mut();
+            input_part.subset = subset;
+            let input = &mut input_part.input;
             input.reset().push_str(&headword);
             input.start_build()?;
             input.build(self.dict.grammar())?;

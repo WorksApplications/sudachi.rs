@@ -6,6 +6,10 @@ Also check [python changelog](python/CHANGELOG.md).
 
 ## [Unreleased]
 
+### Added
+
+- Add `MorphemeList::reset_with_word_id()` for materializing an exact dictionary entry.
+
 ## [0.6.10](https://github.com/WorksApplications/sudachi.rs/releases/tag/v0.6.10) (2025-01-10)
 
 ### Other

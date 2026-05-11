@@ -39,10 +39,12 @@ fn reset_with_word_id_uses_exact_homograph_entry() {
     let word_ids = LEXICON_SET.system_word_ids_in_order();
     let mut ms = MorphemeList::empty(tok.dict());
 
+    // These are the first and last "x" homographs in tests/resources/lex.csv;
+    // they share headword "X" but have different POS metadata.
     let first_x = *word_ids.get(40).unwrap();
     let place_name_x = *word_ids.get(45).unwrap();
 
-    ms.reset_with_word_id(first_x, InfoSubset::all())
+    ms.reset_with_word_id(first_x, InfoSubset::POS_ID)
         .expect("failed to materialize first x entry");
     assert_eq!(1, ms.len());
     assert_eq!(first_x, ms.get(0).word_id());
