@@ -159,8 +159,12 @@ impl LexiconReader {
                 parse_i16(s)
             }
         })?;
-        let reference_id = rec.get_col_or(layout, Column::ReferenceId, String::new(), |s| {
-            Ok(s.to_owned())
+        let reference_id = rec.get_col_or_default(layout, Column::ReferenceId, |s| {
+            Ok(if s.is_empty() {
+                None
+            } else {
+                Some(unescape(s)?)
+            })
         })?;
 
         let pos = if !p1.is_empty() {
@@ -223,11 +227,7 @@ impl LexiconReader {
             effective_headword.as_ref(),
             pos,
             &reading,
-            if reference_id.is_empty() {
-                None
-            } else {
-                Some(reference_id.as_str())
-            },
+            reference_id.as_deref(),
             layout.is_legacy(),
         ))?;
 
@@ -245,11 +245,7 @@ impl LexiconReader {
             norm_form,
             reading,
             headword: none_if_equal(&index_form, effective_headword),
-            reference_id: if reference_id.is_empty() {
-                None
-            } else {
-                Some(reference_id)
-            },
+            reference_id,
             index_form,
             pos,
             splitting,
