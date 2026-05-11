@@ -71,7 +71,7 @@ fn split_user_ref_in_legacy_format() {
 }
 
 #[test]
-fn split_user_inline_ref_system_in_legacy_format() {
+fn split_user_entrykey_ref_system_in_legacy_format() {
     let mut sys = DictBuilder::new_system();
     sys.read_conn(MATRIX_10_10).unwrap();
     sys.read_lexicon(
@@ -123,7 +123,7 @@ fn split_user_inline_ref_system_in_legacy_format() {
 }
 
 #[test]
-fn split_user_inline_ref_user_in_legacy_format() {
+fn split_user_entrykey_ref_user_in_legacy_format() {
     let mut sys = DictBuilder::new_system();
     sys.read_conn(MATRIX_10_10).unwrap();
     sys.read_lexicon(

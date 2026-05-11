@@ -171,7 +171,7 @@ fn different_headword_resolves_normalized_and_dictionary_form_to_headword() {
 }
 
 #[test]
-fn dictionary_form_inline_self_reference_resolves_to_previous_duplicate() {
+fn dictionary_form_entrykey_self_reference_resolves_to_previous_duplicate() {
     let mut bldr = DictBuilder::new_system();
     bldr.read_conn(MATRIX_10_10).unwrap();
     let lex = concat!(
@@ -207,6 +207,30 @@ fn build_system_1word() {
     let info = dic.lexicon().get_word_info(entry.word_id).unwrap();
     assert_eq!(info.headword(&dic), "京都");
     assert_eq!(info.reading_form(&dic), "キョウト");
+}
+
+#[test]
+fn build_system_preserves_empty_and_explicit_equal_reading() {
+    let mut bldr = DictBuilder::new_system();
+    bldr.read_conn(MATRIX_10_10).unwrap();
+    let lex = concat!(
+        "index_form,left_id,right_id,cost,headword,pos1,pos2,pos3,pos4,pos5,pos6,reading_form,normalized_form,dictionary_form,split_a,split_b,split_c,word_structure,synonym_groups\n",
+        "空読,6,6,5293,空読,名詞,普通名詞,一般,*,*,*,,,,,,,,\n",
+        "同読,6,6,5293,同読,名詞,普通名詞,一般,*,*,*,同読,,,,,,,\n"
+    );
+    assert_eq!(2, bldr.read_lexicon(lex.as_bytes()).unwrap());
+    bldr.resolve().unwrap();
+    let mut built = Vec::new();
+    bldr.compile(&mut built).unwrap();
+    let dic = LoadedDictionary::load_system(&built).unwrap();
+
+    let empty = dic.lexicon().lookup("空読".as_bytes(), 0).next().unwrap();
+    let empty_info = dic.lexicon().get_word_info(empty.word_id).unwrap();
+    assert_eq!(empty_info.reading_form(&dic), "");
+
+    let explicit = dic.lexicon().lookup("同読".as_bytes(), 0).next().unwrap();
+    let explicit_info = dic.lexicon().get_word_info(explicit.word_id).unwrap();
+    assert_eq!(explicit_info.reading_form(&dic), "同読");
 }
 
 #[test]
@@ -435,38 +459,90 @@ fn fail_matrix_size_validation() {
 fn various_word_references_system() {
     let mut bldr = DictBuilder::new_system();
     bldr.read_conn(MATRIX_10_10).unwrap();
-    assert_eq!(8, bldr.read_lexicon(WORDREF_SYSTEM).unwrap());
+    assert_eq!(11, bldr.read_lexicon(WORDREF_SYSTEM).unwrap());
     bldr.resolve().unwrap();
     let mut data = Vec::new();
     bldr.compile(&mut data).unwrap();
     let dic = LoadedDictionary::load_system(&data).unwrap();
-    assert_eq!(8, dic.lexicon().size());
+    assert_eq!(11, dic.lexicon().size());
+
+    let tokyo = dic
+        .lexicon()
+        .lookup("トウキョウ".as_bytes(), 0)
+        .next()
+        .unwrap();
+    let tokyo_info = dic.lexicon().get_word_info(tokyo.word_id).unwrap();
+    assert_eq!("東京", tokyo_info.normalized_form(&dic));
+    assert_eq!("東京", tokyo_info.dictionary_form(&dic));
+
+    let east_tokyo = dic
+        .lexicon()
+        .lookup("東トウキョウ".as_bytes(), 0)
+        .filter(|entry| entry.end == "東トウキョウ".len())
+        .next()
+        .unwrap();
+    let east_tokyo_info = dic.lexicon().get_word_info(east_tokyo.word_id).unwrap();
+    let structure = east_tokyo_info.c_unit_split();
+    assert_eq!(2, structure.len());
+    assert_eq!(
+        "東",
+        dic.lexicon()
+            .get_word_info(structure[0])
+            .unwrap()
+            .headword(&dic)
+    );
+    assert_eq!(
+        "東京B",
+        dic.lexicon()
+            .get_word_info(structure[1])
+            .unwrap()
+            .normalized_form(&dic)
+    );
 }
 
 #[test]
 fn various_word_references_user() {
     let mut bldr = DictBuilder::new_system();
     bldr.read_conn(MATRIX_10_10).unwrap();
-    assert_eq!(8, bldr.read_lexicon(WORDREF_SYSTEM).unwrap());
+    assert_eq!(11, bldr.read_lexicon(WORDREF_SYSTEM).unwrap());
     bldr.resolve().unwrap();
     let mut data = Vec::new();
     bldr.compile(&mut data).unwrap();
     let sys = LoadedDictionary::load_system(&data).unwrap();
 
     let mut user = DictBuilder::new_user(&sys);
-    assert_eq!(2, user.read_lexicon(WORDREF_USER).unwrap());
+    assert_eq!(5, user.read_lexicon(WORDREF_USER).unwrap());
     user.resolve().unwrap();
     let mut user_data = Vec::new();
     user.compile(&mut user_data).unwrap();
 
     let user_bin = BinaryDictionary::load_user(&user_data).unwrap();
     let merged = sys.merge_dictionary(user_bin).unwrap();
-    let entry = merged
+    let entries: Vec<_> = merged
         .lexicon_set
         .lookup("東京府".as_bytes(), 0)
-        .next()
-        .unwrap();
-    assert_eq!(entry.word_id.dict().as_raw(), 1);
+        .filter(|entry| entry.end == "東京府".len())
+        .collect();
+    assert_eq!(3, entries.len());
+    for entry in &entries {
+        assert_eq!(entry.word_id.dict().as_raw(), 1);
+    }
+
+    let normalized: Vec<_> = entries
+        .iter()
+        .map(|entry| {
+            let wi = merged.lexicon_set.get_word_info(entry.word_id).unwrap();
+            let splits = wi.a_unit_split();
+            assert_eq!(2, splits.len());
+            merged
+                .lexicon_set
+                .get_word_info(splits[1])
+                .unwrap()
+                .normalized_form(&merged)
+                .to_owned()
+        })
+        .collect();
+    assert_eq!(vec!["府", "府2u", "府3"], normalized);
 }
 
 #[test]
@@ -499,4 +575,210 @@ fn resolve_user_entry_without_system_in_trie() {
     assert_eq!(iter.next(), None);
     let winfo = dic.lexicon_set.get_word_info(e.word_id).unwrap();
     assert_eq!(winfo.a_unit_split().len(), 2);
+}
+
+#[test]
+fn build_system_resolves_ambiguous_reference_by_reference_id() {
+    let mut bldr = DictBuilder::new_system();
+    bldr.read_conn(MATRIX_10_10).unwrap();
+    let data = concat!(
+        "index_form,left_id,right_id,cost,headword,pos1,pos2,pos3,pos4,pos5,pos6,reading_form,normalized_form,dictionary_form,mode,split_a,split_b,word_structure,synonym_groups,reference_id\n",
+        "東京,1,1,100,東京,名詞,固有名詞,地名,一般,*,*,トウキョウ,,,A,,,,,tokyo-1\n",
+        "東京,1,1,200,東京,名詞,固有名詞,地名,一般,*,*,トウキョウ,,,A,,,,,tokyo-2\n",
+        "東都,1,1,300,東都,名詞,固有名詞,地名,一般,*,*,トウト,,\"東京,名詞,固有名詞,地名,一般,*,*,トウキョウ,tokyo-2\",A,,,,,\n"
+    );
+    bldr.read_lexicon(data.as_bytes()).unwrap();
+    bldr.resolve().unwrap();
+
+    let refs = bldr.lexicon.row_word_refs(false);
+    assert_eq!(
+        bldr.lexicon.resolved_entries()[2].dic_form,
+        crate::dic::build::lexicon::ResolvedWordRef::Ref(refs[1])
+    );
+}
+
+#[test]
+fn duplicate_reference_id_fails_build() {
+    let mut bldr = DictBuilder::new_system();
+    bldr.read_conn(MATRIX_10_10).unwrap();
+    let data = concat!(
+        "index_form,left_id,right_id,cost,headword,pos1,pos2,pos3,pos4,pos5,pos6,reading_form,normalized_form,dictionary_form,mode,split_a,split_b,word_structure,synonym_groups,reference_id\n",
+        "東京,1,1,100,東京,名詞,固有名詞,地名,一般,*,*,トウキョウ,,,A,,,,,dup-id\n",
+        "京都,1,1,100,京都,名詞,固有名詞,地名,一般,*,*,キョウト,,,A,,,,,dup-id\n"
+    );
+    bldr.read_lexicon(data.as_bytes()).unwrap();
+
+    claim::assert_matches!(
+        bldr.resolve(),
+        Err(SudachiError::DictionaryCompilationError(DicBuildError {
+            cause: BuildFailure::InvalidSplit(_),
+            ..
+        }))
+    );
+}
+
+#[test]
+fn compiled_dictionary_preserves_reference_id_table() {
+    let mut bldr = DictBuilder::new_system();
+    bldr.read_conn(MATRIX_10_10).unwrap();
+    let data = concat!(
+        "index_form,left_id,right_id,cost,headword,pos1,pos2,pos3,pos4,pos5,pos6,reading_form,normalized_form,dictionary_form,mode,split_a,split_b,word_structure,synonym_groups,reference_id\n",
+        "東京,1,1,100,東京,名詞,固有名詞,地名,一般,*,*,トウキョウ,,,A,,,,,tokyo-1\n"
+    );
+    bldr.read_lexicon(data.as_bytes()).unwrap();
+    bldr.resolve().unwrap();
+
+    let mut built = Vec::new();
+    bldr.compile(&mut built).unwrap();
+    let bin = BinaryDictionary::load_system(&built).unwrap();
+    let loaded = LoadedDictionary::load_system(&built).unwrap();
+    let wid = loaded
+        .lexicon()
+        .lookup("東京".as_bytes(), 0)
+        .next()
+        .unwrap()
+        .word_id;
+    let reference_ids = bin.reference_id_table().unwrap();
+    assert_eq!(
+        reference_ids.get(&wid.entry().as_raw()).map(|s| s.as_str()),
+        Some("tokyo-1")
+    );
+}
+
+#[test]
+fn user_reference_id_prefers_user_entries() {
+    let mut system = DictBuilder::new_system();
+    system.read_conn(MATRIX_10_10).unwrap();
+    system
+        .read_lexicon(
+            concat!(
+                "index_form,left_id,right_id,cost,headword,pos1,pos2,pos3,pos4,pos5,pos6,reading_form,normalized_form,dictionary_form,mode,split_a,split_b,word_structure,synonym_groups,reference_id\n",
+                "東京,1,1,100,東京,名詞,固有名詞,地名,一般,*,*,トウキョウ,,,A,,,,,tokyo-sys\n"
+            )
+            .as_bytes(),
+        )
+        .unwrap();
+    system.resolve().unwrap();
+    let mut system_bin = Vec::new();
+    system.compile(&mut system_bin).unwrap();
+    let system_dic = LoadedDictionary::load_system(&system_bin).unwrap();
+
+    let mut user = DictBuilder::new_user(&system_dic);
+    user.read_lexicon(
+        concat!(
+            "index_form,left_id,right_id,cost,headword,pos1,pos2,pos3,pos4,pos5,pos6,reading_form,normalized_form,dictionary_form,mode,split_a,split_b,word_structure,synonym_groups,reference_id\n",
+            "東京,1,1,110,東京,名詞,固有名詞,地名,一般,*,*,トウキョウ,,,A,,,,,tokyo-user\n",
+            "東都,1,1,120,東都,名詞,固有名詞,地名,一般,*,*,トウト,,,B,\"東京,名詞,固有名詞,地名,一般,*,*,トウキョウ,tokyo-user\",,,,\n"
+        )
+        .as_bytes(),
+    )
+    .unwrap();
+    user.resolve().unwrap();
+
+    let refs = user.lexicon.row_word_refs(true);
+    assert_eq!(user.lexicon.resolved_entries()[1].splits_a, [refs[0]]);
+}
+
+#[test]
+fn user_reference_id_falls_back_to_system_entries() {
+    let mut system = DictBuilder::new_system();
+    system.read_conn(MATRIX_10_10).unwrap();
+    system
+        .read_lexicon(
+            concat!(
+                "index_form,left_id,right_id,cost,headword,pos1,pos2,pos3,pos4,pos5,pos6,reading_form,normalized_form,dictionary_form,mode,split_a,split_b,word_structure,synonym_groups,reference_id\n",
+                "東京,1,1,100,東京,名詞,固有名詞,地名,一般,*,*,トウキョウ,,,A,,,,,tokyo-sys\n"
+            )
+            .as_bytes(),
+        )
+        .unwrap();
+    system.resolve().unwrap();
+    let mut system_bin = Vec::new();
+    system.compile(&mut system_bin).unwrap();
+    let system_dic = LoadedDictionary::load_system(&system_bin).unwrap();
+
+    let mut user = DictBuilder::new_user(&system_dic);
+    user.read_lexicon(
+        concat!(
+            "index_form,left_id,right_id,cost,headword,pos1,pos2,pos3,pos4,pos5,pos6,reading_form,normalized_form,dictionary_form,mode,split_a,split_b,word_structure,synonym_groups\n",
+            "東都,1,1,120,東都,名詞,固有名詞,地名,一般,*,*,トウト,,,B,\"東京,名詞,固有名詞,地名,一般,*,*,トウキョウ,tokyo-sys\",,,,\n"
+        )
+        .as_bytes(),
+    )
+    .unwrap();
+    user.resolve().unwrap();
+
+    let sys_ref = DicWordRef::new(
+        true,
+        system_dic.lexicon().system_word_ids_in_order()[0]
+            .entry()
+            .as_raw(),
+    );
+    assert_eq!(user.lexicon.resolved_entries()[0].splits_a, [sys_ref]);
+}
+
+#[test]
+fn user_reference_id_triple_mismatch_fails() {
+    let mut system = DictBuilder::new_system();
+    system.read_conn(MATRIX_10_10).unwrap();
+    system
+        .read_lexicon(
+            concat!(
+                "index_form,left_id,right_id,cost,headword,pos1,pos2,pos3,pos4,pos5,pos6,reading_form,normalized_form,dictionary_form,mode,split_a,split_b,word_structure,synonym_groups,reference_id\n",
+                "東京,1,1,100,東京,名詞,固有名詞,地名,一般,*,*,トウキョウ,,,A,,,,,tokyo-sys\n"
+            )
+            .as_bytes(),
+        )
+        .unwrap();
+    system.resolve().unwrap();
+    let mut system_bin = Vec::new();
+    system.compile(&mut system_bin).unwrap();
+    let system_dic = LoadedDictionary::load_system(&system_bin).unwrap();
+
+    let mut user = DictBuilder::new_user(&system_dic);
+    user.read_lexicon(
+        concat!(
+            "index_form,left_id,right_id,cost,headword,pos1,pos2,pos3,pos4,pos5,pos6,reading_form,normalized_form,dictionary_form,mode,split_a,split_b,word_structure,synonym_groups\n",
+            "東都,1,1,120,東都,名詞,固有名詞,地名,一般,*,*,トウト,,,B,\"大阪,名詞,固有名詞,地名,一般,*,*,オオサカ,tokyo-sys\",,,,\n"
+        )
+        .as_bytes(),
+    )
+    .unwrap();
+
+    claim::assert_matches!(
+        user.resolve(),
+        Err(SudachiError::DictionaryCompilationError(DicBuildError {
+            cause: BuildFailure::InvalidSplitWordReference(_),
+            ..
+        }))
+    );
+}
+
+#[test]
+fn user_reference_without_reference_id_prefers_first_user_entry() {
+    let mut system = DictBuilder::new_system();
+    system.read_conn(MATRIX_10_10).unwrap();
+    system
+        .read_lexicon(include_bytes!("test/data_1word.csv"))
+        .unwrap();
+    system.resolve().unwrap();
+    let mut system_bin = Vec::new();
+    system.compile(&mut system_bin).unwrap();
+    let system_dic = LoadedDictionary::load_system(&system_bin).unwrap();
+
+    let mut user = DictBuilder::new_user(&system_dic);
+    user.read_lexicon(
+        concat!(
+            "index_form,left_id,right_id,cost,headword,pos1,pos2,pos3,pos4,pos5,pos6,reading_form,normalized_form,dictionary_form,mode,split_a,split_b,word_structure,synonym_groups\n",
+            "東京,1,1,110,東京,名詞,固有名詞,地名,一般,*,*,トウキョウ,,,A,,,,\n",
+            "東京,1,1,111,東京,名詞,固有名詞,地名,一般,*,*,トウキョウ,,,A,,,,\n",
+            "東都,1,1,120,東都,名詞,固有名詞,地名,一般,*,*,トウト,,,B,\"東京,名詞,固有名詞,地名,一般,*,*,トウキョウ\",,,,\n"
+        )
+        .as_bytes(),
+    )
+    .unwrap();
+    user.resolve().unwrap();
+
+    let refs = user.lexicon.row_word_refs(true);
+    assert_eq!(user.lexicon.resolved_entries()[2].splits_a, [refs[0]]);
 }

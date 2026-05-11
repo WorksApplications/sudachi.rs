@@ -32,6 +32,7 @@ pub(crate) struct ParsedLexiconEntry {
     pub cost: i16,
     pub index_form: String,
     pub headword: Option<String>,
+    pub reference_id: Option<String>,
     pub dic_form: WordRef,
     pub norm_form: WordRef,
     pub pos: u16,
@@ -39,7 +40,7 @@ pub(crate) struct ParsedLexiconEntry {
     pub splits_b: Vec<WordRef>,
     #[allow(unused)]
     pub splits_c: Vec<WordRef>,
-    pub reading: Option<String>,
+    pub reading: String,
     #[allow(unused)]
     pub splitting: Mode,
     pub word_structure: Vec<WordRef>,
@@ -58,6 +59,7 @@ pub(crate) struct ResolvedLexiconEntry {
     pub cost: i16,
     pub index_form: String,
     pub headword: Option<String>,
+    pub reference_id: Option<String>,
     pub dic_form: ResolvedWordRef,
     pub norm_form: ResolvedWordRef,
     pub pos: u16,
@@ -65,7 +67,7 @@ pub(crate) struct ResolvedLexiconEntry {
     pub splits_b: Vec<DicWordRef>,
     #[allow(unused)]
     pub splits_c: Vec<DicWordRef>,
-    pub reading: Option<String>,
+    pub reading: String,
     #[allow(unused)]
     pub splitting: Mode,
     pub word_structure: Vec<DicWordRef>,
@@ -97,7 +99,11 @@ impl ParsedLexiconEntry {
     }
 
     pub fn reading(&self) -> &str {
-        self.reading.as_deref().unwrap_or_else(|| self.headword())
+        &self.reading
+    }
+
+    pub fn reference_id(&self) -> Option<&str> {
+        self.reference_id.as_deref()
     }
 
     #[cfg_attr(not(test), allow(dead_code))]
@@ -129,6 +135,7 @@ impl ResolvedLexiconEntry {
         Self {
             index_form: String::new(),
             headword: Some(headword),
+            reference_id: None,
             left_id: -1,
             right_id: -1,
             cost: i16::MAX,
@@ -171,7 +178,11 @@ impl ResolvedLexiconEntry {
     }
 
     pub fn reading(&self) -> &str {
-        self.reading.as_deref().unwrap_or_else(|| self.headword())
+        &self.reading
+    }
+
+    pub fn reference_id(&self) -> Option<&str> {
+        self.reference_id.as_deref()
     }
 
     pub fn should_index(&self) -> bool {
@@ -284,13 +295,14 @@ mod tests {
             cost: 3,
             index_form: "東京".to_string(),
             headword: Some("京都".to_string()),
+            reference_id: None,
             dic_form: ResolvedWordRef::SelfRef,
             norm_form: ResolvedWordRef::Ref(DicWordRef::new(true, 13)),
             pos: 4,
             splits_a: vec![DicWordRef::new(true, 5), DicWordRef::new(true, 6)],
             splits_b: vec![DicWordRef::new(true, 7)],
             splits_c: vec![],
-            reading: Some("キョウト".to_string()),
+            reading: "キョウト".to_string(),
             splitting: Mode::B,
             word_structure: vec![DicWordRef::new(true, 8)],
             synonym_groups: vec![10, 11],

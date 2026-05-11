@@ -127,6 +127,7 @@ impl LexiconReader {
             cost: entry.cost,
             index_form: entry.index_form,
             headword: entry.headword,
+            reference_id: entry.reference_id,
             dic_form,
             norm_form,
             pos: entry.pos,
@@ -220,15 +221,20 @@ impl LexiconReader {
             WordRef::SelfRef => "<self>".to_owned(),
             WordRef::LineRef(id) => id.as_raw().to_string(),
             WordRef::Headword(h) => h.clone(),
-            WordRef::Inline {
+            WordRef::EntryKey {
                 headword,
                 pos,
                 reading,
+                reference_id,
             } => format!(
-                "{},{:?},{}",
+                "{},{:?},{}{}",
                 headword,
                 self.pos_obj(*pos).unwrap(),
-                reading.as_ref().unwrap_or(headword)
+                reading,
+                reference_id
+                    .as_ref()
+                    .map(|rid| format!(",{}", rid))
+                    .unwrap_or_default()
             ),
         }
     }

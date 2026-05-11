@@ -22,10 +22,11 @@ pub(crate) enum WordRef {
     SelfRef,
     LineRef(DicWordRef),
     Headword(String),
-    Inline {
+    EntryKey {
         headword: String,
         pos: u16,
-        reading: Option<String>,
+        reading: String,
+        reference_id: Option<String>,
     },
 }
 
@@ -35,17 +36,38 @@ pub(crate) enum ResolvedWordRef {
     SelfRef,
 }
 
+impl WordRef {
+    pub(crate) fn matches(
+        &self,
+        headword: &str,
+        pos: u16,
+        reading: &str,
+        reference_id: Option<&str>,
+    ) -> bool {
+        match self {
+            WordRef::EntryKey {
+                headword: h,
+                pos: p,
+                reading: r,
+                reference_id: rid,
+            } => h == headword && *p == pos && r == reading && rid.as_deref() == reference_id,
+            _ => false,
+        }
+    }
+}
+
 pub(crate) trait WordRefResolver {
     fn resolve(&self, unit: &WordRef) -> Option<DicWordRef> {
         match unit {
             WordRef::SelfRef => None,
             WordRef::LineRef(line_ref) => self.resolve_by_line_ref(*line_ref),
             WordRef::Headword(headword) => self.resolve_by_headword(headword),
-            WordRef::Inline {
+            WordRef::EntryKey {
                 headword,
                 pos,
                 reading,
-            } => self.resolve_inline(headword, *pos, reading.as_deref()),
+                reference_id,
+            } => self.resolve_entry_key(headword, *pos, reading, reference_id.as_deref()),
         }
     }
 
@@ -53,6 +75,11 @@ pub(crate) trait WordRefResolver {
 
     fn resolve_by_headword(&self, headword: &str) -> Option<DicWordRef>;
 
-    fn resolve_inline(&self, headword: &str, pos: u16, reading: Option<&str>)
-        -> Option<DicWordRef>;
+    fn resolve_entry_key(
+        &self,
+        headword: &str,
+        pos: u16,
+        reading: &str,
+        reference_id: Option<&str>,
+    ) -> Option<DicWordRef>;
 }

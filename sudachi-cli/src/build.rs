@@ -14,6 +14,7 @@
  *  limitations under the License.
  */
 
+use std::collections::HashMap;
 use std::fs::{File, OpenOptions};
 use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
@@ -108,7 +109,7 @@ pub(crate) enum BuildCli {
         system: Option<PathBuf>,
 
         /// Use POS_ID instead of POS1..POS6 in dump winfo output.
-        /// Inline references in dictionary_form and split columns also use POS_ID.
+        /// entrykey references also use POS_ID.
         #[arg(long = "pos-id")]
         pos_id: bool,
     },
@@ -346,27 +347,32 @@ fn dump_word_info<W: Write>(
     let system = data.as_ref().map(|data| {
         let system_dict =
             BinaryDictionary::load_system(data).expect("failed to load system dictionary");
+        let reference_ids = system_dict
+            .reference_id_table()
+            .expect("failed to load reference-id table");
         let grammar = Grammar::from_system_binary(system_dict.grammar)
             .expect("failed to load system dictionary");
         let lexicon_set =
             LexiconSet::from_system_binary(system_dict.lexicon, grammar.pos_list.len());
-        (grammar, lexicon_set)
+        (grammar, lexicon_set, reference_ids)
     });
 
     let (base, user) = if is_user {
-        (
-            system.expect("system dictionary is required to dump user dictionary lexicon"),
-            Some(dict),
-        )
+        let (grammar, lexicon_set, reference_ids) =
+            system.expect("system dictionary is required to dump user dictionary lexicon");
+        (((grammar, lexicon_set), reference_ids), Some(dict))
     } else {
+        let system_reference_ids = dict.reference_id_table()?;
         let grammar = Grammar::from_system_binary(dict.grammar).expect("failed to load dictionary");
         let lexicon_set = LexiconSet::from_system_binary(dict.lexicon, grammar.pos_list.len());
-        ((grammar, lexicon_set), None)
+        (((grammar, lexicon_set), system_reference_ids), None)
     };
 
-    let (mut grammar, mut lex) = base;
+    let ((mut grammar, mut lex), system_reference_ids) = base;
     let mut word_ids = Vec::new();
+    let mut user_reference_ids = HashMap::new();
     if let Some(udic) = user {
+        user_reference_ids = udic.reference_id_table()?;
         let user_lex = Lexicon::from_binary(udic.lexicon);
         for entry in user_lex.entry_ids_in_order() {
             word_ids.push(WordId::new(1, entry.as_raw()));
@@ -415,18 +421,61 @@ fn dump_word_info<W: Write>(
             wid,
             winfo.borrow_data().dictionary_form_word_id(),
             pos_format,
+            &system_reference_ids,
+            &user_reference_ids,
         )?;
         write!(w, "{},", dict_form)?;
-        dump_wids(w, &grammar, &lex, winfo.a_unit_split(), pos_format)?;
+        dump_wids(
+            w,
+            &grammar,
+            &lex,
+            winfo.a_unit_split(),
+            pos_format,
+            &system_reference_ids,
+            &user_reference_ids,
+        )?;
         w.write_all(b",")?;
-        dump_wids(w, &grammar, &lex, winfo.b_unit_split(), pos_format)?;
+        dump_wids(
+            w,
+            &grammar,
+            &lex,
+            winfo.b_unit_split(),
+            pos_format,
+            &system_reference_ids,
+            &user_reference_ids,
+        )?;
         w.write_all(b",")?;
-        dump_wids(w, &grammar, &lex, winfo.c_unit_split(), pos_format)?;
+        dump_wids(
+            w,
+            &grammar,
+            &lex,
+            winfo.c_unit_split(),
+            pos_format,
+            &system_reference_ids,
+            &user_reference_ids,
+        )?;
         w.write_all(b",")?;
-        dump_wids(w, &grammar, &lex, winfo.word_structure(), pos_format)?;
+        dump_wids(
+            w,
+            &grammar,
+            &lex,
+            winfo.word_structure(),
+            pos_format,
+            &system_reference_ids,
+            &user_reference_ids,
+        )?;
         w.write_all(b",")?;
         dump_gids(w, winfo.synonym_group_ids())?;
-        write!(w, ",{}", csv_field(winfo.user_data()))?;
+        write!(
+            w,
+            ",{},{}",
+            csv_field(winfo.user_data()),
+            csv_field(&reference_id_for_word_id(
+                wid,
+                &system_reference_ids,
+                &user_reference_ids
+            ))
+        )?;
         w.write_all(b"\n")?;
     }
     Ok(())
@@ -437,7 +486,7 @@ fn unicode_escape(raw: &str) -> String {
     raw.replace('"', "\\u0022")
 }
 
-fn inline_ref_escape(raw: &str) -> String {
+fn entrykey_ref_escape(raw: &str) -> String {
     raw.replace('"', "\\u0022")
         .replace(',', "\\u002c")
         .replace('/', "\\u002f")
@@ -455,10 +504,10 @@ fn csv_field(raw: &str) -> String {
 fn word_info_header(pos_format: PosDumpFormat) -> &'static str {
     match pos_format {
         PosDumpFormat::Components => {
-            "INDEX_FORM,LEFT_ID,RIGHT_ID,COST,HEADWORD,POS1,POS2,POS3,POS4,POS5,POS6,READING_FORM,NORMALIZED_FORM,DICTIONARY_FORM,SPLIT_A,SPLIT_B,SPLIT_C,WORD_STRUCTURE,SYNONYM_GROUPS,USER_DATA"
+            "INDEX_FORM,LEFT_ID,RIGHT_ID,COST,HEADWORD,POS1,POS2,POS3,POS4,POS5,POS6,READING_FORM,NORMALIZED_FORM,DICTIONARY_FORM,SPLIT_A,SPLIT_B,SPLIT_C,WORD_STRUCTURE,SYNONYM_GROUPS,USER_DATA,REFERENCE_ID"
         }
         PosDumpFormat::Id => {
-            "INDEX_FORM,LEFT_ID,RIGHT_ID,COST,HEADWORD,POS_ID,READING_FORM,NORMALIZED_FORM,DICTIONARY_FORM,SPLIT_A,SPLIT_B,SPLIT_C,WORD_STRUCTURE,SYNONYM_GROUPS,USER_DATA"
+            "INDEX_FORM,LEFT_ID,RIGHT_ID,COST,HEADWORD,POS_ID,READING_FORM,NORMALIZED_FORM,DICTIONARY_FORM,SPLIT_A,SPLIT_B,SPLIT_C,WORD_STRUCTURE,SYNONYM_GROUPS,USER_DATA,REFERENCE_ID"
         }
     }
 }
@@ -475,12 +524,12 @@ fn pos_string(grammar: &Grammar, posid: u16, pos_format: PosDumpFormat) -> Strin
     }
 }
 
-fn pos_string_for_inline(grammar: &Grammar, posid: u16, pos_format: PosDumpFormat) -> String {
+fn pos_string_for_entrykey(grammar: &Grammar, posid: u16, pos_format: PosDumpFormat) -> String {
     match pos_format {
         PosDumpFormat::Components => grammar
             .pos_components(posid)
             .into_iter()
-            .map(|p| inline_ref_escape(p))
+            .map(|p| entrykey_ref_escape(p))
             .collect::<Vec<_>>()
             .join(","),
         PosDumpFormat::Id => posid.to_string(),
@@ -493,6 +542,8 @@ fn dictionary_form_string(
     self_wid: WordId,
     wid: WordId,
     pos_format: PosDumpFormat,
+    system_reference_ids: &HashMap<u32, String>,
+    user_reference_ids: &HashMap<u32, String>,
 ) -> SudachiResult<String> {
     if self_wid == wid {
         return Ok(String::new());
@@ -500,11 +551,42 @@ fn dictionary_form_string(
 
     let dict_form_wi = lex.get_word_info(wid)?;
     Ok(format!(
-        "\"{},{},{}\"",
-        inline_ref_escape(dict_form_wi.headword(lex)),
-        pos_string_for_inline(grammar, dict_form_wi.pos_id(), pos_format),
-        inline_ref_escape(dict_form_wi.reading_form(lex)),
+        "\"{}\"",
+        entrykey_ref_string(
+            grammar,
+            wid,
+            dict_form_wi.headword(lex),
+            dict_form_wi.pos_id(),
+            dict_form_wi.reading_form(lex),
+            pos_format,
+            system_reference_ids,
+            user_reference_ids,
+        )
     ))
+}
+
+fn entrykey_ref_string(
+    grammar: &Grammar,
+    wid: WordId,
+    headword: &str,
+    pos_id: u16,
+    reading: &str,
+    pos_format: PosDumpFormat,
+    system_reference_ids: &HashMap<u32, String>,
+    user_reference_ids: &HashMap<u32, String>,
+) -> String {
+    let mut data = format!(
+        "{},{},{}",
+        entrykey_ref_escape(headword),
+        pos_string_for_entrykey(grammar, pos_id, pos_format),
+        entrykey_ref_escape(reading),
+    );
+    let reference_id = reference_id_for_word_id(wid, system_reference_ids, user_reference_ids);
+    if !reference_id.is_empty() {
+        data.push(',');
+        data.push_str(&entrykey_ref_escape(&reference_id));
+    }
+    data
 }
 
 fn dump_wids<W: Write>(
@@ -513,6 +595,8 @@ fn dump_wids<W: Write>(
     lex: &LexiconSet,
     data: &[WordId],
     pos_format: PosDumpFormat,
+    system_reference_ids: &HashMap<u32, String>,
+    user_reference_ids: &HashMap<u32, String>,
 ) -> SudachiResult<()> {
     if data.is_empty() {
         return Ok(());
@@ -521,11 +605,15 @@ fn dump_wids<W: Write>(
     let mut refs = Vec::with_capacity(data.len());
     for wid in data {
         let wi = lex.get_word_info(*wid)?;
-        refs.push(format!(
-            "{},{},{}",
-            inline_ref_escape(wi.headword(lex)),
-            pos_string_for_inline(grammar, wi.pos_id(), pos_format),
-            inline_ref_escape(wi.reading_form(lex)),
+        refs.push(entrykey_ref_string(
+            grammar,
+            *wid,
+            wi.headword(lex),
+            wi.pos_id(),
+            wi.reading_form(lex),
+            pos_format,
+            system_reference_ids,
+            user_reference_ids,
         ));
     }
     w.write_all(b"\"")?;
@@ -537,6 +625,24 @@ fn dump_wids<W: Write>(
     }
     w.write_all(b"\"")?;
     Ok(())
+}
+
+fn reference_id_for_word_id(
+    wid: WordId,
+    system_reference_ids: &HashMap<u32, String>,
+    user_reference_ids: &HashMap<u32, String>,
+) -> String {
+    match wid.dict().as_raw() {
+        0 => system_reference_ids
+            .get(&wid.entry().as_raw())
+            .cloned()
+            .unwrap_or_default(),
+        1 => user_reference_ids
+            .get(&wid.entry().as_raw())
+            .cloned()
+            .unwrap_or_default(),
+        _ => String::new(),
+    }
 }
 
 fn dump_gids<W: Write>(w: &mut W, data: &[i32]) -> SudachiResult<()> {
@@ -581,6 +687,7 @@ mod tests {
             .from_reader(data);
         let headers = rdr.headers().unwrap().clone();
         let has_user_data = headers.iter().any(|h| h == "user_data");
+        let has_reference_id = headers.iter().any(|h| h == "reference_id");
         let mut rows = Vec::new();
         let dump_header = vec![
             "INDEX_FORM",
@@ -603,6 +710,7 @@ mod tests {
             "WORD_STRUCTURE",
             "SYNONYM_GROUPS",
             "USER_DATA",
+            "REFERENCE_ID",
         ];
         rows.push(
             dump_header
@@ -663,6 +771,13 @@ mod tests {
             } else {
                 String::new()
             });
+            row.push(if has_reference_id {
+                rec.get(if has_user_data { 20 } else { 19 })
+                    .unwrap_or("")
+                    .to_string()
+            } else {
+                String::new()
+            });
             rows.push(row);
         }
         rows
@@ -679,8 +794,8 @@ mod tests {
     }
 
     #[test]
-    fn inline_ref_escape_replaces_inline_separators() {
-        assert_eq!(inline_ref_escape("a,b/c\"d"), "a\\u002cb\\u002fc\\u0022d");
+    fn entrykey_ref_escape_replaces_entrykey_separators() {
+        assert_eq!(entrykey_ref_escape("a,b/c\"d"), "a\\u002cb\\u002fc\\u0022d");
     }
 
     fn parse_dump_csv(data: &[u8]) -> Vec<Vec<String>> {
@@ -794,7 +909,7 @@ mod tests {
     }
 
     #[test]
-    fn dump_word_info_uses_pos_id_for_columns_and_inline_refs() {
+    fn dump_word_info_uses_pos_id_for_columns_and_entrykey_refs() {
         let pos = concat!(
             "POS_ID,POS1,POS2,POS3,POS4,POS5,POS6\n",
             "0,名詞,固有名詞,地名,一般,*,*\n",
@@ -837,6 +952,7 @@ mod tests {
                 "WORD_STRUCTURE",
                 "SYNONYM_GROUPS",
                 "USER_DATA",
+                "REFERENCE_ID",
             ]
             .into_iter()
             .map(|s| s.to_string())
@@ -857,12 +973,13 @@ mod tests {
                 "",
                 "",
                 "",
+                "",
             ]
             .into_iter()
             .map(|s| s.to_string())
             .collect::<Vec<_>>(),
             vec![
-                "府", "2", "2", "2914", "", "1", "フ", "", "", "", "", "", "", "", "",
+                "府", "2", "2", "2914", "", "1", "フ", "", "", "", "", "", "", "", "", "",
             ]
             .into_iter()
             .map(|s| s.to_string())
@@ -883,6 +1000,7 @@ mod tests {
                 "",
                 "",
                 "",
+                "",
             ]
             .into_iter()
             .map(|s| s.to_string())
@@ -890,6 +1008,69 @@ mod tests {
         ];
         let actual = parse_dump_csv(&dumped);
         assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn dump_word_info_outputs_reference_id_column_and_entrykey_refs() {
+        let mut builder = DictBuilder::new_system();
+        builder.read_conn(MATRIX_10_10).unwrap();
+        builder
+            .read_lexicon(
+                concat!(
+                    "INDEX_FORM,LEFT_ID,RIGHT_ID,COST,HEADWORD,POS1,POS2,POS3,POS4,POS5,POS6,READING_FORM,NORMALIZED_FORM,DICTIONARY_FORM,MODE,SPLIT_A,SPLIT_B,SPLIT_C,WORD_STRUCTURE,SYNONYM_GROUPS,REFERENCE_ID\n",
+                    "東京,6,6,5293,東京,名詞,固有名詞,地名,一般,*,*,トウキョウ,,,A,,,,,,tokyo-ref\n",
+                    "東京府,2,2,2816,,名詞,固有名詞,地名,一般,*,*,トウキョウフ,\"東京,0,トウキョウ,tokyo-ref\",\"東京,0,トウキョウ,tokyo-ref\",B,\"東京,0,トウキョウ,tokyo-ref\",,,,,\n"
+                )
+                .as_bytes(),
+            )
+            .unwrap();
+        builder.resolve().unwrap();
+
+        let mut compiled = Vec::new();
+        builder.compile(&mut compiled).unwrap();
+
+        let dict = BinaryDictionary::load_system(&compiled).unwrap();
+        let mut dumped = Vec::new();
+        dump_word_info(dict, None, PosDumpFormat::Components, &mut dumped).unwrap();
+
+        let actual = parse_dump_csv(&dumped);
+        assert_eq!(actual[0].last().map(|s| s.as_str()), Some("REFERENCE_ID"));
+        assert_eq!(actual[1].last().map(|s| s.as_str()), Some("tokyo-ref"));
+        assert!(actual[2]
+            .iter()
+            .any(|v| v == "東京,名詞,固有名詞,地名,一般,*,*,トウキョウ,tokyo-ref"));
+    }
+
+    #[test]
+    fn dump_word_info_pos_id_outputs_reference_id_entrykey_refs() {
+        let pos = concat!(
+            "POS_ID,POS1,POS2,POS3,POS4,POS5,POS6\n",
+            "0,名詞,固有名詞,地名,一般,*,*\n"
+        );
+        let lex = concat!(
+            "INDEX_FORM,LEFT_ID,RIGHT_ID,COST,HEADWORD,POS_ID,READING_FORM,NORMALIZED_FORM,DICTIONARY_FORM,MODE,SPLIT_A,SPLIT_B,SPLIT_C,WORD_STRUCTURE,SYNONYM_GROUPS,REFERENCE_ID\n",
+            "東京,6,6,5293,東京,0,トウキョウ,,,A,,,,,,tokyo-ref\n",
+            "東京府,2,2,2816,,0,トウキョウフ,,\"東京,0,トウキョウ,tokyo-ref\",B,\"東京,0,トウキョウ,tokyo-ref\",,,,,\n"
+        );
+
+        let mut builder = DictBuilder::new_system();
+        builder.read_conn(MATRIX_10_10).unwrap();
+        builder.read_pos(pos.as_bytes()).unwrap();
+        builder.read_lexicon(lex.as_bytes()).unwrap();
+        builder.resolve().unwrap();
+
+        let mut compiled = Vec::new();
+        builder.compile(&mut compiled).unwrap();
+
+        let dict = BinaryDictionary::load_system(&compiled).unwrap();
+        let mut dumped = Vec::new();
+        dump_word_info(dict, None, PosDumpFormat::Id, &mut dumped).unwrap();
+
+        let actual = parse_dump_csv(&dumped);
+        assert_eq!(actual[0].last().map(|s| s.as_str()), Some("REFERENCE_ID"));
+        assert_eq!(actual[1].last().map(|s| s.as_str()), Some("tokyo-ref"));
+        assert_eq!(actual[2][8], "東京,0,トウキョウ,tokyo-ref");
+        assert_eq!(actual[2][9], "東京,0,トウキョウ,tokyo-ref");
     }
 
     #[test]

@@ -14,6 +14,7 @@
  *  limitations under the License.
  */
 
+use std::collections::HashMap;
 use std::ops::Deref;
 
 use crate::dic::description::Description;
@@ -48,6 +49,21 @@ where
 {
     fn description(&self) -> &Description {
         <T as Deref>::deref(self).description()
+    }
+}
+
+/// Build-time helper access to dictionary entry reference IDs.
+pub trait ReferenceIdAccess {
+    fn reference_ids(&self) -> HashMap<u32, String>;
+}
+
+impl<T> ReferenceIdAccess for T
+where
+    T: Deref,
+    <T as Deref>::Target: ReferenceIdAccess,
+{
+    fn reference_ids(&self) -> HashMap<u32, String> {
+        <T as Deref>::deref(self).reference_ids()
     }
 }
 

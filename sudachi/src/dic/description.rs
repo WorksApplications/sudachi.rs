@@ -69,6 +69,8 @@ pub enum Block {
     Entries,
     // storage of strings in the lexicon
     Strings,
+    // build-time reference_id table
+    ReferenceIdTable,
 }
 
 impl Block {
@@ -82,6 +84,7 @@ impl Block {
             Block::WordPointers => "WordPointers",
             Block::Entries => "Entries",
             Block::Strings => "Strings",
+            Block::ReferenceIdTable => "ReferenceIdTable",
         }
     }
 }

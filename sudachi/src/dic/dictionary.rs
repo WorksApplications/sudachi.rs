@@ -27,7 +27,7 @@ use crate::dic::grammar::Grammar;
 use crate::dic::lexicon::Lexicon;
 use crate::dic::lexicon_set::LexiconSet;
 use crate::dic::storage::{Storage, SudachiDicData};
-use crate::dic::{DescriptionAccess, DictionaryAccess, LexiconAccess};
+use crate::dic::{DescriptionAccess, DictionaryAccess, LexiconAccess, ReferenceIdAccess};
 use crate::error::{SudachiError, SudachiResult};
 use crate::plugin::input_text::InputTextPlugin;
 use crate::plugin::oov::OovProviderPlugin;
@@ -197,5 +197,13 @@ impl DictionaryAccess for JapaneseDictionary {
 impl DescriptionAccess for JapaneseDictionary {
     fn description(&self) -> &Description {
         &self.description
+    }
+}
+
+impl ReferenceIdAccess for JapaneseDictionary {
+    fn reference_ids(&self) -> std::collections::HashMap<u32, String> {
+        BinaryDictionary::load_system(unsafe { self.storage.system_static_slice() })
+            .and_then(|dict| dict.reference_id_table())
+            .unwrap_or_default()
     }
 }

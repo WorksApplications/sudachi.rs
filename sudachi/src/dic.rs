@@ -34,4 +34,6 @@ pub mod subset;
 pub mod word_id;
 pub mod word_info;
 
-pub use dictionary_access::{DescriptionAccess, DictionaryAccess, LexiconAccess};
+pub use dictionary_access::{
+    DescriptionAccess, DictionaryAccess, LexiconAccess, ReferenceIdAccess,
+};

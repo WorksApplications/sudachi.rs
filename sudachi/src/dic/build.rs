@@ -27,7 +27,7 @@ use crate::dic::build::util::default_signature;
 use crate::dic::description::Block;
 use crate::dic::grammar::Grammar;
 use crate::dic::lexicon_set::LexiconSet;
-use crate::dic::{DescriptionAccess, DictionaryAccess, LexiconAccess};
+use crate::dic::{DescriptionAccess, DictionaryAccess, LexiconAccess, ReferenceIdAccess};
 use crate::error::SudachiResult;
 use crate::plugin::input_text::InputTextPlugin;
 use crate::plugin::oov::OovProviderPlugin;
@@ -137,6 +137,12 @@ impl DictionaryAccess for NoDic {
     }
 }
 
+impl ReferenceIdAccess for NoDic {
+    fn reference_ids(&self) -> std::collections::HashMap<u32, String> {
+        std::collections::HashMap::new()
+    }
+}
+
 /// Builds a binary dictionary from csv lexicon and connection matrix (optional)
 pub struct DictBuilder<D> {
     user: bool,
@@ -159,7 +165,7 @@ impl DictBuilder<NoDic> {
     }
 }
 
-impl<D: DictionaryAccess> DictBuilder<D> {
+impl<D: DictionaryAccess + ReferenceIdAccess> DictBuilder<D> {
     fn new_empty() -> Self {
         Self {
             user: false,
@@ -177,7 +183,7 @@ impl<D: DictionaryAccess> DictBuilder<D> {
     }
 }
 
-impl<D: DictionaryAccess + DescriptionAccess> DictBuilder<D> {
+impl<D: DictionaryAccess + DescriptionAccess + ReferenceIdAccess> DictBuilder<D> {
     /// Creates a new builder for user dictionary
     pub fn new_user(system: D) -> Self {
         let mut bldr = Self::new_empty();
@@ -203,7 +209,7 @@ impl<D: DictionaryAccess + DescriptionAccess> DictBuilder<D> {
     }
 }
 
-impl<D: DictionaryAccess> DictBuilder<D> {
+impl<D: DictionaryAccess + ReferenceIdAccess> DictBuilder<D> {
     /// Set the dictionary compile time to the specified time instead of current time
     pub fn set_compile_time<T: Into<std::time::SystemTime>>(
         &mut self,
@@ -286,7 +292,7 @@ impl<D: DictionaryAccess> DictBuilder<D> {
         self.ensure_compile_stage()?;
 
         let mut buffer = vec![0u8; DICT_BLOCK_SIZE];
-        let mut blocks: Vec<BlockInfo> = Vec::with_capacity(6);
+        let mut blocks: Vec<BlockInfo> = Vec::with_capacity(7);
 
         if !self.user {
             self.align_to_block(&mut buffer);
@@ -343,6 +349,13 @@ impl<D: DictionaryAccess> DictBuilder<D> {
         let size = writer.write(&mut buffer)?;
         blocks.push(BlockInfo::new(Block::Entries, start, size));
 
+        self.align_to_block(&mut buffer);
+        let start = buffer.len();
+        let report = ReportBuilder::new("reference_id_table");
+        let size = self.write_reference_id_table(&mut buffer)?;
+        self.reporter.collect(size, report);
+        blocks.push(BlockInfo::new(Block::ReferenceIdTable, start, size));
+
         let runtime_costs = self
             .lexicon
             .resolved_entries()
@@ -381,7 +394,7 @@ impl<D: DictionaryAccess> DictBuilder<D> {
 }
 
 // private functions
-impl<D: DictionaryAccess> DictBuilder<D> {
+impl<D: DictionaryAccess + ReferenceIdAccess> DictBuilder<D> {
     fn set_user(&mut self, user: bool) {
         if user && self.reference.is_empty() {
             self.reference = DEFAULT_USER_REFERENCE.to_owned();
@@ -392,19 +405,23 @@ impl<D: DictionaryAccess> DictBuilder<D> {
         self.user = user;
     }
 
-    fn make_resolver(&self) -> RawDictResolver {
+    fn make_resolver(&self) -> SudachiResult<RawDictResolver> {
         let line_to_wref = self.lexicon.row_word_refs(self.user);
-        RawDictResolver::new(self.lexicon.entries(), line_to_wref, self.user)
+        self.ctx.transform(RawDictResolver::new(
+            self.lexicon.entries(),
+            line_to_wref,
+            self.user,
+        ))
     }
 
     fn resolve_impl(&mut self) -> SudachiResult<usize> {
-        let this_resolver = self.make_resolver();
+        let this_resolver = self.make_resolver()?;
         let report = ReportBuilder::new("resolve");
 
         let cnt = match self.prebuilt.as_ref() {
             Some(d) => {
                 let built_resolver = BinDictResolver::new(d)?;
-                let chained = ChainedResolver::new(built_resolver, this_resolver);
+                let chained = ChainedResolver::new(this_resolver, built_resolver);
                 self.lexicon.resolve_entries(&chained, self.user)
             }
             None => self.lexicon.resolve_entries(&this_resolver, self.user),
@@ -568,6 +585,29 @@ impl<D: DictionaryAccess> DictBuilder<D> {
                 break;
             }
         }
+    }
+
+    fn write_reference_id_table<W: Write>(&self, dst: &mut W) -> SudachiResult<usize> {
+        let mut out = Vec::new();
+        let mut rows = Vec::new();
+        let mut offset = lexicon::LexiconReader::ENTRY_INITIAL_OFFSET;
+        for entry in self.lexicon.resolved_entries() {
+            let entry_id =
+                (offset >> crate::dic::word_info::WordInfos::WORD_ID_ALIGNMENT_BITS) as u32;
+            if !entry.is_phantom() {
+                if let Some(reference_id) = entry.reference_id() {
+                    rows.push((entry_id, reference_id));
+                }
+            }
+            offset += entry.expected_entry_size();
+        }
+        Self::put_varint(&mut out, rows.len() as u64);
+        for (entry_id, reference_id) in rows {
+            Self::put_varint(&mut out, entry_id as u64);
+            self.put_utf8_string(&mut out, reference_id)?;
+        }
+        dst.write_all(&out)?;
+        Ok(out.len())
     }
 }
 

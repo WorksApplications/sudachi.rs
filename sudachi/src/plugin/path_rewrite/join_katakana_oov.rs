@@ -115,7 +115,8 @@ impl JoinKatakanaOovPlugin {
             }
 
             if (end - begin) > 1 {
-                path = concat_oov_nodes(path, begin, end, self.oov_pos_id, text, lattice, resolver)?;
+                path =
+                    concat_oov_nodes(path, begin, end, self.oov_pos_id, text, lattice, resolver)?;
                 // skip next node, as we already know it is not a joinable katakana
                 i = begin + 1;
             }

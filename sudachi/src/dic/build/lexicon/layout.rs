@@ -23,7 +23,7 @@ use crate::dic::build::error::{BuildFailure, DicCompilationCtx, DicWriteResult};
 use crate::dic::pos::POS_DEPTH;
 use crate::error::SudachiResult;
 
-const NUM_COLUMNS: usize = 22;
+const NUM_COLUMNS: usize = 23;
 lazy_static! {
     static ref INTEGER_LITERAL: Regex = Regex::new(r"^-?\d+$").unwrap();
 }
@@ -53,6 +53,7 @@ pub(super) enum Column {
     SplitC = 19,
     UserData = 20,
     PosId = 21,
+    ReferenceId = 22,
 }
 
 impl Column {
@@ -84,6 +85,7 @@ impl Column {
             Column::SplitC => "SPLIT_C",
             Column::UserData => "USER_DATA",
             Column::PosId => "POS_ID",
+            Column::ReferenceId => "REFERENCE_ID",
         }
     }
 }
@@ -117,6 +119,7 @@ impl CsvColumn<NUM_COLUMNS> for Column {
             Column::SplitC => "SPLIT_C",
             Column::UserData => "USER_DATA",
             Column::PosId => "POS_ID",
+            Column::ReferenceId => "REFERENCE_ID",
         }
     }
 
@@ -144,6 +147,7 @@ impl CsvColumn<NUM_COLUMNS> for Column {
             "splitc" => Some(Column::SplitC),
             "userdata" => Some(Column::UserData),
             "posid" => Some(Column::PosId),
+            "referenceid" => Some(Column::ReferenceId),
             _ => None,
         }
     }

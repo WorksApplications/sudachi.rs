@@ -14,22 +14,32 @@
  *  limitations under the License.
  */
 
+use crate::dic::build::error::{BuildFailure, DicWriteResult};
 use crate::dic::build::lexicon::{ParsedLexiconEntry, ResolvedLexiconEntry, WordRefResolver};
 use crate::dic::subset::InfoSubset;
-use crate::dic::word_id::WordRef;
+use crate::dic::word_id::{DictId, WordRef};
 use crate::dic::word_info::WordInfo;
-use crate::dic::DictionaryAccess;
+use crate::dic::{DictionaryAccess, ReferenceIdAccess};
 use crate::error::SudachiResult;
 use crate::util::fxhash::FxBuildHasher;
 use std::collections::HashMap;
 
-// HashMap from headword to (pos_id, reading_form, word-ref)s
-type ResolutionCandidateMap<T> = HashMap<T, Vec<(u16, Option<T>, WordRef)>, FxBuildHasher>;
+type HeadwordIndex = HashMap<String, Vec<ResolutionCandidate>, FxBuildHasher>;
+type ReferenceIdIndex = HashMap<String, ResolutionCandidate, FxBuildHasher>;
+
+#[derive(Clone)]
+struct ResolutionCandidate {
+    headword: String,
+    pos_id: u16,
+    reading: String,
+    wref: WordRef,
+}
 
 pub(crate) trait ResolverEntryView {
     fn headword(&self) -> &str;
     fn reading(&self) -> &str;
     fn pos_id(&self) -> u16;
+    fn reference_id(&self) -> Option<&str>;
 }
 
 impl ResolverEntryView for ParsedLexiconEntry {
@@ -43,6 +53,10 @@ impl ResolverEntryView for ParsedLexiconEntry {
 
     fn pos_id(&self) -> u16 {
         self.pos
+    }
+
+    fn reference_id(&self) -> Option<&str> {
+        self.reference_id()
     }
 }
 
@@ -58,26 +72,32 @@ impl ResolverEntryView for ResolvedLexiconEntry {
     fn pos_id(&self) -> u16 {
         self.pos
     }
+
+    fn reference_id(&self) -> Option<&str> {
+        self.reference_id()
+    }
 }
 
 /// Resolver based on a (system) binary dictionary.
 ///
-/// We can't use trie to resolve splits because it is possible that refs are not in trie
-/// This resolver has to be owning because the dictionary content is lazily loaded and transient
-pub struct BinDictResolver {
-    index: ResolutionCandidateMap<String>,
+/// We can't use trie to resolve splits because it is possible that refs are not in trie.
+/// This resolver has to be owning because the dictionary content is lazily loaded and transient.
+pub struct BinDictResolver<D> {
+    dict: D,
+    headword_index: HeadwordIndex,
+    reference_id_index: HashMap<String, WordRef, FxBuildHasher>,
     line_to_wref: Vec<WordRef>,
 }
 
-impl BinDictResolver {
-    pub fn new<D: DictionaryAccess>(dict: D) -> SudachiResult<Self> {
+impl<D: DictionaryAccess + ReferenceIdAccess> BinDictResolver<D> {
+    pub fn new(dict: D) -> SudachiResult<Self> {
         let lex = dict.lexicon();
         let line_to_wid = lex.system_word_ids_in_order();
         let line_to_wref = line_to_wid
             .iter()
             .map(|wid| WordRef::new(true, wid.entry().as_raw()))
             .collect::<Vec<_>>();
-        let mut index: ResolutionCandidateMap<String> = HashMap::default();
+        let mut headword_index: HeadwordIndex = HashMap::default();
         for wid in line_to_wid.iter().copied() {
             let winfo: WordInfo = lex.get_word_info_subset(
                 wid,
@@ -85,29 +105,33 @@ impl BinDictResolver {
             )?;
             let headword = winfo.headword(&dict).to_string();
             let reading = winfo.reading_form(&dict).to_string();
-            let pos_id = winfo.pos_id();
-
-            let rdfield = if reading.is_empty() || headword == reading {
-                None
-            } else {
-                Some(reading)
-            };
-
             let wref = WordRef::new(true, wid.entry().as_raw());
-            index
+            headword_index
                 .entry(headword.clone())
                 .or_default()
-                .push((pos_id, rdfield, wref));
+                .push(ResolutionCandidate {
+                    headword,
+                    pos_id: winfo.pos_id(),
+                    reading,
+                    wref,
+                });
+        }
+
+        let mut reference_id_index = HashMap::default();
+        for (entry_id, reference_id) in dict.reference_ids() {
+            reference_id_index.insert(reference_id, WordRef::new(true, entry_id));
         }
 
         Ok(Self {
-            index,
+            dict,
+            headword_index,
+            reference_id_index,
             line_to_wref,
         })
     }
 }
 
-impl WordRefResolver for BinDictResolver {
+impl<D: DictionaryAccess + ReferenceIdAccess> WordRefResolver for BinDictResolver<D> {
     fn resolve_by_line_ref(&self, line_ref: WordRef) -> Option<WordRef> {
         if !line_ref.is_system() {
             return None;
@@ -118,26 +142,52 @@ impl WordRefResolver for BinDictResolver {
     }
 
     fn resolve_by_headword(&self, headword: &str) -> Option<WordRef> {
-        self.index
+        self.headword_index
             .get(headword)
-            .and_then(|v| v.first().map(|(_, _, wref)| *wref))
+            .and_then(|v| v.first().map(|candidate| candidate.wref))
     }
 
-    fn resolve_inline(&self, headword: &str, pos: u16, reading: Option<&str>) -> Option<WordRef> {
-        self.index.get(headword).and_then(|v| {
-            for (p, rd, wref) in v {
-                if *p == pos && reading.eq(&rd.as_deref()) {
-                    return Some(*wref);
+    fn resolve_entry_key(
+        &self,
+        headword: &str,
+        pos: u16,
+        reading: &str,
+        reference_id: Option<&str>,
+    ) -> Option<WordRef> {
+        match reference_id {
+            Some(reference_id) => {
+                let wref = *self.reference_id_index.get(reference_id)?;
+                let wid = wref.resolve(DictId::SYSTEM);
+                let winfo = self
+                    .dict
+                    .lexicon()
+                    .get_word_info_subset(
+                        wid,
+                        InfoSubset::HEADWORD | InfoSubset::READING_FORM | InfoSubset::POS_ID,
+                    )
+                    .ok()?;
+                let actual_headword = winfo.headword(&self.dict);
+                let actual_reading = winfo.reading_form(&self.dict);
+                if actual_headword == headword && winfo.pos_id() == pos && actual_reading == reading
+                {
+                    Some(wref)
+                } else {
+                    None
                 }
             }
-            None
-        })
+            None => self.headword_index.get(headword).and_then(|v| {
+                v.iter()
+                    .find(|candidate| candidate.pos_id == pos && candidate.reading == reading)
+                    .map(|candidate| candidate.wref)
+            }),
+        }
     }
 }
 
-/// Resolver based on a lexicon csv
+/// Resolver based on a lexicon csv.
 pub struct RawDictResolver {
-    data: ResolutionCandidateMap<String>,
+    headword_index: HeadwordIndex,
+    reference_id_index: ReferenceIdIndex,
     line_to_wref: Vec<WordRef>,
     user: bool,
 }
@@ -147,30 +197,40 @@ impl RawDictResolver {
         entries: &[T],
         line_to_wref: Vec<WordRef>,
         user: bool,
-    ) -> Self {
-        let mut data: ResolutionCandidateMap<String> = HashMap::default();
+    ) -> DicWriteResult<Self> {
+        let mut headword_index: HeadwordIndex = HashMap::default();
+        let mut reference_id_index: ReferenceIdIndex = HashMap::default();
 
         for (i, e) in entries.iter().enumerate() {
             let headword = e.headword().to_owned();
-            let reading = e.reading().to_owned();
             let wref = line_to_wref[i];
-
-            let read_opt = if e.headword() == reading {
-                None
-            } else {
-                Some(reading)
+            let candidate = ResolutionCandidate {
+                headword: headword.clone(),
+                pos_id: e.pos_id(),
+                reading: e.reading().to_owned(),
+                wref,
             };
 
-            data.entry(headword)
-                .or_default()
-                .push((e.pos_id(), read_opt, wref));
+            if let Some(reference_id) = e.reference_id() {
+                if reference_id_index
+                    .insert(reference_id.to_owned(), candidate.clone())
+                    .is_some()
+                {
+                    return Err(BuildFailure::InvalidSplit(format!(
+                        "duplicated reference_id: {reference_id}"
+                    )));
+                }
+            }
+
+            headword_index.entry(headword).or_default().push(candidate);
         }
 
-        Self {
-            data,
+        Ok(Self {
+            headword_index,
+            reference_id_index,
             line_to_wref,
             user,
-        }
+        })
     }
 }
 
@@ -185,20 +245,38 @@ impl WordRefResolver for RawDictResolver {
     }
 
     fn resolve_by_headword(&self, headword: &str) -> Option<WordRef> {
-        self.data
+        self.headword_index
             .get(headword)
-            .and_then(|v| v.first().map(|(_, _, wref)| *wref))
+            .and_then(|v| v.first().map(|candidate| candidate.wref))
     }
 
-    fn resolve_inline(&self, headword: &str, pos: u16, reading: Option<&str>) -> Option<WordRef> {
-        self.data.get(headword).and_then(|data| {
-            for (p, rd, wref) in data {
-                if *p == pos && rd.as_deref() == reading {
-                    return Some(*wref);
-                }
-            }
-            None
-        })
+    fn resolve_entry_key(
+        &self,
+        headword: &str,
+        pos: u16,
+        reading: &str,
+        reference_id: Option<&str>,
+    ) -> Option<WordRef> {
+        match reference_id {
+            Some(reference_id) => self
+                .reference_id_index
+                .get(reference_id)
+                .and_then(|candidate| {
+                    if candidate.headword == headword
+                        && candidate.pos_id == pos
+                        && candidate.reading == reading
+                    {
+                        Some(candidate.wref)
+                    } else {
+                        None
+                    }
+                }),
+            None => self.headword_index.get(headword).and_then(|data| {
+                data.iter()
+                    .find(|candidate| candidate.pos_id == pos && candidate.reading == reading)
+                    .map(|candidate| candidate.wref)
+            }),
+        }
     }
 }
 
@@ -226,23 +304,33 @@ impl<A: WordRefResolver, B: WordRefResolver> WordRefResolver for ChainedResolver
             .or_else(|| self.b.resolve_by_headword(headword))
     }
 
-    fn resolve_inline(&self, headword: &str, pos: u16, reading: Option<&str>) -> Option<WordRef> {
+    fn resolve_entry_key(
+        &self,
+        headword: &str,
+        pos: u16,
+        reading: &str,
+        reference_id: Option<&str>,
+    ) -> Option<WordRef> {
         self.a
-            .resolve_inline(headword, pos, reading)
-            .or_else(|| self.b.resolve_inline(headword, pos, reading))
+            .resolve_entry_key(headword, pos, reading, reference_id)
+            .or_else(|| {
+                self.b
+                    .resolve_entry_key(headword, pos, reading, reference_id)
+            })
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::dic::build::lexicon::WordRef;
+    use crate::dic::build::lexicon::WordRef as BuildWordRef;
     use crate::dic::word_id::WordRef as DicWordRef;
 
     struct TestEntry {
         headword: &'static str,
         reading: &'static str,
         pos_id: u16,
+        reference_id: Option<&'static str>,
     }
 
     impl ResolverEntryView for TestEntry {
@@ -257,12 +345,16 @@ mod tests {
         fn pos_id(&self) -> u16 {
             self.pos_id
         }
+
+        fn reference_id(&self) -> Option<&str> {
+            self.reference_id
+        }
     }
 
     struct StubResolver {
         by_line_ref: Option<DicWordRef>,
         by_headword: Option<DicWordRef>,
-        by_inline: Option<DicWordRef>,
+        by_entry_key: Option<DicWordRef>,
     }
 
     impl WordRefResolver for StubResolver {
@@ -274,66 +366,70 @@ mod tests {
             self.by_headword
         }
 
-        fn resolve_inline(
+        fn resolve_entry_key(
             &self,
             _headword: &str,
             _pos: u16,
-            _reading: Option<&str>,
+            _reading: &str,
+            _reference_id: Option<&str>,
         ) -> Option<DicWordRef> {
-            self.by_inline
+            self.by_entry_key
         }
     }
 
     #[test]
     fn chained_resolver_prioritizes_first_resolver() {
-        let a = StubResolver {
+        let first = StubResolver {
             by_line_ref: Some(DicWordRef::new(true, 3)),
             by_headword: Some(DicWordRef::new(true, 1)),
-            by_inline: Some(DicWordRef::new(true, 2)),
+            by_entry_key: Some(DicWordRef::new(true, 2)),
         };
-        let b = StubResolver {
+        let second = StubResolver {
             by_line_ref: Some(DicWordRef::new(false, 3)),
             by_headword: Some(DicWordRef::new(false, 1)),
-            by_inline: Some(DicWordRef::new(false, 2)),
+            by_entry_key: Some(DicWordRef::new(false, 2)),
         };
-        let chained = ChainedResolver::new(a, b);
+        let chained = ChainedResolver::new(first, second);
+
         assert_eq!(
-            chained.resolve(&crate::dic::build::lexicon::WordRef::LineRef(
-                DicWordRef::new(true, 0,)
-            )),
+            chained.resolve(&BuildWordRef::LineRef(DicWordRef::new(true, 0))),
             Some(DicWordRef::new(true, 3))
         );
         assert_eq!(
-            chained.resolve(&WordRef::Headword("京都".to_string())),
+            chained.resolve(&BuildWordRef::Headword("京都".to_string())),
             Some(DicWordRef::new(true, 1))
         );
         assert_eq!(
-            chained.resolve(&WordRef::Inline {
+            chained.resolve(&BuildWordRef::EntryKey {
                 headword: "京都".to_string(),
                 pos: 0,
-                reading: None,
+                reading: "キョウト".to_string(),
+                reference_id: Some("kyoto".to_string()),
             }),
             Some(DicWordRef::new(true, 2))
         );
     }
 
     #[test]
-    fn raw_resolver_resolves_inline_to_first_duplicate_in_csv_order() {
+    fn raw_resolver_resolves_entry_key_to_first_duplicate_in_csv_order() {
         let entries = vec![
             TestEntry {
                 headword: "京都",
                 reading: "キョウト",
                 pos_id: 0,
+                reference_id: None,
             },
             TestEntry {
                 headword: "京都",
                 reading: "キョウト",
                 pos_id: 0,
+                reference_id: None,
             },
             TestEntry {
-                headword: "東京",
-                reading: "トウキョウ",
-                pos_id: 0,
+                headword: "京都",
+                reading: "ミヤコ",
+                pos_id: 1,
+                reference_id: None,
             },
         ];
         let line_to_wref = vec![
@@ -341,11 +437,40 @@ mod tests {
             DicWordRef::new(true, 27),
             DicWordRef::new(true, 42),
         ];
-        let resolver = RawDictResolver::new(&entries, line_to_wref.clone(), false);
+        let resolver = RawDictResolver::new(&entries, line_to_wref.clone(), false).unwrap();
 
         assert_eq!(
-            resolver.resolve_inline("京都", 0, Some("キョウト")),
+            resolver.resolve_entry_key("京都", 0, "キョウト", None),
             Some(line_to_wref[0])
+        );
+    }
+
+    #[test]
+    fn raw_resolver_distinguishes_empty_and_explicit_equal_reading() {
+        let entries = vec![
+            TestEntry {
+                headword: "あ",
+                reading: "",
+                pos_id: 0,
+                reference_id: None,
+            },
+            TestEntry {
+                headword: "あ",
+                reading: "あ",
+                pos_id: 0,
+                reference_id: None,
+            },
+        ];
+        let line_to_wref = vec![DicWordRef::new(true, 11), DicWordRef::new(true, 27)];
+        let resolver = RawDictResolver::new(&entries, line_to_wref.clone(), false).unwrap();
+
+        assert_eq!(
+            resolver.resolve_entry_key("あ", 0, "", None),
+            Some(line_to_wref[0])
+        );
+        assert_eq!(
+            resolver.resolve_entry_key("あ", 0, "あ", None),
+            Some(line_to_wref[1])
         );
     }
 
@@ -356,16 +481,19 @@ mod tests {
                 headword: "京都",
                 reading: "キョウト",
                 pos_id: 0,
+                reference_id: None,
             },
             TestEntry {
                 headword: "京都",
-                reading: "キョート",
+                reading: "ミヤコ",
                 pos_id: 1,
+                reference_id: None,
             },
             TestEntry {
-                headword: "東京",
-                reading: "トウキョウ",
-                pos_id: 0,
+                headword: "京都",
+                reading: "キョウト",
+                pos_id: 2,
+                reference_id: None,
             },
         ];
         let line_to_wref = vec![
@@ -373,7 +501,7 @@ mod tests {
             DicWordRef::new(true, 27),
             DicWordRef::new(true, 42),
         ];
-        let resolver = RawDictResolver::new(&entries, line_to_wref.clone(), false);
+        let resolver = RawDictResolver::new(&entries, line_to_wref.clone(), false).unwrap();
 
         assert_eq!(resolver.resolve_by_headword("京都"), Some(line_to_wref[0]));
     }
@@ -385,16 +513,19 @@ mod tests {
                 headword: "京都",
                 reading: "キョウト",
                 pos_id: 0,
-            },
-            TestEntry {
-                headword: "京都",
-                reading: "キョウト",
-                pos_id: 0,
+                reference_id: None,
             },
             TestEntry {
                 headword: "東京",
                 reading: "トウキョウ",
-                pos_id: 0,
+                pos_id: 1,
+                reference_id: None,
+            },
+            TestEntry {
+                headword: "大阪",
+                reading: "オオサカ",
+                pos_id: 2,
+                reference_id: None,
             },
         ];
         let line_to_wref = vec![
@@ -402,7 +533,7 @@ mod tests {
             DicWordRef::new(true, 27),
             DicWordRef::new(true, 42),
         ];
-        let resolver = RawDictResolver::new(&entries, line_to_wref.clone(), false);
+        let resolver = RawDictResolver::new(&entries, line_to_wref.clone(), false).unwrap();
 
         assert_eq!(
             resolver.resolve_by_line_ref(DicWordRef::new(true, 0)),
@@ -412,5 +543,59 @@ mod tests {
             resolver.resolve_by_line_ref(DicWordRef::new(true, 1)),
             Some(line_to_wref[1])
         );
+        assert_eq!(
+            resolver.resolve_by_line_ref(DicWordRef::new(true, 2)),
+            Some(line_to_wref[2])
+        );
+    }
+
+    #[test]
+    fn raw_resolver_resolves_reference_id_directly() {
+        let entries = vec![
+            TestEntry {
+                headword: "京都",
+                reading: "キョウト",
+                pos_id: 0,
+                reference_id: Some("kyoto-1"),
+            },
+            TestEntry {
+                headword: "京都",
+                reading: "キョウト",
+                pos_id: 0,
+                reference_id: Some("kyoto-2"),
+            },
+        ];
+        let line_to_wref = vec![DicWordRef::new(true, 11), DicWordRef::new(true, 27)];
+        let resolver = RawDictResolver::new(&entries, line_to_wref.clone(), false).unwrap();
+
+        assert_eq!(
+            resolver.resolve_entry_key("京都", 0, "キョウト", Some("kyoto-2")),
+            Some(line_to_wref[1])
+        );
+    }
+
+    #[test]
+    fn raw_resolver_rejects_duplicate_reference_ids() {
+        let entries = vec![
+            TestEntry {
+                headword: "京都",
+                reading: "キョウト",
+                pos_id: 0,
+                reference_id: Some("kyoto"),
+            },
+            TestEntry {
+                headword: "東京",
+                reading: "トウキョウ",
+                pos_id: 1,
+                reference_id: Some("kyoto"),
+            },
+        ];
+
+        assert!(RawDictResolver::new(
+            &entries,
+            vec![DicWordRef::new(true, 1), DicWordRef::new(true, 2)],
+            false
+        )
+        .is_err());
     }
 }
