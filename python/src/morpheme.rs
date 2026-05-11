@@ -23,6 +23,10 @@ use pyo3::ffi::c_str;
 use pyo3::prelude::*;
 use pyo3::types::{PyList, PyString, PyTuple, PyType};
 
+use sudachi::dic::subset::InfoSubset;
+use sudachi::dic::word_id::WordId;
+use sudachi::dic::word_info::WordInfoData;
+use sudachi::dic::LexiconAccess;
 use sudachi::prelude::{Morpheme, MorphemeList};
 
 use crate::dictionary::{extract_mode, PyDicData, PyDictionary};
@@ -275,6 +279,60 @@ impl PyMorpheme {
             mrp.word_id()
         )
     }
+
+    fn form_morpheme<'py, F>(
+        &'py self,
+        py: Python<'py>,
+        subset: InfoSubset,
+        form_word_id: F,
+        context: &str,
+    ) -> PyResult<Option<PyMorpheme>>
+    where
+        F: FnOnce(&WordInfoData) -> WordId,
+    {
+        let (dict, projection, form_word_id) = {
+            let list = self.list(py);
+            let internal = list.internal(py);
+            let word_id = internal.get(self.index).word_id();
+
+            if word_id.is_oov() || word_id.is_special() {
+                return Ok(None);
+            }
+
+            let word_info = errors::wrap_ctx(
+                internal
+                    .dict()
+                    .lexicon()
+                    .get_word_info_subset(word_id, subset),
+                context,
+            )?;
+            let form_word_id = form_word_id(word_info.borrow_data());
+            if form_word_id.is_oov() || form_word_id.is_special() {
+                return Ok(None);
+            }
+
+            (
+                internal.dict().clone(),
+                list.projection.clone(),
+                form_word_id,
+            )
+        };
+
+        let mut form_list = MorphemeList::empty(dict);
+        errors::wrap_ctx(
+            form_list.lookup_word_id(form_word_id, InfoSubset::all()),
+            context,
+        )?;
+
+        let py_list = Py::new(
+            py,
+            PyMorphemeListWrapper::from_components(form_list, projection),
+        )?;
+        Ok(Some(PyMorpheme {
+            list: py_list,
+            index: 0,
+        }))
+    }
 }
 
 #[pymethods]
@@ -338,10 +396,36 @@ impl PyMorpheme {
         Ok(self.morph(py).dictionary_form().into_pyobject(py)?)
     }
 
+    /// Returns the morpheme corresponding to this morpheme's dictionary form.
+    ///
+    /// If this morpheme is out-of-vocabulary, returns ``None``.
+    #[pyo3(text_signature = "(self, /) -> Morpheme | None")]
+    fn dictionary_form_morpheme<'py>(&'py self, py: Python<'py>) -> PyResult<Option<PyMorpheme>> {
+        self.form_morpheme(
+            py,
+            InfoSubset::DICTIONARY_FORM,
+            WordInfoData::dictionary_form_word_id,
+            "Failed to load dictionary form morpheme",
+        )
+    }
+
     /// Returns the normalized form.
     #[pyo3(text_signature = "(self, /) -> str")]
     fn normalized_form<'py>(&'py self, py: Python<'py>) -> PyResult<Bound<'py, PyString>> {
         Ok(self.morph(py).normalized_form().into_pyobject(py)?)
+    }
+
+    /// Returns the morpheme corresponding to this morpheme's normalized form.
+    ///
+    /// If this morpheme is out-of-vocabulary, returns ``None``.
+    #[pyo3(text_signature = "(self, /) -> Morpheme | None")]
+    fn normalized_form_morpheme<'py>(&'py self, py: Python<'py>) -> PyResult<Option<PyMorpheme>> {
+        self.form_morpheme(
+            py,
+            InfoSubset::NORMALIZED_FORM,
+            WordInfoData::normalized_form_word_id,
+            "Failed to load normalized form morpheme",
+        )
     }
 
     /// Returns the reading form.

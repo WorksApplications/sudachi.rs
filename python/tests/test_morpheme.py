@@ -81,6 +81,68 @@ class TestTokenizer(unittest.TestCase):
         self.assertEqual(m.normalized_form(), 'ぴらる')
         self.assertEqual(m.reading_form(), 'ピラル')
 
+    def test_dictionary_form_morpheme(self):
+        m = self.tokenizer_obj.tokenize('行っ')[0]
+        df = m.dictionary_form_morpheme()
+
+        self.assertIsNotNone(df)
+        self.assertEqual(df.surface(), '行く')
+        self.assertEqual(df.raw_surface(), '行く')
+        self.assertEqual(df.dictionary_form(), '行く')
+        self.assertEqual(df.reading_form(), 'イク')
+
+    def test_normalized_form_morpheme(self):
+        m = self.tokenizer_obj.tokenize('いっ')[0]
+        nf = m.normalized_form_morpheme()
+
+        self.assertIsNotNone(nf)
+        self.assertEqual(nf.surface(), '行く')
+        self.assertEqual(nf.raw_surface(), '行く')
+        self.assertEqual(nf.normalized_form(), '行く')
+        self.assertEqual(nf.reading_form(), 'イク')
+
+    def test_form_morpheme_for_same_entry(self):
+        m = self.tokenizer_obj.tokenize('東京')[0]
+        df = m.dictionary_form_morpheme()
+        nf = m.normalized_form_morpheme()
+
+        self.assertIsNotNone(df)
+        self.assertIsNotNone(nf)
+        self.assertEqual(df.word_id(), m.word_id())
+        self.assertEqual(nf.word_id(), m.word_id())
+        self.assertEqual(df.surface(), '東京')
+        self.assertEqual(nf.surface(), '東京')
+
+    def test_form_morpheme_for_normalized_input_same_entry(self):
+        m = self.tokenizer_obj.tokenize('特Ａ東京')[0]
+        nf = m.normalized_form_morpheme()
+
+        self.assertIsNotNone(nf)
+        self.assertEqual(m.surface(), '特Ａ')
+        self.assertEqual(m.normalized_form(), '特A')
+        self.assertEqual(nf.word_id(), m.word_id())
+        self.assertEqual(nf.raw_surface(), '特A')
+
+    def test_form_morpheme_with_field_subset(self):
+        tokenizer = self.dict_.create(fields={'surface'})
+        m = tokenizer.tokenize('行っ')[0]
+        df = m.dictionary_form_morpheme()
+        nf = m.normalized_form_morpheme()
+
+        self.assertIsNotNone(df)
+        self.assertIsNotNone(nf)
+        self.assertEqual(df.surface(), '行く')
+        self.assertEqual(nf.surface(), '行く')
+        self.assertEqual(df.reading_form(), 'イク')
+        self.assertEqual(nf.reading_form(), 'イク')
+
+    def test_form_morpheme_oov_returns_none(self):
+        m = self.tokenizer_obj.tokenize('京')[0]
+
+        self.assertTrue(m.is_oov())
+        self.assertIsNone(m.dictionary_form_morpheme())
+        self.assertIsNone(m.normalized_form_morpheme())
+
     def test_morpheme_dictionary_id(self):
         m = self.tokenizer_obj.tokenize('京都')[0]
         self.assertEqual(m.dictionary_id(), 0)

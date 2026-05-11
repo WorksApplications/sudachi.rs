@@ -24,6 +24,7 @@ use crate::analysis::node::{PathCost, ResultNode};
 use crate::analysis::stateful_tokenizer::StatefulTokenizer;
 use crate::analysis::{Mode, Node};
 use crate::dic::subset::InfoSubset;
+use crate::dic::word_id::WordId;
 use crate::dic::DictionaryAccess;
 use crate::error::{SudachiError, SudachiResult};
 use crate::input_text::InputBuffer;
@@ -217,6 +218,38 @@ impl<D: DictionaryAccess> MorphemeList<D> {
             result += 1;
         }
         Ok(result)
+    }
+
+    /// Resets this list to a single dictionary entry for the given word ID.
+    #[allow(clippy::result_large_err)]
+    pub fn lookup_word_id(&mut self, word_id: WordId, subset: InfoSubset) -> SudachiResult<()> {
+        let lex = self.dict.lexicon();
+        let info = lex.get_word_info_subset(word_id, subset)?;
+        let headword = info.headword(lex).to_owned();
+        let (left_id, right_id, cost) = lex.get_word_param(word_id);
+        let end_bytes = headword.len();
+
+        let end_chars = {
+            let input = &mut self.input.borrow_mut().input;
+            input.reset().push_str(&headword);
+            input.start_build()?;
+            input.build(self.dict.grammar())?;
+            input.ch_idx(end_bytes)
+        };
+
+        self.clear();
+        let node = Node::new(
+            0,
+            end_chars as u16,
+            left_id as u16,
+            right_id as u16,
+            cost,
+            word_id,
+        );
+        self.nodes
+            .data
+            .push(ResultNode::new(node, 0, 0, end_bytes as u16, info));
+        Ok(())
     }
 }
 
