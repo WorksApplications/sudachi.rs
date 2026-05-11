@@ -18,10 +18,11 @@ extern crate lazy_static;
 extern crate sudachi;
 
 use std::ops::Deref;
+use sudachi::dic::subset::InfoSubset;
 use sudachi::prelude::*;
 
 mod common;
-use crate::common::TestTokenizer;
+use crate::common::{TestTokenizer, LEXICON_SET};
 
 #[test]
 fn empty_morpheme_list() {
@@ -30,6 +31,38 @@ fn empty_morpheme_list() {
 
     assert_eq!("", empty.surface().deref());
     assert_eq!(0, empty.len());
+}
+
+#[test]
+fn reset_with_word_id_uses_exact_homograph_entry() {
+    let tok = TestTokenizer::new();
+    let word_ids = LEXICON_SET.system_word_ids_in_order();
+    let mut ms = MorphemeList::empty(tok.dict());
+
+    let first_x = *word_ids.get(40).unwrap();
+    let place_name_x = *word_ids.get(45).unwrap();
+
+    ms.reset_with_word_id(first_x, InfoSubset::all())
+        .expect("failed to materialize first x entry");
+    assert_eq!(1, ms.len());
+    assert_eq!(first_x, ms.get(0).word_id());
+    assert_eq!("X", ms.get(0).surface().deref());
+    assert_eq!(0, ms.get(0).begin());
+    assert_eq!(1, ms.get(0).end());
+    assert_eq!(
+        ["補助記号", "一般", "*", "*", "*", "*"],
+        ms.get(0).part_of_speech()
+    );
+
+    ms.reset_with_word_id(place_name_x, InfoSubset::all())
+        .expect("failed to materialize place-name x entry");
+    assert_eq!(1, ms.len());
+    assert_eq!(place_name_x, ms.get(0).word_id());
+    assert_eq!("X", ms.get(0).surface().deref());
+    assert_eq!(
+        ["名詞", "固有名詞", "地名", "一般", "*", "*"],
+        ms.get(0).part_of_speech()
+    );
 }
 
 #[test]

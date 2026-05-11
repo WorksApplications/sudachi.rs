@@ -221,8 +221,11 @@ impl<D: DictionaryAccess> MorphemeList<D> {
     }
 
     /// Resets this list to a single dictionary entry for the given word ID.
+    ///
+    /// This resolves the exact dictionary entry instead of looking up by
+    /// surface, so it preserves homograph identity.
     #[allow(clippy::result_large_err)]
-    pub fn lookup_word_id(&mut self, word_id: WordId, subset: InfoSubset) -> SudachiResult<()> {
+    pub fn reset_with_word_id(&mut self, word_id: WordId, subset: InfoSubset) -> SudachiResult<()> {
         let lex = self.dict.lexicon();
         let info = lex.get_word_info_subset(word_id, subset)?;
         let headword = info.headword(lex).to_owned();

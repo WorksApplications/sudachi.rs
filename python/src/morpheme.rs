@@ -331,7 +331,7 @@ impl PyMorpheme {
 
         let mut form_list = MorphemeList::empty(dict);
         errors::wrap_ctx(
-            form_list.lookup_word_id(form_word_id, InfoSubset::all()),
+            form_list.reset_with_word_id(form_word_id, InfoSubset::all()),
             context,
         )?;
 
@@ -409,7 +409,10 @@ impl PyMorpheme {
 
     /// Returns the morpheme corresponding to this morpheme's dictionary form.
     ///
-    /// If this morpheme is out-of-vocabulary, returns a morpheme equivalent to ``self``.
+    /// For out-of-vocabulary morphemes, invalid references, and references to
+    /// the same dictionary entry, returns a morpheme equivalent to ``self``.
+    /// For a distinct referenced entry, returns a standalone morpheme whose
+    /// begin/end offsets are ``0..len(surface)``.
     #[pyo3(text_signature = "(self, /) -> Morpheme")]
     fn dictionary_form_morpheme<'py>(&'py self, py: Python<'py>) -> PyResult<PyMorpheme> {
         self.form_morpheme(
@@ -428,7 +431,10 @@ impl PyMorpheme {
 
     /// Returns the morpheme corresponding to this morpheme's normalized form.
     ///
-    /// If this morpheme is out-of-vocabulary, returns a morpheme equivalent to ``self``.
+    /// For out-of-vocabulary morphemes, invalid references, and references to
+    /// the same dictionary entry, returns a morpheme equivalent to ``self``.
+    /// For a distinct referenced entry, returns a standalone morpheme whose
+    /// begin/end offsets are ``0..len(surface)``.
     #[pyo3(text_signature = "(self, /) -> Morpheme")]
     fn normalized_form_morpheme<'py>(&'py self, py: Python<'py>) -> PyResult<PyMorpheme> {
         self.form_morpheme(
