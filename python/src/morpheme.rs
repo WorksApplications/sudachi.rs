@@ -280,13 +280,20 @@ impl PyMorpheme {
         )
     }
 
+    fn self_equivalent(&self, py: Python<'_>) -> PyMorpheme {
+        PyMorpheme {
+            list: self.list.clone_ref(py),
+            index: self.index,
+        }
+    }
+
     fn form_morpheme<'py, F>(
         &'py self,
         py: Python<'py>,
         subset: InfoSubset,
         form_word_id: F,
         context: &str,
-    ) -> PyResult<Option<PyMorpheme>>
+    ) -> PyResult<PyMorpheme>
     where
         F: FnOnce(&WordInfoData) -> WordId,
     {
@@ -296,7 +303,7 @@ impl PyMorpheme {
             let word_id = internal.get(self.index).word_id();
 
             if word_id.is_oov() || word_id.is_special() {
-                return Ok(None);
+                return Ok(self.self_equivalent(py));
             }
 
             let word_info = errors::wrap_ctx(
@@ -307,8 +314,12 @@ impl PyMorpheme {
                 context,
             )?;
             let form_word_id = form_word_id(word_info.borrow_data());
-            if form_word_id.is_oov() || form_word_id.is_special() {
-                return Ok(None);
+            if form_word_id == WordId::INVALID
+                || form_word_id == word_id
+                || form_word_id.is_oov()
+                || form_word_id.is_special()
+            {
+                return Ok(self.self_equivalent(py));
             }
 
             (
@@ -328,10 +339,10 @@ impl PyMorpheme {
             py,
             PyMorphemeListWrapper::from_components(form_list, projection),
         )?;
-        Ok(Some(PyMorpheme {
+        Ok(PyMorpheme {
             list: py_list,
             index: 0,
-        }))
+        })
     }
 }
 
@@ -398,9 +409,9 @@ impl PyMorpheme {
 
     /// Returns the morpheme corresponding to this morpheme's dictionary form.
     ///
-    /// If this morpheme is out-of-vocabulary, returns ``None``.
-    #[pyo3(text_signature = "(self, /) -> Morpheme | None")]
-    fn dictionary_form_morpheme<'py>(&'py self, py: Python<'py>) -> PyResult<Option<PyMorpheme>> {
+    /// If this morpheme is out-of-vocabulary, returns a morpheme equivalent to ``self``.
+    #[pyo3(text_signature = "(self, /) -> Morpheme")]
+    fn dictionary_form_morpheme<'py>(&'py self, py: Python<'py>) -> PyResult<PyMorpheme> {
         self.form_morpheme(
             py,
             InfoSubset::DICTIONARY_FORM,
@@ -417,9 +428,9 @@ impl PyMorpheme {
 
     /// Returns the morpheme corresponding to this morpheme's normalized form.
     ///
-    /// If this morpheme is out-of-vocabulary, returns ``None``.
-    #[pyo3(text_signature = "(self, /) -> Morpheme | None")]
-    fn normalized_form_morpheme<'py>(&'py self, py: Python<'py>) -> PyResult<Option<PyMorpheme>> {
+    /// If this morpheme is out-of-vocabulary, returns a morpheme equivalent to ``self``.
+    #[pyo3(text_signature = "(self, /) -> Morpheme")]
+    fn normalized_form_morpheme<'py>(&'py self, py: Python<'py>) -> PyResult<PyMorpheme> {
         self.form_morpheme(
             py,
             InfoSubset::NORMALIZED_FORM,
