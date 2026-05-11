@@ -34,7 +34,6 @@ impl<'a> NonBreakChecker<'a> {
 
 impl NonBreakChecker<'_> {
     /// Returns whether there is a word that crosses the boundary
-
     fn has_non_break_word(&self, input: &str, length: usize) -> bool {
         // assume that SentenceDetector::get_eos called with self.input[self.bos..]
         let eos_byte = self.bos + length;

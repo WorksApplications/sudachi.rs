@@ -128,7 +128,7 @@ impl OovProviderPlugin for RegexOovProvider {
         let regex = self
             .regex
             .as_ref()
-            .ok_or_else(|| SudachiError::InvalidDictionaryGrammar)?;
+            .ok_or(SudachiError::InvalidDictionaryGrammar)?;
 
         let end = input_text
             .current_chars()

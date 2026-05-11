@@ -135,16 +135,16 @@ impl<T: DictionaryAccess> MorphemeList<T> {
         self.nodes.data.is_empty()
     }
 
-    pub fn get(&self, idx: usize) -> Morpheme<T> {
-        return Morpheme::for_list(self, idx);
+    pub fn get(&self, idx: usize) -> Morpheme<'_, T> {
+        Morpheme::for_list(self, idx)
     }
 
-    pub fn surface(&self) -> Ref<str> {
+    pub fn surface(&self) -> Ref<'_, str> {
         let inp = self.input();
         Ref::map(inp, |i| i.original())
     }
 
-    pub fn iter(&self) -> MorphemeIter<T> {
+    pub fn iter(&self) -> MorphemeIter<'_, T> {
         MorphemeIter {
             index: 0,
             list: self,
@@ -171,7 +171,7 @@ impl<T: DictionaryAccess> MorphemeList<T> {
         &self.dict
     }
 
-    pub(crate) fn input(&self) -> Ref<InputBuffer> {
+    pub(crate) fn input(&self) -> Ref<'_, InputBuffer> {
         Ref::map(self.input.deref().borrow(), |x| &x.input)
     }
 

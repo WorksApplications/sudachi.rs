@@ -55,7 +55,7 @@ impl<'a> Grammar<'a> {
     ///
     /// buf: reference to the dictionary bytes
     /// offset: offset to the grammar section in the buf
-    pub fn parse(buf: &[u8], offset: usize) -> SudachiResult<Grammar> {
+    pub fn parse(buf: &[u8], offset: usize) -> SudachiResult<Grammar<'_>> {
         let (rest, (pos_list, left_id_size, right_id_size)) = grammar_parser(buf, offset)
             .map_err(|e| SudachiError::InvalidDictionaryGrammar.with_context(e.to_string()))?;
 
@@ -89,7 +89,7 @@ impl<'a> Grammar<'a> {
     }
 
     #[inline]
-    pub fn conn_matrix(&self) -> &ConnectionMatrix {
+    pub fn conn_matrix(&self) -> &ConnectionMatrix<'_> {
         &self.connection
     }
 

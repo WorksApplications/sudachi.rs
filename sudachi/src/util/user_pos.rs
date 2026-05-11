@@ -36,7 +36,7 @@ pub trait UserPosSupport {
     ) -> SudachiResult<u16>;
 }
 
-impl<'a> UserPosSupport for &'a mut Grammar<'_> {
+impl UserPosSupport for &mut Grammar<'_> {
     fn handle_user_pos<S: AsRef<str> + ToString + Display>(
         &mut self,
         pos: &[S],

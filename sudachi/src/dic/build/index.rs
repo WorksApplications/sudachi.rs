@@ -84,7 +84,7 @@ impl<'a> IndexBuilder<'a> {
             trie_entries.push((k, v.offset as u32));
         }
         self.data.shrink_to_fit();
-        trie_entries.sort_by(|(a, _), (b, _)| a.cmp(b));
+        trie_entries.sort_by_key(|(a, _)| *a);
 
         let trie = yada::builder::DoubleArrayBuilder::build(&trie_entries);
         match trie {

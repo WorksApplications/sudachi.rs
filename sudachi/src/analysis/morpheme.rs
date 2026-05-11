@@ -78,7 +78,7 @@ impl<'a, T: DictionaryAccess> Morpheme<'a, T> {
     }
 
     /// Returns a substring of the original text which corresponds to the morpheme
-    pub fn surface(&self) -> Ref<str> {
+    pub fn surface(&self) -> Ref<'_, str> {
         let inp = self.list.input();
         Ref::map(inp, |i| i.orig_slice(self.node().bytes_range()))
     }
@@ -152,7 +152,7 @@ impl<'a, T: DictionaryAccess> Morpheme<'a, T> {
 
     /// Returns total cost from the beginning of the path
     pub fn total_cost(&self) -> i32 {
-        return self.node().total_cost();
+        self.node().total_cost()
     }
 }
 

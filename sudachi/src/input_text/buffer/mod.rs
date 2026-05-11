@@ -252,7 +252,7 @@ impl InputBuffer {
         // the buffer object itself will be accessible as RO
         let replaces: &'a mut Vec<edit::ReplaceOp<'a>> =
             unsafe { std::mem::transmute(&mut self.replaces) };
-        return InputEditor::new(replaces);
+        InputEditor::new(replaces)
     }
 
     /// Execute a function which can modify the contents of the current buffer

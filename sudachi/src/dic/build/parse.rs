@@ -174,7 +174,7 @@ fn check_str_len(data: &str) -> DicWriteResult<()> {
 }
 
 #[inline]
-pub(crate) fn unescape_cow(data: &str) -> DicWriteResult<Cow<str>> {
+pub(crate) fn unescape_cow(data: &str) -> DicWriteResult<Cow<'_, str>> {
     check_str_len(data)?;
     if !UNICODE_LITERAL.is_match(data) {
         Ok(Cow::Borrowed(data))

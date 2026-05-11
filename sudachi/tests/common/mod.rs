@@ -214,7 +214,7 @@ impl TestStatefulTokenizer {
         }
     }
 
-    pub fn builder(system: &[u8]) -> TestTokenizerBuilder {
+    pub fn builder(system: &[u8]) -> TestTokenizerBuilder<'_> {
         TestTokenizerBuilder {
             system,
             user: Vec::new(),

@@ -54,7 +54,7 @@ pub fn build_mock_bytes() -> Vec<u8> {
     buf
 }
 
-pub fn build_mock_grammar(bytes: &[u8]) -> Grammar {
+pub fn build_mock_grammar(bytes: &[u8]) -> Grammar<'_> {
     let mut grammar = Grammar::parse(bytes, 0).expect("Failed to create grammar");
     grammar.set_character_category(char_cats());
     grammar

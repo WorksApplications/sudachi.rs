@@ -138,7 +138,9 @@ impl<'a> DictionaryLoader<'a> {
     ///
     /// # Safety
     /// This function is marked unsafe because it does not perform header validation
-    pub unsafe fn read_any_dictionary(dictionary_bytes: &[u8]) -> SudachiResult<DictionaryLoader> {
+    pub unsafe fn read_any_dictionary(
+        dictionary_bytes: &[u8],
+    ) -> SudachiResult<DictionaryLoader<'_>> {
         let header = Header::parse(&dictionary_bytes[..Header::STORAGE_SIZE])?;
         let mut offset = Header::STORAGE_SIZE;
 
@@ -162,7 +164,7 @@ impl<'a> DictionaryLoader<'a> {
     /// Creates a system binary dictionary from bytes
     ///
     /// Returns Err if header version is not match
-    pub fn read_system_dictionary(dictionary_bytes: &[u8]) -> SudachiResult<DictionaryLoader> {
+    pub fn read_system_dictionary(dictionary_bytes: &[u8]) -> SudachiResult<DictionaryLoader<'_>> {
         let dict = unsafe { Self::read_any_dictionary(dictionary_bytes) }?;
         match dict.header.version {
             header::HeaderVersion::SystemDict(_) => Ok(dict),
@@ -175,7 +177,7 @@ impl<'a> DictionaryLoader<'a> {
     /// Creates a user binary dictionary from bytes
     ///
     /// Returns Err if header version is not match
-    pub fn read_user_dictionary(dictionary_bytes: &[u8]) -> SudachiResult<DictionaryLoader> {
+    pub fn read_user_dictionary(dictionary_bytes: &[u8]) -> SudachiResult<DictionaryLoader<'_>> {
         let dict = unsafe { Self::read_any_dictionary(dictionary_bytes) }?;
         match dict.header.version {
             header::HeaderVersion::UserDict(_) => Ok(dict),

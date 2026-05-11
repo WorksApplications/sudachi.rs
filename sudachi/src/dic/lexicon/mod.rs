@@ -74,7 +74,7 @@ impl<'a> Lexicon<'a> {
         buf: &[u8],
         original_offset: usize,
         has_synonym_group_ids: bool,
-    ) -> SudachiResult<Lexicon> {
+    ) -> SudachiResult<Lexicon<'_>> {
         let mut offset = original_offset;
 
         let (_rest, trie_size) = u32_parser_offset(buf, offset)?;

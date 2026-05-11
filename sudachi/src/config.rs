@@ -72,7 +72,7 @@ impl PathResolver {
 
     fn contains<P: AsRef<Path>>(&self, path: P) -> bool {
         let query = path.as_ref();
-        return self.roots.iter().any(|p| p.as_path() == query);
+        self.roots.iter().any(|p| p.as_path() == query)
     }
 
     pub fn first_existing<P: AsRef<Path> + Clone>(&self, path: P) -> Option<PathBuf> {
