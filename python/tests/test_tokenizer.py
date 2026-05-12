@@ -13,9 +13,12 @@
 # limitations under the License.
 
 import os
+import queue
+import threading
 import unittest
 
 from sudachipy import Dictionary, SplitMode
+from sudachipy.errors import SudachiError
 
 
 class TestTokenizer(unittest.TestCase):
@@ -165,6 +168,77 @@ class TestTokenizer(unittest.TestCase):
         ms2 = self.tokenizer_obj.tokenize('すだち', out=ms1)
         self.assertEqual(id(ms1), id(ms2))
         self.assertEqual(m.surface(), 'すだち')
+
+    def test_concurrent_tokenize_on_same_tokenizer_fails(self):
+        text = '東京都庁に行きました。' * 1000
+        ready = threading.Barrier(8)
+        errors = queue.Queue()
+        unexpected = queue.Queue()
+
+        def worker():
+            try:
+                ready.wait(timeout=10)
+                for _ in range(20):
+                    self.tokenizer_obj.tokenize(text)
+            except SudachiError as err:
+                errors.put(str(err))
+            except Exception as err:
+                unexpected.put(err)
+
+        threads = [threading.Thread(target=worker) for _ in range(8)]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join()
+
+        self.assertTrue(unexpected.empty(), list(unexpected.queue))
+
+        messages = list(errors.queue)
+        self.assertTrue(
+            any('Tokenizer is already in use' in message for message in messages),
+            messages,
+        )
+        self.assertFalse(
+            any('Already borrowed' in message for message in messages),
+            messages,
+        )
+
+    def test_separate_tokenizers_work_in_threads(self):
+        errors = queue.Queue()
+
+        def worker():
+            try:
+                tok = self.dict_.create()
+                for _ in range(50):
+                    morphemes = tok.tokenize('東京都庁に行きました。')
+                    self.assertGreater(morphemes.size(), 0)
+            except Exception as err:
+                errors.put(err)
+
+        threads = [threading.Thread(target=worker) for _ in range(8)]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join()
+
+        self.assertTrue(errors.empty(), list(errors.queue))
+
+    def test_tokenizer_is_released_after_internal_error(self):
+        with self.assertRaises(SudachiError) as cm:
+            self.tokenizer_obj.tokenize('あ' * 20000)
+
+        self.assertIn('Input is too long', str(cm.exception))
+
+        morphemes = self.tokenizer_obj.tokenize('東京')
+        self.assertGreater(morphemes.size(), 0)
+
+    def test_temporary_mode_is_restored_after_internal_error(self):
+        tok = self.dict_.create(SplitMode.C)
+
+        with self.assertRaises(SudachiError):
+            tok.tokenize('あ' * 20000, SplitMode.A)
+
+        self.assertEqual(SplitMode.C, tok.mode)
 
 
 if __name__ == '__main__':
