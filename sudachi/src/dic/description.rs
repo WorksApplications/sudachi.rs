@@ -38,8 +38,8 @@ pub enum DescriptionError {
     #[error("Invalid magic bytes")]
     InvalidMagicBytes,
 
-    #[error("Legacy version")]
-    LegacyVersion,
+    #[error("V0 version")]
+    V0Version,
 
     #[error("Invalid header version {0}")]
     InvalidVersion(u64),
@@ -143,7 +143,7 @@ pub struct Description {
 
 impl Description {
     pub fn load(buf: &[u8]) -> SudachiResult<Self> {
-        Self::check_legacy_format(buf)?;
+        Self::check_v0_format(buf)?;
 
         let rest = Self::check_magic(buf)?;
         let (rest, version) = le_u64(rest)?;
@@ -154,14 +154,14 @@ impl Description {
         }
     }
 
-    /// Check if the dictionary is in legacy (V0) format.
+    /// Check if the dictionary is in V0 format.
     ///
     /// In V0 format, the version is stored as a u64 (long) at the beginning of the binary.
-    fn check_legacy_format(buf: &[u8]) -> SudachiResult<()> {
+    fn check_v0_format(buf: &[u8]) -> SudachiResult<()> {
         let (_rest, version) = le_u64(buf)?;
-        let legacy_version = HeaderVersion::from_u64(version);
-        match legacy_version {
-            Some(_) => Err(DescriptionError::LegacyVersion.into()),
+        let v0_version = HeaderVersion::from_u64(version);
+        match v0_version {
+            Some(_) => Err(DescriptionError::V0Version.into()),
             None => Ok(()),
         }
     }

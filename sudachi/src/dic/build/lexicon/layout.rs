@@ -57,7 +57,7 @@ pub(super) enum Column {
 }
 
 impl Column {
-    const fn legacy_index(self) -> usize {
+    const fn v0_index(self) -> usize {
         self as usize
     }
 
@@ -177,7 +177,7 @@ const REQUIRED_COLUMNS: [Column; 10] = [
 
 #[derive(Copy, Clone)]
 pub(super) enum ColumnLayout {
-    Legacy,
+    V0,
     Header([i16; NUM_COLUMNS]),
 }
 
@@ -187,9 +187,9 @@ impl ColumnLayout {
         ctx: &DicCompilationCtx,
     ) -> SudachiResult<(Self, bool)> {
         if record.len() > 1 {
-            if let Some(left_id) = record.get(Column::LeftId.legacy_index()) {
+            if let Some(left_id) = record.get(Column::LeftId.v0_index()) {
                 if INTEGER_LITERAL.is_match(left_id) {
-                    return Ok((ColumnLayout::Legacy, false));
+                    return Ok((ColumnLayout::V0, false));
                 }
             }
         }
@@ -220,7 +220,7 @@ impl ColumnLayout {
 
     fn index(self, col: Column) -> Option<usize> {
         match self {
-            ColumnLayout::Legacy => Some(col.legacy_index()),
+            ColumnLayout::V0 => Some(col.v0_index()),
             ColumnLayout::Header(mapping) => {
                 let idx = mapping[col.as_usize()];
                 if idx < 0 {
@@ -232,8 +232,8 @@ impl ColumnLayout {
         }
     }
 
-    pub(super) const fn is_legacy(self) -> bool {
-        matches!(self, ColumnLayout::Legacy)
+    pub(super) const fn is_v0(self) -> bool {
+        matches!(self, ColumnLayout::V0)
     }
 }
 
