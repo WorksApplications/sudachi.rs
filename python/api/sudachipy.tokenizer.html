@@ -134,16 +134,21 @@
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>text</strong> (<em>str</em>) – text to analyze.</p></li>
-<li><p><strong>mode</strong> (<a class="reference internal" href="sudachipy.html#sudachipy.SplitMode" title="sudachipy.tokenizer.SplitMode"><em>SplitMode</em></a><em> | </em><em>str</em><em> | </em><em>None</em>) – analysis mode.
+<li><p><strong>text</strong> – text to analyze.</p></li>
+<li><p><strong>mode</strong> – analysis mode.
 This parameter is deprecated.
 Pass the analysis mode at the Tokenizer creation time and create different tokenizers for different modes.
 If you need multi-level splitting, prefer using <code class="xref py py-meth docutils literal notranslate"><span class="pre">Morpheme.split()</span></code> method instead.</p></li>
 <li><p><strong>logger</strong> – Arg for v0.5.* compatibility. Ignored.</p></li>
-<li><p><strong>out</strong> (<a class="reference internal" href="sudachipy.html#sudachipy.MorphemeList" title="sudachipy.MorphemeList"><em>MorphemeList</em></a>) – tokenization results will be written into this MorphemeList, a new one will be created instead.
+<li><p><strong>out</strong> – tokenization results will be written into this MorphemeList, a new one will be created instead.
 See <a class="reference external" href="https://worksapplications.github.io/sudachi.rs/python/topics/out_param.html">https://worksapplications.github.io/sudachi.rs/python/topics/out_param.html</a> for details.</p></li>
 </ul>
 </dd>
+</dl>
+<p>A Tokenizer instance cannot be used concurrently from multiple threads.
+For parallel tokenization, share a Dictionary and create one Tokenizer
+per worker/thread. Concurrent calls raise sudachipy.errors.SudachiError.</p>
+<dl class="field-list simple">
 </dl>
 </dd></dl>
 
