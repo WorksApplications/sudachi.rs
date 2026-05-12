@@ -19,7 +19,7 @@ use std::iter::FusedIterator;
 use std::ops::{Deref, DerefMut, Index};
 use std::rc::Rc;
 
-use crate::analysis::morpheme::Morpheme;
+use crate::analysis::morpheme::MorphemeListItem;
 use crate::analysis::node::{PathCost, ResultNode};
 use crate::analysis::stateful_tokenizer::StatefulTokenizer;
 use crate::analysis::{Mode, Node};
@@ -137,8 +137,8 @@ impl<D: DictionaryAccess> MorphemeList<D> {
         self.nodes.data.is_empty()
     }
 
-    pub fn get(&self, idx: usize) -> Morpheme<'_, D> {
-        return Morpheme::for_list(self, idx);
+    pub fn get(&self, idx: usize) -> MorphemeListItem<'_, D> {
+        MorphemeListItem::for_list(self, idx)
     }
 
     pub fn surface(&self) -> Ref<'_, str> {
@@ -287,14 +287,14 @@ pub struct MorphemeIter<'a, T> {
 }
 
 impl<'a, T: DictionaryAccess> Iterator for MorphemeIter<'a, T> {
-    type Item = Morpheme<'a, T>;
+    type Item = MorphemeListItem<'a, T>;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.index >= self.list.len() {
             return None;
         }
 
-        let morpheme = Morpheme::for_list(self.list, self.index);
+        let morpheme = MorphemeListItem::for_list(self.list, self.index);
 
         self.index += 1;
         Some(morpheme)

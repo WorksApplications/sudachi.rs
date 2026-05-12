@@ -24,10 +24,7 @@ use pyo3::prelude::*;
 use pyo3::types::{PyList, PyString, PyTuple, PyType};
 
 use sudachi::dic::subset::InfoSubset;
-use sudachi::dic::word_id::WordId;
-use sudachi::dic::word_info::WordInfoData;
-use sudachi::dic::LexiconAccess;
-use sudachi::prelude::{Morpheme, MorphemeList};
+use sudachi::prelude::{MorphemeList, MorphemeListItem, MorphemeRef as RustMorphemeRef};
 
 use crate::dictionary::{extract_mode, PyDicData, PyDictionary};
 use crate::errors;
@@ -233,14 +230,14 @@ impl PyMorphemeIter {
 
 /// It is a syntax sugar for accessing Morpheme reference
 /// Without it binding implementations become much less readable
-struct MorphemeRef<'py> {
+struct MorphemeListItemRef<'py> {
     #[allow(unused)] // need to keep this around for correct reference count
     list: PyRef<'py, PyMorphemeListWrapper>,
-    morph: Morpheme<'py, Arc<PyDicData>>,
+    morph: MorphemeListItem<'py, Arc<PyDicData>>,
 }
 
-impl<'py> Deref for MorphemeRef<'py> {
-    type Target = Morpheme<'py, Arc<PyDicData>>;
+impl<'py> Deref for MorphemeListItemRef<'py> {
+    type Target = MorphemeListItem<'py, Arc<PyDicData>>;
 
     fn deref(&self) -> &Self::Target {
         &self.morph
@@ -254,16 +251,22 @@ pub struct PyMorpheme {
     index: usize,
 }
 
+#[derive(Clone, Copy)]
+enum FormMorphemeKind {
+    Dictionary,
+    Normalized,
+}
+
 impl PyMorpheme {
     fn list<'py>(&'py self, py: Python<'py>) -> PyRef<'py, PyMorphemeListWrapper> {
         self.list.borrow(py)
     }
 
-    fn morph<'py>(&'py self, py: Python<'py>) -> MorphemeRef<'py> {
+    fn morph<'py>(&'py self, py: Python<'py>) -> MorphemeListItemRef<'py> {
         let list = self.list(py);
         // workaround for self-referential structs
         let morph = unsafe { std::mem::transmute(list.internal(py).get(self.index)) };
-        MorphemeRef { list, morph }
+        MorphemeListItemRef { list, morph }
     }
 
     fn write_repr<'py, W: Write>(&'py self, py: Python<'py>, out: &mut W) -> std::fmt::Result {
@@ -287,46 +290,29 @@ impl PyMorpheme {
         }
     }
 
-    fn form_morpheme<'py, F>(
+    fn form_morpheme<'py>(
         &'py self,
         py: Python<'py>,
-        subset: InfoSubset,
-        form_word_id: F,
+        kind: FormMorphemeKind,
         context: &str,
-    ) -> PyResult<PyMorpheme>
-    where
-        F: FnOnce(&WordInfoData) -> WordId,
-    {
+    ) -> PyResult<PyMorpheme> {
         let (dict, projection, form_word_id) = {
             let list = self.list(py);
             let internal = list.internal(py);
-            let word_id = internal.get(self.index).word_id();
+            let morph = internal.get(self.index);
+            let form_morpheme = match kind {
+                FormMorphemeKind::Dictionary => morph.dictionary_form_morpheme(),
+                FormMorphemeKind::Normalized => morph.normalized_form_morpheme(),
+            };
 
-            if word_id.is_oov() || word_id.is_special() {
-                return Ok(self.self_equivalent(py));
+            match errors::wrap_ctx(form_morpheme, context)? {
+                RustMorphemeRef::ListItem(_) => return Ok(self.self_equivalent(py)),
+                RustMorphemeRef::Single(morpheme) => (
+                    internal.dict().clone(),
+                    list.projection.clone(),
+                    morpheme.word_id(),
+                ),
             }
-
-            let word_info = errors::wrap_ctx(
-                internal
-                    .dict()
-                    .lexicon()
-                    .get_word_info_subset(word_id, subset),
-                context,
-            )?;
-            let form_word_id = form_word_id(word_info.borrow_data());
-            if form_word_id == WordId::INVALID
-                || form_word_id == word_id
-                || form_word_id.is_oov()
-                || form_word_id.is_special()
-            {
-                return Ok(self.self_equivalent(py));
-            }
-
-            (
-                internal.dict().clone(),
-                list.projection.clone(),
-                form_word_id,
-            )
         };
 
         let mut form_list = MorphemeList::empty(dict);
@@ -417,8 +403,7 @@ impl PyMorpheme {
     fn dictionary_form_morpheme<'py>(&'py self, py: Python<'py>) -> PyResult<PyMorpheme> {
         self.form_morpheme(
             py,
-            InfoSubset::DICTIONARY_FORM,
-            WordInfoData::dictionary_form_word_id,
+            FormMorphemeKind::Dictionary,
             "Failed to load dictionary form morpheme",
         )
     }
@@ -439,8 +424,7 @@ impl PyMorpheme {
     fn normalized_form_morpheme<'py>(&'py self, py: Python<'py>) -> PyResult<PyMorpheme> {
         self.form_morpheme(
             py,
-            InfoSubset::NORMALIZED_FORM,
-            WordInfoData::normalized_form_word_id,
+            FormMorphemeKind::Normalized,
             "Failed to load normalized form morpheme",
         )
     }

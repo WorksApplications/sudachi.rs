@@ -24,28 +24,42 @@ use pyo3::Python;
 use sudachi::config::SurfaceProjection;
 use sudachi::dic::DictionaryAccess;
 use sudachi::pos::PosMatcher;
-use sudachi::prelude::Morpheme;
+use sudachi::prelude::MorphemeListItem;
 
 use crate::dictionary::PyDicData;
 
 pub(crate) trait MorphemeProjection {
-    fn project<'py>(&self, m: &Morpheme<Arc<PyDicData>>, py: Python<'py>) -> Bound<'py, PyString>;
+    fn project<'py>(
+        &self,
+        m: &MorphemeListItem<Arc<PyDicData>>,
+        py: Python<'py>,
+    ) -> Bound<'py, PyString>;
 }
 
 struct Surface {}
 
 impl MorphemeProjection for Surface {
-    fn project<'py>(&self, m: &Morpheme<Arc<PyDicData>>, py: Python<'py>) -> Bound<'py, PyString> {
+    fn project<'py>(
+        &self,
+        m: &MorphemeListItem<Arc<PyDicData>>,
+        py: Python<'py>,
+    ) -> Bound<'py, PyString> {
         PyString::new(py, m.surface().deref())
     }
 }
 
-struct Mapped<F: for<'a> Fn(&'a Morpheme<'a, Arc<PyDicData>>) -> &'a str> {
+struct Mapped<F: for<'a> Fn(&'a MorphemeListItem<'a, Arc<PyDicData>>) -> &'a str> {
     func: F,
 }
 
-impl<F: for<'a> Fn(&'a Morpheme<'a, Arc<PyDicData>>) -> &'a str> MorphemeProjection for Mapped<F> {
-    fn project<'py>(&self, m: &Morpheme<Arc<PyDicData>>, py: Python<'py>) -> Bound<'py, PyString> {
+impl<F: for<'a> Fn(&'a MorphemeListItem<'a, Arc<PyDicData>>) -> &'a str> MorphemeProjection
+    for Mapped<F>
+{
+    fn project<'py>(
+        &self,
+        m: &MorphemeListItem<Arc<PyDicData>>,
+        py: Python<'py>,
+    ) -> Bound<'py, PyString> {
         PyString::new(py, (self.func)(m))
     }
 }
@@ -62,7 +76,11 @@ impl DictionaryAndSurface {
 }
 
 impl MorphemeProjection for DictionaryAndSurface {
-    fn project<'py>(&self, m: &Morpheme<Arc<PyDicData>>, py: Python<'py>) -> Bound<'py, PyString> {
+    fn project<'py>(
+        &self,
+        m: &MorphemeListItem<Arc<PyDicData>>,
+        py: Python<'py>,
+    ) -> Bound<'py, PyString> {
         if self.matcher.matches_id(m.part_of_speech_id()) {
             PyString::new(py, m.surface().deref())
         } else {
@@ -83,7 +101,11 @@ impl NormalizedAndSurface {
 }
 
 impl MorphemeProjection for NormalizedAndSurface {
-    fn project<'py>(&self, m: &Morpheme<Arc<PyDicData>>, py: Python<'py>) -> Bound<'py, PyString> {
+    fn project<'py>(
+        &self,
+        m: &MorphemeListItem<Arc<PyDicData>>,
+        py: Python<'py>,
+    ) -> Bound<'py, PyString> {
         if self.matcher.matches_id(m.part_of_speech_id()) {
             PyString::new(py, m.surface().deref())
         } else {
@@ -104,7 +126,11 @@ impl NormalizedNouns {
 }
 
 impl MorphemeProjection for NormalizedNouns {
-    fn project<'py>(&self, m: &Morpheme<Arc<PyDicData>>, py: Python<'py>) -> Bound<'py, PyString> {
+    fn project<'py>(
+        &self,
+        m: &MorphemeListItem<Arc<PyDicData>>,
+        py: Python<'py>,
+    ) -> Bound<'py, PyString> {
         if self.matcher.matches_id(m.part_of_speech_id()) {
             PyString::new(py, m.normalized_form())
         } else {

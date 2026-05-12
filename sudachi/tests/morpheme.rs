@@ -68,6 +68,92 @@ fn reset_with_word_id_uses_exact_homograph_entry() {
 }
 
 #[test]
+fn dictionary_form_morpheme_returns_standalone_entry() {
+    let tok = TestTokenizer::new();
+    let ms = tok.tokenize("行っ", Mode::C);
+    let m = ms.get(0);
+
+    let df = m
+        .dictionary_form_morpheme()
+        .expect("failed to resolve dictionary form morpheme");
+
+    assert!(matches!(df, MorphemeRef::Single(_)));
+    assert_eq!("行く", df.surface().deref());
+    assert_eq!(m.dictionary_form(), df.surface().deref());
+    assert_eq!("行く", df.dictionary_form());
+    assert_eq!("イク", df.reading_form());
+    assert_eq!(0, df.begin());
+    assert_eq!("行く".len(), df.end());
+    assert_eq!(0, df.begin_c());
+    assert_eq!("行く".chars().count(), df.end_c());
+    assert!(!df.is_oov());
+}
+
+#[test]
+fn normalized_form_morpheme_returns_standalone_entry() {
+    let tok = TestTokenizer::new();
+    let ms = tok.tokenize("いっ", Mode::C);
+    let m = ms.get(0);
+
+    let nf = m
+        .normalized_form_morpheme()
+        .expect("failed to resolve normalized form morpheme");
+
+    assert!(matches!(nf, MorphemeRef::Single(_)));
+    assert_eq!("行く", nf.surface().deref());
+    assert_eq!(m.normalized_form(), nf.surface().deref());
+    assert_eq!("行く", nf.normalized_form());
+    assert_eq!("イク", nf.reading_form());
+    assert_eq!(0, nf.begin());
+    assert_eq!("行く".len(), nf.end());
+    assert_eq!(0, nf.begin_c());
+    assert_eq!("行く".chars().count(), nf.end_c());
+    assert!(!nf.is_oov());
+}
+
+#[test]
+fn form_morpheme_returns_self_equivalent_for_same_entry_and_oov() {
+    let tok = TestTokenizer::new();
+    let ms = tok.tokenize("東京", Mode::C);
+    let m = ms.get(0);
+
+    let df = m
+        .dictionary_form_morpheme()
+        .expect("failed to resolve dictionary form morpheme");
+    let nf = m
+        .normalized_form_morpheme()
+        .expect("failed to resolve normalized form morpheme");
+
+    assert!(matches!(df, MorphemeRef::ListItem(_)));
+    assert!(matches!(nf, MorphemeRef::ListItem(_)));
+    assert_eq!(m.word_id(), df.word_id());
+    assert_eq!(m.word_id(), nf.word_id());
+    assert_eq!(m.surface().deref(), df.surface().deref());
+    assert_eq!(m.surface().deref(), nf.surface().deref());
+
+    let ms = tok.tokenize("xyzzy123不在語", Mode::C);
+    let oov = ms
+        .iter()
+        .find(|m| m.is_oov())
+        .expect("expected at least one OOV morpheme");
+    let df = oov
+        .dictionary_form_morpheme()
+        .expect("failed to resolve OOV dictionary form morpheme");
+    let nf = oov
+        .normalized_form_morpheme()
+        .expect("failed to resolve OOV normalized form morpheme");
+
+    assert!(matches!(df, MorphemeRef::ListItem(_)));
+    assert!(matches!(nf, MorphemeRef::ListItem(_)));
+    assert_eq!(oov.word_id(), df.word_id());
+    assert_eq!(oov.word_id(), nf.word_id());
+    assert_eq!(oov.surface().deref(), df.surface().deref());
+    assert_eq!(oov.surface().deref(), nf.surface().deref());
+    assert!(df.is_oov());
+    assert!(nf.is_oov());
+}
+
+#[test]
 fn morpheme_attributes() {
     let tok = TestTokenizer::new();
     let ms = tok.tokenize("京都", Mode::C);
