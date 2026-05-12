@@ -98,7 +98,13 @@ impl<'a> WordInfos<'a> {
     ) -> SudachiResult<WordInfoRefData> {
         let offset = Self::entry_id_to_offset(entry_id);
         let parser = WordInfoParser::subset(subset);
-        let word_info = parser.parse(&self.bytes[offset..])?;
+        let bytes = self.bytes.get(offset..).ok_or_else(|| {
+            SudachiError::InvalidDataFormat(
+                0,
+                format!("invalid word info entry id: {}", entry_id.as_raw()),
+            )
+        })?;
+        let word_info = parser.parse(bytes)?;
         Ok(WordInfoRefData::from_raw(word_info))
     }
 }

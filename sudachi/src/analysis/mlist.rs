@@ -19,7 +19,7 @@ use std::iter::FusedIterator;
 use std::ops::{Deref, DerefMut, Index};
 use std::rc::Rc;
 
-use crate::analysis::morpheme::MorphemeListItem;
+use crate::analysis::morpheme::{validate_dictionary_word_id, Morpheme};
 use crate::analysis::node::{PathCost, ResultNode};
 use crate::analysis::stateful_tokenizer::StatefulTokenizer;
 use crate::analysis::{Mode, Node};
@@ -137,8 +137,8 @@ impl<D: DictionaryAccess> MorphemeList<D> {
         self.nodes.data.is_empty()
     }
 
-    pub fn get(&self, idx: usize) -> MorphemeListItem<'_, D> {
-        MorphemeListItem::for_list(self, idx)
+    pub fn get(&self, idx: usize) -> Morpheme<'_, D> {
+        Morpheme::for_list(self, idx)
     }
 
     pub fn surface(&self) -> Ref<'_, str> {
@@ -226,35 +226,80 @@ impl<D: DictionaryAccess> MorphemeList<D> {
     /// surface, so it preserves homograph identity.
     #[allow(clippy::result_large_err)]
     pub fn reset_with_word_id(&mut self, word_id: WordId, subset: InfoSubset) -> SudachiResult<()> {
+        self.reset_with_word_ids(std::iter::once(word_id), subset)
+    }
+
+    /// Resets this list to dictionary entries for the given word IDs.
+    ///
+    /// This resolves exact dictionary entries instead of looking them up by
+    /// surface. The list surface is the concatenation of dictionary headwords,
+    /// and each entry receives offsets over that standalone surface.
+    #[allow(clippy::result_large_err)]
+    pub fn reset_with_word_ids<I>(&mut self, word_ids: I, subset: InfoSubset) -> SudachiResult<()>
+    where
+        I: IntoIterator<Item = WordId>,
+    {
         let subset = (subset | InfoSubset::HEADWORD).normalize();
         let lex = self.dict.lexicon();
-        let info = lex.get_word_info_subset(word_id, subset)?;
-        let headword = info.headword(lex).to_owned();
-        let (left_id, right_id, cost) = lex.get_word_param(word_id);
-        let end_bytes = headword.len();
+        let mut headwords = String::new();
+        let mut entries = Vec::new();
 
-        let end_chars = {
+        for word_id in word_ids {
+            validate_dictionary_word_id(&self.dict, word_id)?;
+            let info = lex.get_word_info_subset(word_id, subset)?;
+            let headword = info.headword(lex).to_owned();
+            let (left_id, right_id, cost) = lex.get_word_param_checked(word_id)?;
+            let begin_bytes = headwords.len();
+            headwords.push_str(&headword);
+            let end_bytes = headwords.len();
+            entries.push((
+                word_id,
+                info,
+                left_id,
+                right_id,
+                cost,
+                begin_bytes,
+                end_bytes,
+            ));
+        }
+
+        let ranges = {
             let mut input_part = self.input.borrow_mut();
             input_part.subset = subset;
             let input = &mut input_part.input;
-            input.reset().push_str(&headword);
+            input.reset().push_str(&headwords);
             input.start_build()?;
             input.build(self.dict.grammar())?;
-            input.ch_idx(end_bytes)
+            entries
+                .iter()
+                .map(|(_, _, _, _, _, begin_bytes, end_bytes)| {
+                    (input.ch_idx(*begin_bytes), input.ch_idx(*end_bytes))
+                })
+                .collect::<Vec<_>>()
         };
 
         self.clear();
-        let node = Node::new(
-            0,
-            end_chars as u16,
-            left_id as u16,
-            right_id as u16,
-            cost,
-            word_id,
-        );
-        self.nodes
-            .data
-            .push(ResultNode::new(node, 0, 0, end_bytes as u16, info));
+        for (
+            (word_id, info, left_id, right_id, cost, begin_bytes, end_bytes),
+            (begin_chars, end_chars),
+        ) in entries.into_iter().zip(ranges)
+        {
+            let node = Node::new(
+                begin_chars as u16,
+                end_chars as u16,
+                left_id as u16,
+                right_id as u16,
+                cost,
+                word_id,
+            );
+            self.nodes.data.push(ResultNode::new(
+                node,
+                0,
+                begin_bytes as u16,
+                end_bytes as u16,
+                info,
+            ));
+        }
         Ok(())
     }
 }
@@ -287,14 +332,14 @@ pub struct MorphemeIter<'a, T> {
 }
 
 impl<'a, T: DictionaryAccess> Iterator for MorphemeIter<'a, T> {
-    type Item = MorphemeListItem<'a, T>;
+    type Item = Morpheme<'a, T>;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.index >= self.list.len() {
             return None;
         }
 
-        let morpheme = MorphemeListItem::for_list(self.list, self.index);
+        let morpheme = Morpheme::for_list(self.list, self.index);
 
         self.index += 1;
         Some(morpheme)

@@ -70,6 +70,12 @@ impl<'a> WordParams<'a> {
     }
 
     #[inline]
+    pub fn get_params_checked(&self, entry_id: EntryId) -> Option<WordParameter> {
+        let offset = entry_id.as_raw() as usize;
+        self.data.get(offset).copied().map(WordParameter)
+    }
+
+    #[inline]
     pub fn get_cost(&self, entry_id: EntryId) -> i16 {
         self.get_params(entry_id).cost()
     }

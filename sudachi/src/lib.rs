@@ -42,7 +42,7 @@ pub mod text_normalizer;
 pub mod prelude {
     pub use crate::{
         analysis::mlist::MorphemeList,
-        analysis::morpheme::{Morpheme, MorphemeListItem, MorphemeRef, SingleMorpheme},
+        analysis::morpheme::{Morpheme, MorphemeRef, MorphemeView, SingleMorpheme},
         analysis::Mode,
         error::SudachiError,
         error::SudachiResult,

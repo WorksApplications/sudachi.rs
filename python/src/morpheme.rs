@@ -24,7 +24,8 @@ use pyo3::prelude::*;
 use pyo3::types::{PyList, PyString, PyTuple, PyType};
 
 use sudachi::dic::subset::InfoSubset;
-use sudachi::prelude::{MorphemeList, MorphemeListItem, MorphemeRef as RustMorphemeRef};
+use sudachi::dic::word_id::WordId;
+use sudachi::prelude::{Morpheme, MorphemeList, MorphemeRef as RustMorphemeRef, SingleMorpheme};
 
 use crate::dictionary::{extract_mode, PyDicData, PyDictionary};
 use crate::errors;
@@ -152,6 +153,7 @@ impl PyMorphemeListWrapper {
         Ok(PyMorpheme {
             list: py_list,
             index: idx as usize,
+            standalone_word_id: None,
         })
     }
 
@@ -180,6 +182,7 @@ impl PyMorphemeListWrapper {
             let pymorph = PyMorpheme {
                 list: slf.clone_ref(py),
                 index: i,
+                standalone_word_id: None,
             };
             errors::wrap_ctx(pymorph.write_repr(py, &mut result), "format failed")?;
             result.push_str(",\n");
@@ -221,6 +224,7 @@ impl PyMorphemeIter {
         let morpheme = PyMorpheme {
             list: self.list.clone_ref(py),
             index: self.index,
+            standalone_word_id: None,
         };
 
         self.index += 1;
@@ -230,14 +234,14 @@ impl PyMorphemeIter {
 
 /// It is a syntax sugar for accessing Morpheme reference
 /// Without it binding implementations become much less readable
-struct MorphemeListItemRef<'py> {
+struct MorphemeBorrow<'py> {
     #[allow(unused)] // need to keep this around for correct reference count
     list: PyRef<'py, PyMorphemeListWrapper>,
-    morph: MorphemeListItem<'py, Arc<PyDicData>>,
+    morph: Morpheme<'py, Arc<PyDicData>>,
 }
 
-impl<'py> Deref for MorphemeListItemRef<'py> {
-    type Target = MorphemeListItem<'py, Arc<PyDicData>>;
+impl<'py> Deref for MorphemeBorrow<'py> {
+    type Target = Morpheme<'py, Arc<PyDicData>>;
 
     fn deref(&self) -> &Self::Target {
         &self.morph
@@ -249,6 +253,7 @@ impl<'py> Deref for MorphemeListItemRef<'py> {
 pub struct PyMorpheme {
     list: Py<PyMorphemeListWrapper>,
     index: usize,
+    standalone_word_id: Option<WordId>,
 }
 
 #[derive(Clone, Copy)]
@@ -262,11 +267,11 @@ impl PyMorpheme {
         self.list.borrow(py)
     }
 
-    fn morph<'py>(&'py self, py: Python<'py>) -> MorphemeListItemRef<'py> {
+    fn morph<'py>(&'py self, py: Python<'py>) -> MorphemeBorrow<'py> {
         let list = self.list(py);
         // workaround for self-referential structs
         let morph = unsafe { std::mem::transmute(list.internal(py).get(self.index)) };
-        MorphemeListItemRef { list, morph }
+        MorphemeBorrow { list, morph }
     }
 
     fn write_repr<'py, W: Write>(&'py self, py: Python<'py>, out: &mut W) -> std::fmt::Result {
@@ -287,6 +292,7 @@ impl PyMorpheme {
         PyMorpheme {
             list: self.list.clone_ref(py),
             index: self.index,
+            standalone_word_id: self.standalone_word_id,
         }
     }
 
@@ -312,6 +318,7 @@ impl PyMorpheme {
                     list.projection.clone(),
                     morpheme.word_id(),
                 ),
+                _ => unreachable!("unhandled Rust morpheme reference variant"),
             }
         };
 
@@ -328,7 +335,59 @@ impl PyMorpheme {
         Ok(PyMorpheme {
             list: py_list,
             index: 0,
+            standalone_word_id: Some(form_word_id),
         })
+    }
+
+    fn split_standalone<'py>(
+        &'py self,
+        py: Python<'py>,
+        mode: &Bound<'py, PyAny>,
+        out: Option<Bound<'py, PyMorphemeListWrapper>>,
+        add_single: Option<bool>,
+    ) -> PyResult<Bound<'py, PyMorphemeListWrapper>> {
+        let word_id = self
+            .standalone_word_id
+            .expect("split_standalone called for list-backed morpheme");
+        let mode = extract_mode(mode)?;
+        let (dict, projection, split_word_ids) = {
+            let list = self.list(py);
+            let dict = list.internal(py).dict().clone();
+            let projection = list.projection.clone();
+            let morpheme = errors::wrap_ctx(
+                SingleMorpheme::from_word_id(&dict, word_id, InfoSubset::all()),
+                "Error while splitting morpheme",
+            )?;
+            let splits = errors::wrap_ctx(morpheme.split(mode), "Error while splitting morpheme")?;
+            let no_split = splits.len() == 1 && splits[0].word_id() == word_id;
+            let split_word_ids = if add_single.unwrap_or(true) || !no_split {
+                splits.into_iter().map(|m| m.word_id()).collect()
+            } else {
+                Vec::new()
+            };
+            (dict, projection, split_word_ids)
+        };
+
+        let out_cell = match out {
+            None => Bound::new(
+                py,
+                PyMorphemeListWrapper::from_components(MorphemeList::empty(dict), projection),
+            )?,
+            Some(r) => r,
+        };
+
+        let mut borrow = out_cell.try_borrow_mut();
+        let out_ref = match borrow {
+            Ok(ref mut v) => v.internal_mut(py),
+            Err(_) => return errors::wrap(Err("out was used twice at the same time")),
+        };
+
+        errors::wrap_ctx(
+            out_ref.reset_with_word_ids(split_word_ids, InfoSubset::all()),
+            "Error while splitting morpheme",
+        )?;
+
+        Ok(out_cell)
     }
 }
 
@@ -459,6 +518,10 @@ impl PyMorpheme {
         out: Option<Bound<'py, PyMorphemeListWrapper>>,
         add_single: Option<bool>,
     ) -> PyResult<Bound<'py, PyMorphemeListWrapper>> {
+        if self.standalone_word_id.is_some() {
+            return self.split_standalone(py, mode, out, add_single);
+        }
+
         let list = self.list(py);
 
         let mode = extract_mode(mode)?;

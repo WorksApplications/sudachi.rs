@@ -19,10 +19,36 @@ extern crate sudachi;
 
 use std::ops::Deref;
 use sudachi::dic::subset::InfoSubset;
+use sudachi::dic::word_id::WordId;
 use sudachi::prelude::*;
 
 mod common;
 use crate::common::{TestTokenizer, LEXICON_SET};
+
+fn find_system_word_id(tok: &TestTokenizer, headword: &str, pos: [&str; 6]) -> WordId {
+    LEXICON_SET
+        .system_word_ids_in_order()
+        .into_iter()
+        .find(|&word_id| {
+            let word_info = LEXICON_SET
+                .get_word_info_subset(word_id, InfoSubset::HEADWORD | InfoSubset::POS_ID)
+                .expect("failed to load word info");
+            let actual_pos = tok.dict().grammar().pos_components(word_info.pos_id());
+            word_info.headword(&*LEXICON_SET) == headword
+                && actual_pos
+                    .iter()
+                    .map(String::as_str)
+                    .eq(pos.iter().copied())
+        })
+        .expect("expected test dictionary entry")
+}
+
+fn x_homograph_word_ids(tok: &TestTokenizer) -> (WordId, WordId) {
+    let first_x = find_system_word_id(tok, "X", ["補助記号", "一般", "*", "*", "*", "*"]);
+    let place_name_x =
+        find_system_word_id(tok, "X", ["名詞", "固有名詞", "地名", "一般", "*", "*"]);
+    (first_x, place_name_x)
+}
 
 #[test]
 fn empty_morpheme_list() {
@@ -36,13 +62,11 @@ fn empty_morpheme_list() {
 #[test]
 fn reset_with_word_id_uses_exact_homograph_entry() {
     let tok = TestTokenizer::new();
-    let word_ids = LEXICON_SET.system_word_ids_in_order();
     let mut ms = MorphemeList::empty(tok.dict());
 
-    // These are the first and last "x" homographs in tests/resources/lex.csv;
+    // These are "x" homographs in tests/resources/lex.csv;
     // they share headword "X" but have different POS metadata.
-    let first_x = *word_ids.get(40).unwrap();
-    let place_name_x = *word_ids.get(45).unwrap();
+    let (first_x, place_name_x) = x_homograph_word_ids(&tok);
 
     ms.reset_with_word_id(first_x, InfoSubset::POS_ID)
         .expect("failed to materialize first x entry");
@@ -55,6 +79,7 @@ fn reset_with_word_id_uses_exact_homograph_entry() {
         ["補助記号", "一般", "*", "*", "*", "*"],
         ms.get(0).part_of_speech()
     );
+    assert_eq!("", ms.get(0).user_data());
 
     ms.reset_with_word_id(place_name_x, InfoSubset::all())
         .expect("failed to materialize place-name x entry");
@@ -65,6 +90,53 @@ fn reset_with_word_id_uses_exact_homograph_entry() {
         ["名詞", "固有名詞", "地名", "一般", "*", "*"],
         ms.get(0).part_of_speech()
     );
+    assert_eq!("", ms.get(0).user_data());
+}
+
+#[test]
+fn single_morpheme_from_word_id_uses_exact_homograph_entry() {
+    let tok = TestTokenizer::new();
+
+    // These are "x" homographs in tests/resources/lex.csv;
+    // they share headword "X" but have different POS metadata.
+    let (first_x, place_name_x) = x_homograph_word_ids(&tok);
+
+    let first = SingleMorpheme::from_word_id(tok.dict(), first_x, InfoSubset::all())
+        .expect("failed to materialize first x entry");
+    let place = SingleMorpheme::from_word_id(tok.dict(), place_name_x, InfoSubset::all())
+        .expect("failed to materialize place-name x entry");
+
+    assert_eq!(first_x, first.word_id());
+    assert_eq!(place_name_x, place.word_id());
+    assert_eq!("X", first.surface());
+    assert_eq!("X", place.surface());
+    assert_eq!(
+        ["補助記号", "一般", "*", "*", "*", "*"],
+        first.part_of_speech()
+    );
+    assert_eq!(
+        ["名詞", "固有名詞", "地名", "一般", "*", "*"],
+        place.part_of_speech()
+    );
+    assert_eq!("", first.user_data());
+    assert_eq!("", place.user_data());
+}
+
+#[test]
+fn word_id_materialization_rejects_invalid_oov_and_special_ids() {
+    let tok = TestTokenizer::new();
+    let mut ms = MorphemeList::empty(tok.dict());
+
+    for word_id in [WordId::INVALID, WordId::oov(0), WordId::BOS, WordId::EOS] {
+        assert!(matches!(
+            SingleMorpheme::from_word_id(tok.dict(), word_id, InfoSubset::all()),
+            Err(SudachiError::InvalidWordId(err_word_id)) if err_word_id == word_id
+        ));
+        assert!(matches!(
+            ms.reset_with_word_id(word_id, InfoSubset::all()),
+            Err(SudachiError::InvalidWordId(err_word_id)) if err_word_id == word_id
+        ));
+    }
 }
 
 #[test]
@@ -87,6 +159,7 @@ fn dictionary_form_morpheme_returns_standalone_entry() {
     assert_eq!(0, df.begin_c());
     assert_eq!("行く".chars().count(), df.end_c());
     assert!(!df.is_oov());
+    assert_eq!("", df.user_data());
 }
 
 #[test]
@@ -109,6 +182,33 @@ fn normalized_form_morpheme_returns_standalone_entry() {
     assert_eq!(0, nf.begin_c());
     assert_eq!("行く".chars().count(), nf.end_c());
     assert!(!nf.is_oov());
+    assert_eq!("", nf.user_data());
+}
+
+#[test]
+fn single_morpheme_split_materializes_standalone_entries() {
+    let tok = TestTokenizer::new();
+    let ms = tok.tokenize("東京都", Mode::C);
+    let morpheme = SingleMorpheme::from_word_id(tok.dict(), ms.get(0).word_id(), InfoSubset::all())
+        .expect("failed to materialize standalone morpheme");
+
+    let splits = morpheme
+        .split(Mode::A)
+        .expect("failed to split standalone morpheme");
+
+    assert_eq!(2, splits.len());
+    assert_eq!("東京", splits[0].surface());
+    assert_eq!("都", splits[1].surface());
+    assert_eq!(0, splits[0].begin());
+    assert_eq!("東京".len(), splits[0].end());
+    assert_eq!("東京".len(), splits[1].begin());
+    assert_eq!("東京都".len(), splits[1].end());
+    assert_eq!(0, splits[0].begin_c());
+    assert_eq!("東京".chars().count(), splits[0].end_c());
+    assert_eq!("東京".chars().count(), splits[1].begin_c());
+    assert_eq!("東京都".chars().count(), splits[1].end_c());
+    assert_eq!("", splits[0].user_data());
+    assert_eq!("", splits[1].user_data());
 }
 
 #[test]

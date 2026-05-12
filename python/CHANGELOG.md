@@ -6,6 +6,14 @@ Also check [rust changelog](../CHANGELOG.md).
 
 ## [Unreleased]
 
+### Added
+
+- Add `Morpheme.dictionary_form_morpheme()` and `Morpheme.normalized_form_morpheme()`.
+
+### Fixed
+
+- Preserve standalone form-morpheme split behavior when Python wraps Rust form entries.
+
 ## [0.6.10](https://github.com/WorksApplications/sudachi.rs/releases/tag/v0.6.10) (2025-01-10)
 
 - Add support for py3.13t (free thread) (#293, #295)

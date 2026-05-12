@@ -13,9 +13,13 @@
 # limitations under the License.
 
 import os
+import csv
+import json
+import tempfile
 import unittest
 
 from sudachipy import Dictionary, SplitMode
+from sudachipy.sudachipy import build_system_dic
 
 
 class TestTokenizer(unittest.TestCase):
@@ -102,6 +106,61 @@ class TestTokenizer(unittest.TestCase):
         self.assertEqual(nf.reading_form(), 'イク')
         self.assertEqual(nf.begin(), 0)
         self.assertEqual(nf.end(), len(nf.surface()))
+
+    def test_form_morpheme_split_uses_standalone_offsets(self):
+        resource_dir = os.path.join(os.path.dirname(
+            os.path.abspath(__file__)), 'resources')
+        split_ref = '東京,3,トウキョウ/都,4,ト'
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            extra_lex = os.path.join(temp_dir, 'extra.csv')
+            system_dic = os.path.join(temp_dir, 'system.dic')
+            config_path = os.path.join(temp_dir, 'sudachi.json')
+
+            with open(extra_lex, 'w', encoding='utf-8', newline='') as out:
+                writer = csv.writer(out)
+                writer.writerow([
+                    'index_form', 'left_id', 'right_id', 'cost', 'headword',
+                    'pos1', 'pos2', 'pos3', 'pos4', 'pos5', 'pos6',
+                    'reading_form', 'normalized_form', 'dictionary_form',
+                    'split_a', 'split_b', 'split_c', 'word_structure',
+                    'synonym_groups',
+                ])
+                writer.writerow([
+                    '首都', 6, 6, 1000, '',
+                    '名詞', '固有名詞', '地名', '一般', '*', '*',
+                    'シュト', '', '', split_ref, '', '', split_ref, '',
+                ])
+                writer.writerow([
+                    '首都旧', 6, 6, 1000, '',
+                    '名詞', '固有名詞', '地名', '一般', '*', '*',
+                    'シュトキュウ', '首都',
+                    '首都,3,シュト',
+                    '', '', '', '', '',
+                ])
+
+            build_system_dic(
+                os.path.join(resource_dir, 'matrix.def'),
+                [os.path.join(resource_dir, 'lex.csv'), extra_lex],
+                system_dic,
+            )
+
+            with open(os.path.join(resource_dir, 'sudachi.json'), encoding='utf-8') as inp:
+                config = json.load(inp)
+            config['systemDict'] = system_dic
+            config.pop('userDict', None)
+            config.pop('path', None)
+            with open(config_path, 'w', encoding='utf-8') as out:
+                json.dump(config, out, ensure_ascii=False)
+
+            tokenizer = Dictionary(config_path, resource_dir).create()
+            m = tokenizer.tokenize('首都旧')[0]
+            nf = m.normalized_form_morpheme()
+            splits = nf.split(SplitMode.A, add_single=True)
+
+            self.assertEqual(nf.surface(), '首都')
+            self.assertEqual(['東京', '都'], [s.surface() for s in splits])
+            self.assertEqual([(0, 2), (2, 3)], [(s.begin(), s.end()) for s in splits])
 
     def test_form_morpheme_for_same_entry(self):
         m = self.tokenizer_obj.tokenize('東京')[0]

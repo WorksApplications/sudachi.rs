@@ -6,6 +6,14 @@ Also check [python changelog](python/CHANGELOG.md).
 
 ## [Unreleased]
 
+### Added
+
+- Add Rust-side morpheme form accessors and standalone morpheme materialization.
+
+### Fixed
+
+- Reject invalid, OOV, and special word IDs in exact-entry morpheme materialization instead of panicking.
+
 ## [0.6.10](https://github.com/WorksApplications/sudachi.rs/releases/tag/v0.6.10) (2025-01-10)
 
 ### Other

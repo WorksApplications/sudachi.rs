@@ -25,6 +25,7 @@ use crate::dic::description::DescriptionError;
 use crate::dic::header::HeaderError;
 use crate::dic::lexicon_set::LexiconSetError;
 use crate::dic::read::error::SudachiNomError;
+use crate::dic::word_id::WordId;
 use crate::plugin::PluginError;
 
 pub type SudachiResult<T> = Result<T, SudachiError>;
@@ -98,6 +99,9 @@ pub enum SudachiError {
 
     #[error("Invalid part of speech: {0}")]
     InvalidPartOfSpeech(String),
+
+    #[error("Invalid word id: {0}")]
+    InvalidWordId(WordId),
 
     #[error("Invalid range: {0}..{1}")]
     InvalidRange(usize, usize),
