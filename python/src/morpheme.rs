@@ -318,7 +318,9 @@ impl PyMorpheme {
                     list.projection.clone(),
                     morpheme.word_id(),
                 ),
-                _ => unreachable!("unhandled Rust morpheme reference variant"),
+                _ => {
+                    return errors::wrap(Err("unsupported Rust morpheme reference variant"));
+                }
             }
         };
 
