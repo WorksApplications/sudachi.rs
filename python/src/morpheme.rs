@@ -511,7 +511,13 @@ impl PyMorpheme {
         match out {
             None => Bound::new(py, PyMorphemeListWrapper::from_singles(splits, projection)),
             Some(cell) => {
-                cell.borrow_mut().replace_with_singles(splits, projection);
+                {
+                    let mut wrapper = match cell.try_borrow_mut() {
+                        Ok(wrapper) => wrapper,
+                        Err(_) => return errors::wrap(Err("out was used twice at the same time")),
+                    };
+                    wrapper.replace_with_singles(splits, projection);
+                }
                 Ok(cell)
             }
         }
