@@ -22,6 +22,7 @@ pub mod connect;
 pub mod description;
 pub mod dictionary;
 mod dictionary_access;
+pub mod error;
 pub mod grammar;
 pub mod header;
 pub mod lexicon;

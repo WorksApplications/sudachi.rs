@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Works Applications Co., Ltd.
+ * Copyright (c) 2021-2026 Works Applications Co., Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ use crate::config::ConfigError;
 use crate::dic::build::error::DicBuildError;
 use crate::dic::character_category::Error as CharacterCategoryError;
 use crate::dic::description::DescriptionError;
+use crate::dic::error::DictionaryCompatibilityError;
 use crate::dic::header::HeaderError;
 use crate::dic::lexicon_set::LexiconSetError;
 use crate::dic::read::error::SudachiNomError;
@@ -108,6 +109,9 @@ pub enum SudachiError {
 
     #[error("No out of vocabulary plugin provided")]
     NoOOVPluginProvided,
+
+    #[error(transparent)]
+    DictionaryCompatibility(#[from] DictionaryCompatibilityError),
 
     #[error("Input is too long, it can't be more than {1} bytes, was {0}")]
     InputTooLong(usize, usize),

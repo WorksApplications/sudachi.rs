@@ -23,6 +23,7 @@ use crate::config::Config;
 use crate::dic::binary_loader::BinaryDictionary;
 use crate::dic::character_category::CharacterCategory;
 use crate::dic::description::Description;
+use crate::dic::error::DictionaryCompatibilityError;
 use crate::dic::grammar::Grammar;
 use crate::dic::lexicon::Lexicon;
 use crate::dic::lexicon_set::LexiconSet;
@@ -89,6 +90,7 @@ impl JapaneseDictionary {
     ) -> SudachiResult<JapaneseDictionary> {
         let system_binary =
             BinaryDictionary::load_system(unsafe { storage.system_static_slice() })?;
+        let system_signature = system_binary.compatibility_key().to_owned();
         let description = system_binary.description.clone();
 
         let mut grammar = Grammar::from_system_binary(system_binary.grammar)?;
@@ -115,8 +117,17 @@ impl JapaneseDictionary {
 
         // this Vec is needed to prevent double borrowing of dic
         let user_dicts: Vec<_> = dic.storage.user_static_slice();
-        for udic in user_dicts {
-            dic = dic.merge_user_dictionary(udic)?;
+        for (user_index, udic) in user_dicts.into_iter().enumerate() {
+            let user_dict = BinaryDictionary::load_user(udic)?;
+            if user_dict.compatibility_key() != system_signature {
+                return Err(DictionaryCompatibilityError::UserDictionary {
+                    user_index,
+                    system_signature: system_signature.clone(),
+                    user_reference: user_dict.compatibility_key().to_owned(),
+                }
+                .into());
+            }
+            dic = dic.merge_user_dictionary(user_dict)?;
         }
 
         Ok(dic)
@@ -155,9 +166,10 @@ impl JapaneseDictionary {
         &self.description
     }
 
-    fn merge_user_dictionary(mut self, dictionary_bytes: &'static [u8]) -> SudachiResult<Self> {
-        let user_dict = BinaryDictionary::load_user(dictionary_bytes)?;
-
+    fn merge_user_dictionary(
+        mut self,
+        user_dict: BinaryDictionary<'static>,
+    ) -> SudachiResult<Self> {
         // we need to update lexicon first, since it needs the current number of pos
         let mut user_lexicon = Lexicon::from_binary(user_dict.lexicon);
         user_lexicon.update_cost(&self)?;
