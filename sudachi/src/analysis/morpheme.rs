@@ -23,6 +23,7 @@ use crate::dic::word_info::{WordInfo, WordInfoData, WordInfoResolver};
 use crate::dic::{DictionaryAccess, LexiconAccess};
 use crate::error::{SudachiError, SudachiResult};
 use crate::input_text::InputTextIndex;
+use std::borrow::Cow;
 use std::cell::Ref;
 use std::fmt::{Debug, Display, Formatter};
 use std::ops::Deref;
@@ -80,6 +81,9 @@ pub trait MorphemeView: private::Sealed {
 
     #[doc(hidden)]
     fn dict(&self) -> &Self::Dictionary;
+
+    #[doc(hidden)]
+    fn subset(&self) -> InfoSubset;
 
     /// Returns the begin index in bytes of the morpheme.
     fn begin(&self) -> usize;
@@ -144,7 +148,10 @@ pub trait MorphemeView: private::Sealed {
     /// are `0..surface.len()` in bytes and `0..surface.chars().count()` in
     /// codepoints.
     #[allow(clippy::result_large_err)]
-    fn dictionary_form_morpheme(&self) -> SudachiResult<MorphemeRef<'_, Self::Dictionary>> {
+    fn dictionary_form_morpheme(&self) -> SudachiResult<MorphemeRef<'_, Self::Dictionary>>
+    where
+        Self::Dictionary: Clone,
+    {
         resolve_referenced_form_morpheme(
             self,
             InfoSubset::DICTIONARY_FORM,
@@ -171,7 +178,10 @@ pub trait MorphemeView: private::Sealed {
     /// are `0..surface.len()` in bytes and `0..surface.chars().count()` in
     /// codepoints.
     #[allow(clippy::result_large_err)]
-    fn normalized_form_morpheme(&self) -> SudachiResult<MorphemeRef<'_, Self::Dictionary>> {
+    fn normalized_form_morpheme(&self) -> SudachiResult<MorphemeRef<'_, Self::Dictionary>>
+    where
+        Self::Dictionary: Clone,
+    {
         resolve_referenced_form_morpheme(
             self,
             InfoSubset::NORMALIZED_FORM,
@@ -230,11 +240,12 @@ pub(crate) fn validate_dictionary_word_id<D: DictionaryAccess>(
 #[allow(clippy::result_large_err)]
 fn resolve_referenced_form_morpheme<'a, M, F>(
     morpheme: &'a M,
-    subset: InfoSubset,
+    reference_subset: InfoSubset,
     form_word_id: F,
 ) -> SudachiResult<MorphemeRef<'a, M::Dictionary>>
 where
     M: MorphemeView + ?Sized,
+    M::Dictionary: Clone,
     F: FnOnce(&WordInfoData) -> WordId,
 {
     let word_id = morpheme.word_id();
@@ -245,7 +256,7 @@ where
     let word_info = morpheme
         .dict()
         .lexicon()
-        .get_word_info_subset(word_id, subset)?;
+        .get_word_info_subset(word_id, reference_subset)?;
     let form_word_id = form_word_id(word_info.borrow_data());
     if form_word_id == WordId::INVALID
         || form_word_id == word_id
@@ -255,7 +266,9 @@ where
         return Ok(morpheme.self_morpheme());
     }
 
-    SingleMorpheme::from_word_id(morpheme.dict(), form_word_id, InfoSubset::all())
+    let materialized_subset = (morpheme.subset() | InfoSubset::HEADWORD).normalize();
+
+    SingleMorpheme::from_word_id(morpheme.dict().clone(), form_word_id, materialized_subset)
         .map(Box::new)
         .map(MorphemeRef::Single)
 }
@@ -338,7 +351,10 @@ impl<'a, D: DictionaryAccess> Morpheme<'a, D> {
 
     /// Returns the morpheme corresponding to this morpheme's dictionary form.
     #[allow(clippy::result_large_err)]
-    pub fn dictionary_form_morpheme(&self) -> SudachiResult<MorphemeRef<'_, D>> {
+    pub fn dictionary_form_morpheme(&self) -> SudachiResult<MorphemeRef<'_, D>>
+    where
+        D: Clone,
+    {
         <Self as MorphemeView>::dictionary_form_morpheme(self)
     }
 
@@ -352,7 +368,10 @@ impl<'a, D: DictionaryAccess> Morpheme<'a, D> {
 
     /// Returns the morpheme corresponding to this morpheme's normalized form.
     #[allow(clippy::result_large_err)]
-    pub fn normalized_form_morpheme(&self) -> SudachiResult<MorphemeRef<'_, D>> {
+    pub fn normalized_form_morpheme(&self) -> SudachiResult<MorphemeRef<'_, D>>
+    where
+        D: Clone,
+    {
         <Self as MorphemeView>::normalized_form_morpheme(self)
     }
 
@@ -421,6 +440,10 @@ impl<D: DictionaryAccess> MorphemeView for Morpheme<'_, D> {
         self.list.dict()
     }
 
+    fn subset(&self) -> InfoSubset {
+        self.list.subset()
+    }
+
     fn begin(&self) -> usize {
         Morpheme::begin(self)
     }
@@ -467,22 +490,24 @@ impl<D: DictionaryAccess> Debug for Morpheme<'_, D> {
 }
 
 /// A standalone morpheme materialized from a single dictionary entry.
-pub struct SingleMorpheme<'a, D> {
-    dict: &'a D,
+pub struct SingleMorpheme<D> {
+    dict: D,
     word_id: WordId,
     word_info: WordInfo,
+    subset: InfoSubset,
     begin: usize,
     end: usize,
     begin_c: usize,
     end_c: usize,
 }
 
-impl<D> Clone for SingleMorpheme<'_, D> {
+impl<D: Clone> Clone for SingleMorpheme<D> {
     fn clone(&self) -> Self {
         Self {
-            dict: self.dict,
+            dict: self.dict.clone(),
             word_id: self.word_id,
             word_info: self.word_info.clone(),
+            subset: self.subset,
             begin: self.begin,
             end: self.end,
             begin_c: self.begin_c,
@@ -491,14 +516,15 @@ impl<D> Clone for SingleMorpheme<'_, D> {
     }
 }
 
-impl<'a, D: DictionaryAccess> SingleMorpheme<'a, D> {
+impl<D: DictionaryAccess> SingleMorpheme<D> {
     /// Creates a standalone morpheme for the exact dictionary entry.
     ///
     /// The entry is resolved by `WordId`, not by surface lookup, so homograph
-    /// identity is preserved.
+    /// identity is preserved. `HEADWORD` is always loaded because standalone
+    /// offsets and surface are based on the dictionary headword.
     #[allow(clippy::result_large_err)]
-    pub fn from_word_id(dict: &'a D, word_id: WordId, subset: InfoSubset) -> SudachiResult<Self> {
-        validate_dictionary_word_id(dict, word_id)?;
+    pub fn from_word_id(dict: D, word_id: WordId, subset: InfoSubset) -> SudachiResult<Self> {
+        validate_dictionary_word_id(&dict, word_id)?;
         let subset = (subset | InfoSubset::HEADWORD).normalize();
         let word_info = dict.lexicon().get_word_info_subset(word_id, subset)?;
         let surface = word_info.headword(dict.lexicon());
@@ -509,6 +535,7 @@ impl<'a, D: DictionaryAccess> SingleMorpheme<'a, D> {
             dict,
             word_id,
             word_info,
+            subset,
             begin: 0,
             end,
             begin_c: 0,
@@ -516,9 +543,12 @@ impl<'a, D: DictionaryAccess> SingleMorpheme<'a, D> {
         })
     }
 
-    /// Returns the part of speech.
-    pub fn part_of_speech(&self) -> &[String] {
-        <Self as MorphemeView>::part_of_speech(self)
+    pub(crate) fn subset(&self) -> InfoSubset {
+        self.subset
+    }
+
+    pub(crate) fn dict(&self) -> &D {
+        &self.dict
     }
 
     /// Returns the begin index in bytes of this standalone morpheme.
@@ -546,37 +576,78 @@ impl<'a, D: DictionaryAccess> SingleMorpheme<'a, D> {
         self.word_info.headword(self.dict.lexicon())
     }
 
+    /// Returns the word id of morpheme.
+    pub fn word_id(&self) -> WordId {
+        self.word_id
+    }
+
+    pub fn get_word_info(&self) -> &WordInfo {
+        &self.word_info
+    }
+}
+
+impl<D: DictionaryAccess + Clone> SingleMorpheme<D> {
+    /// Returns the part of speech.
+    pub fn part_of_speech(&self) -> &[String] {
+        <Self as MorphemeView>::part_of_speech(self)
+    }
+
     /// Returns standalone sub-morphemes for the requested split mode.
     ///
     /// When the dictionary entry has no splits for the mode, returns a clone of
-    /// this morpheme. Offsets are assigned by advancing over each split
-    /// surface, matching Java's standalone morpheme behavior.
+    /// this morpheme. Split metadata is loaded on demand when it was not part
+    /// of the original subset, while returned morphemes still use the original
+    /// subset. Offsets match Java's standalone morpheme behavior: a single
+    /// replacement split preserves this morpheme's span, while multi-splits
+    /// advance over each split surface.
     #[allow(clippy::result_large_err)]
-    pub fn split(&self, mode: Mode) -> SudachiResult<Vec<SingleMorpheme<'a, D>>> {
-        let subset = match mode {
+    pub fn split(&self, mode: Mode) -> SudachiResult<Vec<SingleMorpheme<D>>> {
+        let split_subset = match mode {
             Mode::A => InfoSubset::SPLIT_A,
             Mode::B => InfoSubset::SPLIT_B,
             Mode::C => return Ok(vec![self.clone()]),
         };
-        let word_info = self
-            .dict
-            .lexicon()
-            .get_word_info_subset(self.word_id, subset.normalize())?;
-        let splits = match mode {
-            Mode::A => word_info.a_unit_split(),
-            Mode::B => word_info.b_unit_split(),
-            Mode::C => unreachable!(),
+
+        let word_info = if self.subset.contains(split_subset) {
+            Cow::Borrowed(&self.word_info)
+        } else {
+            Cow::Owned(
+                self.dict
+                    .lexicon()
+                    .get_word_info_subset(self.word_id, (self.subset | split_subset).normalize())?,
+            )
+        };
+
+        let splits = if mode == Mode::A {
+            word_info.a_unit_split()
+        } else {
+            word_info.b_unit_split()
         };
 
         if splits.is_empty() {
             return Ok(vec![self.clone()]);
         }
 
+        if let [word_id] = splits {
+            if *word_id == self.word_id {
+                return Ok(vec![self.clone()]);
+            }
+
+            let mut morpheme =
+                SingleMorpheme::from_word_id(self.dict.clone(), *word_id, self.subset)?;
+            morpheme.begin = self.begin;
+            morpheme.end = self.end;
+            morpheme.begin_c = self.begin_c;
+            morpheme.end_c = self.end_c;
+            return Ok(vec![morpheme]);
+        }
+
         let mut result = Vec::with_capacity(splits.len());
         let mut begin = self.begin;
         let mut begin_c = self.begin_c;
         for &word_id in splits {
-            let mut morpheme = SingleMorpheme::from_word_id(self.dict, word_id, InfoSubset::all())?;
+            let mut morpheme =
+                SingleMorpheme::from_word_id(self.dict.clone(), word_id, self.subset)?;
             let end = begin + morpheme.surface().len();
             let end_c = begin_c + morpheme.surface().chars().count();
             morpheme.begin = begin;
@@ -627,11 +698,6 @@ impl<'a, D: DictionaryAccess> SingleMorpheme<'a, D> {
         <Self as MorphemeView>::is_oov(self)
     }
 
-    /// Returns the word id of morpheme.
-    pub fn word_id(&self) -> WordId {
-        self.word_id
-    }
-
     /// Returns the dictionary id where the morpheme belongs.
     pub fn dictionary_id(&self) -> i32 {
         <Self as MorphemeView>::dictionary_id(self)
@@ -645,19 +711,19 @@ impl<'a, D: DictionaryAccess> SingleMorpheme<'a, D> {
     pub fn user_data(&self) -> &str {
         <Self as MorphemeView>::user_data(self)
     }
-
-    pub fn get_word_info(&self) -> &WordInfo {
-        &self.word_info
-    }
 }
 
-impl<D> private::Sealed for SingleMorpheme<'_, D> {}
+impl<D> private::Sealed for SingleMorpheme<D> {}
 
-impl<D: DictionaryAccess> MorphemeView for SingleMorpheme<'_, D> {
+impl<D: DictionaryAccess + Clone> MorphemeView for SingleMorpheme<D> {
     type Dictionary = D;
 
     fn dict(&self) -> &D {
-        self.dict
+        &self.dict
+    }
+
+    fn subset(&self) -> InfoSubset {
+        self.subset
     }
 
     fn begin(&self) -> usize {
@@ -693,7 +759,7 @@ impl<D: DictionaryAccess> MorphemeView for SingleMorpheme<'_, D> {
     }
 }
 
-impl<D: DictionaryAccess> Debug for SingleMorpheme<'_, D> {
+impl<D: DictionaryAccess + Clone> Debug for SingleMorpheme<D> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("SingleMorpheme")
             .field("surface", &self.surface())
@@ -709,10 +775,10 @@ impl<D: DictionaryAccess> Debug for SingleMorpheme<'_, D> {
 #[non_exhaustive]
 pub enum MorphemeRef<'a, D> {
     ListItem(Morpheme<'a, D>),
-    Single(Box<SingleMorpheme<'a, D>>),
+    Single(Box<SingleMorpheme<D>>),
 }
 
-impl<D> Clone for MorphemeRef<'_, D> {
+impl<D: Clone> Clone for MorphemeRef<'_, D> {
     fn clone(&self) -> Self {
         match self {
             MorphemeRef::ListItem(m) => MorphemeRef::ListItem(*m),
@@ -721,7 +787,7 @@ impl<D> Clone for MorphemeRef<'_, D> {
     }
 }
 
-impl<D: DictionaryAccess> MorphemeRef<'_, D> {
+impl<D: DictionaryAccess + Clone> MorphemeRef<'_, D> {
     /// Returns user-defined data associated with this morpheme.
     pub fn user_data(&self) -> &str {
         <Self as MorphemeView>::user_data(self)
@@ -730,13 +796,20 @@ impl<D: DictionaryAccess> MorphemeRef<'_, D> {
 
 impl<D> private::Sealed for MorphemeRef<'_, D> {}
 
-impl<D: DictionaryAccess> MorphemeView for MorphemeRef<'_, D> {
+impl<D: DictionaryAccess + Clone> MorphemeView for MorphemeRef<'_, D> {
     type Dictionary = D;
 
     fn dict(&self) -> &D {
         match self {
             MorphemeRef::ListItem(m) => m.dict(),
             MorphemeRef::Single(m) => m.dict(),
+        }
+    }
+
+    fn subset(&self) -> InfoSubset {
+        match self {
+            MorphemeRef::ListItem(m) => m.subset(),
+            MorphemeRef::Single(m) => m.subset(),
         }
     }
 
@@ -794,7 +867,7 @@ impl<D: DictionaryAccess> MorphemeView for MorphemeRef<'_, D> {
     }
 }
 
-impl<D: DictionaryAccess> Debug for MorphemeRef<'_, D> {
+impl<D: DictionaryAccess + Clone> Debug for MorphemeRef<'_, D> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             MorphemeRef::ListItem(m) => Debug::fmt(m, f),

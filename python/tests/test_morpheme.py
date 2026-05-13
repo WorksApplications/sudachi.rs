@@ -157,10 +157,22 @@ class TestTokenizer(unittest.TestCase):
             m = tokenizer.tokenize('首都旧')[0]
             nf = m.normalized_form_morpheme()
             splits = nf.split(SplitMode.A, add_single=True)
+            out = self.tokenizer_obj.tokenize('東京都', SplitMode.C)[0].split(
+                SplitMode.A)
+            out_result = nf.split(SplitMode.A, out=out, add_single=True)
+            surface_tokenizer = Dictionary(config_path, resource_dir).create(
+                fields={'surface'})
+            surface_nf = surface_tokenizer.tokenize(
+                '首都旧')[0].normalized_form_morpheme()
+            surface_splits = surface_nf.split(SplitMode.A, add_single=True)
 
             self.assertEqual(nf.surface(), '首都')
             self.assertEqual(['東京', '都'], [s.surface() for s in splits])
             self.assertEqual([(0, 2), (2, 3)], [(s.begin(), s.end()) for s in splits])
+            self.assertIs(out_result, out)
+            self.assertEqual(['東京', '都'], [s.surface() for s in out_result])
+            self.assertEqual(['東京', '都'], [
+                s.surface() for s in surface_splits])
 
     def test_form_morpheme_for_same_entry(self):
         m = self.tokenizer_obj.tokenize('東京')[0]
@@ -186,8 +198,19 @@ class TestTokenizer(unittest.TestCase):
         self.assertEqual(nf.raw_surface(), m.raw_surface())
         self.assertEqual(nf.surface(), m.surface())
 
-    def test_form_morpheme_with_field_subset(self):
+    def test_form_morpheme_with_surface_subset(self):
         tokenizer = self.dict_.create(fields={'surface'})
+        m = tokenizer.tokenize('行っ')[0]
+        df = m.dictionary_form_morpheme()
+        nf = m.normalized_form_morpheme()
+
+        self.assertEqual(df.surface(), '行く')
+        self.assertEqual(nf.surface(), '行く')
+        self.assertEqual(df.raw_surface(), '行く')
+        self.assertEqual(nf.raw_surface(), '行く')
+
+    def test_form_morpheme_with_reading_subset(self):
+        tokenizer = self.dict_.create(fields={'surface', 'reading_form'})
         m = tokenizer.tokenize('行っ')[0]
         df = m.dictionary_form_morpheme()
         nf = m.normalized_form_morpheme()
@@ -196,6 +219,50 @@ class TestTokenizer(unittest.TestCase):
         self.assertEqual(nf.surface(), '行く')
         self.assertEqual(df.reading_form(), 'イク')
         self.assertEqual(nf.reading_form(), 'イク')
+
+    def test_single_backed_form_morpheme_uses_projection(self):
+        tokenizer = self.dict_.create(projection='reading')
+        m = tokenizer.tokenize('行っ')[0]
+        df = m.dictionary_form_morpheme()
+
+        self.assertEqual(df.raw_surface(), '行く')
+        self.assertEqual(df.surface(), 'イク')
+
+    def test_single_backed_form_morpheme_can_chain_form_accessors(self):
+        m = self.tokenizer_obj.tokenize('いっ')[0]
+        nf = m.normalized_form_morpheme()
+        df = nf.dictionary_form_morpheme()
+
+        self.assertEqual(nf.word_id(), df.word_id())
+        self.assertEqual(df.raw_surface(), '行く')
+        self.assertEqual(df.surface(), '行く')
+        self.assertEqual(df.dictionary_form(), '行く')
+
+    def test_single_backed_morpheme_list_protocol(self):
+        m = self.tokenizer_obj.tokenize('いっ')[0]
+        nf = m.normalized_form_morpheme()
+        result = nf.split(SplitMode.A, add_single=True)
+
+        self.assertEqual(1, len(result))
+        self.assertEqual('行く', result[0].surface())
+        self.assertEqual('行く', result[-1].surface())
+        self.assertEqual('行く', str(result))
+        self.assertIn('<Morpheme(行く, 0:2, ', repr(result))
+
+        with self.assertRaisesRegex(
+                Exception,
+                'standalone morpheme lists do not have a lattice path cost'):
+            result.get_internal_cost()
+
+    def test_single_backed_morpheme_list_can_be_reused_as_tokenize_out(self):
+        m = self.tokenizer_obj.tokenize('いっ')[0]
+        nf = m.normalized_form_morpheme()
+        out = nf.split(SplitMode.A, add_single=True)
+
+        result = self.tokenizer_obj.tokenize('東京', out=out)
+
+        self.assertIs(result, out)
+        self.assertEqual(['東京'], [m.surface() for m in result])
 
     def test_form_morpheme_oov_returns_self_equivalent(self):
         for m in self.tokenizer_obj.tokenize('xyzzy123不在語'):

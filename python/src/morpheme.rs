@@ -23,9 +23,9 @@ use pyo3::ffi::c_str;
 use pyo3::prelude::*;
 use pyo3::types::{PyList, PyString, PyTuple, PyType};
 
-use sudachi::dic::subset::InfoSubset;
-use sudachi::dic::word_id::WordId;
-use sudachi::prelude::{Morpheme, MorphemeList, MorphemeRef as RustMorphemeRef, SingleMorpheme};
+use sudachi::prelude::{
+    Morpheme, MorphemeList, MorphemeRef as RustMorphemeRef, MorphemeView, SingleMorpheme,
+};
 
 use crate::dictionary::{extract_mode, PyDicData, PyDictionary};
 use crate::errors;
@@ -33,14 +33,18 @@ use crate::projection::{MorphemeProjection, PyProjector};
 
 pub(crate) type PyMorphemeList = MorphemeList<Arc<PyDicData>>;
 
+enum PyMorphemeListBacking {
+    List(PyMorphemeList),
+    Singles(Vec<SingleMorpheme<Arc<PyDicData>>>),
+}
+
 /// A list of morphemes.
 ///
 /// An object can not be instantiated manually.
 /// Use Tokenizer.tokenize("") to create an empty morpheme list.
 #[pyclass(module = "sudachipy.morphemelist", name = "MorphemeList")]
 pub struct PyMorphemeListWrapper {
-    /// use `internal()` function instead
-    inner: PyMorphemeList,
+    inner: PyMorphemeListBacking,
     projection: PyProjector,
 }
 
@@ -53,14 +57,24 @@ impl PyMorphemeListWrapper {
     pub(crate) fn new(dict: Arc<PyDicData>) -> Self {
         let proj = dict.projection.clone();
         Self {
-            inner: PyMorphemeList::empty(dict),
+            inner: PyMorphemeListBacking::List(PyMorphemeList::empty(dict)),
             projection: proj,
         }
     }
 
     pub(crate) fn from_components(list: PyMorphemeList, projection: PyProjector) -> Self {
         Self {
-            inner: list,
+            inner: PyMorphemeListBacking::List(list),
+            projection,
+        }
+    }
+
+    pub(crate) fn from_singles(
+        singles: Vec<SingleMorpheme<Arc<PyDicData>>>,
+        projection: PyProjector,
+    ) -> Self {
+        Self {
+            inner: PyMorphemeListBacking::Singles(singles),
             projection,
         }
     }
@@ -72,23 +86,49 @@ impl PyMorphemeListWrapper {
         }
     }
 
-    /// Borrow internals mutable. GIL token proves access.
-    pub(crate) fn internal_mut(&mut self, _py: Python) -> &mut PyMorphemeList {
-        &mut self.inner
-    }
-
-    /// Borrow internals immutable. GIL token proves access.
-    #[inline]
-    pub(crate) fn internal(&self, _py: Python) -> &PyMorphemeList {
-        &self.inner
-    }
-
-    /// Create a copy with empty list of Nodes. GIL token proves access.
-    pub(crate) fn empty_clone(&self, _py: Python) -> Self {
-        Self {
-            inner: self.inner.empty_clone(),
-            projection: self.projection.clone(),
+    pub(crate) fn as_list(&self) -> PyResult<&PyMorphemeList> {
+        match &self.inner {
+            PyMorphemeListBacking::List(list) => Ok(list),
+            PyMorphemeListBacking::Singles(_) => errors::wrap(Err::<&PyMorphemeList, _>(
+                "expected analyzed MorphemeList, got standalone morphemes",
+            )),
         }
+    }
+
+    pub(crate) fn replace_with_empty_list(
+        &mut self,
+        dict: Arc<PyDicData>,
+        projection: PyProjector,
+    ) -> PyResult<&mut PyMorphemeList> {
+        self.projection = projection;
+        self.inner = PyMorphemeListBacking::List(PyMorphemeList::empty(dict));
+
+        match &mut self.inner {
+            PyMorphemeListBacking::List(list) => Ok(list),
+            PyMorphemeListBacking::Singles(_) => errors::wrap(Err::<&mut PyMorphemeList, _>(
+                "failed to install analyzed MorphemeList backing",
+            )),
+        }
+    }
+
+    pub(crate) fn replace_with_singles(
+        &mut self,
+        singles: Vec<SingleMorpheme<Arc<PyDicData>>>,
+        projection: PyProjector,
+    ) {
+        self.projection = projection;
+        self.inner = PyMorphemeListBacking::Singles(singles);
+    }
+
+    fn len_internal(&self) -> usize {
+        match &self.inner {
+            PyMorphemeListBacking::List(list) => list.len(),
+            PyMorphemeListBacking::Singles(items) => items.len(),
+        }
+    }
+
+    fn is_empty_internal(&self) -> bool {
+        self.len_internal() == 0
     }
 }
 
@@ -109,21 +149,26 @@ impl PyMorphemeListWrapper {
         let cloned = dict.dictionary.as_ref().unwrap().clone();
         let proj = cloned.projection.clone();
         Ok(Self {
-            inner: PyMorphemeList::empty(cloned),
+            inner: PyMorphemeListBacking::List(PyMorphemeList::empty(cloned)),
             projection: proj,
         })
     }
 
     /// Returns the total cost of the path.
     #[pyo3(text_signature = "(self, /) -> int")]
-    fn get_internal_cost(&self, py: Python) -> i32 {
-        self.internal(py).get_internal_cost()
+    fn get_internal_cost(&self, _py: Python) -> PyResult<i32> {
+        match &self.inner {
+            PyMorphemeListBacking::List(list) => Ok(list.get_internal_cost()),
+            PyMorphemeListBacking::Singles(_) => errors::wrap(Err(
+                "standalone morpheme lists do not have a lattice path cost",
+            )),
+        }
     }
 
     /// Returns the number of morpheme in this list.
     #[pyo3(text_signature = "(self, /) -> int")]
-    fn size(&self, py: Python) -> usize {
-        self.internal(py).len()
+    fn size(&self, _py: Python) -> usize {
+        self.len_internal()
     }
 
     fn __len__(&self, py: Python) -> usize {
@@ -131,41 +176,60 @@ impl PyMorphemeListWrapper {
     }
 
     fn __getitem__(slf: Bound<PyMorphemeListWrapper>, mut idx: isize) -> PyResult<PyMorpheme> {
-        let list = slf.borrow();
-        let py = slf.py();
-        let len = list.size(py) as isize;
-
-        if idx < 0 {
-            // negative indexing
-            idx += len;
+        enum Item {
+            List(usize),
+            Single(SingleMorpheme<Arc<PyDicData>>, PyProjector),
         }
 
-        if idx < 0 || len <= idx {
-            return Err(PyIndexError::new_err(format!(
-                "MorphemeList index out of range: the len is {} but the index is {}",
-                list.size(py),
-                idx
-            )));
+        let item = {
+            let list = slf.borrow();
+            let len = list.len_internal() as isize;
+
+            if idx < 0 {
+                // negative indexing
+                idx += len;
+            }
+
+            if idx < 0 || len <= idx {
+                return Err(PyIndexError::new_err(format!(
+                    "MorphemeList index out of range: the len is {} but the index is {}",
+                    len, idx
+                )));
+            }
+
+            let idx = idx as usize;
+            match &list.inner {
+                PyMorphemeListBacking::List(_) => Item::List(idx),
+                PyMorphemeListBacking::Singles(items) => {
+                    Item::Single(items[idx].clone(), list.projection.clone())
+                }
+            }
+        };
+
+        match item {
+            Item::List(idx) => {
+                let py_list: Py<PyMorphemeListWrapper> = slf.into();
+                Ok(PyMorpheme::list_backed(py_list, idx))
+            }
+            Item::Single(morpheme, projection) => {
+                Ok(PyMorpheme::single_backed(morpheme, projection))
+            }
         }
-
-        let py_list: Py<PyMorphemeListWrapper> = slf.into();
-
-        Ok(PyMorpheme {
-            list: py_list,
-            index: idx as usize,
-            standalone_word_id: None,
-        })
     }
 
     fn __str__<'py>(&'py self, py: Python<'py>) -> Bound<'py, PyString> {
-        // do a simple tokenization __str__
-        let list = self.internal(py);
-        let mut result = String::with_capacity(list.surface().len() * 2);
-        let nmorphs = list.len();
-        for (i, m) in list.iter().enumerate() {
-            result.push_str(m.surface().deref());
-            if i + 1 != nmorphs {
+        let mut result = String::new();
+        for i in 0..self.len_internal() {
+            if i > 0 {
                 result.push(' ');
+            }
+            match &self.inner {
+                PyMorphemeListBacking::List(list) => {
+                    result.push_str(list.get(i).surface().deref());
+                }
+                PyMorphemeListBacking::Singles(items) => {
+                    result.push_str(items[i].surface());
+                }
             }
         }
         PyString::new(py, result.as_str())
@@ -173,18 +237,18 @@ impl PyMorphemeListWrapper {
 
     fn __repr__(slf: Py<PyMorphemeListWrapper>, py: Python) -> PyResult<Bound<PyString>> {
         let self_ref = slf.borrow(py);
-        let list = self_ref.internal(py);
-        let mut result = String::with_capacity(list.surface().len() * 10);
+        let mut result = String::new();
         result.push_str("<MorphemeList[\n");
-        let nmorphs = list.len();
+        let nmorphs = self_ref.len_internal();
         for i in 0..nmorphs {
             result.push_str("  ");
-            let pymorph = PyMorpheme {
-                list: slf.clone_ref(py),
-                index: i,
-                standalone_word_id: None,
+            let pymorph = match &self_ref.inner {
+                PyMorphemeListBacking::List(_) => PyMorpheme::list_backed(slf.clone_ref(py), i),
+                PyMorphemeListBacking::Singles(items) => {
+                    PyMorpheme::single_backed(items[i].clone(), self_ref.projection.clone())
+                }
             };
-            errors::wrap_ctx(pymorph.write_repr(py, &mut result), "format failed")?;
+            pymorph.write_repr(py, &mut result)?;
             result.push_str(",\n");
         }
         result.push_str("]>");
@@ -198,8 +262,8 @@ impl PyMorphemeListWrapper {
         }
     }
 
-    fn __bool__(&self, py: Python) -> bool {
-        !self.internal(py).is_empty()
+    fn __bool__(&self, _py: Python) -> bool {
+        !self.is_empty_internal()
     }
 }
 
@@ -217,18 +281,32 @@ impl PyMorphemeIter {
     }
 
     fn __next__(&mut self, py: Python) -> Option<PyMorpheme> {
-        if self.index >= self.list.borrow(py).size(py) {
-            return None;
+        enum Item {
+            List(usize),
+            Single(SingleMorpheme<Arc<PyDicData>>, PyProjector),
         }
 
-        let morpheme = PyMorpheme {
-            list: self.list.clone_ref(py),
-            index: self.index,
-            standalone_word_id: None,
+        let item = {
+            let list = self.list.borrow(py);
+            if self.index >= list.len_internal() {
+                return None;
+            }
+
+            match &list.inner {
+                PyMorphemeListBacking::List(_) => Item::List(self.index),
+                PyMorphemeListBacking::Singles(items) => {
+                    Item::Single(items[self.index].clone(), list.projection.clone())
+                }
+            }
         };
 
         self.index += 1;
-        Some(morpheme)
+        match item {
+            Item::List(index) => Some(PyMorpheme::list_backed(self.list.clone_ref(py), index)),
+            Item::Single(morpheme, projection) => {
+                Some(PyMorpheme::single_backed(morpheme, projection))
+            }
+        }
     }
 }
 
@@ -248,12 +326,21 @@ impl<'py> Deref for MorphemeBorrow<'py> {
     }
 }
 
+enum PyMorphemeBacking {
+    List {
+        list: Py<PyMorphemeListWrapper>,
+        index: usize,
+    },
+    Single {
+        morpheme: SingleMorpheme<Arc<PyDicData>>,
+        projection: PyProjector,
+    },
+}
+
 /// A morpheme (basic semantic unit of language).
 #[pyclass(module = "sudachipy.morpheme", name = "Morpheme", frozen)]
 pub struct PyMorpheme {
-    list: Py<PyMorphemeListWrapper>,
-    index: usize,
-    standalone_word_id: Option<WordId>,
+    backing: PyMorphemeBacking,
 }
 
 #[derive(Clone, Copy)]
@@ -263,36 +350,87 @@ enum FormMorphemeKind {
 }
 
 impl PyMorpheme {
-    fn list<'py>(&'py self, py: Python<'py>) -> PyRef<'py, PyMorphemeListWrapper> {
-        self.list.borrow(py)
+    fn list_backed(list: Py<PyMorphemeListWrapper>, index: usize) -> Self {
+        Self {
+            backing: PyMorphemeBacking::List { list, index },
+        }
     }
 
-    fn morph<'py>(&'py self, py: Python<'py>) -> MorphemeBorrow<'py> {
-        let list = self.list(py);
+    fn single_backed(morpheme: SingleMorpheme<Arc<PyDicData>>, projection: PyProjector) -> Self {
+        Self {
+            backing: PyMorphemeBacking::Single {
+                morpheme,
+                projection,
+            },
+        }
+    }
+
+    fn borrow_morpheme<'py>(
+        list: &'py Py<PyMorphemeListWrapper>,
+        py: Python<'py>,
+        index: usize,
+    ) -> PyResult<MorphemeBorrow<'py>> {
+        let list = list.borrow(py);
         // workaround for self-referential structs
-        let morph = unsafe { std::mem::transmute(list.internal(py).get(self.index)) };
-        MorphemeBorrow { list, morph }
+        let morph = unsafe { std::mem::transmute(list.as_list()?.get(index)) };
+        Ok(MorphemeBorrow { list, morph })
     }
 
-    fn write_repr<'py, W: Write>(&'py self, py: Python<'py>, out: &mut W) -> std::fmt::Result {
+    fn write_repr<'py, W: Write>(&'py self, py: Python<'py>, out: &mut W) -> PyResult<()> {
         // per https://github.com/WorksApplications/SudachiPy/pull/166#issuecomment-932043063
-        let mrp = self.morph(py);
-        let surf = mrp.surface();
-        write!(
-            out,
-            "<Morpheme({}, {}:{}, {})>",
-            surf.deref(),
-            mrp.begin_c(),
-            mrp.end_c(),
-            mrp.word_id()
-        )
+        match &self.backing {
+            PyMorphemeBacking::List { list, index } => {
+                let mrp = Self::borrow_morpheme(list, py, *index)?;
+                let surf = mrp.surface();
+                errors::wrap_ctx(
+                    write!(
+                        out,
+                        "<Morpheme({}, {}:{}, {})>",
+                        surf.deref(),
+                        mrp.begin_c(),
+                        mrp.end_c(),
+                        mrp.word_id()
+                    ),
+                    "format failed",
+                )
+            }
+            PyMorphemeBacking::Single { morpheme, .. } => errors::wrap_ctx(
+                write!(
+                    out,
+                    "<Morpheme({}, {}:{}, {})>",
+                    morpheme.surface(),
+                    morpheme.begin_c(),
+                    morpheme.end_c(),
+                    morpheme.word_id()
+                ),
+                "format failed",
+            ),
+        }
     }
 
     fn self_equivalent(&self, py: Python<'_>) -> PyMorpheme {
-        PyMorpheme {
-            list: self.list.clone_ref(py),
-            index: self.index,
-            standalone_word_id: self.standalone_word_id,
+        match &self.backing {
+            PyMorphemeBacking::List { list, index } => {
+                PyMorpheme::list_backed(list.clone_ref(py), *index)
+            }
+            PyMorphemeBacking::Single {
+                morpheme,
+                projection,
+            } => PyMorpheme::single_backed(morpheme.clone(), projection.clone()),
+        }
+    }
+
+    fn with_morpheme<'py, R>(
+        &'py self,
+        py: Python<'py>,
+        f: impl for<'m> FnOnce(&'m dyn MorphemeView<Dictionary = Arc<PyDicData>>) -> R,
+    ) -> PyResult<R> {
+        match &self.backing {
+            PyMorphemeBacking::List { list, index } => {
+                let mrp = Self::borrow_morpheme(list, py, *index)?;
+                Ok(f(mrp.deref()))
+            }
+            PyMorphemeBacking::Single { morpheme, .. } => Ok(f(morpheme)),
         }
     }
 
@@ -302,94 +440,143 @@ impl PyMorpheme {
         kind: FormMorphemeKind,
         context: &str,
     ) -> PyResult<PyMorpheme> {
-        let (dict, projection, form_word_id) = {
-            let list = self.list(py);
-            let internal = list.internal(py);
-            let morph = internal.get(self.index);
-            let form_morpheme = match kind {
-                FormMorphemeKind::Dictionary => morph.dictionary_form_morpheme(),
-                FormMorphemeKind::Normalized => morph.normalized_form_morpheme(),
-            };
+        match &self.backing {
+            PyMorphemeBacking::List { list, index } => {
+                let morph = Self::borrow_morpheme(list, py, *index)?;
+                let form_morpheme = match kind {
+                    FormMorphemeKind::Dictionary => morph.dictionary_form_morpheme(),
+                    FormMorphemeKind::Normalized => morph.normalized_form_morpheme(),
+                };
 
-            match errors::wrap_ctx(form_morpheme, context)? {
-                RustMorphemeRef::ListItem(_) => return Ok(self.self_equivalent(py)),
-                RustMorphemeRef::Single(morpheme) => (
-                    internal.dict().clone(),
-                    list.projection.clone(),
-                    morpheme.word_id(),
-                ),
-                _ => {
-                    return errors::wrap(Err("unsupported Rust morpheme reference variant"));
+                match errors::wrap_ctx(form_morpheme, context)? {
+                    RustMorphemeRef::ListItem(_) => Ok(self.self_equivalent(py)),
+                    RustMorphemeRef::Single(morpheme) => Ok(PyMorpheme::single_backed(
+                        *morpheme,
+                        morph.list.projection.clone(),
+                    )),
+                    _ => errors::wrap(Err("unsupported Rust morpheme reference variant; \
+                         sudachipy bindings are out of sync with sudachi core")),
                 }
             }
-        };
+            PyMorphemeBacking::Single {
+                morpheme,
+                projection,
+            } => {
+                let form_morpheme = match kind {
+                    FormMorphemeKind::Dictionary => morpheme.dictionary_form_morpheme(),
+                    FormMorphemeKind::Normalized => morpheme.normalized_form_morpheme(),
+                };
 
-        let mut form_list = MorphemeList::empty(dict);
-        errors::wrap_ctx(
-            form_list.reset_with_word_id(form_word_id, InfoSubset::all()),
-            context,
-        )?;
-
-        let py_list = Py::new(
-            py,
-            PyMorphemeListWrapper::from_components(form_list, projection),
-        )?;
-        Ok(PyMorpheme {
-            list: py_list,
-            index: 0,
-            standalone_word_id: Some(form_word_id),
-        })
+                match errors::wrap_ctx(form_morpheme, context)? {
+                    RustMorphemeRef::Single(morpheme) => {
+                        Ok(PyMorpheme::single_backed(*morpheme, projection.clone()))
+                    }
+                    RustMorphemeRef::ListItem(_) => Ok(self.self_equivalent(py)),
+                    _ => errors::wrap(Err("unsupported Rust morpheme reference variant; \
+                         sudachipy bindings are out of sync with sudachi core")),
+                }
+            }
+        }
     }
 
-    fn split_standalone<'py>(
+    fn split_single_backed<'py>(
         &'py self,
         py: Python<'py>,
         mode: &Bound<'py, PyAny>,
         out: Option<Bound<'py, PyMorphemeListWrapper>>,
         add_single: Option<bool>,
     ) -> PyResult<Bound<'py, PyMorphemeListWrapper>> {
-        let word_id = self
-            .standalone_word_id
-            .expect("split_standalone called for list-backed morpheme");
         let mode = extract_mode(mode)?;
-        let (dict, projection, split_word_ids) = {
-            let list = self.list(py);
-            let dict = list.internal(py).dict().clone();
-            let projection = list.projection.clone();
-            let morpheme = errors::wrap_ctx(
-                SingleMorpheme::from_word_id(&dict, word_id, InfoSubset::all()),
-                "Error while splitting morpheme",
-            )?;
-            let splits = errors::wrap_ctx(morpheme.split(mode), "Error while splitting morpheme")?;
-            let no_split = splits.len() == 1 && splits[0].word_id() == word_id;
-            let split_word_ids = if add_single.unwrap_or(true) || !no_split {
-                splits.into_iter().map(|m| m.word_id()).collect()
-            } else {
-                Vec::new()
-            };
-            (dict, projection, split_word_ids)
+
+        let (splits, projection) = match &self.backing {
+            PyMorphemeBacking::Single {
+                morpheme,
+                projection,
+            } => {
+                let splits =
+                    errors::wrap_ctx(morpheme.split(mode), "Error while splitting morpheme")?;
+                let no_split = splits.len() == 1 && splits[0].word_id() == morpheme.word_id();
+                let splits = if add_single.unwrap_or(true) || !no_split {
+                    splits
+                } else {
+                    Vec::new()
+                };
+                (splits, projection.clone())
+            }
+            PyMorphemeBacking::List { .. } => {
+                return errors::wrap(Err("split_single_backed called for list-backed morpheme"));
+            }
         };
+
+        match out {
+            None => Bound::new(py, PyMorphemeListWrapper::from_singles(splits, projection)),
+            Some(cell) => {
+                cell.borrow_mut().replace_with_singles(splits, projection);
+                Ok(cell)
+            }
+        }
+    }
+
+    fn split_list_backed<'py>(
+        &'py self,
+        py: Python<'py>,
+        mode: &Bound<'py, PyAny>,
+        out: Option<Bound<'py, PyMorphemeListWrapper>>,
+        add_single: Option<bool>,
+    ) -> PyResult<Bound<'py, PyMorphemeListWrapper>> {
+        let mode = extract_mode(mode)?;
+        let (list_py, index) = match &self.backing {
+            PyMorphemeBacking::List { list, index } => (list.clone_ref(py), *index),
+            PyMorphemeBacking::Single { .. } => {
+                return errors::wrap(Err("split_list_backed called for single-backed morpheme"));
+            }
+        };
+
+        let list_ref = list_py.borrow(py);
+        let source_list = list_ref.as_list()?;
+        let dict = source_list.dict().clone();
+        let projection = list_ref.projection.clone();
 
         let out_cell = match out {
             None => Bound::new(
                 py,
-                PyMorphemeListWrapper::from_components(MorphemeList::empty(dict), projection),
+                PyMorphemeListWrapper::from_components(
+                    MorphemeList::empty(dict.clone()),
+                    projection.clone(),
+                ),
             )?,
-            Some(r) => r,
+            Some(cell) => cell,
         };
 
         let mut borrow = out_cell.try_borrow_mut();
         let out_ref = match borrow {
-            Ok(ref mut v) => v.internal_mut(py),
+            Ok(ref mut v) => v.replace_with_empty_list(dict, projection)?,
             Err(_) => return errors::wrap(Err("out was used twice at the same time")),
         };
 
-        errors::wrap_ctx(
-            out_ref.reset_with_word_ids(split_word_ids, InfoSubset::all()),
+        out_ref.clear();
+        let splitted = errors::wrap_ctx(
+            source_list.split_into(mode, index, out_ref),
             "Error while splitting morpheme",
         )?;
 
+        if add_single.unwrap_or(true) && !splitted {
+            source_list.copy_slice(index, index + 1, out_ref);
+        }
+
         Ok(out_cell)
+    }
+
+    fn dict_pos<'py>(&'py self, py: Python<'py>, pos_id: u16) -> PyResult<Py<PyTuple>> {
+        match &self.backing {
+            PyMorphemeBacking::List { list, .. } => {
+                let list = list.borrow(py);
+                Ok(list.as_list()?.dict().pos_of(pos_id).clone_ref(py))
+            }
+            PyMorphemeBacking::Single { morpheme, .. } => {
+                Ok(MorphemeView::dict(morpheme).pos_of(pos_id).clone_ref(py))
+            }
+        }
     }
 }
 
@@ -397,28 +584,42 @@ impl PyMorpheme {
 impl PyMorpheme {
     /// Returns the begin index of this in the input text.
     #[pyo3(text_signature = "(self, /) -> int")]
-    fn begin(&self, py: Python) -> usize {
+    fn begin(&self, py: Python) -> PyResult<usize> {
         // call codepoint version
-        self.morph(py).begin_c()
+        self.with_morpheme(py, |m| m.begin_c())
     }
 
     /// Returns the end index of this in the input text.
     #[pyo3(text_signature = "(self, /) -> int")]
-    fn end(&self, py: Python) -> usize {
+    fn end(&self, py: Python) -> PyResult<usize> {
         // call codepoint version
-        self.morph(py).end_c()
+        self.with_morpheme(py, |m| m.end_c())
     }
 
     /// Returns the substring of input text corresponding to the morpheme, or a projection if one is configured.
     ///
     /// See `Config.projection`.
     #[pyo3(text_signature = "(self, /) -> str")]
-    fn surface<'py>(&'py self, py: Python<'py>) -> Bound<'py, PyString> {
-        let list = self.list(py);
-        let morph = self.morph(py);
-        match list.projection() {
-            None => PyString::new(py, morph.surface().deref()),
-            Some(proj) => proj.project(morph.deref(), py),
+    fn surface<'py>(&'py self, py: Python<'py>) -> PyResult<Bound<'py, PyString>> {
+        match &self.backing {
+            PyMorphemeBacking::List { list, index } => {
+                let morph = Self::borrow_morpheme(list, py, *index)?;
+                match morph.list.projection() {
+                    None => {
+                        let surface = morph.surface();
+                        let result = PyString::new(py, surface.deref());
+                        Ok(result)
+                    }
+                    Some(proj) => Ok(proj.project(morph.deref(), py)),
+                }
+            }
+            PyMorphemeBacking::Single {
+                morpheme,
+                projection,
+            } => match projection {
+                None => Ok(PyString::new(py, morpheme.surface())),
+                Some(proj) => Ok(proj.project(morpheme, py)),
+            },
         }
     }
 
@@ -426,32 +627,36 @@ impl PyMorpheme {
     ///
     /// See `Config.projection`.
     #[pyo3(text_signature = "(self, /) -> str")]
-    fn raw_surface<'py>(&'py self, py: Python<'py>) -> Bound<'py, PyString> {
-        PyString::new(py, self.morph(py).surface().deref())
+    fn raw_surface<'py>(&'py self, py: Python<'py>) -> PyResult<Bound<'py, PyString>> {
+        match &self.backing {
+            PyMorphemeBacking::List { list, index } => {
+                let morph = Self::borrow_morpheme(list, py, *index)?;
+                let surface = morph.surface();
+                let result = PyString::new(py, surface.deref());
+                Ok(result)
+            }
+            PyMorphemeBacking::Single { morpheme, .. } => Ok(PyString::new(py, morpheme.surface())),
+        }
     }
 
     /// Returns the part of speech as a six-element tuple.
     /// Tuple elements are four POS levels, conjugation type and conjugation form.
     #[pyo3(text_signature = "(self, /) -> tuple[str, str, str, str, str, str]")]
-    fn part_of_speech<'py>(&'py self, py: Python<'py>) -> Py<PyTuple> {
-        let pos_id = self.part_of_speech_id(py);
-        self.list(py)
-            .internal(py)
-            .dict()
-            .pos_of(pos_id)
-            .clone_ref(py)
+    fn part_of_speech<'py>(&'py self, py: Python<'py>) -> PyResult<Py<PyTuple>> {
+        let pos_id = self.part_of_speech_id(py)?;
+        self.dict_pos(py, pos_id)
     }
 
     /// Returns the id of the part of speech in the dictionary.
     #[pyo3(text_signature = "(self, /) -> int")]
-    pub fn part_of_speech_id(&self, py: Python) -> u16 {
-        self.morph(py).part_of_speech_id()
+    pub fn part_of_speech_id(&self, py: Python) -> PyResult<u16> {
+        self.with_morpheme(py, |m| m.part_of_speech_id())
     }
 
     /// Returns the dictionary form.
     #[pyo3(text_signature = "(self, /) -> str")]
     fn dictionary_form<'py>(&'py self, py: Python<'py>) -> PyResult<Bound<'py, PyString>> {
-        Ok(self.morph(py).dictionary_form().into_pyobject(py)?)
+        self.with_morpheme(py, |m| PyString::new(py, m.dictionary_form()))
     }
 
     /// Returns the morpheme corresponding to this morpheme's dictionary form.
@@ -472,7 +677,7 @@ impl PyMorpheme {
     /// Returns the normalized form.
     #[pyo3(text_signature = "(self, /) -> str")]
     fn normalized_form<'py>(&'py self, py: Python<'py>) -> PyResult<Bound<'py, PyString>> {
-        Ok(self.morph(py).normalized_form().into_pyobject(py)?)
+        self.with_morpheme(py, |m| PyString::new(py, m.normalized_form()))
     }
 
     /// Returns the morpheme corresponding to this morpheme's normalized form.
@@ -493,7 +698,7 @@ impl PyMorpheme {
     /// Returns the reading form.
     #[pyo3(text_signature = "(self, /) -> str")]
     fn reading_form<'py>(&'py self, py: Python<'py>) -> PyResult<Bound<'py, PyString>> {
-        Ok(self.morph(py).reading_form().into_pyobject(py)?)
+        self.with_morpheme(py, |m| PyString::new(py, m.reading_form()))
     }
 
     /// Returns sub-morphemes in the provided split mode.
@@ -520,86 +725,56 @@ impl PyMorpheme {
         out: Option<Bound<'py, PyMorphemeListWrapper>>,
         add_single: Option<bool>,
     ) -> PyResult<Bound<'py, PyMorphemeListWrapper>> {
-        if self.standalone_word_id.is_some() {
-            return self.split_standalone(py, mode, out, add_single);
+        match &self.backing {
+            PyMorphemeBacking::List { .. } => self.split_list_backed(py, mode, out, add_single),
+            PyMorphemeBacking::Single { .. } => self.split_single_backed(py, mode, out, add_single),
         }
-
-        let list = self.list(py);
-
-        let mode = extract_mode(mode)?;
-
-        let out_cell = match out {
-            None => {
-                let list = list.empty_clone(py);
-                Bound::new(py, list)?
-            }
-            Some(r) => r,
-        };
-
-        let mut borrow = out_cell.try_borrow_mut();
-        let out_ref = match borrow {
-            Ok(ref mut v) => v.internal_mut(py),
-            Err(_) => return errors::wrap(Err("out was used twice at the same time")),
-        };
-
-        out_ref.clear();
-        let splitted = errors::wrap_ctx(
-            list.internal(py).split_into(mode, self.index, out_ref),
-            "Error while splitting morpheme",
-        )?;
-
-        if add_single.unwrap_or(true) && !splitted {
-            list.internal(py)
-                .copy_slice(self.index, self.index + 1, out_ref);
-        }
-
-        Ok(out_cell)
     }
 
     /// Returns whether if this is out of vocabulary word.
     #[pyo3(text_signature = "(self, /) -> bool")]
-    fn is_oov(&self, py: Python) -> bool {
-        self.morph(py).is_oov()
+    fn is_oov(&self, py: Python) -> PyResult<bool> {
+        self.with_morpheme(py, |m| m.is_oov())
     }
 
     /// Returns word id of this word in the dictionary.
     #[pyo3(text_signature = "(self, /) -> int")]
-    fn word_id(&self, py: Python) -> u32 {
-        self.morph(py).word_id().as_raw()
+    fn word_id(&self, py: Python) -> PyResult<u32> {
+        self.with_morpheme(py, |m| m.word_id().as_raw())
     }
 
     /// Returns the dictionary id which this word belongs.
     #[pyo3(text_signature = "(self, /) -> int")]
-    fn dictionary_id(&self, py: Python) -> i32 {
-        let word_id = self.morph(py).word_id();
-        if word_id.is_oov() {
-            -1
-        } else {
-            word_id.dict().as_raw() as i32
-        }
+    fn dictionary_id(&self, py: Python) -> PyResult<i32> {
+        self.with_morpheme(py, |m| m.dictionary_id())
     }
 
     /// Returns the list of synonym group ids.
     #[pyo3(text_signature = "(self, /) -> List[int]")]
     fn synonym_group_ids<'py>(&'py self, py: Python<'py>) -> PyResult<Bound<'py, PyList>> {
-        let mref = self.morph(py);
-        let ids = mref.get_word_info().synonym_group_ids();
-        PyList::new(py, ids)
+        match &self.backing {
+            PyMorphemeBacking::List { list, index } => {
+                let mref = Self::borrow_morpheme(list, py, *index)?;
+                PyList::new(py, mref.get_word_info().synonym_group_ids())
+            }
+            PyMorphemeBacking::Single { morpheme, .. } => {
+                PyList::new(py, morpheme.get_word_info().synonym_group_ids())
+            }
+        }
     }
 
     /// Returns morpheme length in codepoints.
-    pub fn __len__(&self, py: Python) -> usize {
-        let m = self.morph(py);
-        m.end_c() - m.begin_c()
+    pub fn __len__(&self, py: Python) -> PyResult<usize> {
+        self.with_morpheme(py, |m| m.end_c() - m.begin_c())
     }
 
-    pub fn __str__<'py>(&'py self, py: Python<'py>) -> Bound<'py, PyString> {
+    pub fn __str__<'py>(&'py self, py: Python<'py>) -> PyResult<Bound<'py, PyString>> {
         self.surface(py)
     }
 
     pub fn __repr__<'py>(&'py self, py: Python<'py>) -> PyResult<String> {
         let mut result = String::new();
-        errors::wrap_ctx(self.write_repr(py, &mut result), "failed to format repr")?;
+        self.write_repr(py, &mut result)?;
         Ok(result)
     }
 }

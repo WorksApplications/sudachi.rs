@@ -132,9 +132,9 @@ impl PyPosMatcher {
     /// :return: if morpheme has matching POS.
     ///
     /// :type m: Morpheme
-    pub fn __call__<'py>(&'py self, py: Python<'py>, m: &'py PyMorpheme) -> bool {
-        let pos_id = m.part_of_speech_id(py);
-        self.matcher.matches_id(pos_id)
+    pub fn __call__<'py>(&'py self, py: Python<'py>, m: &'py PyMorpheme) -> PyResult<bool> {
+        let pos_id = m.part_of_speech_id(py)?;
+        Ok(self.matcher.matches_id(pos_id))
     }
 
     pub fn __str__(&self) -> String {

@@ -14,7 +14,6 @@
  *  limitations under the License.
  */
 
-use std::ops::Deref;
 use std::sync::Arc;
 
 use pyo3::prelude::*;
@@ -24,29 +23,52 @@ use pyo3::Python;
 use sudachi::config::SurfaceProjection;
 use sudachi::dic::DictionaryAccess;
 use sudachi::pos::PosMatcher;
-use sudachi::prelude::Morpheme;
+use sudachi::prelude::MorphemeView;
 
 use crate::dictionary::PyDicData;
 
 pub(crate) trait MorphemeProjection {
-    fn project<'py>(&self, m: &Morpheme<Arc<PyDicData>>, py: Python<'py>) -> Bound<'py, PyString>;
+    fn project<'py>(
+        &self,
+        m: &(dyn MorphemeView<Dictionary = Arc<PyDicData>> + '_),
+        py: Python<'py>,
+    ) -> Bound<'py, PyString>;
 }
 
 struct Surface {}
 
 impl MorphemeProjection for Surface {
-    fn project<'py>(&self, m: &Morpheme<Arc<PyDicData>>, py: Python<'py>) -> Bound<'py, PyString> {
-        PyString::new(py, m.surface().deref())
+    fn project<'py>(
+        &self,
+        m: &(dyn MorphemeView<Dictionary = Arc<PyDicData>> + '_),
+        py: Python<'py>,
+    ) -> Bound<'py, PyString> {
+        PyString::new(py, m.surface().as_ref())
     }
 }
 
-struct Mapped<F: for<'a> Fn(&'a Morpheme<'a, Arc<PyDicData>>) -> &'a str> {
-    func: F,
+enum MappedField {
+    Normalized,
+    Reading,
+    Dictionary,
 }
 
-impl<F: for<'a> Fn(&'a Morpheme<'a, Arc<PyDicData>>) -> &'a str> MorphemeProjection for Mapped<F> {
-    fn project<'py>(&self, m: &Morpheme<Arc<PyDicData>>, py: Python<'py>) -> Bound<'py, PyString> {
-        PyString::new(py, (self.func)(m))
+struct Mapped {
+    field: MappedField,
+}
+
+impl MorphemeProjection for Mapped {
+    fn project<'py>(
+        &self,
+        m: &(dyn MorphemeView<Dictionary = Arc<PyDicData>> + '_),
+        py: Python<'py>,
+    ) -> Bound<'py, PyString> {
+        let s = match self.field {
+            MappedField::Normalized => m.normalized_form(),
+            MappedField::Reading => m.reading_form(),
+            MappedField::Dictionary => m.dictionary_form(),
+        };
+        PyString::new(py, s)
     }
 }
 
@@ -62,9 +84,13 @@ impl DictionaryAndSurface {
 }
 
 impl MorphemeProjection for DictionaryAndSurface {
-    fn project<'py>(&self, m: &Morpheme<Arc<PyDicData>>, py: Python<'py>) -> Bound<'py, PyString> {
+    fn project<'py>(
+        &self,
+        m: &(dyn MorphemeView<Dictionary = Arc<PyDicData>> + '_),
+        py: Python<'py>,
+    ) -> Bound<'py, PyString> {
         if self.matcher.matches_id(m.part_of_speech_id()) {
-            PyString::new(py, m.surface().deref())
+            PyString::new(py, m.surface().as_ref())
         } else {
             PyString::new(py, m.dictionary_form())
         }
@@ -83,9 +109,13 @@ impl NormalizedAndSurface {
 }
 
 impl MorphemeProjection for NormalizedAndSurface {
-    fn project<'py>(&self, m: &Morpheme<Arc<PyDicData>>, py: Python<'py>) -> Bound<'py, PyString> {
+    fn project<'py>(
+        &self,
+        m: &(dyn MorphemeView<Dictionary = Arc<PyDicData>> + '_),
+        py: Python<'py>,
+    ) -> Bound<'py, PyString> {
         if self.matcher.matches_id(m.part_of_speech_id()) {
-            PyString::new(py, m.surface().deref())
+            PyString::new(py, m.surface().as_ref())
         } else {
             PyString::new(py, m.normalized_form())
         }
@@ -104,18 +134,22 @@ impl NormalizedNouns {
 }
 
 impl MorphemeProjection for NormalizedNouns {
-    fn project<'py>(&self, m: &Morpheme<Arc<PyDicData>>, py: Python<'py>) -> Bound<'py, PyString> {
+    fn project<'py>(
+        &self,
+        m: &(dyn MorphemeView<Dictionary = Arc<PyDicData>> + '_),
+        py: Python<'py>,
+    ) -> Bound<'py, PyString> {
         if self.matcher.matches_id(m.part_of_speech_id()) {
             PyString::new(py, m.normalized_form())
         } else {
-            PyString::new(py, m.surface().deref())
+            PyString::new(py, m.surface().as_ref())
         }
     }
 }
 
 fn conjugating_matcher<D: DictionaryAccess>(dic: &D) -> PosMatcher {
     make_matcher(dic, |pos| {
-        matches!(pos[0].deref(), "動詞" | "形容詞" | "助動詞")
+        matches!(pos[0].as_str(), "動詞" | "形容詞" | "助動詞")
     })
 }
 
@@ -127,13 +161,13 @@ pub(crate) fn morpheme_projection<D: DictionaryAccess>(
         // implement for surface to make this function full
         SurfaceProjection::Surface => Arc::new(Surface {}),
         SurfaceProjection::Normalized => Arc::new(Mapped {
-            func: |m| m.normalized_form(),
+            field: MappedField::Normalized,
         }),
         SurfaceProjection::Reading => Arc::new(Mapped {
-            func: |m| m.reading_form(),
+            field: MappedField::Reading,
         }),
         SurfaceProjection::Dictionary => Arc::new(Mapped {
-            func: |m| m.dictionary_form(),
+            field: MappedField::Dictionary,
         }),
         SurfaceProjection::DictionaryAndSurface => Arc::new(DictionaryAndSurface::new(dict)),
         SurfaceProjection::NormalizedAndSurface => Arc::new(NormalizedAndSurface::new(dict)),

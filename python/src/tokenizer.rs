@@ -182,9 +182,11 @@ impl PyTokenizer {
             Some(list) => list,
         };
 
+        let dict = tokenizer.dict_clone();
+        let projection = self.projection.clone();
         let mut borrow = out_list.try_borrow_mut();
         let morphemes = match borrow {
-            Ok(ref mut ms) => ms.internal_mut(py),
+            Ok(ref mut ms) => ms.replace_with_empty_list(dict, projection)?,
             Err(_) => return errors::wrap(Err("out was used twice at the same time")),
         };
 

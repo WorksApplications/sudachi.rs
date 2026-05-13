@@ -23,7 +23,13 @@ use sudachi::dic::word_id::WordId;
 use sudachi::prelude::*;
 
 mod common;
-use crate::common::{TestTokenizer, LEXICON_SET};
+use crate::common::{TestStatefulTokenizer, TestTokenizer, LEXICON_SET};
+
+const SINGLE_SPLIT_DIC: &str = "\
+index_form,left_id,right_id,cost,headword,pos1,pos2,pos3,pos4,pos5,pos6,reading_form,normalized_form,dictionary_form,split_a,split_b,split_c,word_structure,synonym_groups
+ab,6,6,1000,AB,名詞,普通名詞,一般,*,*,*,AB,,,\"A,1,A\",,,,
+a,-1,6,1000,A,名詞,数詞,*,*,*,*,A,,,,,,,
+";
 
 fn find_system_word_id(tok: &TestTokenizer, headword: &str, pos: [&str; 6]) -> WordId {
     LEXICON_SET
@@ -209,6 +215,68 @@ fn single_morpheme_split_materializes_standalone_entries() {
     assert_eq!("東京都".chars().count(), splits[1].end_c());
     assert_eq!("", splits[0].user_data());
     assert_eq!("", splits[1].user_data());
+}
+
+#[test]
+fn single_morpheme_split_loads_split_subset_on_demand() {
+    let tok = TestTokenizer::new();
+    let ms = tok.tokenize("東京都", Mode::C);
+    let word_id = ms.get(0).word_id();
+
+    let surface_only = SingleMorpheme::from_word_id(tok.dict(), word_id, InfoSubset::HEADWORD)
+        .expect("failed to materialize standalone morpheme");
+
+    let splits = surface_only
+        .split(Mode::A)
+        .expect("failed to split standalone morpheme");
+    assert_eq!(2, splits.len());
+    assert_eq!("東京", splits[0].surface());
+    assert_eq!("都", splits[1].surface());
+
+    let with_splits = SingleMorpheme::from_word_id(
+        tok.dict(),
+        word_id,
+        InfoSubset::HEADWORD | InfoSubset::SPLIT_A,
+    )
+    .expect("failed to materialize standalone morpheme with splits");
+
+    let splits = with_splits
+        .split(Mode::A)
+        .expect("failed to split standalone morpheme");
+    assert_eq!(2, splits.len());
+    assert_eq!("東京", splits[0].surface());
+    assert_eq!("都", splits[1].surface());
+}
+
+#[test]
+fn single_morpheme_split_single_replacement_preserves_span() {
+    let mut tok = TestStatefulTokenizer::builder(SINGLE_SPLIT_DIC.as_bytes())
+        .mode(Mode::C)
+        .build();
+    let word_id = {
+        let ms = tok.tokenize("ＡＢ");
+        assert_eq!(1, ms.len());
+        assert_eq!("ＡＢ", ms.get(0).surface().deref());
+        ms.get(0).word_id()
+    };
+    let morpheme = SingleMorpheme::from_word_id(
+        tok.dict(),
+        word_id,
+        InfoSubset::HEADWORD | InfoSubset::SPLIT_A,
+    )
+    .expect("failed to materialize standalone morpheme");
+
+    let splits = morpheme
+        .split(Mode::A)
+        .expect("failed to split standalone morpheme");
+
+    assert_eq!(1, splits.len());
+    assert_ne!(morpheme.word_id(), splits[0].word_id());
+    assert_eq!("A", splits[0].surface());
+    assert_eq!(morpheme.begin(), splits[0].begin());
+    assert_eq!(morpheme.end(), splits[0].end());
+    assert_eq!(morpheme.begin_c(), splits[0].begin_c());
+    assert_eq!(morpheme.end_c(), splits[0].end_c());
 }
 
 #[test]

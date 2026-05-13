@@ -66,10 +66,13 @@ impl PerThreadPreTokenizer {
             }
             Some(ms) => ms.borrow_mut(py),
         };
-        mlist
-            .internal_mut(py)
-            .collect_results(&mut self.tokenizer)
-            .unwrap();
+        let dict = self.tokenizer.dict_clone();
+        let projection = dict.projection.clone();
+        errors::wrap(
+            mlist
+                .replace_with_empty_list(dict, projection)?
+                .collect_results(&mut self.tokenizer),
+        )?;
         Ok(())
     }
 
@@ -146,7 +149,7 @@ impl PyPretokenizer {
         match self.handler.as_ref() {
             None => {
                 let py_ref = morphs.borrow(py);
-                let morphs = py_ref.internal(py);
+                let morphs = py_ref.as_list()?;
                 match self.projection.as_deref() {
                     None => make_result_for_surface(py, morphs, string).map(|bl| bl.into_any()),
                     Some(p) => make_result_for_projection(py, morphs, p).map(|bl| bl.into_any()),
