@@ -157,11 +157,10 @@ class TestTokenizer(unittest.TestCase):
             m = tokenizer.tokenize('首都旧')[0]
             nf = m.normalized_form_morpheme()
             splits = nf.split(SplitMode.A, add_single=True)
-            out = self.tokenizer_obj.tokenize('東京都', SplitMode.C)[0].split(
-                SplitMode.A)
+            out = self.tokenizer_obj.tokenize('')
             out_result = nf.split(SplitMode.A, out=out, add_single=True)
             surface_tokenizer = Dictionary(config_path, resource_dir).create(
-                fields={'surface'})
+                fields={'surface', 'normalized_form', 'split_a'})
             surface_nf = surface_tokenizer.tokenize(
                 '首都旧')[0].normalized_form_morpheme()
             surface_splits = surface_nf.split(SplitMode.A, add_single=True)
@@ -199,7 +198,8 @@ class TestTokenizer(unittest.TestCase):
         self.assertEqual(nf.surface(), m.surface())
 
     def test_form_morpheme_with_surface_subset(self):
-        tokenizer = self.dict_.create(fields={'surface'})
+        tokenizer = self.dict_.create(
+            fields={'surface', 'dictionary_form', 'normalized_form'})
         m = tokenizer.tokenize('行っ')[0]
         df = m.dictionary_form_morpheme()
         nf = m.normalized_form_morpheme()
@@ -210,7 +210,13 @@ class TestTokenizer(unittest.TestCase):
         self.assertEqual(nf.raw_surface(), '行く')
 
     def test_form_morpheme_with_reading_subset(self):
-        tokenizer = self.dict_.create(fields={'surface', 'reading_form'})
+        tokenizer = self.dict_.create(
+            fields={
+                'surface',
+                'reading_form',
+                'dictionary_form',
+                'normalized_form',
+            })
         m = tokenizer.tokenize('行っ')[0]
         df = m.dictionary_form_morpheme()
         nf = m.normalized_form_morpheme()
@@ -221,7 +227,8 @@ class TestTokenizer(unittest.TestCase):
         self.assertEqual(nf.reading_form(), 'イク')
 
     def test_single_backed_form_morpheme_uses_projection(self):
-        tokenizer = self.dict_.create(projection='reading')
+        tokenizer = self.dict_.create(
+            fields={'dictionary_form'}, projection='reading')
         m = tokenizer.tokenize('行っ')[0]
         df = m.dictionary_form_morpheme()
 

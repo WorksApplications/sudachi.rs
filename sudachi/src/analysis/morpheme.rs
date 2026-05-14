@@ -595,11 +595,9 @@ impl<D: DictionaryAccess + Clone> SingleMorpheme<D> {
     /// Returns standalone sub-morphemes for the requested split mode.
     ///
     /// When the dictionary entry has no splits for the mode, returns a clone of
-    /// this morpheme. Split metadata is loaded on demand when it was not part
-    /// of the original subset, while returned morphemes still use the original
-    /// subset. Offsets match Java's standalone morpheme behavior: a single
-    /// replacement split preserves this morpheme's span, while multi-splits
-    /// advance over each split surface.
+    /// this morpheme. Offsets match Java's standalone morpheme behavior: a
+    /// single replacement split preserves this morpheme's span, while
+    /// multi-splits advance over each split surface.
     #[allow(clippy::result_large_err)]
     pub fn split(&self, mode: Mode) -> SudachiResult<Vec<SingleMorpheme<D>>> {
         let split_subset = match mode {
