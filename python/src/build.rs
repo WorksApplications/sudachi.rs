@@ -24,7 +24,7 @@ use pyo3::types::{PyBytes, PyList, PyString, PyType};
 use sudachi::config::Config;
 use sudachi::dic::build::{DataSource, DictBuilder};
 use sudachi::dic::dictionary::JapaneseDictionary;
-use sudachi::dic::DictionaryAccess;
+use sudachi::dic::{DictionaryAccess, ReferenceIdAccess};
 
 use crate::dictionary::get_default_resource_dir;
 use crate::errors;
@@ -35,7 +35,10 @@ pub fn register_functions(m: &Bound<PyModule>) -> PyResult<()> {
     Ok(())
 }
 
-fn to_stats<T: DictionaryAccess>(py: Python, builder: DictBuilder<T>) -> PyResult<Bound<PyList>> {
+fn to_stats<T: DictionaryAccess + ReferenceIdAccess>(
+    py: Python,
+    builder: DictBuilder<T>,
+) -> PyResult<Bound<PyList>> {
     let stats = PyList::empty(py);
 
     for p in builder.report() {

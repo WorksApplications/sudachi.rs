@@ -15,7 +15,7 @@
  */
 
 use std::io::{BufWriter, Write};
-use sudachi::analysis::morpheme::Morpheme;
+use sudachi::analysis::morpheme::MorphemeView;
 use sudachi::dic::subset::InfoSubset;
 use sudachi::dic::DictionaryAccess;
 
@@ -103,10 +103,11 @@ impl<T: DictionaryAccess> SudachiOutput<T> for Simple {
 }
 
 #[inline]
-fn write_morpheme_basic<T: DictionaryAccess>(
-    writer: &mut Writer,
-    morpheme: &Morpheme<T>,
-) -> SudachiResult<()> {
+fn write_morpheme_basic<T, M>(writer: &mut Writer, morpheme: &M) -> SudachiResult<()>
+where
+    T: DictionaryAccess,
+    M: MorphemeView<Dictionary = T> + ?Sized,
+{
     writer.write_all(morpheme.surface().as_bytes())?;
     writer.write_all(b"\t")?;
     let all_pos = morpheme.part_of_speech();
@@ -122,10 +123,11 @@ fn write_morpheme_basic<T: DictionaryAccess>(
 }
 
 #[inline]
-fn write_morpheme_extended<T: DictionaryAccess>(
-    writer: &mut Writer,
-    morpheme: &Morpheme<T>,
-) -> SudachiResult<()> {
+fn write_morpheme_extended<T, M>(writer: &mut Writer, morpheme: &M) -> SudachiResult<()>
+where
+    T: DictionaryAccess,
+    M: MorphemeView<Dictionary = T> + ?Sized,
+{
     write!(
         writer,
         "\t{}\t{}\t{}\t{:?}\t{}",

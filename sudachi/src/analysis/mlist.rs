@@ -137,7 +137,7 @@ impl<D: DictionaryAccess> MorphemeList<D> {
     }
 
     pub fn get(&self, idx: usize) -> Morpheme<'_, D> {
-        return Morpheme::for_list(self, idx);
+        Morpheme::for_list(self, idx)
     }
 
     pub fn surface(&self) -> Ref<'_, str> {

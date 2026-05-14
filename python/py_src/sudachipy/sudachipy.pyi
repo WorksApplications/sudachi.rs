@@ -192,6 +192,12 @@ class Morpheme:
         """
         ...
 
+    def dictionary_form_morpheme(self) -> Morpheme:
+        """
+        Returns the morpheme corresponding to this morpheme's dictionary form.
+        """
+        ...
+
     def dictionary_id(self) -> int:
         """
         Returns the dictionary id which this word belongs.
@@ -213,6 +219,12 @@ class Morpheme:
     def normalized_form(self) -> str:
         """
         Returns the normalized form.
+        """
+        ...
+
+    def normalized_form_morpheme(self) -> Morpheme:
+        """
+        Returns the morpheme corresponding to this morpheme's normalized form.
         """
         ...
 

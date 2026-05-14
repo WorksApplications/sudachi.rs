@@ -133,6 +133,11 @@ impl<'a> Lexicon<'a> {
         (params.left_id(), params.right_id(), params.cost())
     }
 
+    pub fn get_word_param_checked(&self, entry_id: EntryId) -> Option<(i16, i16, i16)> {
+        let params = self.word_params.get_params_checked(entry_id)?;
+        Some((params.left_id(), params.right_id(), params.cost()))
+    }
+
     #[inline]
     pub fn get_string(&self, strptr: strings::StringPointer) -> SudachiResult<String> {
         self.strings.get_string(strptr)

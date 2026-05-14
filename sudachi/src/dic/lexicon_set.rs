@@ -132,9 +132,16 @@ impl LexiconSet<'_> {
     /// Rest will be of default values (0 or empty).
     pub fn get_word_info_subset(&self, id: WordId, subset: InfoSubset) -> SudachiResult<WordInfo> {
         let dict_id = id.dict();
-        let word_info_data = self.lexicons[dict_id.as_raw() as usize]
-            .get_word_info(id.entry(), subset)?
-            .resolve(dict_id, self.num_system_pos, &self.pos_offsets, subset);
+        let lexicon = self
+            .lexicons
+            .get(dict_id.as_raw() as usize)
+            .ok_or(SudachiError::InvalidWordId(id))?;
+        let word_info_data = lexicon.get_word_info(id.entry(), subset)?.resolve(
+            dict_id,
+            self.num_system_pos,
+            &self.pos_offsets,
+            subset,
+        );
 
         Ok(WordInfo::new(word_info_data, id))
     }
@@ -143,6 +150,17 @@ impl LexiconSet<'_> {
     pub fn get_word_param(&self, id: WordId) -> (i16, i16, i16) {
         let dict_id = id.dict().as_raw() as usize;
         self.lexicons[dict_id].get_word_param(id.entry())
+    }
+
+    /// Returns word_param for given word_id.
+    pub fn get_word_param_checked(&self, id: WordId) -> SudachiResult<(i16, i16, i16)> {
+        let dict_id = id.dict().as_raw() as usize;
+        match self.lexicons.get(dict_id) {
+            Some(lexicon) => lexicon
+                .get_word_param_checked(id.entry())
+                .ok_or(SudachiError::InvalidWordId(id)),
+            None => Err(SudachiError::InvalidWordId(id)),
+        }
     }
 
     #[inline]

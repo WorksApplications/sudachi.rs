@@ -407,10 +407,12 @@ impl PyDictionary {
             }
         };
 
+        let dict = self.dictionary.clone().unwrap();
+        let projection = dict.projection.clone();
         // this needs to be a variable
         let mut borrow = l.try_borrow_mut();
         let out_list = match borrow {
-            Ok(ref mut ms) => ms.internal_mut(py),
+            Ok(ref mut ms) => ms.replace_with_empty_list(dict, projection)?,
             Err(_) => return errors::wrap(Err("out was used twice at the same time")),
         };
 
