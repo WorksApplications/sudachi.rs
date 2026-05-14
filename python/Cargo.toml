@@ -3,7 +3,7 @@ name = "sudachipy"
 version.workspace = true
 authors.workspace = true
 edition.workspace = true
-rust-version.workspace = true
+rust-version = "1.83"
 description = "Python bindings of sudachi.rs, the Japanese Morphological Analyzer"
 readme = "README.md"
 homepage.workspace = true
@@ -15,7 +15,7 @@ name = "sudachipy"
 crate-type = ["cdylib"]
 
 [dependencies]
-pyo3 = { version = "0.27", features = ["extension-module"] }
+pyo3 = { version = "0.28.3", features = ["extension-module"] }
 scopeguard = "1" # Apache 2.0/MIT
 thread_local = "1.1" # Apache 2.0/MIT
 

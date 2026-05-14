@@ -41,7 +41,14 @@ use crate::projection::PyProjector;
 ///     If None, returns SplitMode.C.
 ///
 /// :type mode: str | None
-#[pyclass(module = "sudachipy.tokenizer", name = "SplitMode", eq, eq_int, frozen)]
+#[pyclass(
+    module = "sudachipy.tokenizer",
+    name = "SplitMode",
+    eq,
+    eq_int,
+    frozen,
+    from_py_object
+)]
 #[derive(Clone, PartialEq, Eq, Copy, Debug)]
 #[repr(u8)]
 pub enum PySplitMode {

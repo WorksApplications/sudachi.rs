@@ -97,7 +97,11 @@ impl PyDicData {
 /// :type resource_dir: pathlib.Path | str | None
 /// :type dict: pathlib.Path | str | None
 /// :type dict_type: pathlib.Path | str | None
-#[pyclass(module = "sudachipy.dictionary", name = "Dictionary")]
+#[pyclass(
+    module = "sudachipy.dictionary",
+    name = "Dictionary",
+    skip_from_py_object
+)]
 #[derive(Clone)]
 pub struct PyDictionary {
     pub(super) dictionary: Option<Arc<PyDicData>>,
