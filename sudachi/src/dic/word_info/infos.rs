@@ -40,32 +40,19 @@ impl<'a> WordInfos<'a> {
     }
 
     pub fn entry_ids_in_order(&self, num_total_entries: u32) -> Option<Vec<EntryId>> {
-        let mut result = Vec::with_capacity(num_total_entries as usize);
-        let mut offset = Self::ENTRIES_INITIAL_OFFSET;
-
-        while result.len() < num_total_entries as usize {
-            if offset % Self::WORD_INFO_OFFSET_ALIGNMENT != 0 {
-                return None;
-            }
-
-            let entry_id = EntryId::new((offset >> Self::WORD_ID_ALIGNMENT_BITS) as u32);
-            result.push(entry_id);
-
-            let size = self.entry_size_at(offset)?;
-            offset = offset.checked_add(size)?;
-        }
-
-        Some(result)
+        self.entry_ids(num_total_entries)
+            .collect::<SudachiResult<Vec<_>>>()
+            .ok()
     }
 
-    pub fn entry_ids(&self, num_total_entries: u32) -> WordInfoEntryIdIter<'_, '_> {
+    pub(crate) fn entry_ids(&self, num_total_entries: u32) -> WordInfoEntryIdIter<'_, '_> {
         WordInfoEntryIdIter {
             infos: self,
             cursor: Self::entry_id_cursor(num_total_entries),
         }
     }
 
-    pub fn entry_id_cursor(num_total_entries: u32) -> WordInfoEntryIdCursor {
+    pub(crate) fn entry_id_cursor(num_total_entries: u32) -> WordInfoEntryIdCursor {
         WordInfoEntryIdCursor {
             remaining: num_total_entries,
             offset: Self::ENTRIES_INITIAL_OFFSET,
@@ -78,7 +65,7 @@ impl<'a> WordInfos<'a> {
         Ok(())
     }
 
-    pub fn next_entry_id(
+    pub(crate) fn next_entry_id(
         &self,
         cursor: &mut WordInfoEntryIdCursor,
     ) -> SudachiResult<Option<EntryId>> {
@@ -172,12 +159,12 @@ fn invalid_entry_block(offset: usize, reason: &str) -> SudachiError {
     )
 }
 
-pub struct WordInfoEntryIdCursor {
+pub(crate) struct WordInfoEntryIdCursor {
     remaining: u32,
     offset: usize,
 }
 
-pub struct WordInfoEntryIdIter<'a, 'b> {
+pub(crate) struct WordInfoEntryIdIter<'a, 'b> {
     infos: &'a WordInfos<'b>,
     cursor: WordInfoEntryIdCursor,
 }

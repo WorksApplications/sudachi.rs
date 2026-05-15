@@ -9,6 +9,13 @@ Also check [python changelog](python/CHANGELOG.md).
 ### Added
 
 - Add Rust-side morpheme form accessors and standalone morpheme materialization.
+- Added dictionary entry iteration APIs: `JapaneseDictionary::entries`,
+  `entries_subset`, `lookup_all_entries`, and `lookup_all_entries_subset`.
+
+### Changed
+
+- Changed `MorphemeList::lookup` to normalize queries with dictionary input-text
+  plugins before indexed lookup, matching Java Sudachi behavior.
 
 ### Fixed
 

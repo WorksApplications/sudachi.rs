@@ -23,7 +23,7 @@ from sudachipy.config import Config
 from sudachipy.sudachipy import build_system_dic
 
 
-HIDDEN_ENTRY_LEXICON = (
+NON_INDEXED_ENTRY_LEXICON = (
     "index_form,left_id,right_id,cost,pos1,pos2,pos3,pos4,pos5,pos6,reading_form,"
     "normalized_form,dictionary_form,mode,split_a,split_b,word_structure\n"
     "京都,6,6,5293,名詞,固有名詞,地名,一般,*,*,キョウト,,,A,,,\n"
@@ -119,9 +119,9 @@ class TestDictionary(unittest.TestCase):
     def test_entries_include_non_indexed_entries_and_exclude_phantoms(self):
         resource_dir = Path(__file__).parent / "resources"
         with tempfile.TemporaryDirectory() as temp_dir:
-            lexicon = Path(temp_dir) / "hidden.csv"
+            lexicon = Path(temp_dir) / "non_indexed.csv"
             system_dic = Path(temp_dir) / "system.dic"
-            lexicon.write_text(HIDDEN_ENTRY_LEXICON, encoding="utf-8")
+            lexicon.write_text(NON_INDEXED_ENTRY_LEXICON, encoding="utf-8")
             build_system_dic(
                 matrix=resource_dir / "matrix.def",
                 lex=[lexicon],

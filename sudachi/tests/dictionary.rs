@@ -27,7 +27,7 @@ use sudachi::dic::error::DictionaryCompatibilityError;
 use sudachi::dic::storage::{Storage, SudachiDicData};
 use sudachi::error::SudachiError;
 
-const HIDDEN_ENTRY_LEXICON: &[u8] = concat!(
+const NON_INDEXED_ENTRY_LEXICON: &[u8] = concat!(
     "index_form,left_id,right_id,cost,pos1,pos2,pos3,pos4,pos5,pos6,reading_form,normalized_form,dictionary_form,mode,split_a,split_b,word_structure\n",
     "京都,6,6,5293,名詞,固有名詞,地名,一般,*,*,キョウト,,,A,,,\n",
     "隠し,-1,-1,5293,名詞,普通名詞,一般,*,*,*,カクシ,,,A,,,\n",
@@ -35,7 +35,7 @@ const HIDDEN_ENTRY_LEXICON: &[u8] = concat!(
 )
 .as_bytes();
 
-const HIDDEN_ENTRY_CONFIG: &str = r#"
+const NON_INDEXED_ENTRY_CONFIG: &str = r#"
 {
     "path" : "tests/resources/",
     "characterDefinitionFile" : "char.def",
@@ -158,8 +158,8 @@ fn reject_incompatible_user_dictionary() {
 
 #[test]
 fn entries_include_non_indexed_entries_and_exclude_phantoms() {
-    let tok = common::TestStatefulTokenizer::builder(HIDDEN_ENTRY_LEXICON)
-        .config(HIDDEN_ENTRY_CONFIG.as_bytes())
+    let tok = common::TestStatefulTokenizer::builder(NON_INDEXED_ENTRY_LEXICON)
+        .config(NON_INDEXED_ENTRY_CONFIG.as_bytes())
         .build();
 
     let entries = tok
@@ -176,8 +176,8 @@ fn entries_include_non_indexed_entries_and_exclude_phantoms() {
 
 #[test]
 fn lookup_all_entries_scans_non_indexed_entries_only_public_rows() {
-    let mut tok = common::TestStatefulTokenizer::builder(HIDDEN_ENTRY_LEXICON)
-        .config(HIDDEN_ENTRY_CONFIG.as_bytes())
+    let mut tok = common::TestStatefulTokenizer::builder(NON_INDEXED_ENTRY_LEXICON)
+        .config(NON_INDEXED_ENTRY_CONFIG.as_bytes())
         .build();
 
     let indexed = tok.dict().lookup_all_entries("京都").unwrap();
@@ -235,7 +235,7 @@ fn lookup_all_entries_normalizes_query_and_searches_user_dictionaries() {
 
 #[test]
 fn lookup_all_entries_and_lookup_apply_input_text_plugins() {
-    let mut tok = common::TestStatefulTokenizer::builder(HIDDEN_ENTRY_LEXICON)
+    let mut tok = common::TestStatefulTokenizer::builder(NON_INDEXED_ENTRY_LEXICON)
         .config(YOMIGANA_CONFIG.as_bytes())
         .build();
 

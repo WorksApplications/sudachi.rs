@@ -86,15 +86,15 @@ impl<'a> Lexicon<'a> {
         }
     }
 
-    pub fn entry_ids(&self) -> impl Iterator<Item = SudachiResult<EntryId>> + '_ {
+    pub(crate) fn entry_ids(&self) -> impl Iterator<Item = SudachiResult<EntryId>> + '_ {
         self.word_infos.entry_ids(self.num_total_entries)
     }
 
-    pub fn entry_id_cursor(&self) -> WordInfoEntryIdCursor {
+    pub(crate) fn entry_id_cursor(&self) -> WordInfoEntryIdCursor {
         WordInfos::entry_id_cursor(self.num_total_entries)
     }
 
-    pub fn next_entry_id(
+    pub(crate) fn next_entry_id(
         &self,
         cursor: &mut WordInfoEntryIdCursor,
     ) -> SudachiResult<Option<EntryId>> {

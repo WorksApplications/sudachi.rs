@@ -51,6 +51,7 @@ pub struct LexiconSet<'a> {
     num_system_pos: usize,
 }
 
+#[doc(hidden)]
 pub struct WordIdCursor {
     lexicon_index: usize,
     entry_cursor: Option<WordInfoEntryIdCursor>,
@@ -185,6 +186,7 @@ impl LexiconSet<'_> {
         })
     }
 
+    #[doc(hidden)]
     pub fn word_id_cursor(&self) -> WordIdCursor {
         WordIdCursor {
             lexicon_index: 0,
@@ -192,6 +194,7 @@ impl LexiconSet<'_> {
         }
     }
 
+    #[doc(hidden)]
     pub fn next_word_id(&self, cursor: &mut WordIdCursor) -> SudachiResult<Option<WordId>> {
         loop {
             let Some(lexicon) = self.lexicons.get(cursor.lexicon_index) else {
