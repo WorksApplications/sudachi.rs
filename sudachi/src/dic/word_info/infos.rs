@@ -69,42 +69,51 @@ impl<'a> WordInfos<'a> {
         WordInfoEntryIdCursor {
             remaining: num_total_entries,
             offset: Self::ENTRIES_INITIAL_OFFSET,
-            invalid: false,
         }
     }
 
-    pub fn next_entry_id(&self, cursor: &mut WordInfoEntryIdCursor) -> Option<EntryId> {
-        if cursor.remaining == 0 || cursor.invalid {
-            return None;
+    pub fn validate_entry_boundaries(&self, num_total_entries: u32) -> SudachiResult<()> {
+        let mut cursor = Self::entry_id_cursor(num_total_entries);
+        while self.next_entry_id(&mut cursor)?.is_some() {}
+        Ok(())
+    }
+
+    pub fn next_entry_id(
+        &self,
+        cursor: &mut WordInfoEntryIdCursor,
+    ) -> SudachiResult<Option<EntryId>> {
+        if cursor.remaining == 0 {
+            return Ok(None);
         }
 
         if cursor.offset % Self::WORD_INFO_OFFSET_ALIGNMENT != 0 {
-            cursor.invalid = true;
-            return None;
+            return Err(invalid_entry_block(
+                cursor.offset,
+                "word info entry offset is not aligned",
+            ));
         }
 
         let entry_id = EntryId::new((cursor.offset >> Self::WORD_ID_ALIGNMENT_BITS) as u32);
-        let size = match self.entry_size_at(cursor.offset) {
-            Some(size) => size,
-            None => {
-                cursor.invalid = true;
-                return None;
-            }
-        };
+        let size = self.entry_size_at(cursor.offset).ok_or_else(|| {
+            invalid_entry_block(cursor.offset, "failed to read word info entry size")
+        })?;
 
         cursor.offset = match cursor.offset.checked_add(size) {
             Some(offset) => offset,
             None => {
-                cursor.invalid = true;
-                return None;
+                return Err(invalid_entry_block(
+                    cursor.offset,
+                    "word info entry overflows",
+                ))
             }
         };
         cursor.remaining -= 1;
-        Some(entry_id)
+        Ok(Some(entry_id))
     }
 
     fn entry_size_at(&self, offset: usize) -> Option<usize> {
-        let fixed = WordInfoFixedData::from_entry_bytes(&self.bytes[offset..])?;
+        let entry_bytes = self.bytes.get(offset..)?;
+        let fixed = WordInfoFixedData::from_entry_bytes(entry_bytes)?;
 
         if !layout::is_valid_user_data_flag(fixed.user_data_flag) {
             return None;
@@ -156,10 +165,16 @@ impl<'a> WordInfos<'a> {
     }
 }
 
+fn invalid_entry_block(offset: usize, reason: &str) -> SudachiError {
+    SudachiError::InvalidDataFormat(
+        0,
+        format!("invalid word info entry block at byte offset {offset}: {reason}"),
+    )
+}
+
 pub struct WordInfoEntryIdCursor {
     remaining: u32,
     offset: usize,
-    invalid: bool,
 }
 
 pub struct WordInfoEntryIdIter<'a, 'b> {
@@ -168,18 +183,21 @@ pub struct WordInfoEntryIdIter<'a, 'b> {
 }
 
 impl Iterator for WordInfoEntryIdIter<'_, '_> {
-    type Item = EntryId;
+    type Item = SudachiResult<EntryId>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.infos.next_entry_id(&mut self.cursor)
+        match self.infos.next_entry_id(&mut self.cursor) {
+            Ok(Some(entry_id)) => Some(Ok(entry_id)),
+            Ok(None) => None,
+            Err(error) => {
+                self.cursor.remaining = 0;
+                Some(Err(error))
+            }
+        }
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let remaining = if self.cursor.invalid {
-            0
-        } else {
-            self.cursor.remaining as usize
-        };
+        let remaining = self.cursor.remaining as usize;
         (0, Some(remaining))
     }
 }
@@ -319,5 +337,39 @@ mod tests {
                 .len(),
             1
         );
+    }
+
+    #[test]
+    fn validate_entry_boundaries_rejects_malformed_entries() {
+        let mut bytes = make_entry(&sample_fixed());
+        bytes.truncate(bytes.len() - 1);
+        let infos = WordInfos::from_bytes(&bytes);
+
+        let err = infos.validate_entry_boundaries(1).unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("invalid word info entry block at byte offset"));
+    }
+
+    #[test]
+    fn validate_entry_boundaries_rejects_short_entry_block() {
+        let bytes = vec![0; layout::ENTRY_INITIAL_OFFSET - 1];
+        let infos = WordInfos::from_bytes(&bytes);
+
+        let err = infos.validate_entry_boundaries(1).unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("failed to read word info entry size"));
+    }
+
+    #[test]
+    fn entry_id_iterator_reports_malformed_entries() {
+        let mut bytes = make_entry(&sample_fixed());
+        bytes.truncate(bytes.len() - 1);
+        let infos = WordInfos::from_bytes(&bytes);
+        let mut entries = infos.entry_ids(1);
+
+        assert!(entries.next().unwrap().is_err());
+        assert!(entries.next().is_none());
     }
 }

@@ -16,6 +16,7 @@
 
 extern crate lazy_static;
 
+use std::ops::Deref;
 use std::time::{Duration, UNIX_EPOCH};
 
 mod common;
@@ -43,6 +44,28 @@ const HIDDEN_ENTRY_CONFIG: &str = r#"
     ],
     "oovProviderPlugin" : [
         { "class" : "$exe/simple_oov",
+          "oovPOS" : [ "名詞", "普通名詞", "一般", "*", "*", "*" ],
+          "leftId" : 8,
+          "rightId" : 8,
+          "cost" : 6000 }
+    ],
+    "pathRewritePlugin" : []
+}
+"#;
+
+const YOMIGANA_CONFIG: &str = r#"
+{
+    "path" : "tests/resources/",
+    "characterDefinitionFile" : "char.def",
+    "inputTextPlugin" : [
+        { "class" : "com.worksap.nlp.sudachi.DefaultInputTextPlugin" },
+        { "class" : "com.worksap.nlp.sudachi.IgnoreYomiganaPlugin",
+          "leftBrackets": ["(", "（"],
+          "rightBrackets": [")", "）"],
+          "maxYomiganaLength": 4 }
+    ],
+    "oovProviderPlugin" : [
+        { "class" : "com.worksap.nlp.sudachi.SimpleOovPlugin",
           "oovPOS" : [ "名詞", "普通名詞", "一般", "*", "*", "*" ],
           "leftId" : 8,
           "rightId" : 8,
@@ -161,9 +184,9 @@ fn lookup_all_entries_scans_non_indexed_entries_only_public_rows() {
     assert_eq!(indexed.len(), 1);
     assert_eq!(indexed[0].reading_form(), "キョウト");
 
-    let hidden = tok.dict().lookup_all_entries("隠し").unwrap();
-    assert_eq!(hidden.len(), 1);
-    assert_eq!(hidden[0].surface(), "隠し");
+    let non_indexed = tok.dict().lookup_all_entries("隠し").unwrap();
+    assert_eq!(non_indexed.len(), 1);
+    assert_eq!(non_indexed[0].surface(), "隠し");
 
     tok.result.clear();
     assert_eq!(
@@ -175,6 +198,19 @@ fn lookup_all_entries_scans_non_indexed_entries_only_public_rows() {
 
     let phantom = tok.dict().lookup_all_entries("舞台芸術").unwrap();
     assert!(phantom.is_empty());
+}
+
+#[test]
+fn indexed_lookup_normalizes_query() {
+    let mut tok = common::TestStatefulTokenizer::new_built(sudachi::analysis::Mode::C);
+
+    assert_eq!(
+        tok.result
+            .lookup("特A", sudachi::dic::subset::InfoSubset::all())
+            .unwrap(),
+        1
+    );
+    assert_eq!(tok.result.get(0).reading_form(), "トクエー");
 }
 
 #[test]
@@ -195,6 +231,31 @@ fn lookup_all_entries_normalizes_query_and_searches_user_dictionaries() {
         .lookup_all_entries("存在しない語")
         .unwrap()
         .is_empty());
+}
+
+#[test]
+fn lookup_all_entries_and_lookup_apply_input_text_plugins() {
+    let mut tok = common::TestStatefulTokenizer::builder(HIDDEN_ENTRY_LEXICON)
+        .config(YOMIGANA_CONFIG.as_bytes())
+        .build();
+
+    let entries = tok.dict().lookup_all_entries("京都（キョウト）").unwrap();
+    assert_eq!(entries.len(), 1);
+    assert_eq!(entries[0].surface(), "京都");
+    assert_eq!(entries[0].normalized_form(), "京都");
+
+    tok.result.clear();
+    assert_eq!(
+        tok.result
+            .lookup("京都（キョウト）", sudachi::dic::subset::InfoSubset::all())
+            .unwrap(),
+        1
+    );
+    assert_eq!(tok.result.get(0).reading_form(), "キョウト");
+    assert_eq!(tok.result.get(0).surface().deref(), "京都");
+    assert_eq!(tok.result.get(0).begin(), 0);
+    assert_eq!(tok.result.get(0).end(), "京都".len());
+    assert_eq!(tok.result.get(0).end_c(), 2);
 }
 
 // fn creat_with_merging_settings

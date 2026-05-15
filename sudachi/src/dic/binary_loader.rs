@@ -169,6 +169,7 @@ impl<'a> BinaryLexicon<'a> {
         let entries_bytes = description.slice(buf, Block::Entries)?;
         let word_params = WordParams::from_bytes(entries_bytes);
         let word_infos = WordInfos::from_bytes(entries_bytes);
+        word_infos.validate_entry_boundaries(description.num_total_entries())?;
 
         let strings = CompactedStrings::from_bytes(description.slice(buf, Block::Strings)?);
 

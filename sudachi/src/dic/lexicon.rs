@@ -86,7 +86,7 @@ impl<'a> Lexicon<'a> {
         }
     }
 
-    pub fn entry_ids(&self) -> impl Iterator<Item = EntryId> + '_ {
+    pub fn entry_ids(&self) -> impl Iterator<Item = SudachiResult<EntryId>> + '_ {
         self.word_infos.entry_ids(self.num_total_entries)
     }
 
@@ -94,7 +94,10 @@ impl<'a> Lexicon<'a> {
         WordInfos::entry_id_cursor(self.num_total_entries)
     }
 
-    pub fn next_entry_id(&self, cursor: &mut WordInfoEntryIdCursor) -> Option<EntryId> {
+    pub fn next_entry_id(
+        &self,
+        cursor: &mut WordInfoEntryIdCursor,
+    ) -> SudachiResult<Option<EntryId>> {
         self.word_infos.next_entry_id(cursor)
     }
 

@@ -177,11 +177,11 @@ impl LexiconSet<'_> {
         self.lexicons.iter().fold(0, |acc, lex| acc + lex.size())
     }
 
-    pub fn word_ids(&self) -> impl Iterator<Item = WordId> + '_ {
+    pub fn word_ids(&self) -> impl Iterator<Item = SudachiResult<WordId>> + '_ {
         self.lexicons.iter().enumerate().flat_map(|(dict_id, lex)| {
             let dict_id = DictId::new(dict_id as u8);
             lex.entry_ids()
-                .map(move |entry| WordId::from_parts(dict_id, entry))
+                .map(move |entry| entry.map(|entry| WordId::from_parts(dict_id, entry)))
         })
     }
 
@@ -192,13 +192,17 @@ impl LexiconSet<'_> {
         }
     }
 
-    pub fn next_word_id(&self, cursor: &mut WordIdCursor) -> Option<WordId> {
+    pub fn next_word_id(&self, cursor: &mut WordIdCursor) -> SudachiResult<Option<WordId>> {
         loop {
-            let lexicon = self.lexicons.get(cursor.lexicon_index)?;
-            let entry_cursor = cursor.entry_cursor.as_mut()?;
-            if let Some(entry) = lexicon.next_entry_id(entry_cursor) {
+            let Some(lexicon) = self.lexicons.get(cursor.lexicon_index) else {
+                return Ok(None);
+            };
+            let Some(entry_cursor) = cursor.entry_cursor.as_mut() else {
+                return Ok(None);
+            };
+            if let Some(entry) = lexicon.next_entry_id(entry_cursor)? {
                 let dict_id = DictId::new(cursor.lexicon_index as u8);
-                return Some(WordId::from_parts(dict_id, entry));
+                return Ok(Some(WordId::from_parts(dict_id, entry)));
             }
 
             cursor.lexicon_index += 1;

@@ -31,9 +31,9 @@ use sudachi::dic::dictionary::JapaneseDictionary;
 use sudachi::dic::grammar::Grammar;
 use sudachi::dic::lexicon_set::{LexiconSet, WordIdCursor};
 use sudachi::dic::subset::InfoSubset;
-use sudachi::dic::{
-    lookup_all_entries as lookup_all_dictionary_entries, DictionaryAccess, LexiconAccess,
-};
+use sudachi::dic::{DictionaryAccess, LexiconAccess};
+use sudachi::error::SudachiResult;
+use sudachi::input_text::InputBuffer;
 use sudachi::plugin::input_text::InputTextPlugin;
 use sudachi::plugin::oov::OovProviderPlugin;
 use sudachi::plugin::path_rewrite::PathRewritePlugin;
@@ -84,6 +84,43 @@ impl PyDicData {
     }
 }
 
+fn normalize_input_text(
+    dict: &PyDicData,
+    text: &str,
+    buffer: &mut InputBuffer,
+) -> SudachiResult<()> {
+    buffer.reset().push_str(text);
+    buffer.start_build()?;
+    for plugin in dict.input_text_plugins() {
+        plugin.rewrite(buffer)?;
+    }
+    buffer.build(dict.grammar())
+}
+
+fn lookup_all_dictionary_entries(
+    dict: Arc<PyDicData>,
+    surface: &str,
+    subset: InfoSubset,
+) -> SudachiResult<Vec<SingleMorpheme<Arc<PyDicData>>>> {
+    let mut query_buffer = InputBuffer::new();
+    normalize_input_text(&dict, surface, &mut query_buffer)?;
+    let mut entry_buffer = InputBuffer::new();
+    let mut result = Vec::new();
+
+    for word_id in dict.lexicon().word_ids() {
+        let word_id = word_id?;
+        let word_info = dict
+            .lexicon()
+            .get_word_info_subset(word_id, InfoSubset::HEADWORD)?;
+        normalize_input_text(&dict, word_info.headword(dict.lexicon()), &mut entry_buffer)?;
+        if entry_buffer.current() == query_buffer.current() {
+            result.push(SingleMorpheme::from_word_id(dict.clone(), word_id, subset)?);
+        }
+    }
+
+    Ok(result)
+}
+
 #[pyclass(module = "sudachipy.dictionary", name = "DictionaryEntryIterator")]
 pub struct PyDictionaryEntryIterator {
     dict: Arc<PyDicData>,
@@ -98,7 +135,11 @@ impl PyDictionaryEntryIterator {
     }
 
     fn __next__(&mut self) -> PyResult<Option<PyMorpheme>> {
-        let Some(word_id) = self.dict.lexicon().next_word_id(&mut self.cursor) else {
+        let Some(word_id) = errors::wrap_ctx(
+            self.dict.lexicon().next_word_id(&mut self.cursor),
+            "failed to scan dictionary entries",
+        )?
+        else {
             return Ok(None);
         };
         let morpheme = errors::wrap_ctx(
@@ -409,8 +450,11 @@ impl PyDictionary {
 
     /// Iterates over dictionary entries as standalone morphemes.
     ///
-    /// This includes non-indexed entries such as split units, and excludes
-    /// internal entries automatically added to store literal normalization forms.
+    /// This iterates public lexicon entries. It includes entries that are
+    /// referred to from other entries, such as split or constituent units, even
+    /// when they are not indexed for normal lookup. Internal entries
+    /// automatically generated for literal normalized forms are not exposed.
+    /// The iteration order is not part of the public contract.
     #[pyo3(text_signature = "(self, /) -> Iterator[Morpheme]")]
     fn entries(&self) -> PyDictionaryEntryIterator {
         let dict = self.dictionary.clone().unwrap();
@@ -471,9 +515,9 @@ impl PyDictionary {
 
     /// Look up morphemes by scanning all dictionary entries.
     ///
-    /// The given surface is normalized before matching. This can find entries
-    /// which are not indexed and appear only when referred from other words, but
-    /// it is much slower than lookup.
+    /// The given surface is normalized before matching. This scans public
+    /// lexicon entries and can find entries which are not indexed for normal
+    /// lookup.
     ///
     /// :param surface: find all morphemes whose normalized surface matches this value
     /// :param out: if passed, reuse the given morpheme list instead of creating a new one.

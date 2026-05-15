@@ -35,7 +35,7 @@ pub mod subset;
 pub mod word_id;
 pub mod word_info;
 
+pub(crate) use dictionary_access::{lookup_all_entries, normalize_input_text};
 pub use dictionary_access::{
-    lookup_all_entries, normalize_input_text, DescriptionAccess, DictionaryAccess, LexiconAccess,
-    ReferenceIdAccess,
+    DescriptionAccess, DictionaryAccess, LexiconAccess, ReferenceIdAccess,
 };

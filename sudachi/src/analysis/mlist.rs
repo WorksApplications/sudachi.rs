@@ -202,6 +202,9 @@ impl<D: DictionaryAccess> MorphemeList<D> {
             let input = &mut self.input.borrow_mut().input;
             normalize_input_text(dict, query, input)?;
             let normalized = input.current().to_owned();
+            input.reset().push_str(&normalized);
+            input.start_build()?;
+            input.build(dict.grammar())?;
             let end_chars = input.ch_idx(normalized.len());
             (normalized, end_chars)
         };

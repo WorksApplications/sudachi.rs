@@ -159,10 +159,12 @@ class Dictionary:
 
     def entries(self) -> Iterator[Morpheme]:
         """
-        Iterates over dictionary entries as morphemes.
+        Iterates over public lexicon entries as morphemes.
 
-        Non-indexed entries are included. Internal entries automatically added
-        to store literal normalization forms are excluded.
+        Entries referred to from other entries, such as split or constituent
+        units, are included even when they are not indexed for normal lookup.
+        Internal entries automatically generated for literal normalized forms
+        are not exposed. The iteration order is not part of the public contract.
         """
         ...
 
@@ -186,8 +188,9 @@ class Dictionary:
         """
         Look up morphemes by scanning all dictionary entries.
 
-        The given surface is normalized before matching. This can find
-        non-indexed entries, but is much slower than lookup.
+        The given surface is normalized before matching. This scans public
+        lexicon entries and can find entries which are not indexed for normal
+        lookup.
 
         :param surface: find all morphemes whose normalized surface matches this value
         :param out: if passed, reuse the given morpheme list instead of creating a new one.

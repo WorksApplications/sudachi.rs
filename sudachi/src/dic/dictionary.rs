@@ -172,9 +172,11 @@ impl JapaneseDictionary {
 
     /// Iterates over dictionary entries as standalone morphemes.
     ///
-    /// This corresponds to lexicon CSV rows: it includes non-indexed entries
-    /// such as split units, and excludes internal phantom entries generated for
-    /// literal normalization forms.
+    /// This corresponds to public lexicon CSV rows. It includes entries that
+    /// are referred to from other entries, such as split or constituent units,
+    /// even when they are not indexed for normal lookup. Internal entries
+    /// automatically generated for literal normalized forms are not exposed.
+    /// The iteration order is not part of the public contract.
     pub fn entries(&self) -> impl Iterator<Item = SudachiResult<SingleMorpheme<&Self>>> + '_ {
         self.entries_subset(InfoSubset::all())
     }
@@ -186,13 +188,14 @@ impl JapaneseDictionary {
     ) -> impl Iterator<Item = SudachiResult<SingleMorpheme<&Self>>> + '_ {
         self.lexicon()
             .word_ids()
-            .map(move |word_id| SingleMorpheme::from_word_id(self, word_id, subset))
+            .map(move |word_id| SingleMorpheme::from_word_id(self, word_id?, subset))
     }
 
     /// Looks up all dictionary entries whose normalized surface matches `surface`.
     ///
-    /// This scans every public dictionary entry, including non-indexed entries,
-    /// so it is much slower than indexed lookup.
+    /// This normalizes the query using dictionary input-text plugins and scans
+    /// every public lexicon entry. It can find entries that are not indexed for
+    /// normal lookup. Use `lookup` for normal indexed lookup.
     #[allow(clippy::result_large_err)]
     pub fn lookup_all_entries(&self, surface: &str) -> SudachiResult<Vec<SingleMorpheme<&Self>>> {
         self.lookup_all_entries_subset(surface, InfoSubset::all())

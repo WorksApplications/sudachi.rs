@@ -103,7 +103,7 @@ where
 }
 
 /// Build normalized input text by applying dictionary input-text plugins.
-pub fn normalize_input_text<D: DictionaryAccess + ?Sized>(
+pub(crate) fn normalize_input_text<D: DictionaryAccess + ?Sized>(
     dict: &D,
     text: &str,
     buffer: &mut InputBuffer,
@@ -117,7 +117,7 @@ pub fn normalize_input_text<D: DictionaryAccess + ?Sized>(
 }
 
 /// Look up entries by scanning every public dictionary entry.
-pub fn lookup_all_entries<D>(
+pub(crate) fn lookup_all_entries<D>(
     dict: D,
     surface: &str,
     subset: InfoSubset,
@@ -131,6 +131,7 @@ where
     let mut result = Vec::new();
 
     for word_id in dict.lexicon().word_ids() {
+        let word_id = word_id?;
         let word_info = dict
             .lexicon()
             .get_word_info_subset(word_id, InfoSubset::HEADWORD)?;
