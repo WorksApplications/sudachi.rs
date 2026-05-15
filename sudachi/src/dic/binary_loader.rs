@@ -16,6 +16,7 @@
 
 use crate::dic::connect::ConnectionMatrix;
 use crate::dic::description::{Block, Description};
+use crate::dic::error::DictionaryCompatibilityError;
 use crate::dic::grammar::Grammar;
 use crate::dic::header::HeaderError;
 use crate::dic::lexicon::strings::CompactedStrings;
@@ -85,6 +86,14 @@ impl<'a> BinaryDictionary<'a> {
                 HeaderError::InvalidUserDictVersion,
             ))
         }
+    }
+
+    pub fn compatibility_key(&self) -> &str {
+        compatibility_key(&self.description)
+    }
+
+    pub fn is_compatible_with(&self, other: &BinaryDictionary<'_>) -> bool {
+        self.compatibility_key() == other.compatibility_key()
     }
 
     /// Build-time helper for dictionary builders and dump tooling.
@@ -208,6 +217,15 @@ impl<'a> LoadedDictionary<'a> {
     }
 
     pub fn merge_dictionary(mut self, other: BinaryDictionary<'a>) -> SudachiResult<Self> {
+        let expected_signature = compatibility_key(&self.description);
+        if expected_signature != other.compatibility_key() {
+            return Err(DictionaryCompatibilityError::UserDictionaryWithoutIndex {
+                system_signature: expected_signature.to_owned(),
+                user_reference: other.compatibility_key().to_owned(),
+            }
+            .into());
+        }
+
         self.lexicon_set.append(
             Lexicon::from_binary(other.lexicon),
             self.grammar.pos_list.len(),
@@ -256,6 +274,14 @@ impl ReferenceIdAccess for BinaryDictionary<'_> {
 impl ReferenceIdAccess for LoadedDictionary<'_> {
     fn reference_ids(&self) -> HashMap<u32, String> {
         self.system_reference_ids.clone()
+    }
+}
+
+fn compatibility_key(description: &Description) -> &str {
+    if description.is_system_dictionary() {
+        description.signature()
+    } else {
+        description.reference()
     }
 }
 

@@ -1,4 +1,4 @@
-#   Copyright (c) 2021 Works Applications Co., Ltd.
+#   Copyright (c) 2021-2026 Works Applications Co., Ltd.
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ CFG_TEMPLATE = Config(
 
 class MyTestCase(unittest.TestCase):
     def setUp(self) -> None:
+        self.tempdirs = []
         self.tempfiles = []
         self.tmpdir = tempfile.mkdtemp("sudachi", "test")
         super().setUp()
@@ -44,12 +45,22 @@ class MyTestCase(unittest.TestCase):
             p = Path(f)
             if p.exists():
                 p.unlink()
+        for d in self.tempdirs:
+            p = Path(d)
+            if p.exists():
+                p.rmdir()
         Path(self.tmpdir).rmdir()
         super().tearDown()
 
+    def make_tempfile(self, prefix, suffix):
+        tmpdir = tempfile.mkdtemp(prefix=prefix, dir=self.tmpdir)
+        self.tempdirs.append(tmpdir)
+        path = Path(tmpdir) / f"tmp{suffix}"
+        self.tempfiles.append(str(path))
+        return str(path)
+
     def test_build_system(self):
-        out_tmp = tempfile.mktemp(prefix="sudachi_sy", suffix=".dic", dir=self.tmpdir)
-        self.tempfiles.append(out_tmp)
+        out_tmp = self.make_tempfile("sudachi_sy", ".dic")
         stats = sudachipy.sudachipy.build_system_dic(
             matrix=RESOURCES_PATH / "matrix.def",
             lex=[RESOURCES_PATH / "lex.csv"],
@@ -63,15 +74,13 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual(result.size(), 3)
 
     def test_build_user1(self):
-        sys_dic = tempfile.mktemp(prefix="sudachi_sy", suffix=".dic", dir=self.tmpdir)
-        self.tempfiles.append(sys_dic)
+        sys_dic = self.make_tempfile("sudachi_sy", ".dic")
         sudachipy.sudachipy.build_system_dic(
             matrix=RESOURCES_PATH / "matrix.def",
             lex=[RESOURCES_PATH / "lex.csv"],
             output=sys_dic
         )
-        u1_dic = tempfile.mktemp(prefix="sudachi_u1", suffix=".dic", dir=self.tmpdir)
-        self.tempfiles.append(u1_dic)
+        u1_dic = self.make_tempfile("sudachi_u1", ".dic")
         sudachipy.sudachipy.build_user_dic(
             system=sys_dic,
             lex=[RESOURCES_PATH / "user1.csv"],
@@ -86,23 +95,20 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual(result[0].dictionary_id(), 1)
 
     def test_build_user2(self):
-        sys_dic = tempfile.mktemp(prefix="sudachi_sy", suffix=".dic", dir=self.tmpdir)
-        self.tempfiles.append(sys_dic)
+        sys_dic = self.make_tempfile("sudachi_sy", ".dic")
         sudachipy.sudachipy.build_system_dic(
             matrix=RESOURCES_PATH / "matrix.def",
             lex=[RESOURCES_PATH / "lex.csv"],
             output=sys_dic
         )
-        u1_dic = tempfile.mktemp(prefix="sudachi_u1", suffix=".dic", dir=self.tmpdir)
-        self.tempfiles.append(u1_dic)
+        u1_dic = self.make_tempfile("sudachi_u1", ".dic")
         sudachipy.sudachipy.build_user_dic(
             system=sys_dic,
             lex=[RESOURCES_PATH / "user1.csv"],
             output=u1_dic
         )
 
-        u2_dic = tempfile.mktemp(prefix="sudachi_u2", suffix=".dic", dir=self.tmpdir)
-        self.tempfiles.append(u2_dic)
+        u2_dic = self.make_tempfile("sudachi_u2", ".dic")
         sudachipy.sudachipy.build_user_dic(
             system=sys_dic,
             lex=[RESOURCES_PATH / "user2.csv"],
@@ -116,6 +122,37 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual(result.size(), 3)
         self.assertEqual(result[0].dictionary_id(), 2)
         self.assertEqual(result[0].part_of_speech()[0], "被子植物門")
+
+    def test_reject_incompatible_user_dictionary(self):
+        sys_dic = self.make_tempfile("sudachi_sy", ".dic")
+        sudachipy.sudachipy.build_system_dic(
+            matrix=RESOURCES_PATH / "matrix.def",
+            lex=[RESOURCES_PATH / "lex.csv"],
+            output=sys_dic,
+            description="system"
+        )
+
+        another_sys_dic = self.make_tempfile("sudachi_sy2", ".dic")
+        sudachipy.sudachipy.build_system_dic(
+            matrix=RESOURCES_PATH / "matrix.def",
+            lex=[RESOURCES_PATH / "lex.csv"],
+            output=another_sys_dic,
+            description="another"
+        )
+
+        incompatible_user_dic = self.make_tempfile("sudachi_u1", ".dic")
+        sudachipy.sudachipy.build_user_dic(
+            system=another_sys_dic,
+            lex=[RESOURCES_PATH / "user1.csv"],
+            output=incompatible_user_dic
+        )
+
+        cfg = replace(CFG_TEMPLATE, system=sys_dic, user=[incompatible_user_dic])
+        with self.assertRaises(sudachipy.errors.SudachiError) as err:
+            sudachipy.Dictionary(config=cfg)
+
+        self.assertIn("Error while constructing dictionary", str(err.exception))
+        self.assertIn("user dictionary is not compatible with the system dictionary", str(err.exception))
 
 
 if __name__ == '__main__':

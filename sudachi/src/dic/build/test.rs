@@ -22,6 +22,7 @@ mod with_analysis;
 use crate::dic::binary_loader::{BinaryDictionary, LoadedDictionary};
 use crate::dic::build::error::{BuildFailure, DicBuildError};
 use crate::dic::build::DictBuilder;
+use crate::dic::error::DictionaryCompatibilityError;
 use crate::dic::word_id::WordRef as DicWordRef;
 use crate::dic::LexiconAccess;
 use crate::error::SudachiError;
@@ -423,6 +424,64 @@ fn build_user_sets_reference_to_system_signature() {
 
     assert_eq!(user_desc.signature(), "");
     assert_eq!(user_desc.reference(), system_desc.signature());
+}
+
+#[test]
+fn loaded_dictionary_rejects_incompatible_user_dictionary() {
+    let mut system = DictBuilder::new_system();
+    system.set_compile_time(UNIX_EPOCH + Duration::from_secs(1));
+    system.set_description("abc");
+    system.read_conn(MATRIX_10_10).unwrap();
+    system
+        .read_lexicon(include_bytes!("test/data_1word.csv"))
+        .unwrap();
+    system.resolve().unwrap();
+
+    let mut system_bin = Vec::new();
+    system.compile(&mut system_bin).unwrap();
+    let system_dic = LoadedDictionary::load_system(&system_bin).unwrap();
+    let system_desc = BinaryDictionary::load_system(&system_bin)
+        .unwrap()
+        .description;
+
+    let mut another_system = DictBuilder::new_system();
+    another_system.set_compile_time(UNIX_EPOCH + Duration::from_secs(2));
+    another_system.set_description("another");
+    another_system.read_conn(MATRIX_10_10).unwrap();
+    another_system
+        .read_lexicon(include_bytes!("test/data_1word.csv"))
+        .unwrap();
+    another_system.resolve().unwrap();
+
+    let mut another_system_bin = Vec::new();
+    another_system.compile(&mut another_system_bin).unwrap();
+    let another_system_dic = LoadedDictionary::load_system(&another_system_bin).unwrap();
+    let another_system_desc = BinaryDictionary::load_system(&another_system_bin)
+        .unwrap()
+        .description;
+
+    let mut user = DictBuilder::new_user(&another_system_dic);
+    user.read_lexicon(include_bytes!("test/data_1word.csv"))
+        .unwrap();
+    user.resolve().unwrap();
+
+    let mut user_bin = Vec::new();
+    user.compile(&mut user_bin).unwrap();
+    let user_dic = BinaryDictionary::load_user(&user_bin).unwrap();
+
+    match system_dic.merge_dictionary(user_dic) {
+        Err(SudachiError::DictionaryCompatibility(
+            DictionaryCompatibilityError::UserDictionaryWithoutIndex {
+                system_signature,
+                user_reference,
+            },
+        )) => {
+            assert_eq!(system_signature, system_desc.signature());
+            assert_eq!(user_reference, another_system_desc.signature());
+        }
+        Ok(_) => panic!("merge should have failed for an incompatible user dictionary"),
+        Err(err) => panic!("unexpected error: {err}"),
+    }
 }
 
 #[test]
