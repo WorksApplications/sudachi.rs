@@ -36,5 +36,6 @@ pub mod word_id;
 pub mod word_info;
 
 pub use dictionary_access::{
-    DescriptionAccess, DictionaryAccess, LexiconAccess, ReferenceIdAccess,
+    lookup_all_entries, normalize_input_text, DescriptionAccess, DictionaryAccess, LexiconAccess,
+    ReferenceIdAccess,
 };

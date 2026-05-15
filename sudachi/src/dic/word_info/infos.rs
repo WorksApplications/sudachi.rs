@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+use std::iter::FusedIterator;
+
 use crate::dic::subset::InfoSubset;
 use crate::dic::word_id::EntryId;
 use crate::dic::word_info::layout;
@@ -54,6 +56,51 @@ impl<'a> WordInfos<'a> {
         }
 
         Some(result)
+    }
+
+    pub fn entry_ids(&self, num_total_entries: u32) -> WordInfoEntryIdIter<'_, '_> {
+        WordInfoEntryIdIter {
+            infos: self,
+            cursor: Self::entry_id_cursor(num_total_entries),
+        }
+    }
+
+    pub fn entry_id_cursor(num_total_entries: u32) -> WordInfoEntryIdCursor {
+        WordInfoEntryIdCursor {
+            remaining: num_total_entries,
+            offset: Self::ENTRIES_INITIAL_OFFSET,
+            invalid: false,
+        }
+    }
+
+    pub fn next_entry_id(&self, cursor: &mut WordInfoEntryIdCursor) -> Option<EntryId> {
+        if cursor.remaining == 0 || cursor.invalid {
+            return None;
+        }
+
+        if cursor.offset % Self::WORD_INFO_OFFSET_ALIGNMENT != 0 {
+            cursor.invalid = true;
+            return None;
+        }
+
+        let entry_id = EntryId::new((cursor.offset >> Self::WORD_ID_ALIGNMENT_BITS) as u32);
+        let size = match self.entry_size_at(cursor.offset) {
+            Some(size) => size,
+            None => {
+                cursor.invalid = true;
+                return None;
+            }
+        };
+
+        cursor.offset = match cursor.offset.checked_add(size) {
+            Some(offset) => offset,
+            None => {
+                cursor.invalid = true;
+                return None;
+            }
+        };
+        cursor.remaining -= 1;
+        Some(entry_id)
     }
 
     fn entry_size_at(&self, offset: usize) -> Option<usize> {
@@ -108,6 +155,36 @@ impl<'a> WordInfos<'a> {
         Ok(WordInfoRefData::from_raw(word_info))
     }
 }
+
+pub struct WordInfoEntryIdCursor {
+    remaining: u32,
+    offset: usize,
+    invalid: bool,
+}
+
+pub struct WordInfoEntryIdIter<'a, 'b> {
+    infos: &'a WordInfos<'b>,
+    cursor: WordInfoEntryIdCursor,
+}
+
+impl Iterator for WordInfoEntryIdIter<'_, '_> {
+    type Item = EntryId;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.infos.next_entry_id(&mut self.cursor)
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let remaining = if self.cursor.invalid {
+            0
+        } else {
+            self.cursor.remaining as usize
+        };
+        (0, Some(remaining))
+    }
+}
+
+impl FusedIterator for WordInfoEntryIdIter<'_, '_> {}
 
 #[cfg(test)]
 mod tests {

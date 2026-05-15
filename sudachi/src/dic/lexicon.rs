@@ -24,7 +24,7 @@ use crate::dic::binary_loader::BinaryLexicon;
 use crate::dic::lexicon::strings::CompactedStrings;
 use crate::dic::subset::InfoSubset;
 use crate::dic::word_id::{EntryId, WordId};
-use crate::dic::word_info::{WordInfoRefData, WordInfos};
+use crate::dic::word_info::{WordInfoEntryIdCursor, WordInfoRefData, WordInfos};
 use crate::dic::DictionaryAccess;
 use crate::prelude::*;
 
@@ -84,6 +84,18 @@ impl<'a> Lexicon<'a> {
                 result
             }
         }
+    }
+
+    pub fn entry_ids(&self) -> impl Iterator<Item = EntryId> + '_ {
+        self.word_infos.entry_ids(self.num_total_entries)
+    }
+
+    pub fn entry_id_cursor(&self) -> WordInfoEntryIdCursor {
+        WordInfos::entry_id_cursor(self.num_total_entries)
+    }
+
+    pub fn next_entry_id(&self, cursor: &mut WordInfoEntryIdCursor) -> Option<EntryId> {
+        self.word_infos.next_entry_id(cursor)
     }
 
     /// Assign lexicon id to the current Lexicon

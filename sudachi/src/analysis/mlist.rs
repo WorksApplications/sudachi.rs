@@ -24,7 +24,7 @@ use crate::analysis::node::{PathCost, ResultNode};
 use crate::analysis::stateful_tokenizer::StatefulTokenizer;
 use crate::analysis::{Mode, Node};
 use crate::dic::subset::InfoSubset;
-use crate::dic::DictionaryAccess;
+use crate::dic::{normalize_input_text, DictionaryAccess};
 use crate::error::{SudachiError, SudachiResult};
 use crate::input_text::InputBuffer;
 
@@ -193,27 +193,30 @@ impl<D: DictionaryAccess> MorphemeList<D> {
     }
 
     /// Looks up the given query and reset the morpheme list to the result.
+    ///
+    /// The query is normalized with dictionary input-text plugins before lookup.
     /// Returns the number of found entries.
     pub fn lookup(&mut self, query: &str, subset: InfoSubset) -> SudachiResult<usize> {
-        let end_chars = {
+        let (normalized, end_chars) = {
+            let dict = &self.dict;
             let input = &mut self.input.borrow_mut().input;
-            input.reset().push_str(query);
-            input.start_build()?;
-            input.build(self.dict.grammar())?;
-            input.ch_idx(query.len())
+            normalize_input_text(dict, query, input)?;
+            let normalized = input.current().to_owned();
+            let end_chars = input.ch_idx(normalized.len());
+            (normalized, end_chars)
         };
 
         let mut result = 0;
         let lex = self.dict.lexicon();
-        for entry in lex.lookup(query.as_bytes(), 0) {
-            if entry.end != query.len() {
+        for entry in lex.lookup(normalized.as_bytes(), 0) {
+            if entry.end != normalized.len() {
                 continue;
             }
             let info = lex.get_word_info_subset(entry.word_id, subset)?;
             let node = Node::new(0, end_chars as _, 0, 0, 0, entry.word_id);
             self.nodes
                 .data
-                .push(ResultNode::new(node, 0, 0, query.len() as _, info));
+                .push(ResultNode::new(node, 0, 0, normalized.len() as _, info));
             result += 1;
         }
         Ok(result)

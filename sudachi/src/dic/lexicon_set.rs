@@ -21,7 +21,7 @@ use crate::dic::lexicon::strings::StringPointer;
 use crate::dic::lexicon::{Lexicon, LexiconEntry, MAX_DICTIONARIES};
 use crate::dic::subset::InfoSubset;
 use crate::dic::word_id::{DictId, WordId};
-use crate::dic::word_info::WordInfo;
+use crate::dic::word_info::{WordInfo, WordInfoEntryIdCursor};
 use crate::dic::LexiconAccess;
 use crate::prelude::*;
 
@@ -49,6 +49,11 @@ pub struct LexiconSet<'a> {
     lexicons: Vec<Lexicon<'a>>,
     pos_offsets: Vec<usize>,
     num_system_pos: usize,
+}
+
+pub struct WordIdCursor {
+    lexicon_index: usize,
+    entry_cursor: Option<WordInfoEntryIdCursor>,
 }
 
 impl LexiconAccess for LexiconSet<'_> {
@@ -170,6 +175,38 @@ impl LexiconSet<'_> {
 
     pub fn size(&self) -> u32 {
         self.lexicons.iter().fold(0, |acc, lex| acc + lex.size())
+    }
+
+    pub fn word_ids(&self) -> impl Iterator<Item = WordId> + '_ {
+        self.lexicons.iter().enumerate().flat_map(|(dict_id, lex)| {
+            let dict_id = DictId::new(dict_id as u8);
+            lex.entry_ids()
+                .map(move |entry| WordId::from_parts(dict_id, entry))
+        })
+    }
+
+    pub fn word_id_cursor(&self) -> WordIdCursor {
+        WordIdCursor {
+            lexicon_index: 0,
+            entry_cursor: self.lexicons.first().map(Lexicon::entry_id_cursor),
+        }
+    }
+
+    pub fn next_word_id(&self, cursor: &mut WordIdCursor) -> Option<WordId> {
+        loop {
+            let lexicon = self.lexicons.get(cursor.lexicon_index)?;
+            let entry_cursor = cursor.entry_cursor.as_mut()?;
+            if let Some(entry) = lexicon.next_entry_id(entry_cursor) {
+                let dict_id = DictId::new(cursor.lexicon_index as u8);
+                return Some(WordId::from_parts(dict_id, entry));
+            }
+
+            cursor.lexicon_index += 1;
+            cursor.entry_cursor = self
+                .lexicons
+                .get(cursor.lexicon_index)
+                .map(Lexicon::entry_id_cursor);
+        }
     }
 
     pub fn system_word_ids_in_order(&self) -> Vec<WordId> {

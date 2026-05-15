@@ -55,6 +55,39 @@ class TestDictionary(unittest.TestCase):
         self.assertEqual(0, ms[0].begin())
         self.assertEqual(2, ms[0].end())
 
+    def test_entries(self):
+        entries = list(self.dict_.entries())
+        surfaces = [m.raw_surface() for m in entries]
+
+        self.assertIn("東京都", surfaces)
+        self.assertIn("すだち", surfaces)
+        self.assertTrue(any(m.dictionary_id() == 0 for m in entries))
+        self.assertEqual(1, next(m for m in entries if m.raw_surface() == "すだち").dictionary_id())
+
+    def test_lookup_all_entries(self):
+        self.assertFalse(self.dict_.lookup_all_entries("存在しない語"))
+
+        tokyo = self.dict_.lookup_all_entries("東京都")
+        self.assertEqual(1, len(tokyo))
+        self.assertEqual("トウキョウト", tokyo[0].reading_form())
+        self.assertEqual("東京都", tokyo[0].raw_surface())
+        self.assertEqual(0, tokyo[0].begin())
+        self.assertEqual(3, tokyo[0].end())
+
+        normalized = self.dict_.lookup_all_entries("特A")
+        self.assertEqual(1, len(normalized))
+        self.assertEqual("特A", normalized[0].raw_surface())
+
+        user_entry = self.dict_.lookup_all_entries("すだち")
+        self.assertEqual(1, len(user_entry))
+        self.assertEqual(1, user_entry[0].dictionary_id())
+        self.assertEqual("スダチ", user_entry[0].reading_form())
+
+        out = self.dict_.lookup("京都")
+        reused = self.dict_.lookup_all_entries("東京都", out=out)
+        self.assertIs(reused, out)
+        self.assertEqual("東京都", reused[0].raw_surface())
+
 
 if __name__ == '__main__':
     unittest.main()
