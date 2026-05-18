@@ -178,7 +178,7 @@ class Dictionary:
         Inside a dictionary, morphemes are outputted in-binary-dictionary order.
         Morphemes which are not indexed are not returned.
 
-        :param surface: find all morphemes with the given surface
+        :param surface: input surface; normalized before indexed lookup.
         :param out: if passed, reuse the given morpheme list instead of creating a new one.
             See https://worksapplications.github.io/sudachi.rs/python/topics/out_param.html for details.
         """
@@ -190,7 +190,8 @@ class Dictionary:
 
         The given surface is normalized before matching. This scans public
         lexicon entries and can find entries which are not indexed for normal
-        lookup.
+        lookup. This can be slow on large dictionaries; use `lookup()` for
+        normal indexed lookup.
 
         :param surface: find all morphemes whose normalized surface matches this value
         :param out: if passed, reuse the given morpheme list instead of creating a new one.

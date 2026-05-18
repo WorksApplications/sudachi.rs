@@ -84,7 +84,12 @@ impl PyDicData {
     }
 }
 
-fn normalize_input_text(
+/// Applies input-text plugins and leaves the rewritten text in `buffer.current()`.
+///
+/// This intentionally does not build grammar/index metadata and must only be
+/// used when the rewritten string is needed for comparison, not for morpheme
+/// offsets or analysis.
+fn rewrite_input_text_for_comparison(
     dict: &PyDicData,
     text: &str,
     buffer: &mut InputBuffer,
@@ -94,7 +99,7 @@ fn normalize_input_text(
     for plugin in dict.input_text_plugins() {
         plugin.rewrite(buffer)?;
     }
-    buffer.build(dict.grammar())
+    Ok(())
 }
 
 fn lookup_all_dictionary_entries(
@@ -103,7 +108,8 @@ fn lookup_all_dictionary_entries(
     subset: InfoSubset,
 ) -> SudachiResult<Vec<SingleMorpheme<Arc<PyDicData>>>> {
     let mut query_buffer = InputBuffer::new();
-    normalize_input_text(&dict, surface, &mut query_buffer)?;
+    rewrite_input_text_for_comparison(&dict, surface, &mut query_buffer)?;
+    let query = query_buffer.current().to_owned();
     let mut entry_buffer = InputBuffer::new();
     let mut result = Vec::new();
 
@@ -112,8 +118,12 @@ fn lookup_all_dictionary_entries(
         let word_info = dict
             .lexicon()
             .get_word_info_subset(word_id, InfoSubset::HEADWORD)?;
-        normalize_input_text(&dict, word_info.headword(dict.lexicon()), &mut entry_buffer)?;
-        if entry_buffer.current() == query_buffer.current() {
+        rewrite_input_text_for_comparison(
+            &dict,
+            word_info.headword(dict.lexicon()),
+            &mut entry_buffer,
+        )?;
+        if entry_buffer.current() == query {
             result.push(SingleMorpheme::from_word_id(dict.clone(), word_id, subset)?);
         }
     }
@@ -475,7 +485,7 @@ impl PyDictionary {
     /// Inside a dictionary, morphemes are outputted in-binary-dictionary order.
     /// Morphemes which are not indexed are not returned.
     ///
-    /// :param surface: find all morphemes with the given surface
+    /// :param surface: input surface; normalized before indexed lookup.
     /// :param out: if passed, reuse the given morpheme list instead of creating a new one.
     ///     See https://worksapplications.github.io/sudachi.rs/python/topics/out_param.html for details.
     ///
@@ -517,7 +527,8 @@ impl PyDictionary {
     ///
     /// The given surface is normalized before matching. This scans public
     /// lexicon entries and can find entries which are not indexed for normal
-    /// lookup.
+    /// lookup. This can be slow on large dictionaries; use `lookup()` for
+    /// normal indexed lookup.
     ///
     /// :param surface: find all morphemes whose normalized surface matches this value
     /// :param out: if passed, reuse the given morpheme list instead of creating a new one.
