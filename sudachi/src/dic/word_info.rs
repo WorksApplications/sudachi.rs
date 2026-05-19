@@ -24,7 +24,7 @@ mod raw;
 pub(crate) use binary::{parse_i32_array, parse_u32_array, parse_user_data};
 pub use data::*;
 pub(crate) use infos::WordInfoEntryIdCursor;
-pub use infos::WordInfos;
+pub use infos::{WordInfoError, WordInfos};
 pub(crate) use layout::WordInfoVariableLayout;
 pub use parse::WordInfoParser;
 pub(crate) use raw::WordInfoVariableData;
