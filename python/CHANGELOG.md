@@ -9,6 +9,12 @@ Also check [rust changelog](../CHANGELOG.md).
 ### Added
 
 - Add `Morpheme.dictionary_form_morpheme()` and `Morpheme.normalized_form_morpheme()`.
+- Added `Dictionary.entries()` and `Dictionary.lookup_all_entries()`.
+
+### Changed
+
+- Changed `Dictionary.lookup()` to normalize queries before indexed lookup,
+  matching Java Sudachi behavior.
 
 ### Fixed
 

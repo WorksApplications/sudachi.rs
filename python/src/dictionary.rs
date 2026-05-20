@@ -24,19 +24,22 @@ use pyo3::ffi::c_str;
 use pyo3::prelude::*;
 use pyo3::types::{PySet, PyString, PyTuple};
 
+use sudachi::analysis::morpheme::SingleMorpheme;
 use sudachi::analysis::Mode;
 use sudachi::config::{Config, ConfigBuilder, SurfaceProjection};
 use sudachi::dic::dictionary::JapaneseDictionary;
 use sudachi::dic::grammar::Grammar;
-use sudachi::dic::lexicon_set::LexiconSet;
+use sudachi::dic::lexicon_set::{LexiconSet, WordIdCursor};
 use sudachi::dic::subset::InfoSubset;
 use sudachi::dic::{DictionaryAccess, LexiconAccess};
+use sudachi::error::SudachiResult;
+use sudachi::input_text::InputBuffer;
 use sudachi::plugin::input_text::InputTextPlugin;
 use sudachi::plugin::oov::OovProviderPlugin;
 use sudachi::plugin::path_rewrite::PathRewritePlugin;
 
 use crate::errors;
-use crate::morpheme::PyMorphemeListWrapper;
+use crate::morpheme::{PyMorpheme, PyMorphemeListWrapper};
 use crate::pos_matcher::PyPosMatcher;
 use crate::pretokenizer::PyPretokenizer;
 use crate::projection::{pyprojection, PyProjector};
@@ -78,6 +81,85 @@ impl LexiconAccess for PyDicData {
 impl PyDicData {
     pub fn pos_of(&self, pos_id: u16) -> &Py<PyTuple> {
         &self.pos[pos_id as usize]
+    }
+}
+
+/// Applies input-text plugins and leaves the rewritten text in `buffer.current()`.
+///
+/// This intentionally does not build grammar/index metadata and must only be
+/// used when the rewritten string is needed for comparison, not for morpheme
+/// offsets or analysis.
+fn rewrite_input_text_for_comparison(
+    dict: &PyDicData,
+    text: &str,
+    buffer: &mut InputBuffer,
+) -> SudachiResult<()> {
+    buffer.reset().push_str(text);
+    buffer.start_build()?;
+    for plugin in dict.input_text_plugins() {
+        plugin.rewrite(buffer)?;
+    }
+    Ok(())
+}
+
+fn lookup_all_dictionary_entries(
+    dict: Arc<PyDicData>,
+    surface: &str,
+    subset: InfoSubset,
+) -> SudachiResult<Vec<SingleMorpheme<Arc<PyDicData>>>> {
+    let mut query_buffer = InputBuffer::new();
+    rewrite_input_text_for_comparison(&dict, surface, &mut query_buffer)?;
+    let query = query_buffer.current().to_owned();
+    let mut entry_buffer = InputBuffer::new();
+    let mut result = Vec::new();
+
+    for word_id in dict.lexicon().word_ids() {
+        let word_id = word_id?;
+        let word_info = dict
+            .lexicon()
+            .get_word_info_subset(word_id, InfoSubset::HEADWORD)?;
+        rewrite_input_text_for_comparison(
+            &dict,
+            word_info.headword(dict.lexicon()),
+            &mut entry_buffer,
+        )?;
+        if entry_buffer.current() == query {
+            result.push(SingleMorpheme::from_word_id(dict.clone(), word_id, subset)?);
+        }
+    }
+
+    Ok(result)
+}
+
+#[pyclass(module = "sudachipy.dictionary", name = "DictionaryEntryIterator")]
+pub struct PyDictionaryEntryIterator {
+    dict: Arc<PyDicData>,
+    projection: PyProjector,
+    cursor: WordIdCursor,
+}
+
+#[pymethods]
+impl PyDictionaryEntryIterator {
+    fn __iter__(slf: PyRef<Self>) -> PyRef<Self> {
+        slf
+    }
+
+    fn __next__(&mut self) -> PyResult<Option<PyMorpheme>> {
+        let Some(word_id) = errors::wrap_ctx(
+            self.dict.lexicon().next_word_id(&mut self.cursor),
+            "failed to scan dictionary entries",
+        )?
+        else {
+            return Ok(None);
+        };
+        let morpheme = errors::wrap_ctx(
+            SingleMorpheme::from_word_id(self.dict.clone(), word_id, InfoSubset::all()),
+            "failed to load dictionary entry",
+        )?;
+        Ok(Some(PyMorpheme::single_backed(
+            morpheme,
+            self.projection.clone(),
+        )))
     }
 }
 
@@ -376,14 +458,34 @@ impl PyDictionary {
             .call1((pretokenizer,))
     }
 
+    /// Iterates over dictionary entries as standalone morphemes.
+    ///
+    /// This iterates public lexicon entries. It includes entries that are
+    /// referred to from other entries, such as split or constituent units, even
+    /// when they are not indexed for normal lookup. Internal entries
+    /// automatically generated for literal normalized forms are not exposed.
+    /// The iteration order is not part of the public contract.
+    #[pyo3(text_signature = "(self, /) -> Iterator[Morpheme]")]
+    fn entries(&self) -> PyDictionaryEntryIterator {
+        let dict = self.dictionary.clone().unwrap();
+        let projection = dict.projection.clone();
+        let cursor = dict.lexicon().word_id_cursor();
+        PyDictionaryEntryIterator {
+            dict,
+            projection,
+            cursor,
+        }
+    }
+
     /// Look up morphemes in the binary dictionary without performing the analysis.
     ///
-    /// All morphemes from the dictionary with the given surface string are returned,
-    /// with the last user dictionary searched first and the system dictionary searched last.
+    /// The given surface is normalized before lookup. All morphemes from the
+    /// dictionary with the normalized surface string are returned, with the last
+    /// user dictionary searched first and the system dictionary searched last.
     /// Inside a dictionary, morphemes are outputted in-binary-dictionary order.
     /// Morphemes which are not indexed are not returned.
     ///
-    /// :param surface: find all morphemes with the given surface
+    /// :param surface: input surface; normalized before indexed lookup.
     /// :param out: if passed, reuse the given morpheme list instead of creating a new one.
     ///     See https://worksapplications.github.io/sudachi.rs/python/topics/out_param.html for details.
     ///
@@ -419,6 +521,50 @@ impl PyDictionary {
         out_list.clear();
         errors::wrap_ctx(out_list.lookup(surface, InfoSubset::all()), surface)?;
         Ok(l)
+    }
+
+    /// Look up morphemes by scanning all dictionary entries.
+    ///
+    /// The given surface is normalized before matching. This scans public
+    /// lexicon entries and can find entries which are not indexed for normal
+    /// lookup. This can be slow on large dictionaries; use `lookup()` for
+    /// normal indexed lookup.
+    ///
+    /// :param surface: find all morphemes whose normalized surface matches this value
+    /// :param out: if passed, reuse the given morpheme list instead of creating a new one.
+    ///
+    /// :type surface: str
+    /// :type out: MorphemeList | None
+    #[pyo3(
+        signature = (surface, out=None),
+        text_signature = "(self, /, surface, out=None) -> MorphemeList",
+    )]
+    fn lookup_all_entries<'py>(
+        &'py self,
+        py: Python<'py>,
+        surface: &'py str,
+        out: Option<Bound<'py, PyMorphemeListWrapper>>,
+    ) -> PyResult<Bound<'py, PyMorphemeListWrapper>> {
+        let dict = self.dictionary.clone().unwrap();
+        let projection = dict.projection.clone();
+        let singles = errors::wrap_ctx(
+            lookup_all_dictionary_entries(dict, surface, InfoSubset::all()),
+            surface,
+        )?;
+
+        match out {
+            None => Bound::new(py, PyMorphemeListWrapper::from_singles(singles, projection)),
+            Some(cell) => {
+                {
+                    let mut wrapper = match cell.try_borrow_mut() {
+                        Ok(wrapper) => wrapper,
+                        Err(_) => return errors::wrap(Err("out was used twice at the same time")),
+                    };
+                    wrapper.replace_with_singles(singles, projection);
+                }
+                Ok(cell)
+            }
+        }
     }
 
     /// Close this dictionary.

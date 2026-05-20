@@ -14,11 +14,31 @@
  * limitations under the License.
  */
 
+use std::iter::FusedIterator;
+
 use crate::dic::subset::InfoSubset;
 use crate::dic::word_id::EntryId;
 use crate::dic::word_info::layout;
 use crate::dic::word_info::{WordInfoFixedData, WordInfoParser, WordInfoRefData};
 use crate::prelude::*;
+use thiserror::Error;
+
+/// Errors returned while scanning binary WordInfo entry boundaries.
+#[derive(Error, Debug, Clone, Eq, PartialEq)]
+#[non_exhaustive]
+pub enum WordInfoError {
+    /// WordInfo entry offsets must be aligned because entry ids are derived from them.
+    #[error("word info entry id at byte offset {0} is not aligned")]
+    EntryIdNotAligned(usize),
+
+    /// The scanner could not determine a complete, valid entry size at the offset.
+    #[error("failed to load word info entry size at byte offset {0}")]
+    FailedToLoadEntrySize(usize),
+
+    /// The entry offset cannot be represented as a valid Sudachi entry id.
+    #[error("word info entry id at byte offset {0} is too large")]
+    EntryIdTooLarge(usize),
+}
 
 pub struct WordInfos<'a> {
     bytes: &'a [u8],
@@ -38,26 +58,72 @@ impl<'a> WordInfos<'a> {
     }
 
     pub fn entry_ids_in_order(&self, num_total_entries: u32) -> Option<Vec<EntryId>> {
-        let mut result = Vec::with_capacity(num_total_entries as usize);
-        let mut offset = Self::ENTRIES_INITIAL_OFFSET;
+        self.entry_ids(num_total_entries)
+            .collect::<SudachiResult<Vec<_>>>()
+            .ok()
+    }
 
-        while result.len() < num_total_entries as usize {
-            if offset % Self::WORD_INFO_OFFSET_ALIGNMENT != 0 {
-                return None;
-            }
+    pub(crate) fn entry_ids(&self, num_total_entries: u32) -> WordInfoEntryIdIter<'_, '_> {
+        WordInfoEntryIdIter {
+            infos: self,
+            cursor: Self::entry_id_cursor(num_total_entries),
+        }
+    }
 
-            let entry_id = EntryId::new((offset >> Self::WORD_ID_ALIGNMENT_BITS) as u32);
-            result.push(entry_id);
+    pub(crate) fn entry_id_cursor(num_total_entries: u32) -> WordInfoEntryIdCursor {
+        WordInfoEntryIdCursor {
+            remaining: num_total_entries,
+            offset: Self::ENTRIES_INITIAL_OFFSET,
+        }
+    }
 
-            let size = self.entry_size_at(offset)?;
-            offset = offset.checked_add(size)?;
+    /// Validate that all WordInfo entries can be scanned from their binary boundaries.
+    ///
+    /// Returns [`WordInfoError`] through [`SudachiError`] when an entry id cannot be
+    /// derived or an entry size cannot be read.
+    pub fn validate_entry_boundaries(&self, num_total_entries: u32) -> SudachiResult<()> {
+        let mut cursor = Self::entry_id_cursor(num_total_entries);
+        while self.next_entry_id(&mut cursor)?.is_some() {}
+        Ok(())
+    }
+
+    pub(crate) fn next_entry_id(
+        &self,
+        cursor: &mut WordInfoEntryIdCursor,
+    ) -> SudachiResult<Option<EntryId>> {
+        if cursor.remaining == 0 {
+            return Ok(None);
         }
 
-        Some(result)
+        let entry_id = Self::entry_id_from_offset(cursor.offset)?;
+        let size = self
+            .entry_size_at(cursor.offset)
+            .ok_or_else(|| WordInfoError::FailedToLoadEntrySize(cursor.offset))?;
+
+        cursor.offset = match cursor.offset.checked_add(size) {
+            Some(offset) => offset,
+            None => return Err(WordInfoError::EntryIdTooLarge(cursor.offset).into()),
+        };
+        cursor.remaining -= 1;
+        Ok(Some(entry_id))
+    }
+
+    fn entry_id_from_offset(offset: usize) -> SudachiResult<EntryId> {
+        if offset % Self::WORD_INFO_OFFSET_ALIGNMENT != 0 {
+            return Err(WordInfoError::EntryIdNotAligned(offset).into());
+        }
+
+        let raw = offset >> Self::WORD_ID_ALIGNMENT_BITS;
+        if raw > EntryId::MAX as usize {
+            return Err(WordInfoError::EntryIdTooLarge(offset).into());
+        }
+
+        Ok(EntryId::new(raw as u32))
     }
 
     fn entry_size_at(&self, offset: usize) -> Option<usize> {
-        let fixed = WordInfoFixedData::from_entry_bytes(&self.bytes[offset..])?;
+        let entry_bytes = self.bytes.get(offset..)?;
+        let fixed = WordInfoFixedData::from_entry_bytes(entry_bytes)?;
 
         if !layout::is_valid_user_data_flag(fixed.user_data_flag) {
             return None;
@@ -65,16 +131,16 @@ impl<'a> WordInfos<'a> {
 
         let mut user_data_units = None;
         if fixed.has_user_data() {
-            let user_data_offset = offset
-                + layout::unaligned_size_from_lengths(
-                    fixed.c_unit_split_length,
-                    fixed.b_unit_split_length,
-                    fixed.a_unit_split_length,
-                    fixed.word_structure_length,
-                    fixed.synonym_group_ids_length,
-                    None,
-                )?;
-            let user_len_bytes = self.bytes.get(user_data_offset..user_data_offset + 2)?;
+            let user_data_offset = offset.checked_add(layout::unaligned_size_from_lengths(
+                fixed.c_unit_split_length,
+                fixed.b_unit_split_length,
+                fixed.a_unit_split_length,
+                fixed.word_structure_length,
+                fixed.synonym_group_ids_length,
+                None,
+            )?)?;
+            let user_data_len_end = user_data_offset.checked_add(2)?;
+            let user_len_bytes = self.bytes.get(user_data_offset..user_data_len_end)?;
             let user_len = i16::from_le_bytes([user_len_bytes[0], user_len_bytes[1]]);
             user_data_units = Some(user_len);
         }
@@ -87,7 +153,8 @@ impl<'a> WordInfos<'a> {
             fixed.synonym_group_ids_length,
             user_data_units,
         )?;
-        self.bytes.get(offset..offset + aligned)?;
+        let end = offset.checked_add(aligned)?;
+        self.bytes.get(offset..end)?;
         Some(aligned)
     }
 
@@ -109,12 +176,51 @@ impl<'a> WordInfos<'a> {
     }
 }
 
+pub(crate) struct WordInfoEntryIdCursor {
+    remaining: u32,
+    offset: usize,
+}
+
+pub(crate) struct WordInfoEntryIdIter<'a, 'b> {
+    infos: &'a WordInfos<'b>,
+    cursor: WordInfoEntryIdCursor,
+}
+
+impl Iterator for WordInfoEntryIdIter<'_, '_> {
+    type Item = SudachiResult<EntryId>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.infos.next_entry_id(&mut self.cursor) {
+            Ok(Some(entry_id)) => Some(Ok(entry_id)),
+            Ok(None) => None,
+            Err(error) => {
+                self.cursor.remaining = 0;
+                Some(Err(error))
+            }
+        }
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let remaining = self.cursor.remaining as usize;
+        (0, Some(remaining))
+    }
+}
+
+impl FusedIterator for WordInfoEntryIdIter<'_, '_> {}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::dic::lexicon::strings::StringPointer;
     use crate::dic::word_id::DictId;
     use crate::dic::word_info::WordInfoVariableData;
+
+    fn assert_word_info_error(error: SudachiError, expected: WordInfoError) {
+        match error {
+            SudachiError::WordInfo(actual) => assert_eq!(actual, expected),
+            other => panic!("expected word info error {expected:?}, got {other:?}"),
+        }
+    }
 
     fn sample_fixed() -> WordInfoFixedData {
         WordInfoFixedData {
@@ -242,5 +348,71 @@ mod tests {
                 .len(),
             1
         );
+    }
+
+    #[test]
+    fn validate_entry_boundaries_rejects_malformed_entries() {
+        let mut bytes = make_entry(&sample_fixed());
+        bytes.truncate(bytes.len() - 1);
+        let infos = WordInfos::from_bytes(&bytes);
+
+        let err = infos.validate_entry_boundaries(1).unwrap_err();
+        assert_word_info_error(
+            err,
+            WordInfoError::FailedToLoadEntrySize(layout::ENTRY_INITIAL_OFFSET),
+        );
+    }
+
+    #[test]
+    fn validate_entry_boundaries_rejects_short_entry_block() {
+        let bytes = vec![0; layout::ENTRY_INITIAL_OFFSET - 1];
+        let infos = WordInfos::from_bytes(&bytes);
+
+        let err = infos.validate_entry_boundaries(1).unwrap_err();
+        assert_word_info_error(
+            err,
+            WordInfoError::FailedToLoadEntrySize(layout::ENTRY_INITIAL_OFFSET),
+        );
+    }
+
+    #[test]
+    fn next_entry_id_rejects_misaligned_entry_offset() {
+        let bytes = make_entry(&sample_fixed());
+        let infos = WordInfos::from_bytes(&bytes);
+        let mut cursor = WordInfoEntryIdCursor {
+            remaining: 1,
+            offset: layout::ENTRY_INITIAL_OFFSET + 1,
+        };
+
+        let err = infos.next_entry_id(&mut cursor).unwrap_err();
+        assert_word_info_error(
+            err,
+            WordInfoError::EntryIdNotAligned(layout::ENTRY_INITIAL_OFFSET + 1),
+        );
+    }
+
+    #[test]
+    fn next_entry_id_rejects_too_large_entry_id() {
+        let bytes = make_entry(&sample_fixed());
+        let infos = WordInfos::from_bytes(&bytes);
+        let too_large_offset = ((EntryId::MAX as usize) + 1) << WordInfos::WORD_ID_ALIGNMENT_BITS;
+        let mut cursor = WordInfoEntryIdCursor {
+            remaining: 1,
+            offset: too_large_offset,
+        };
+
+        let err = infos.next_entry_id(&mut cursor).unwrap_err();
+        assert_word_info_error(err, WordInfoError::EntryIdTooLarge(too_large_offset));
+    }
+
+    #[test]
+    fn entry_id_iterator_reports_malformed_entries() {
+        let mut bytes = make_entry(&sample_fixed());
+        bytes.truncate(bytes.len() - 1);
+        let infos = WordInfos::from_bytes(&bytes);
+        let mut entries = infos.entry_ids(1);
+
+        assert!(entries.next().unwrap().is_err());
+        assert!(entries.next().is_none());
     }
 }

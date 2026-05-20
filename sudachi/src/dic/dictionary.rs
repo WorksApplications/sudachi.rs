@@ -19,6 +19,7 @@ use std::path::Path;
 
 use memmap2::Mmap;
 
+use crate::analysis::morpheme::SingleMorpheme;
 use crate::config::Config;
 use crate::dic::binary_loader::BinaryDictionary;
 use crate::dic::character_category::CharacterCategory;
@@ -28,7 +29,10 @@ use crate::dic::grammar::Grammar;
 use crate::dic::lexicon::Lexicon;
 use crate::dic::lexicon_set::LexiconSet;
 use crate::dic::storage::{Storage, SudachiDicData};
-use crate::dic::{DescriptionAccess, DictionaryAccess, LexiconAccess, ReferenceIdAccess};
+use crate::dic::subset::InfoSubset;
+use crate::dic::{
+    lookup_all_entries, DescriptionAccess, DictionaryAccess, LexiconAccess, ReferenceIdAccess,
+};
 use crate::error::{SudachiError, SudachiResult};
 use crate::plugin::input_text::InputTextPlugin;
 use crate::plugin::oov::OovProviderPlugin;
@@ -164,6 +168,47 @@ impl JapaneseDictionary {
 
     pub fn description(&self) -> &Description {
         &self.description
+    }
+
+    /// Iterates over dictionary entries as standalone morphemes.
+    ///
+    /// This corresponds to public lexicon CSV rows. It includes entries that
+    /// are referred to from other entries, such as split or constituent units,
+    /// even when they are not indexed for normal lookup. Internal entries
+    /// automatically generated for literal normalized forms are not exposed.
+    /// The iteration order is not part of the public contract.
+    pub fn entries(&self) -> impl Iterator<Item = SudachiResult<SingleMorpheme<&Self>>> + '_ {
+        self.entries_subset(InfoSubset::all())
+    }
+
+    /// Iterates over dictionary entries, loading only the requested word-info fields.
+    pub fn entries_subset(
+        &self,
+        subset: InfoSubset,
+    ) -> impl Iterator<Item = SudachiResult<SingleMorpheme<&Self>>> + '_ {
+        self.lexicon()
+            .word_ids()
+            .map(move |word_id| SingleMorpheme::from_word_id(self, word_id?, subset))
+    }
+
+    /// Looks up all dictionary entries whose normalized surface matches `surface`.
+    ///
+    /// This normalizes the query using dictionary input-text plugins and scans
+    /// every public lexicon entry. It can find entries that are not indexed for
+    /// normal lookup. Use `lookup` for normal indexed lookup.
+    #[allow(clippy::result_large_err)]
+    pub fn lookup_all_entries(&self, surface: &str) -> SudachiResult<Vec<SingleMorpheme<&Self>>> {
+        self.lookup_all_entries_subset(surface, InfoSubset::all())
+    }
+
+    /// Looks up all matching dictionary entries, loading only requested fields.
+    #[allow(clippy::result_large_err)]
+    pub fn lookup_all_entries_subset(
+        &self,
+        surface: &str,
+        subset: InfoSubset,
+    ) -> SudachiResult<Vec<SingleMorpheme<&Self>>> {
+        lookup_all_entries(self, surface, subset)
     }
 
     fn merge_user_dictionary(

@@ -356,7 +356,10 @@ impl PyMorpheme {
         }
     }
 
-    fn single_backed(morpheme: SingleMorpheme<Arc<PyDicData>>, projection: PyProjector) -> Self {
+    pub(crate) fn single_backed(
+        morpheme: SingleMorpheme<Arc<PyDicData>>,
+        projection: PyProjector,
+    ) -> Self {
         Self {
             backing: PyMorphemeBacking::Single {
                 morpheme,

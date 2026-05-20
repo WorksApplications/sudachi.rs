@@ -27,6 +27,7 @@ use crate::dic::header::HeaderError;
 use crate::dic::lexicon_set::LexiconSetError;
 use crate::dic::read::error::SudachiNomError;
 use crate::dic::word_id::WordId;
+use crate::dic::word_info::WordInfoError;
 use crate::plugin::PluginError;
 
 pub type SudachiResult<T> = Result<T, SudachiError>;
@@ -91,6 +92,9 @@ pub enum SudachiError {
 
     #[error("Invalid data format: {1} at line {0}")]
     InvalidDataFormat(usize, String),
+
+    #[error(transparent)]
+    WordInfo(#[from] WordInfoError),
 
     #[error("Invalid grammar")]
     InvalidDictionaryGrammar,

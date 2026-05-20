@@ -157,16 +157,43 @@ class Dictionary:
         """
         ...
 
+    def entries(self) -> Iterator[Morpheme]:
+        """
+        Iterates over public lexicon entries as morphemes.
+
+        Entries referred to from other entries, such as split or constituent
+        units, are included even when they are not indexed for normal lookup.
+        Internal entries automatically generated for literal normalized forms
+        are not exposed. The iteration order is not part of the public contract.
+        """
+        ...
+
     def lookup(self, surface: str, out: Optional[MorphemeList] = None) -> MorphemeList:
         """
         Look up morphemes in the binary dictionary without performing the analysis.
 
-        All morphemes from the dictionary with the given surface string are returned,
+        The given surface is normalized before lookup.
+        All morphemes from the dictionary with the normalized surface string are returned,
         with the last user dictionary searched first and the system dictionary searched last.
         Inside a dictionary, morphemes are outputted in-binary-dictionary order.
         Morphemes which are not indexed are not returned.
 
-        :param surface: find all morphemes with the given surface
+        :param surface: input surface; normalized before indexed lookup.
+        :param out: if passed, reuse the given morpheme list instead of creating a new one.
+            See https://worksapplications.github.io/sudachi.rs/python/topics/out_param.html for details.
+        """
+        ...
+
+    def lookup_all_entries(self, surface: str, out: Optional[MorphemeList] = None) -> MorphemeList:
+        """
+        Look up morphemes by scanning all dictionary entries.
+
+        The given surface is normalized before matching. This scans public
+        lexicon entries and can find entries which are not indexed for normal
+        lookup. This can be slow on large dictionaries; use `lookup()` for
+        normal indexed lookup.
+
+        :param surface: find all morphemes whose normalized surface matches this value
         :param out: if passed, reuse the given morpheme list instead of creating a new one.
             See https://worksapplications.github.io/sudachi.rs/python/topics/out_param.html for details.
         """
