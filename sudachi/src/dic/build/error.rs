@@ -94,6 +94,12 @@ pub enum BuildFailure {
     #[error("Failed to build trie")]
     TrieBuildFailure,
 
+    #[error("Invalid trie build profile: {0}")]
+    InvalidTrieProfile(String),
+
+    #[error("Trie value {value} exceeds the 31-bit Yada value limit in {entry}")]
+    TrieValueLimitExceeded { entry: String, value: u32 },
+
     #[error(
         "Invalid string pointer during dictionary compilation: length={length}, offset={offset}, alignment={alignment}"
     )]

@@ -27,6 +27,7 @@ use crate::dic::build::util::default_signature;
 use crate::dic::description::Block;
 use crate::dic::grammar::Grammar;
 use crate::dic::lexicon_set::LexiconSet;
+use crate::dic::word_id::WordId;
 use crate::dic::{DescriptionAccess, DictionaryAccess, LexiconAccess, ReferenceIdAccess};
 use crate::error::SudachiResult;
 use crate::plugin::input_text::InputTextPlugin;
@@ -45,6 +46,8 @@ mod resolve;
 #[cfg(test)]
 mod test;
 mod util;
+
+pub use self::index::{CacheAwareOptions, LayoutScoring, TrieBuildStrategy, TrieProfileMode};
 
 const MAX_POS_IDS: usize = i16::MAX as usize;
 const MAX_DIC_STRING_LEN: usize = i16::MAX as usize;
@@ -156,6 +159,7 @@ pub struct DictBuilder<D> {
     stage: BuilderStage,
     prebuilt: Option<D>,
     reporter: Reporter,
+    trie_build_strategy: TrieBuildStrategy,
 }
 
 impl DictBuilder<NoDic> {
@@ -179,6 +183,7 @@ impl<D: DictionaryAccess + ReferenceIdAccess> DictBuilder<D> {
             stage: BuilderStage::Grammar,
             prebuilt: None,
             reporter: Reporter::new(),
+            trie_build_strategy: TrieBuildStrategy::default(),
         }
     }
 }
@@ -221,6 +226,15 @@ impl<D: DictionaryAccess + ReferenceIdAccess> DictBuilder<D> {
     /// Set the dictionary description
     pub fn set_description<T: Into<String>>(&mut self, description: T) {
         self.description = description.into()
+    }
+
+    /// Set the trie layout strategy used while compiling the dictionary.
+    ///
+    /// The default strategy is [`TrieBuildStrategy::ClassicYada`], preserving
+    /// the current dictionary bytes unless callers explicitly opt in to a
+    /// different layout.
+    pub fn set_trie_build_strategy(&mut self, strategy: TrieBuildStrategy) {
+        self.trie_build_strategy = strategy;
     }
 
     /// Read the connection matrix from either a file or an in-memory buffer
@@ -496,14 +510,15 @@ impl<D: DictionaryAccess + ReferenceIdAccess> DictBuilder<D> {
     }
 
     fn build_index_data(&mut self) -> SudachiResult<(Vec<u8>, Vec<u8>)> {
-        let mut index = IndexBuilder::new();
+        let mut index = IndexBuilder::with_trie_build_strategy(self.trie_build_strategy.clone());
+        self.fill_index_builder(&mut index)?;
+        let word_id_table = index.build_word_id_table(&self.non_indexed_word_ids())?;
+        let trie = index.build_trie()?;
+        Ok((trie, word_id_table))
+    }
+
+    fn fill_index_builder<'a>(&'a self, index: &mut IndexBuilder<'a>) -> SudachiResult<()> {
         let entry_ids = self.lexicon.row_word_ids(0);
-        // Keep non-indexed, non-phantom entries in the word-id table as a
-        // trailing list. This preserves compatibility with the Java
-        // dictionary format, where callers can enumerate all public entries
-        // from WordIdTable even if some of them are intentionally absent from
-        // the trie. Phantom entries stay internal to reference resolution.
-        let mut non_indexed = Vec::new();
         for (e, wid) in self
             .lexicon
             .resolved_entries()
@@ -512,14 +527,26 @@ impl<D: DictionaryAccess + ReferenceIdAccess> DictBuilder<D> {
         {
             if e.should_index() {
                 index.add(e.index_form(), wid);
-            } else if !e.is_phantom() {
-                non_indexed.push(wid);
             }
         }
+        Ok(())
+    }
 
-        let word_id_table = index.build_word_id_table(&non_indexed)?;
-        let trie = index.build_trie()?;
-        Ok((trie, word_id_table))
+    fn non_indexed_word_ids(&self) -> Vec<WordId> {
+        // Keep non-indexed, non-phantom entries in the word-id table as a
+        // trailing list. This preserves compatibility with the Java dictionary
+        // format, where callers can enumerate all public entries from
+        // WordIdTable even if some of them are intentionally absent from the
+        // trie. Phantom entries stay internal to reference resolution.
+        let entry_ids = self.lexicon.row_word_ids(0);
+        self.lexicon
+            .resolved_entries()
+            .iter()
+            .zip(entry_ids)
+            .filter_map(|(entry, word_id)| {
+                (!entry.should_index() && !entry.is_phantom()).then_some(word_id)
+            })
+            .collect()
     }
 
     fn serialize_description(

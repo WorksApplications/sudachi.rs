@@ -19,6 +19,68 @@ use crate::dic::word_id::WordId;
 use crate::error::{SudachiError, SudachiResult};
 use crate::util::fxhash::FxBuildHasher;
 use indexmap::map::IndexMap;
+use std::path::PathBuf;
+
+mod cache_aware;
+
+const MAX_TRIE_VALUE: u32 = (1 << 31) - 1;
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum TrieBuildStrategy {
+    ClassicYada,
+    CacheAware(CacheAwareOptions),
+}
+
+impl Default for TrieBuildStrategy {
+    fn default() -> Self {
+        Self::ClassicYada
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct CacheAwareOptions {
+    pub cache_line_bytes: usize,
+    pub candidate_window_blocks: usize,
+    pub profile_mode: TrieProfileMode,
+    pub scoring: LayoutScoring,
+}
+
+impl Default for CacheAwareOptions {
+    fn default() -> Self {
+        Self {
+            cache_line_bytes: 64,
+            candidate_window_blocks: 16,
+            profile_mode: TrieProfileMode::DictionaryPrefixCount,
+            scoring: LayoutScoring::default(),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum TrieProfileMode {
+    Uniform,
+    DictionaryPrefixCount,
+    ExternalKeyProfile(PathBuf),
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct LayoutScoring {
+    pub cache_line_weight: u32,
+    pub distance_weight: u32,
+    pub spread_weight: u32,
+    pub density_weight: u32,
+}
+
+impl Default for LayoutScoring {
+    fn default() -> Self {
+        Self {
+            cache_line_weight: 10_000,
+            distance_weight: 32,
+            spread_weight: 8,
+            density_weight: 1,
+        }
+    }
+}
 
 pub struct IndexEntry {
     ids: Vec<WordId>,
@@ -38,12 +100,19 @@ pub struct IndexBuilder<'a> {
     // Insertion order matters for the built dictionary,
     // so using IndexMap here instead of a simple HashMap
     data: IndexMap<&'a str, IndexEntry, FxBuildHasher>,
+    trie_build_strategy: TrieBuildStrategy,
 }
 
 impl<'a> IndexBuilder<'a> {
+    #[cfg(test)]
     pub fn new() -> Self {
+        Self::with_trie_build_strategy(TrieBuildStrategy::default())
+    }
+
+    pub fn with_trie_build_strategy(trie_build_strategy: TrieBuildStrategy) -> Self {
         Self {
             data: IndexMap::default(),
+            trie_build_strategy,
         }
     }
 
@@ -80,31 +149,72 @@ impl<'a> IndexBuilder<'a> {
     }
 
     pub fn build_trie(&mut self) -> SudachiResult<Vec<u8>> {
-        let mut trie_entries: Vec<(&str, u32)> = Vec::new();
-        for (k, v) in self.data.drain(..) {
+        let trie_entries = self.trie_entries()?;
+        self.data.clear();
+        self.data.shrink_to_fit();
+
+        match &self.trie_build_strategy {
+            TrieBuildStrategy::ClassicYada => {
+                let trie_entries: Vec<_> = trie_entries
+                    .iter()
+                    .map(|(key, value)| (key.as_str(), *value))
+                    .collect();
+                let trie = yada::builder::DoubleArrayBuilder::build(&trie_entries);
+                match trie {
+                    Some(t) => Ok(t),
+                    None => Err(DicBuildError {
+                        file: "<trie>".to_owned(),
+                        line: 0,
+                        cause: BuildFailure::TrieBuildFailure,
+                    }
+                    .into()),
+                }
+            }
+            TrieBuildStrategy::CacheAware(options) => {
+                let trie_entries: Vec<_> = trie_entries
+                    .iter()
+                    .map(|(key, value)| (key.as_str(), *value))
+                    .collect();
+                cache_aware::CacheAwareDartsBuilder::build(&trie_entries, options.clone()).map_err(
+                    |cause| {
+                        DicBuildError {
+                            file: "<trie>".to_owned(),
+                            line: 0,
+                            cause,
+                        }
+                        .into()
+                    },
+                )
+            }
+        }
+    }
+
+    fn trie_entries(&self) -> SudachiResult<Vec<(String, u32)>> {
+        let mut trie_entries = Vec::new();
+        for (k, v) in self.data.iter() {
             if v.offset > u32::MAX as _ {
                 return Err(DicBuildError {
-                    file: format!("entry {}", k),
+                    file: format!("entry {k}"),
                     line: 0,
                     cause: BuildFailure::WordIdTableNotBuilt,
                 }
                 .into());
             }
-            trie_entries.push((k, v.offset as u32));
-        }
-        self.data.shrink_to_fit();
-        trie_entries.sort_by(|(a, _), (b, _)| a.cmp(b));
-
-        let trie = yada::builder::DoubleArrayBuilder::build(&trie_entries);
-        match trie {
-            Some(t) => Ok(t),
-            None => Err(DicBuildError {
-                file: "<trie>".to_owned(),
-                line: 0,
-                cause: BuildFailure::TrieBuildFailure,
+            if v.offset as u32 > MAX_TRIE_VALUE {
+                return Err(DicBuildError {
+                    file: format!("entry {k}"),
+                    line: 0,
+                    cause: BuildFailure::TrieValueLimitExceeded {
+                        entry: (*k).to_owned(),
+                        value: v.offset as u32,
+                    },
+                }
+                .into());
             }
-            .into()),
+            trie_entries.push(((*k).to_owned(), v.offset as u32));
         }
+        trie_entries.sort_by(|(a, _), (b, _)| a.cmp(b));
+        Ok(trie_entries)
     }
 }
 
@@ -194,5 +304,90 @@ mod test {
                 EntryId::new(16),
             ]
         );
+    }
+
+    fn trie_for_strategy(strategy: TrieBuildStrategy) -> Trie<'static> {
+        let entries = [
+            ("a", 0),
+            ("ab", 1),
+            ("aba", 2),
+            ("ac", 3),
+            ("ba", 4),
+            ("京都", 5),
+            ("京都府", 6),
+            ("東京都", 7),
+            ("東京", 8),
+        ];
+        let mut bldr = IndexBuilder::with_trie_build_strategy(strategy);
+        for (key, raw_id) in entries {
+            bldr.add(key, WordId::new(0, raw_id));
+        }
+        let _ = bldr.build_word_id_table(&[]).unwrap();
+        make_trie(bldr.build_trie().unwrap())
+    }
+
+    #[test]
+    fn cache_aware_trie_matches_classic_lookup_semantics() {
+        let classic = trie_for_strategy(TrieBuildStrategy::ClassicYada);
+        let cache_aware =
+            trie_for_strategy(TrieBuildStrategy::CacheAware(CacheAwareOptions::default()));
+
+        for input in [
+            b"abacus".as_slice(),
+            b"ac".as_slice(),
+            b"bad".as_slice(),
+            "京都府庁".as_bytes(),
+            "東京都".as_bytes(),
+            "東京湾".as_bytes(),
+        ] {
+            let expected: Vec<_> = classic.common_prefix_iterator(input, 0).collect();
+            let actual: Vec<_> = cache_aware.common_prefix_iterator(input, 0).collect();
+            assert_eq!(actual, expected, "input={:?}", input);
+        }
+    }
+
+    #[test]
+    fn cache_aware_trie_build_is_deterministic() {
+        let mut first = IndexBuilder::with_trie_build_strategy(TrieBuildStrategy::CacheAware(
+            CacheAwareOptions::default(),
+        ));
+        let mut second = IndexBuilder::with_trie_build_strategy(TrieBuildStrategy::CacheAware(
+            CacheAwareOptions::default(),
+        ));
+        for (key, raw_id) in [
+            ("alpha", 0),
+            ("alphabet", 1),
+            ("alpine", 2),
+            ("beta", 3),
+            ("betamax", 4),
+            ("京都", 5),
+        ] {
+            first.add(key, WordId::new(0, raw_id));
+            second.add(key, WordId::new(0, raw_id));
+        }
+        let _ = first.build_word_id_table(&[]).unwrap();
+        let _ = second.build_word_id_table(&[]).unwrap();
+
+        assert_eq!(first.build_trie().unwrap(), second.build_trie().unwrap());
+    }
+
+    #[test]
+    fn cache_aware_trie_accepts_external_profile() {
+        use std::io::Write;
+
+        let mut profile = tempfile::NamedTempFile::new().unwrap();
+        writeln!(profile, "ab\t100").unwrap();
+        writeln!(profile, "hex:E4BAACE983BD\t50").unwrap();
+
+        let options = CacheAwareOptions {
+            profile_mode: TrieProfileMode::ExternalKeyProfile(profile.path().to_owned()),
+            ..CacheAwareOptions::default()
+        };
+        let trie = trie_for_strategy(TrieBuildStrategy::CacheAware(options));
+        let actual: Vec<_> = trie
+            .common_prefix_iterator("京都府".as_bytes(), 0)
+            .collect();
+
+        assert_eq!(actual.len(), 2);
     }
 }

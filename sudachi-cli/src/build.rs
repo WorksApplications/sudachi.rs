@@ -25,7 +25,7 @@ use memmap2::Mmap;
 
 use sudachi::dic::binary_loader::{BinaryDictionary, LoadedDictionary};
 use sudachi::dic::build::report::DictPartReport;
-use sudachi::dic::build::DictBuilder;
+use sudachi::dic::build::{CacheAwareOptions, DictBuilder, TrieBuildStrategy, TrieProfileMode};
 use sudachi::dic::description::Description;
 use sudachi::dic::grammar::Grammar;
 use sudachi::dic::lexicon::Lexicon;
@@ -46,6 +46,12 @@ pub(crate) enum DumpPart {
     Matrix,
     Pos,
     Winfo,
+}
+
+#[derive(Copy, Clone, Debug, Eq, PartialEq, ValueEnum)]
+enum TrieLayoutArg {
+    Classic,
+    CacheAware,
 }
 
 /// Check that the first argument is a subcommand and the file with the same name does
@@ -128,6 +134,48 @@ pub(crate) struct BuildCmd {
     /// Description string to embed into dictionary
     #[arg(short, long, default_value = "")]
     description: String,
+
+    /// Trie layout strategy for dictionary compilation.
+    #[arg(long = "trie-layout", value_enum, default_value_t = TrieLayoutArg::Classic)]
+    trie_layout: TrieLayoutArg,
+
+    /// External key profile for cache-aware trie layout: <surface-or-hex>\t<count>.
+    #[arg(long = "trie-profile")]
+    trie_profile: Option<PathBuf>,
+
+    /// Cache line size in bytes used by the cache-aware trie layout scorer.
+    #[arg(long = "trie-cache-line-bytes", default_value_t = 64)]
+    trie_cache_line_bytes: usize,
+
+    /// Number of recent 256-unit blocks searched by the cache-aware trie layout builder.
+    #[arg(long = "trie-candidate-window", default_value_t = 16)]
+    trie_candidate_window: usize,
+}
+
+impl BuildCmd {
+    fn trie_build_strategy(&self) -> TrieBuildStrategy {
+        match self.trie_layout {
+            TrieLayoutArg::Classic => {
+                if self.trie_profile.is_some() {
+                    panic!("--trie-profile requires --trie-layout cache-aware");
+                }
+                TrieBuildStrategy::ClassicYada
+            }
+            TrieLayoutArg::CacheAware => {
+                let profile_mode = self
+                    .trie_profile
+                    .as_ref()
+                    .map(|path| TrieProfileMode::ExternalKeyProfile(path.clone()))
+                    .unwrap_or(TrieProfileMode::DictionaryPrefixCount);
+                TrieBuildStrategy::CacheAware(CacheAwareOptions {
+                    cache_line_bytes: self.trie_cache_line_bytes,
+                    candidate_window_blocks: self.trie_candidate_window,
+                    profile_mode,
+                    ..CacheAwareOptions::default()
+                })
+            }
+        }
+    }
 }
 
 pub fn build_main(subcommand: BuildCli) {
@@ -161,6 +209,7 @@ pub fn build_main(subcommand: BuildCli) {
 fn build_system(mut cmd: BuildCmd, matrix: PathBuf, pos: Option<PathBuf>) {
     let mut builder = DictBuilder::new_system();
     builder.set_description(std::mem::take(&mut cmd.description));
+    builder.set_trie_build_strategy(cmd.trie_build_strategy());
     builder
         .read_conn(matrix.as_path())
         .expect("failed to read matrix");
@@ -192,6 +241,7 @@ fn build_user(mut cmd: BuildCmd, system: PathBuf) {
 
     let mut builder = DictBuilder::new_user(&dict);
     builder.set_description(std::mem::take(&mut cmd.description));
+    builder.set_trie_build_strategy(cmd.trie_build_strategy());
     for d in cmd.inputs.iter() {
         builder
             .read_lexicon(d.as_path())

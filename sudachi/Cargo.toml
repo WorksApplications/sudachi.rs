@@ -31,6 +31,11 @@ yada = "0.5" # MIT/Apache 2.0
 
 [dev-dependencies]
 claim = "0.5" # MIT/Apache 2.0
+criterion = "0.5" # MIT/Apache 2.0
+crawdad = "0.4" # MIT/Apache 2.0
+daachorse = { git = "https://github.com/daac-tools/daachorse", tag = "v3.0.0" } # MIT/Apache 2.0
+fst = "0.4" # Unlicense/MIT
+rsmarisa = "0.4" # BSD-2-Clause
 tempfile = "3" # MIT/Apache 2.0
 
 # Plugins for tests
@@ -41,3 +46,7 @@ join_katakana_oov = { path = "../plugin/path_rewrite/join_katakana_oov" }
 
 [lib]
 crate-type = ["rlib"]
+
+[[bench]]
+name = "trie_layout"
+harness = false
