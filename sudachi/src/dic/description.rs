@@ -15,6 +15,7 @@
  */
 
 use nom::number::complete::le_u64;
+use std::fmt::Display;
 use std::time::Duration;
 use thiserror::Error;
 
@@ -76,7 +77,7 @@ pub enum Block {
 impl Block {
     /// return the string representation of the block
     /// This must be same as the name defined in the Java version.
-    fn to_str(&self) -> &str {
+    fn as_string_representation(&self) -> &str {
         match self {
             Block::ConnectionMatrix => "ConnMatrix",
             Block::POSTable => "POS",
@@ -89,9 +90,9 @@ impl Block {
     }
 }
 
-impl ToString for Block {
-    fn to_string(&self) -> String {
-        self.to_str().to_string()
+impl Display for Block {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.as_string_representation().to_string())
     }
 }
 
@@ -255,7 +256,7 @@ impl Description {
         buf: &'a [u8],
         block: Block,
     ) -> SudachiResult<Option<&'a [u8]>> {
-        let block_name = block.to_str();
+        let block_name = block.as_string_representation();
         match self.blocks.iter().find(|block| block.name() == block_name) {
             Some(block) => {
                 let start = block.start() as usize;
