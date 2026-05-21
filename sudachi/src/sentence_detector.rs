@@ -15,6 +15,7 @@
  */
 
 use std::cmp::Ordering;
+use std::sync::OnceLock;
 
 use crate::dic::lexicon_set::LexiconSet;
 use crate::prelude::*;
@@ -119,7 +120,7 @@ impl SentenceDetector {
 
         if input_exceeds_limit {
             // search the final whitespace as a provisional split.
-            if let Some(end) = last_whitespace_end(s) {
+            if let Some(end) = legacy_whitespace_end(s) {
                 return Ok(-(end as isize));
             }
         }
@@ -337,16 +338,12 @@ fn ends_with_itemize_header(s: &str) -> bool {
     is_dot(last) && is_alphabet_or_number(previous)
 }
 
-fn last_whitespace_end(s: &str) -> Option<usize> {
-    let mut previous = None;
-    let mut last_end = None;
-    for (index, c) in s.char_indices() {
-        if c.is_whitespace() && previous.map(|p| p != '\n').unwrap_or(false) {
-            last_end = Some(index + c.len_utf8());
-        }
-        previous = Some(c);
-    }
-    last_end
+fn legacy_whitespace_end(s: &str) -> Option<usize> {
+    static SPACES: OnceLock<regex::Regex> = OnceLock::new();
+    SPACES
+        .get_or_init(|| regex::Regex::new(r".+\s+").unwrap())
+        .find(s)
+        .map(|mat| mat.end())
 }
 
 #[inline]
@@ -395,7 +392,7 @@ fn is_alphabet_or_number(c: char) -> bool {
 fn is_open_parenthesis(c: char) -> bool {
     matches!(
         c,
-        '(' | '{' | '｛' | '[' | '（' | '「' | '【' | '『' | '［' | '≪' | '〔' | '“'
+        '(' | '{' | '｛' | '[' | '（' | '「' | '【' | '『' | '［' | '≪' | '〔' | '“' | '"'
     )
 }
 
@@ -403,7 +400,7 @@ fn is_open_parenthesis(c: char) -> bool {
 fn is_close_parenthesis(c: char) -> bool {
     matches!(
         c,
-        ')' | '}' | ']' | '）' | '」' | '｝' | '】' | '』' | '］' | '〕' | '≫' | '”'
+        ')' | '}' | ']' | '）' | '」' | '｝' | '】' | '』' | '］' | '〕' | '≫' | '”' | '"'
     )
 }
 
@@ -447,6 +444,12 @@ mod tests {
     }
 
     #[test]
+    fn get_eos_with_limit_multiline_whitespace_legacy_behavior() {
+        let sd = SentenceDetector::with_limit(5);
+        assert_eq!(sd.get_eos("a\n b c d", None).unwrap(), -3);
+    }
+
+    #[test]
     fn get_eos_with_period() {
         let sd = SentenceDetector::new();
         assert_eq!(sd.get_eos("あいう.えお", None).unwrap(), 10);
@@ -483,6 +486,14 @@ mod tests {
         assert_eq!(sd.get_eos("あ（いう。え）お", None).unwrap(), -24);
         assert_eq!(sd.get_eos("（あ（いう）。え）お", None).unwrap(), -30);
         assert_eq!(sd.get_eos("あ（いう）。えお", None).unwrap(), 18);
+    }
+
+    #[test]
+    fn get_eos_with_ascii_quote_legacy_behavior() {
+        let sd = SentenceDetector::new();
+        assert_eq!(sd.get_eos("\"あ。\"", None).unwrap(), -8);
+        assert_eq!(sd.get_eos("あ。\"です。", None).unwrap(), -16);
+        assert_eq!(sd.get_eos("あ。\")え。", None).unwrap(), 8);
     }
 
     #[test]
