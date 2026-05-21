@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2025 Works Applications Co., Ltd.
+ * Copyright (c) 2021-2026 Works Applications Co., Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,7 +40,7 @@ impl<'a> WordIdTable<'a> {
 
     pub fn all_entries(&self) -> EntryIdIter<'a> {
         EntryIdIter {
-            inner: DeltaCompressedEntryIdIter::new(&self.bytes),
+            inner: DeltaCompressedEntryIdIter::new(self.bytes),
         }
     }
 }

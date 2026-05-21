@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 Works Applications Co., Ltd.
+ * Copyright (c) 2025-2026 Works Applications Co., Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ use super::read::{
 };
 use crate::error::SudachiResult;
 
-static MAGIC_BYTES: &'static [u8] = b"SudachiBinaryDic";
+static MAGIC_BYTES: &[u8] = b"SudachiBinaryDic";
 
 /// Sudachi error
 #[derive(Error, Debug, Eq, PartialEq)]
@@ -148,9 +148,9 @@ impl Description {
         let rest = Self::check_magic(buf)?;
         let (rest, version) = le_u64(rest)?;
         if version == 1 {
-            return Self::load_v1(rest);
+            Self::load_v1(rest)
         } else {
-            return Err(DescriptionError::InvalidVersion(version).into());
+            Err(DescriptionError::InvalidVersion(version).into())
         }
     }
 
@@ -265,7 +265,7 @@ impl Description {
                 }
                 Ok(Some(&buf[start..end]))
             }
-            None => return Ok(None),
+            None => Ok(None),
         }
     }
 

@@ -46,10 +46,10 @@ pub struct StringPointer {
 
 impl Default for StringPointer {
     fn default() -> Self {
-        return Self {
+        Self {
             length: 0,
             offset: 0,
-        };
+        }
     }
 }
 

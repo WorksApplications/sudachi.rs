@@ -45,7 +45,7 @@ where
     <T as Deref>::Target: DictionaryAccess,
 {
     pub fn as_dict(&self) -> &<T as Deref>::Target {
-        return Deref::deref(&self.dict);
+        Deref::deref(&self.dict)
     }
 }
 

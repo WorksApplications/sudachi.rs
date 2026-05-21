@@ -516,7 +516,7 @@ fn pos_string(grammar: &Grammar, posid: u16, pos_format: PosDumpFormat) -> Strin
     match pos_format {
         PosDumpFormat::Components => grammar
             .pos_components(posid)
-            .into_iter()
+            .iter()
             .map(|p| csv_field(p))
             .collect::<Vec<_>>()
             .join(","),
@@ -528,7 +528,7 @@ fn pos_string_for_entrykey(grammar: &Grammar, posid: u16, pos_format: PosDumpFor
     match pos_format {
         PosDumpFormat::Components => grammar
             .pos_components(posid)
-            .into_iter()
+            .iter()
             .map(|p| entrykey_ref_escape(p))
             .collect::<Vec<_>>()
             .join(","),
