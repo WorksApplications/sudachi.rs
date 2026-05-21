@@ -50,17 +50,18 @@ impl NonBreakChecker<'_> {
 
         for (relative, _) in input[lookup_start..eos_byte].char_indices() {
             let i = lookup_start + relative;
-            for entry in self.lexicon.lookup(input_bytes, i) {
-                let end_byte = entry.end;
+            if let Some(result) = self.lexicon.check_prefix_ends(input_bytes, i, |end_byte| {
                 // handling cases like モーニング娘。
                 match end_byte.cmp(&eos_byte) {
                     // end is after than boundary candidate, this boundary is bad
-                    Ordering::Greater => return true,
+                    Ordering::Greater => Some(true),
                     // end is on boundary candidate,
                     // check that there are more than one character in the matched word
-                    Ordering::Equal => return input[i..].chars().nth(1).is_some(),
-                    _ => {}
+                    Ordering::Equal => Some(input[i..].chars().nth(1).is_some()),
+                    _ => None,
                 }
+            }) {
+                return result;
             }
         }
         false
