@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [ develop ]
 
+permissions:
+  contents: read
+
 jobs:
   build:
 
@@ -19,7 +22,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6.0.2
       - name: Download dictionary
-        run: bash fetch_dictionary.sh "20220519" "core"
+        run: bash fetch_dictionary.sh "20220519" "core" "8de60382bde6b8307a10daa265569164a6296b28d52d793c3ed0757786969365"
 
       - uses: actions/cache@v5.0.5
         with:
@@ -37,6 +40,9 @@ jobs:
           python-version: '3.11'
       - name: Setup uv
         uses: astral-sh/setup-uv@v8.1.0
+
+      - name: Check version metadata
+        run: python python/check_version_consistency.py
 
       - name: Build and test
         working-directory: ./python

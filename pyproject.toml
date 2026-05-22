@@ -42,6 +42,15 @@ build = "cp310-* cp313t-* cp314t-*"
 skip = "*t-win* *-win32 *-musllinux_*"
 enable = ["cpython-prerelease", "cpython-freethreading"]
 build-frontend = "build[uv]"
+test-requires = [
+    "sudachidict_core",
+    "tokenizers",
+]
+test-command = [
+    "python -c \"import sudachipy; print(sudachipy.__version__)\"",
+    "python -m unittest discover -s {project}/python/tests",
+    "sudachipy --help",
+]
 
 manylinux-x86_64-image = "manylinux_2_28"
 manylinux-aarch64-image = "manylinux_2_28"

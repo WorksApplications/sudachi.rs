@@ -7,6 +7,9 @@ on:
 env:
   CARGO_TERM_COLOR: always
 
+permissions:
+  contents: read
+
 jobs:
   build:
 
@@ -18,10 +21,10 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-      - uses: actions/checkout@v6.0.2
-      - name: Download dictionary
-        run: bash fetch_dictionary.sh "20220519" "core"
-      - name: Run tests (Debug)
-        run: cargo test --verbose
-      - name: Run tests (Release)
-        run: cargo test --release --verbose
+    - uses: actions/checkout@v6.0.2
+    - name: Download dictionary
+      run: bash fetch_dictionary.sh "20220519" "core" "8de60382bde6b8307a10daa265569164a6296b28d52d793c3ed0757786969365"
+    - name: Run tests (Debug)
+      run: cargo test --verbose
+    - name: Run tests (Release)
+      run: cargo test --release --verbose

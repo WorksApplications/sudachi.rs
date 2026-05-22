@@ -6,6 +6,11 @@ REPO_ROOT=$(cd -- "$SCRIPT_DIR/.." && pwd)
 VENV_NAME="${VENV_NAME:-$SCRIPT_DIR/.env}"
 PYTHON_BIN="${PYTHON:-python}"
 
+case "$VENV_NAME" in
+    /*|[A-Za-z]:*) ;;
+    *) VENV_NAME="$PWD/$VENV_NAME" ;;
+esac
+
 if ! command -v uv >/dev/null 2>&1 ; then
     echo "uv is required to build and test SudachiPy" >&2
     exit 1
@@ -24,6 +29,5 @@ else
     exit 1
 fi
 
-uv pip install --python "$VENV_PYTHON" -e "$REPO_ROOT"
-uv pip install --python "$VENV_PYTHON" sudachidict_core tokenizers
+(cd "$REPO_ROOT" && uv pip install --python "$VENV_PYTHON" -e ".[tests]")
 "$VENV_PYTHON" -m unittest discover -s "$SCRIPT_DIR/tests"

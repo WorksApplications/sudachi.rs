@@ -23,11 +23,11 @@
 # ref: https://packaging.python.org/en/latest/specifications/version-specifiers/
 
 import json
-import re
 import sys
 import urllib.request
 from pathlib import Path
 from packaging.version import Version, InvalidVersion
+import tomlkit
 
 # find current version
 cur_file = Path(__file__)
@@ -36,15 +36,15 @@ pyproject = cur_file.parent.parent / "pyproject.toml"
 with pyproject.open("rt", encoding="utf-8") as f:
     pyproject_data = f.read()
 
-version_re = re.compile(r'(?m)^version = "([^"]+)"')
-cur_version = version_re.findall(pyproject_data)
+pyproject_doc = tomlkit.parse(pyproject_data)
+cur_version = pyproject_doc.get("project", {}).get("version")
 
-if len(cur_version) != 1:
-    print("could not find version", sys.stderr)
+if not cur_version:
+    print("could not find version", file=sys.stderr)
     exit(1)
 
 try:
-    cur_version = Version(cur_version[0])
+    cur_version = Version(cur_version)
     print("Current version:", cur_version)
 except InvalidVersion:
     print(f"{cur_version} is invalid as a python version")
@@ -72,17 +72,17 @@ def increment_version(v: Version):
     elif v.is_postrelease:
         post += 1
     elif v.is_prerelease:
-        pre = (pre[0], pre[1]+1)
+        pre = (pre[0], pre[1] + 1)
     else:  # is final release
         post = 1
 
-    next = v.base_version + \
+    next_version = v.base_version + \
         ("" if pre is None else f"{pre[0]}{pre[1]}") + \
         ("" if post is None else f".post{post}") + \
         ("" if dev is None else f".dev{dev}")
 
-    assert Version(next) > v
-    return Version(next)
+    assert Version(next_version) > v
+    return Version(next_version)
 
 
 # search proper version to upload
@@ -94,8 +94,7 @@ while str(next_v) in remote_versions:
 
 print("::notice::Next version:", next_v)
 
-modified_pyproject = version_re.sub(
-    'version = "{}"'.format(next_v), pyproject_data, 1)
+pyproject_doc["project"]["version"] = str(next_v)
 
 with pyproject.open("wt", encoding='utf-8') as f:
-    f.write(modified_pyproject)
+    f.write(tomlkit.dumps(pyproject_doc))

@@ -50,3 +50,7 @@ echo "files which include the previous version number:"
 set +e # allow grep to exit with 1 (no line match)
 
 git grep -F "$VERSION_FROM"
+
+set -e
+
+python ./python/check_version_consistency.py
