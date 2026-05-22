@@ -51,6 +51,7 @@ test-command = [
     "python -m unittest discover -s {project}/python/tests",
     "sudachipy --help",
 ]
+test-skip = "*-macosx_x86_64 *-macosx_universal2:x86_64"
 
 manylinux-x86_64-image = "manylinux_2_28"
 manylinux-aarch64-image = "manylinux_2_28"
