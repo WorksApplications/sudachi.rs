@@ -36,21 +36,12 @@ impl<'a> CompactedStrings<'a> {
     }
 }
 
-#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default)]
 pub struct StringPointer {
     /// length of the string (in utf16 codepoint)
     pub length: u32,
     /// offset in the CompactedStrings (in utf16 codepoint)
     pub offset: u32,
-}
-
-impl Default for StringPointer {
-    fn default() -> Self {
-        Self {
-            length: 0,
-            offset: 0,
-        }
-    }
 }
 
 impl StringPointer {
