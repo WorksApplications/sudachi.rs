@@ -30,9 +30,9 @@ WORKSPACE_CARGO_FILE="./Cargo.toml"
 echo $WORKSPACE_CARGO_FILE
 sed -i -r "1,/^version = / s/^version = \"${VERSION_FROM}\"$/version = \"${VERSION_TO}\"/" $WORKSPACE_CARGO_FILE
 
-PY_SETUP_FILE="./python/setup.py"
-echo $PY_SETUP_FILE
-sed -i -r "1,/^ *version=/ s/^ *version=\"${VERSION_FROM}\",$/    version=\"${VERSION_TO}\",/" $PY_SETUP_FILE
+PY_PROJECT_FILE="./pyproject.toml"
+echo $PY_PROJECT_FILE
+sed -i -r "1,/^version = / s/^version = \"${VERSION_FROM}\"$/version = \"${VERSION_TO}\"/" $PY_PROJECT_FILE
 
 PY_INIT_FILE="./python/py_src/sudachipy/__init__.py"
 echo $PY_INIT_FILE

@@ -14,19 +14,17 @@ jobs:
         os: [ubuntu-latest, ubuntu-24.04-arm, windows-latest, macos-latest]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6.0.2
       - name: download dictionary for PGO
         if: ${{ matrix.os == 'ubuntu-latest' || matrix.os == 'ubuntu-24.04-arm' }}
         run: bash fetch_dictionary.sh "20220519" "core"
       - name: Setup python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6.2.0
         with:
           python-version: "3.11"
-      - name: Install dependencies for version rewrite
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install --upgrade packaging
-      - uses: actions/cache@v4
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v8.1.0
+      - uses: actions/cache@v5.0.5
         with:
           path: |
             ~/.cargo/bin/
@@ -37,18 +35,18 @@ jobs:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Modify version for TestPyPI upload
-        run: python ./python/modify_version_for_testpypi.py
+        run: uv run --no-project --with packaging python ./python/modify_version_for_testpypi.py
       - name: cibuildwheel ${{ matrix.os }}
-        uses: pypa/cibuildwheel@v3.4.0
+        uses: pypa/cibuildwheel@v3.4.1
         with:
-          package-dir: python
+          package-dir: .
           output-dir: python/dist
-          config-file: "{package}/pyproject.toml"
+          config-file: pyproject.toml
           extras: "uv"
         env:
           CIBW_BUILD_FRONTEND: "build[uv]"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7.0.1
         with:
           name: artifact-${{ matrix.os }}
           path: |
@@ -59,16 +57,14 @@ jobs:
     name: build sdist
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6.0.2
       - name: setup python for sdist
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6.2.0
         with:
           python-version: "3.11"
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install --upgrade setuptools setuptools-rust build packaging
-      - uses: actions/cache@v4
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v8.1.0
+      - uses: actions/cache@v5.0.5
         with:
           path: |
             ~/.cargo/bin/
@@ -79,12 +75,12 @@ jobs:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Modify version for TestPyPI upload
-        run: python ./python/modify_version_for_testpypi.py
+        run: uv run --no-project --with packaging python ./python/modify_version_for_testpypi.py
       - name: build sdist
         working-directory: ./python
         run: bash build-sdist.sh
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7.0.1
         with:
           name: artifact-sdist
           path: |
@@ -95,7 +91,7 @@ jobs:
     needs: [build-wheels, build-sdist]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8.0.1
         with:
           pattern: artifact-*
           path: dist/
@@ -103,7 +99,7 @@ jobs:
       - name: List files to upload
         run: ls -R dist/
       - name: Publish distribution to Test PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
+        uses: pypa/gh-action-pypi-publish@v1.14.0
         with:
           user: ${{ secrets.PYPI_TEST_USERNAME }}
           password: ${{ secrets.PYPI_TEST_PASSWORD }}
@@ -115,8 +111,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, ubuntu-24.04-arm, windows-latest, macOS-latest]
-        target: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.13t", "3.14", "3.14t"]
+        os: [ubuntu-latest, ubuntu-24.04-arm, windows-latest, macos-latest]
+        target: ["3.10", "3.11", "3.12", "3.13", "3.13t", "3.14", "3.14t"]
         include:
           - os: "ubuntu-latest"
             target: "sdist"
@@ -132,46 +128,33 @@ jobs:
 
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v6.0.2
+      - uses: actions/setup-python@v6.2.0
         with:
           python-version: ${{ matrix.python-version || matrix.target }}
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v8.1.0
       - name: Upgrade pip
         run: python -m pip install --upgrade pip
       - name: Show compatible tags
         run: python -m pip debug --verbose
       - name: Install our module from TestPyPi
         if: ${{ matrix.target != 'sdist' }}
-        run: python -m pip -vvvv install --pre -U -i https://test.pypi.org/simple/ SudachiPy
+        run: uv pip install --system --pre -U --default-index https://test.pypi.org/simple/ SudachiPy
       - name: Install our module from TestPyPi (sdist)
         if: ${{ matrix.target == 'sdist' }}
         run: |
-          python -m pip install -U setuptools setuptools-rust
-          python -m pip -vvvv install --pre -U -i https://test.pypi.org/simple/ --no-build-isolation --no-binary SudachiPy SudachiPy
+          uv pip install --system -U maturin
+          uv pip install --system --pre -U --default-index https://test.pypi.org/simple/ --no-build-isolation --no-binary SudachiPy SudachiPy
       - name: Install dependencies (dictionary)
         # this must be after sudachipy install
-        run: python -m pip install sudachidict_core
+        run: uv pip install --system sudachidict_core
       - name: Install dependencies (test pretokenizer)
-        # tokenizers for py3.13t, py3.14, py3.14t are not provided yet
-        if: ${{ matrix.target != '3.13t' && matrix.target != '3.14' && matrix.target != '3.14t' }}
-        run: python -m pip install tokenizers
+        run: uv pip install --system tokenizers
 
       - name: Run test
-        if: ${{ matrix.target != '3.13t' && matrix.target != '3.14' && matrix.target != '3.14t' }}
         working-directory: ./python
         run: python -m unittest
-      - name: Run test (skip pretokenizer test)
-        # tokenizers for py3.13t, py3.14, py3.14t are not provided yet
-        if: ${{ matrix.target == '3.13t' || matrix.target == '3.14' || matrix.target == '3.14t' }}
-        working-directory: ./python
-        shell: bash
-        run: |
-          for f in tests/test_*.py; do
-            case "$f" in
-              *pretokenizer*) continue ;;
-            esac
-            python -m unittest "$f"
-          done
       - name: Check that binary works (C mode)
         run: |
           sudachipy .github/data/input.txt -o result-c.txt

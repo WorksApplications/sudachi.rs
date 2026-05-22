@@ -267,7 +267,7 @@ impl PyDictionary {
         let dict = self.dictionary.as_ref().unwrap().clone();
 
         let (projection, required_fields) = if let Some(s) = projection {
-            let projection = errors::wrap(SurfaceProjection::try_from(s.to_str()?))?;
+            let projection = errors::wrap(SurfaceProjection::try_from(s.to_cow()?.as_ref()))?;
             (
                 pyprojection(projection, &dict),
                 projection.required_subset(),
@@ -350,7 +350,7 @@ impl PyDictionary {
                 self.config.projection.required_subset() | parse_field_subset(fields)?,
             )
         } else if let Some(s) = projection {
-            let projection = errors::wrap(SurfaceProjection::try_from(s.to_str()?))?;
+            let projection = errors::wrap(SurfaceProjection::try_from(s.to_cow()?.as_ref()))?;
             // use default projection if "surface" is specified (see #259)
             if projection == SurfaceProjection::Surface {
                 (
@@ -470,7 +470,7 @@ fn config_repr(cfg: &Config) -> Result<String, std::fmt::Error> {
 
 pub(crate) fn extract_mode(mode: &Bound<'_, PyAny>) -> PyResult<Mode> {
     if mode.is_instance_of::<PyString>() {
-        errors::wrap(Mode::from_str(mode.str()?.to_str()?))
+        errors::wrap(Mode::from_str(mode.str()?.to_cow()?.as_ref()))
     } else if mode.is_instance_of::<PySplitMode>() {
         let mode = mode.extract::<PySplitMode>()?;
         Ok(Mode::from(mode))
@@ -490,7 +490,8 @@ fn read_config_from_fs(path: Option<&Path>) -> PyResult<ConfigBuilder> {
 fn read_config(config_opt: &Bound<PyAny>) -> PyResult<ConfigBuilder> {
     if config_opt.is_instance_of::<PyString>() {
         let config_pystr = config_opt.str()?;
-        let config_str = config_pystr.to_str()?.trim();
+        let config_cow = config_pystr.to_cow()?;
+        let config_str = config_cow.trim();
         // looks like json
         if config_str.starts_with('{') && config_str.ends_with('}') {
             let result = ConfigBuilder::from_bytes(config_str.as_bytes());
@@ -520,22 +521,19 @@ fn read_config(config_opt: &Bound<PyAny>) -> PyResult<ConfigBuilder> {
 
 pub(crate) fn read_default_config(py: Python) -> PyResult<ConfigBuilder> {
     let path = py.import("sudachipy")?.getattr("_DEFAULT_SETTINGFILE")?;
-    let path = path.cast::<PyString>()?.to_str()?;
-    let path = PathBuf::from(path);
+    let path = PathBuf::from(path.cast::<PyString>()?.to_cow()?.as_ref());
     errors::wrap_ctx(ConfigBuilder::from_opt_file(Some(&path)), &path)
 }
 
 pub(crate) fn get_default_resource_dir(py: Python) -> PyResult<PathBuf> {
     let path = py.import("sudachipy")?.getattr("_DEFAULT_RESOURCEDIR")?;
-    let path = path.cast::<PyString>()?.to_str()?;
-    Ok(PathBuf::from(path))
+    Ok(PathBuf::from(path.cast::<PyString>()?.to_cow()?.as_ref()))
 }
 
 fn find_dict_path(py: Python, dict_type: &str) -> PyResult<PathBuf> {
     let pyfunc = py.import("sudachipy")?.getattr("_find_dict_path")?;
     let path = pyfunc.call1((dict_type,))?;
-    let path = path.cast::<PyString>()?.to_str()?;
-    Ok(PathBuf::from(path))
+    Ok(PathBuf::from(path.cast::<PyString>()?.to_cow()?.as_ref()))
 }
 
 fn locate_system_dict(py: Python, path: &Path) -> PyResult<PathBuf> {
@@ -555,7 +553,7 @@ fn parse_field_subset(data: Option<&Bound<PySet>>) -> PyResult<InfoSubset> {
 
     let mut subset = InfoSubset::empty();
     for elem in data.unwrap().iter() {
-        subset |= match elem.str()?.to_str()? {
+        subset |= match elem.str()?.to_cow()?.as_ref() {
             "surface" => InfoSubset::SURFACE,
             "pos" | "pos_id" => InfoSubset::POS_ID,
             "normalized_form" => InfoSubset::NORMALIZED_FORM,

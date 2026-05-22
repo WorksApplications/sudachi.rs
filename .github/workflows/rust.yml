@@ -15,16 +15,16 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-latest, windows-latest, macOS-latest ]
+        os: [ ubuntu-latest, windows-latest, macos-latest ]
 
     runs-on: ${{ matrix.os }}
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6.0.2
     - name: Download dictionary
       run: bash fetch_dictionary.sh "20220519" "core"
 
-    - uses: actions/cache@v4
+    - uses: actions/cache@v5.0.5
       with:
         path: |
           ~/.cargo/bin/

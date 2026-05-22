@@ -1,19 +1,29 @@
 #!/bin/bash
+set -euo pipefail
 
-cd "$(dirname 0)" || ( echo "failed to cd" && exit 1 )
+SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+REPO_ROOT=$(cd -- "$SCRIPT_DIR/.." && pwd)
+VENV_NAME="${VENV_NAME:-$SCRIPT_DIR/.env}"
+PYTHON_BIN="${PYTHON:-python}"
 
-VENV_NAME=".env"
-
-# create venv
-if ! [ -e $VENV_NAME ] ; then
-    python -m venv $VENV_NAME
-    $VENV_NAME/bin/pip install setuptools-rust
+if ! command -v uv >/dev/null 2>&1 ; then
+    echo "uv is required to build and test SudachiPy" >&2
+    exit 1
 fi
 
-source $VENV_NAME/bin/activate
+if ! [ -e "$VENV_NAME" ] ; then
+    uv venv --python "$PYTHON_BIN" "$VENV_NAME"
+fi
 
-# build with tests extras
-pip install -vvv -e '.[tests]'
+if [ -x "$VENV_NAME/bin/python" ] ; then
+    VENV_PYTHON="$VENV_NAME/bin/python"
+elif [ -x "$VENV_NAME/Scripts/python.exe" ] ; then
+    VENV_PYTHON="$VENV_NAME/Scripts/python.exe"
+else
+    echo "could not find Python executable in $VENV_NAME" >&2
+    exit 1
+fi
 
-# run test
-python -m unittest
+uv pip install --python "$VENV_PYTHON" -e "$REPO_ROOT"
+uv pip install --python "$VENV_PYTHON" sudachidict_core tokenizers
+"$VENV_PYTHON" -m unittest discover -s "$SCRIPT_DIR/tests"
