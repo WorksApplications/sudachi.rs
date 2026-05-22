@@ -12,16 +12,23 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+from __future__ import annotations
+
 import unittest
 
-import tokenizers
-from tokenizers.models import WordLevel
+try:
+    import tokenizers
+    from tokenizers.models import WordLevel
+except ImportError:
+    tokenizers = None
+    WordLevel = None
 
 import sudachipy
 from sudachipy import MorphemeList
 from sudachipy.config import Config
 
 
+@unittest.skipIf(tokenizers is None, "tokenizers is not installed")
 class PretokenizerTestCase(unittest.TestCase):
     def setUp(self) -> None:
         self.dict = sudachipy.Dictionary()

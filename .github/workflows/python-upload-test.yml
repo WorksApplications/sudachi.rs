@@ -185,6 +185,7 @@ jobs:
         # this must be after sudachipy install
         run: uv pip install --system sudachidict_core
       - name: Install dependencies (test pretokenizer)
+        if: ${{ !(matrix.os == 'macos-latest' && (matrix.target == '3.13t' || matrix.target == '3.14t')) }}
         run: uv pip install --system tokenizers
 
       - name: Run test
