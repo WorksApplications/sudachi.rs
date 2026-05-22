@@ -125,6 +125,12 @@ jobs:
   upload-to-testpypi: # run only if all have succeeded
     needs: [verify-artifacts]
     runs-on: ubuntu-latest
+    environment:
+      name: testpypi
+      url: https://test.pypi.org/p/SudachiPy
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - uses: actions/download-artifact@v8.0.1
         with:
@@ -136,9 +142,7 @@ jobs:
       - name: Publish distribution to Test PyPI
         uses: pypa/gh-action-pypi-publish@v1.14.0
         with:
-          user: ${{ secrets.PYPI_TEST_USERNAME }}
-          password: ${{ secrets.PYPI_TEST_PASSWORD }}
-          repository_url: https://test.pypi.org/legacy/
+          repository-url: https://test.pypi.org/legacy/
           verbose: true
 
   install-and-test:
@@ -185,7 +189,12 @@ jobs:
         # this must be after sudachipy install
         run: uv pip install --system sudachidict_core
       - name: Install dependencies (test pretokenizer)
-        if: ${{ !(matrix.os == 'macos-latest' && (matrix.target == '3.13t' || matrix.target == '3.14t')) }}
+        if: ${{ !(runner.os == 'macOS' && (matrix.target == '3.13t' || matrix.target == '3.14t')) }}
+        run: uv pip install --system tokenizers
+      - name: Install dependencies (test pretokenizer, macOS free-threaded)
+        if: ${{ runner.os == 'macOS' && (matrix.target == '3.13t' || matrix.target == '3.14t') }}
+        env:
+          RUSTFLAGS: -C link-arg=-undefined -C link-arg=dynamic_lookup
         run: uv pip install --system tokenizers
 
       - name: Run test

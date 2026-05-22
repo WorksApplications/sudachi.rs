@@ -51,13 +51,17 @@ test-command = [
     "python -m unittest discover -s {project}/python/tests",
     "sudachipy --help",
 ]
-test-skip = "*-macosx_x86_64 *-macosx_universal2:x86_64 cp313t-macosx_* cp314t-macosx_*"
 
 manylinux-x86_64-image = "manylinux_2_28"
 manylinux-aarch64-image = "manylinux_2_28"
 
 build-verbosity = 1
 before-build = "rustup show"
+
+[[tool.cibuildwheel.overrides]]
+select = "cp3??t-macosx_*"
+inherit.environment = "append"
+environment.RUSTFLAGS = "-C link-arg=-undefined -C link-arg=dynamic_lookup"
 
 [tool.cibuildwheel.linux]
 environment = { PATH = "$HOME/.cargo/bin:$PATH", CARGO_TERM_COLOR = "always", RUSTFLAGS = "-C profile-use=/tmp/sudachi-profdata.merged -C opt-level=3" }

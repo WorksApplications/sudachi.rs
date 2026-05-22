@@ -31,6 +31,25 @@ SDIST_REQUIRED = (
     "python/py_src/sudachipy/resources/sudachi.json",
 )
 
+EXPECTED_WHEEL_TAGS = {
+    "cp310-abi3-macosx_10_12_universal2",
+    "cp310-abi3-macosx_10_12_x86_64",
+    "cp310-abi3-macosx_11_0_arm64",
+    "cp310-abi3-manylinux_2_28_aarch64",
+    "cp310-abi3-manylinux_2_28_x86_64",
+    "cp310-abi3-win_amd64",
+    "cp313-cp313t-macosx_10_13_universal2",
+    "cp313-cp313t-macosx_10_13_x86_64",
+    "cp313-cp313t-macosx_11_0_arm64",
+    "cp313-cp313t-manylinux_2_28_aarch64",
+    "cp313-cp313t-manylinux_2_28_x86_64",
+    "cp314-cp314t-macosx_10_15_universal2",
+    "cp314-cp314t-macosx_10_15_x86_64",
+    "cp314-cp314t-macosx_11_0_arm64",
+    "cp314-cp314t-manylinux_2_28_aarch64",
+    "cp314-cp314t-manylinux_2_28_x86_64",
+}
+
 
 def fail(message: str) -> None:
     print(f"error: {message}", file=sys.stderr)
@@ -88,6 +107,21 @@ def main() -> None:
         fail(f"no wheels found in {dist_dir}")
     if not sdists:
         fail(f"no sdist found in {dist_dir}")
+
+    actual_tags = set()
+    for wheel in wheels:
+        match = re.fullmatch(r"sudachipy-[^-]+-(?P<tag>.+)\.whl", wheel.name)
+        if not match:
+            fail(f"{wheel.name} has an unexpected wheel filename")
+        actual_tags.add(match.group("tag"))
+
+    missing = EXPECTED_WHEEL_TAGS - actual_tags
+    unexpected = actual_tags - EXPECTED_WHEEL_TAGS
+
+    if missing:
+        fail(f"missing expected wheels: {sorted(missing)}")
+    if unexpected:
+        fail(f"unexpected wheels: {sorted(unexpected)}")
 
     for wheel in wheels:
         check_wheel(wheel)
