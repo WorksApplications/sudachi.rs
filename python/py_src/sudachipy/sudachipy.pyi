@@ -33,7 +33,8 @@ Fields that can be specified for partial dictionary loading.
 See https://worksapplications.github.io/sudachi.rs/python/topics/subsetting.html.
 """
 FieldSet = Optional[Set[Literal["surface", "pos", "normalized_form", "dictionary_form", "reading_form",
-                                "word_structure", "split_a", "split_b", "synonym_group_id"]]]
+                                "word_structure", "split_a", "split_b", "synonym_group_id",
+                                "user_data"]]]
 
 
 """
@@ -310,6 +311,12 @@ class Morpheme:
     def synonym_group_ids(self) -> List[int]:
         """
         Returns the list of synonym group ids.
+        """
+        ...
+
+    def user_data(self) -> str:
+        """
+        Returns user-defined data associated with this morpheme.
         """
         ...
 
