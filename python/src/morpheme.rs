@@ -375,7 +375,11 @@ impl PyMorpheme {
     ) -> PyResult<MorphemeBorrow<'py>> {
         let list = list.borrow(py);
         // workaround for self-referential structs
-        let morph = unsafe { std::mem::transmute(list.as_list()?.get(index)) };
+        let morph = unsafe {
+            std::mem::transmute::<Morpheme<'_, Arc<PyDicData>>, Morpheme<'_, Arc<PyDicData>>>(
+                list.as_list()?.get(index),
+            )
+        };
         Ok(MorphemeBorrow { list, morph })
     }
 

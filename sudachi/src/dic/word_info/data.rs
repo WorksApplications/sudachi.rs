@@ -81,7 +81,7 @@ impl WordInfoRefData {
         WordInfoData::from_resolved(raw)
     }
 
-    fn resolve_ref_vec(refs: &mut Vec<u32>, dict_id: DictId) {
+    fn resolve_ref_vec(refs: &mut [u32], dict_id: DictId) {
         for raw in refs.iter_mut() {
             *raw = WordRef::resolve_raw(*raw, dict_id);
         }
