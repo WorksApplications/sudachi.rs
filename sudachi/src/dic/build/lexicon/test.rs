@@ -25,7 +25,7 @@ use crate::error::SudachiError;
 use claim::assert_matches;
 use std::fmt::Write;
 
-mod legacy;
+mod v0;
 
 #[test]
 fn parse_split_empty() {

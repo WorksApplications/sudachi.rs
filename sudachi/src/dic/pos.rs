@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 Works Applications Co., Ltd.
+ * Copyright (c) 2025-2026 Works Applications Co., Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,9 +30,9 @@ type POS = Vec<String>;
 #[derive(Clone, Debug, Default)]
 pub struct PosList(Vec<POS>);
 
-impl Into<Vec<POS>> for PosList {
-    fn into(self) -> Vec<POS> {
-        self.0
+impl From<PosList> for Vec<POS> {
+    fn from(val: PosList) -> Self {
+        val.0
     }
 }
 

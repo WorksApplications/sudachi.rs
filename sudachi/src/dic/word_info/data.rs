@@ -81,7 +81,7 @@ impl WordInfoRefData {
         WordInfoData::from_resolved(raw)
     }
 
-    fn resolve_ref_vec(refs: &mut Vec<u32>, dict_id: DictId) {
+    fn resolve_ref_vec(refs: &mut [u32], dict_id: DictId) {
         for raw in refs.iter_mut() {
             *raw = WordRef::resolve_raw(*raw, dict_id);
         }
@@ -238,7 +238,7 @@ impl WordInfo {
     }
 
     pub fn index_form_length(&self) -> usize {
-        self.data.index_form_length() as usize
+        self.data.index_form_length()
     }
 
     pub fn pos_id(&self) -> u16 {
@@ -264,23 +264,23 @@ impl WordInfo {
     }
 
     pub fn a_unit_split(&self) -> &[WordId] {
-        &self.data.a_unit_split()
+        self.data.a_unit_split()
     }
 
     pub fn b_unit_split(&self) -> &[WordId] {
-        &self.data.b_unit_split()
+        self.data.b_unit_split()
     }
 
     pub fn c_unit_split(&self) -> &[WordId] {
-        &self.data.c_unit_split()
+        self.data.c_unit_split()
     }
 
     pub fn word_structure(&self) -> &[WordId] {
-        &self.data.word_structure()
+        self.data.word_structure()
     }
 
     pub fn synonym_group_ids(&self) -> &[i32] {
-        &self.data.synonym_group_ids()
+        self.data.synonym_group_ids()
     }
 
     pub fn user_data(&self) -> &str {

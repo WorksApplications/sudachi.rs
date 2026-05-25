@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2021-2024 Works Applications Co., Ltd.
+ *  Copyright (c) 2021-2026 Works Applications Co., Ltd.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -248,7 +248,7 @@ impl InputBuffer {
         // the buffer object itself will be accessible as RO
         let replaces: &'a mut Vec<edit::ReplaceOp<'a>> =
             unsafe { std::mem::transmute(&mut self.replaces) };
-        return InputEditor::new(replaces);
+        InputEditor::new(replaces)
     }
 
     /// Execute a function which can modify the contents of the current buffer

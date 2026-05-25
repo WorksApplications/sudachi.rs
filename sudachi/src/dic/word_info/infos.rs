@@ -98,7 +98,7 @@ impl<'a> WordInfos<'a> {
         let entry_id = Self::entry_id_from_offset(cursor.offset)?;
         let size = self
             .entry_size_at(cursor.offset)
-            .ok_or_else(|| WordInfoError::FailedToLoadEntrySize(cursor.offset))?;
+            .ok_or(WordInfoError::FailedToLoadEntrySize(cursor.offset))?;
 
         cursor.offset = match cursor.offset.checked_add(size) {
             Some(offset) => offset,
