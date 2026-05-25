@@ -92,7 +92,7 @@ pub(super) fn split_path<T: DictionaryAccess + ?Sized>(
     Ok(new_path)
 }
 
-pub(super) fn dump_path(path: &Vec<ResultNode>) {
+pub(super) fn dump_path(path: &[ResultNode]) {
     for (i, node) in path.iter().enumerate() {
         println!("{}: {}", i, node);
     }
