@@ -543,6 +543,42 @@ impl<D: DictionaryAccess> SingleMorpheme<D> {
         })
     }
 
+    pub fn oov(
+        dict: D,
+        pos_id: u16,
+        surface: String,
+        reading: String,
+        normalized_form: String,
+        dictionary_form: String,
+    ) -> SudachiResult<Self> {
+        if pos_id as usize >= dict.grammar().pos_list.len() {
+            return Err(SudachiError::InvalidPartOfSpeech(pos_id.to_string()));
+        }
+        let end = surface.len();
+        let end_c = surface.chars().count();
+        let word_id = WordId::oov(pos_id as u32);
+        let word_info = WordInfo::new_with_strings(
+            pos_id as i16,
+            end as i16,
+            word_id,
+            surface,
+            reading,
+            normalized_form,
+            dictionary_form,
+        );
+
+        Ok(Self {
+            dict,
+            word_id,
+            word_info,
+            subset: InfoSubset::all(),
+            begin: 0,
+            end,
+            begin_c: 0,
+            end_c,
+        })
+    }
+
     pub(crate) fn subset(&self) -> InfoSubset {
         self.subset
     }

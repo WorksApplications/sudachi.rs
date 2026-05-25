@@ -199,6 +199,28 @@ class Dictionary:
         """
         ...
 
+    def oov_morpheme(
+        self,
+        pos_id: int,
+        surface: str,
+        reading: Optional[str] = None,
+        normalized_form: Optional[str] = None,
+        dictionary_form: Optional[str] = None,
+    ) -> Morpheme:
+        """
+        Create an out-of-vocabulary morpheme from the POS id and string forms.
+
+        Begin/end are set from the surface. When optional string forms are not
+        provided, the surface is used for them.
+
+        :param pos_id: part-of-speech id of the morpheme
+        :param surface: surface of the morpheme
+        :param reading: reading form of the morpheme
+        :param normalized_form: normalized form of the morpheme
+        :param dictionary_form: dictionary form of the morpheme
+        """
+        ...
+
 
 class Morpheme:
     """

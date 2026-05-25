@@ -171,6 +171,40 @@ class TestDictionary(unittest.TestCase):
             finally:
                 dictionary.close()
 
+    def test_oov_morpheme(self):
+        pos_id1 = 1
+        m1 = self.dict_.oov_morpheme(pos_id1, "OOV")
+        self.assertEqual(0, m1.begin())
+        self.assertEqual(3, m1.end())
+        self.assertEqual(pos_id1, m1.part_of_speech_id())
+        self.assertEqual("OOV", m1.surface())
+        self.assertEqual("OOV", m1.reading_form())
+        self.assertEqual("OOV", m1.normalized_form())
+        self.assertEqual("OOV", m1.dictionary_form())
+        self.assertTrue(m1.is_oov())
+        self.assertEqual(-1, m1.dictionary_id())
+        self.assertEqual([], m1.synonym_group_ids())
+
+        pos_id2 = 2
+        m2 = self.dict_.oov_morpheme(pos_id2, "OOVs", "OOVr", "OOVn", "OOVd")
+        self.assertEqual(0, m2.begin())
+        self.assertEqual(4, m2.end())
+        self.assertEqual(pos_id2, m2.part_of_speech_id())
+        self.assertEqual("OOVs", m2.surface())
+        self.assertEqual("OOVr", m2.reading_form())
+        self.assertEqual("OOVn", m2.normalized_form())
+        self.assertEqual("OOVd", m2.dictionary_form())
+
+        # form_morpheme return self for OOV morphemes
+        self.assertEqual("OOV", m1.normalized_form_morpheme().surface())
+        self.assertEqual("OOV", m1.dictionary_form_morpheme().surface())
+        self.assertTrue(m1.normalized_form_morpheme().is_oov())
+        self.assertTrue(m1.dictionary_form_morpheme().is_oov())
+        self.assertEqual("OOVs", m2.normalized_form_morpheme().surface())
+        self.assertEqual("OOVs", m2.dictionary_form_morpheme().surface())
+        self.assertTrue(m2.normalized_form_morpheme().is_oov())
+        self.assertTrue(m2.dictionary_form_morpheme().is_oov())
+
 
 if __name__ == '__main__':
     unittest.main()

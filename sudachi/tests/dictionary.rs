@@ -21,6 +21,7 @@ use std::time::{Duration, UNIX_EPOCH};
 
 mod common;
 use common::{TestTokenizer, GRAMMAR};
+use sudachi::analysis::morpheme::MorphemeView;
 use sudachi::dic::build::DictBuilder;
 use sudachi::dic::dictionary::JapaneseDictionary;
 use sudachi::dic::error::DictionaryCompatibilityError;
@@ -256,6 +257,59 @@ fn lookup_all_entries_and_lookup_apply_input_text_plugins() {
     assert_eq!(tok.result.get(0).begin(), 0);
     assert_eq!(tok.result.get(0).end(), "京都".len());
     assert_eq!(tok.result.get(0).end_c(), 2);
+}
+
+#[test]
+fn oov_morpheme_creates_standalone_oov_entry() {
+    let tok = TestTokenizer::new();
+
+    let pos_id1 = 1;
+    let m1 = tok.dict().oov_morpheme(pos_id1, "OOV").unwrap();
+    assert_eq!(m1.begin(), 0);
+    assert_eq!(m1.end(), 3);
+    assert_eq!(m1.begin_c(), 0);
+    assert_eq!(m1.end_c(), 3);
+    assert_eq!(m1.part_of_speech_id(), pos_id1);
+    assert_eq!(m1.surface(), "OOV");
+    assert_eq!(m1.reading_form(), "OOV");
+    assert_eq!(m1.normalized_form(), "OOV");
+    assert_eq!(m1.dictionary_form(), "OOV");
+    assert!(m1.is_oov());
+    assert_eq!(
+        m1.word_id(),
+        sudachi::dic::word_id::WordId::oov(pos_id1 as u32)
+    );
+    assert_eq!(m1.dictionary_id(), -1);
+    assert!(m1.synonym_group_ids().is_empty());
+    assert_eq!(m1.user_data(), "");
+
+    let pos_id2 = 2;
+    let m2 = tok
+        .dict()
+        .oov_morpheme_with_forms(pos_id2, "OOVs", "OOVr", "OOVn", "OOVd")
+        .unwrap();
+    assert_eq!(m2.begin(), 0);
+    assert_eq!(m2.end(), 4);
+    assert_eq!(m2.part_of_speech_id(), pos_id2);
+    assert_eq!(m2.surface(), "OOVs");
+    assert_eq!(m2.reading_form(), "OOVr");
+    assert_eq!(m2.normalized_form(), "OOVn");
+    assert_eq!(m2.dictionary_form(), "OOVd");
+
+    // form_morpheme returns self for OOV morphemes
+    let m1_df = m1.dictionary_form_morpheme().unwrap();
+    let m1_nf = m1.normalized_form_morpheme().unwrap();
+    assert_eq!(m1_df.surface().as_ref(), "OOV");
+    assert_eq!(m1_nf.surface().as_ref(), "OOV");
+    assert!(m1_df.is_oov());
+    assert!(m1_nf.is_oov());
+
+    let m2_df = m2.dictionary_form_morpheme().unwrap();
+    let m2_nf = m2.normalized_form_morpheme().unwrap();
+    assert_eq!(m2_df.surface().as_ref(), "OOVs");
+    assert_eq!(m2_nf.surface().as_ref(), "OOVs");
+    assert!(m2_df.is_oov());
+    assert!(m2_nf.is_oov());
 }
 
 // fn creat_with_merging_settings
