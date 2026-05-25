@@ -33,7 +33,8 @@ use crate::dic::subset::InfoSubset;
 use crate::dic::{
     lookup_all_entries, DescriptionAccess, DictionaryAccess, LexiconAccess, ReferenceIdAccess,
 };
-use crate::error::{SudachiError, SudachiResult};
+use crate::error::SudachiError;
+use crate::error::SudachiResult;
 use crate::plugin::input_text::InputTextPlugin;
 use crate::plugin::oov::OovProviderPlugin;
 use crate::plugin::path_rewrite::PathRewritePlugin;
@@ -209,6 +210,36 @@ impl JapaneseDictionary {
         subset: InfoSubset,
     ) -> SudachiResult<Vec<SingleMorpheme<&Self>>> {
         lookup_all_entries(self, surface, subset)
+    }
+
+    /// Creates an out-of-vocabulary standalone morpheme from the pos id and the surface.
+    ///
+    /// Uses the surface for reading, normalized, and dictionary forms.
+    pub fn oov_morpheme(&self, pos_id: u16, surface: &str) -> SudachiResult<SingleMorpheme<&Self>> {
+        self.oov_morpheme_with_forms(pos_id, surface, surface, surface, surface)
+    }
+
+    /// Creates an out-of-vocabulary standalone morpheme from the pos id and string forms.
+    pub fn oov_morpheme_with_forms(
+        &self,
+        pos_id: u16,
+        surface: &str,
+        reading: &str,
+        normalized_form: &str,
+        dictionary_form: &str,
+    ) -> SudachiResult<SingleMorpheme<&Self>> {
+        if pos_id as usize >= self.grammar().pos_list.len() {
+            return Err(SudachiError::InvalidPartOfSpeech(pos_id.to_string()));
+        }
+
+        Ok(SingleMorpheme::oov(
+            self,
+            pos_id,
+            surface.to_owned(),
+            reading.to_owned(),
+            normalized_form.to_owned(),
+            dictionary_form.to_owned(),
+        ))
     }
 
     fn merge_user_dictionary(
