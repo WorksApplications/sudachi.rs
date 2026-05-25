@@ -197,13 +197,11 @@ impl JapaneseDictionary {
     /// This normalizes the query using dictionary input-text plugins and scans
     /// every public lexicon entry. It can find entries that are not indexed for
     /// normal lookup. Use `lookup` for normal indexed lookup.
-    #[allow(clippy::result_large_err)]
     pub fn lookup_all_entries(&self, surface: &str) -> SudachiResult<Vec<SingleMorpheme<&Self>>> {
         self.lookup_all_entries_subset(surface, InfoSubset::all())
     }
 
     /// Looks up all matching dictionary entries, loading only requested fields.
-    #[allow(clippy::result_large_err)]
     pub fn lookup_all_entries_subset(
         &self,
         surface: &str,

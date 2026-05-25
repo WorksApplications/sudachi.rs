@@ -25,6 +25,7 @@ pub const POS_DEPTH: usize = 6;
 /// A part of speech
 ///
 /// Its length must be `POS_DEPTH`
+#[allow(clippy::upper_case_acronyms)]
 type POS = Vec<String>;
 
 #[derive(Clone, Debug, Default)]

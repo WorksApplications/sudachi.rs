@@ -25,6 +25,7 @@ use sudachi::sentence_splitter::{SentenceSplitter, SplitSentences};
 
 pub trait Analysis {
     fn analyze(&mut self, input: &str, writer: &mut Writer);
+    #[allow(unused)]
     fn set_subset(&mut self, subset: InfoSubset);
 }
 

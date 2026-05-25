@@ -108,6 +108,7 @@ pub(crate) struct WordInfoVariableLayout {
 }
 
 impl WordInfoVariableLayout {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         c_unit_split_len: usize,
         b_unit_split_shared: bool,

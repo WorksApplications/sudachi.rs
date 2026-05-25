@@ -213,6 +213,7 @@ impl ResolvedLexiconEntry {
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn variable_layout(
     splits_c_len: usize,
     split_b_eq_c: bool,

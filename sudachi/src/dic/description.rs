@@ -92,7 +92,7 @@ impl Block {
 
 impl Display for Block {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.as_string_representation().to_string())
+        write!(f, "{}", self.as_string_representation())
     }
 }
 
