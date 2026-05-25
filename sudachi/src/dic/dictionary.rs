@@ -228,18 +228,14 @@ impl JapaneseDictionary {
         normalized_form: &str,
         dictionary_form: &str,
     ) -> SudachiResult<SingleMorpheme<&Self>> {
-        if pos_id as usize >= self.grammar().pos_list.len() {
-            return Err(SudachiError::InvalidPartOfSpeech(pos_id.to_string()));
-        }
-
-        Ok(SingleMorpheme::oov(
+        SingleMorpheme::oov(
             self,
             pos_id,
             surface.to_owned(),
             reading.to_owned(),
             normalized_form.to_owned(),
             dictionary_form.to_owned(),
-        ))
+        )
     }
 
     fn merge_user_dictionary(

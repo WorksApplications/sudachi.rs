@@ -543,14 +543,17 @@ impl<D: DictionaryAccess> SingleMorpheme<D> {
         })
     }
 
-    pub(crate) fn oov(
+    pub fn oov(
         dict: D,
         pos_id: u16,
         surface: String,
         reading: String,
         normalized_form: String,
         dictionary_form: String,
-    ) -> Self {
+    ) -> SudachiResult<Self> {
+        if pos_id as usize >= dict.grammar().pos_list.len() {
+            return Err(SudachiError::InvalidPartOfSpeech(pos_id.to_string()));
+        }
         let end = surface.len();
         let end_c = surface.chars().count();
         let word_id = WordId::oov(pos_id as u32);
@@ -564,7 +567,7 @@ impl<D: DictionaryAccess> SingleMorpheme<D> {
             dictionary_form,
         );
 
-        Self {
+        Ok(Self {
             dict,
             word_id,
             word_info,
@@ -573,7 +576,7 @@ impl<D: DictionaryAccess> SingleMorpheme<D> {
             end,
             begin_c: 0,
             end_c,
-        }
+        })
     }
 
     pub(crate) fn subset(&self) -> InfoSubset {
