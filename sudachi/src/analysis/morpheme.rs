@@ -147,7 +147,6 @@ pub trait MorphemeView: private::Sealed {
     /// distinct referenced entry, returns a standalone morpheme whose offsets
     /// are `0..surface.len()` in bytes and `0..surface.chars().count()` in
     /// codepoints.
-    #[allow(clippy::result_large_err)]
     fn dictionary_form_morpheme(&self) -> SudachiResult<MorphemeRef<'_, Self::Dictionary>>
     where
         Self::Dictionary: Clone,
@@ -177,7 +176,6 @@ pub trait MorphemeView: private::Sealed {
     /// distinct referenced entry, returns a standalone morpheme whose offsets
     /// are `0..surface.len()` in bytes and `0..surface.chars().count()` in
     /// codepoints.
-    #[allow(clippy::result_large_err)]
     fn normalized_form_morpheme(&self) -> SudachiResult<MorphemeRef<'_, Self::Dictionary>>
     where
         Self::Dictionary: Clone,
@@ -290,7 +288,6 @@ impl<D> Copy for Morpheme<'_, D> {}
 impl<D: DictionaryAccess + Clone> Morpheme<'_, D> {
     /// Returns new morpheme list splitting the morpheme with given mode.
     #[deprecated(note = "use split_into", since = "0.6.1")]
-    #[allow(clippy::result_large_err)]
     pub fn split(&self, mode: Mode) -> SudachiResult<MorphemeList<D>> {
         #[allow(deprecated)]
         self.list.split(mode, self.index)
@@ -350,7 +347,6 @@ impl<'a, D: DictionaryAccess> Morpheme<'a, D> {
     }
 
     /// Returns the morpheme corresponding to this morpheme's dictionary form.
-    #[allow(clippy::result_large_err)]
     pub fn dictionary_form_morpheme(&self) -> SudachiResult<MorphemeRef<'_, D>>
     where
         D: Clone,
@@ -367,7 +363,6 @@ impl<'a, D: DictionaryAccess> Morpheme<'a, D> {
     }
 
     /// Returns the morpheme corresponding to this morpheme's normalized form.
-    #[allow(clippy::result_large_err)]
     pub fn normalized_form_morpheme(&self) -> SudachiResult<MorphemeRef<'_, D>>
     where
         D: Clone,
@@ -420,7 +415,6 @@ impl<'a, D: DictionaryAccess> Morpheme<'a, D> {
     /// Splits morpheme and writes sub-morphemes into the provided list.
     /// The resulting list is _not_ cleared before that.
     /// Returns true if split has produced any elements.
-    #[allow(clippy::result_large_err)]
     pub fn split_into(&self, mode: Mode, out: &mut MorphemeList<D>) -> SudachiResult<bool> {
         self.list.split_into(mode, self.index, out)
     }
@@ -522,7 +516,6 @@ impl<D: DictionaryAccess> SingleMorpheme<D> {
     /// The entry is resolved by `WordId`, not by surface lookup, so homograph
     /// identity is preserved. `HEADWORD` is always loaded because standalone
     /// offsets and surface are based on the dictionary headword.
-    #[allow(clippy::result_large_err)]
     pub fn from_word_id(dict: D, word_id: WordId, subset: InfoSubset) -> SudachiResult<Self> {
         validate_dictionary_word_id(&dict, word_id)?;
         let subset = (subset | InfoSubset::HEADWORD).normalize();
@@ -634,7 +627,6 @@ impl<D: DictionaryAccess + Clone> SingleMorpheme<D> {
     /// this morpheme. Offsets match Java's standalone morpheme behavior: a
     /// single replacement split preserves this morpheme's span, while
     /// multi-splits advance over each split surface.
-    #[allow(clippy::result_large_err)]
     pub fn split(&self, mode: Mode) -> SudachiResult<Vec<SingleMorpheme<D>>> {
         let split_subset = match mode {
             Mode::A => InfoSubset::SPLIT_A,
@@ -706,7 +698,6 @@ impl<D: DictionaryAccess + Clone> SingleMorpheme<D> {
     }
 
     /// Returns the morpheme corresponding to this morpheme's dictionary form.
-    #[allow(clippy::result_large_err)]
     pub fn dictionary_form_morpheme(&self) -> SudachiResult<MorphemeRef<'_, D>> {
         <Self as MorphemeView>::dictionary_form_morpheme(self)
     }
@@ -717,7 +708,6 @@ impl<D: DictionaryAccess + Clone> SingleMorpheme<D> {
     }
 
     /// Returns the morpheme corresponding to this morpheme's normalized form.
-    #[allow(clippy::result_large_err)]
     pub fn normalized_form_morpheme(&self) -> SudachiResult<MorphemeRef<'_, D>> {
         <Self as MorphemeView>::normalized_form_morpheme(self)
     }
