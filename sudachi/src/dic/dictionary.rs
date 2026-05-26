@@ -82,8 +82,10 @@ impl JapaneseDictionary {
             )
         }
 
-        let chardef_path = cfg.complete_path(&cfg.character_definition_file)?;
-        let chardef = CharacterCategory::from_file(chardef_path.as_path())?;
+        let chardef = CharacterCategory::from_bytes(
+            &cfg.resolve_resource(&cfg.character_definition_file)?
+                .read_bytes()?,
+        )?;
 
         Self::from_cfg_storage_chardef(cfg, sb, chardef)
     }
@@ -143,8 +145,10 @@ impl JapaneseDictionary {
         cfg: &Config,
         storage: SudachiDicData,
     ) -> SudachiResult<JapaneseDictionary> {
-        let chardef_path = cfg.complete_path(&cfg.character_definition_file)?;
-        let chardef = CharacterCategory::from_file(chardef_path.as_path())?;
+        let chardef = CharacterCategory::from_bytes(
+            &cfg.resolve_resource(&cfg.character_definition_file)?
+                .read_bytes()?,
+        )?;
         Self::from_cfg_storage_chardef(cfg, storage, chardef)
     }
 

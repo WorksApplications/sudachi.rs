@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-use std::io::{Cursor, Write};
+use std::io::{BufReader, Cursor, Write};
 
 use crate::analysis::node::LatticeNode;
 use crate::plugin::PluginError;
