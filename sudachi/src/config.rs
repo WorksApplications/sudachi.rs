@@ -155,11 +155,32 @@ impl PathResolver {
         Self::default()
     }
 
+    pub fn from_path<P: Into<PathBuf>>(path: P) -> Self {
+        let mut resolver = Self::new();
+        resolver.push_root(path);
+        resolver
+    }
+
+    pub fn from_embedded() -> Self {
+        let mut resolver = Self::new();
+        resolver.push_embedded();
+        resolver
+    }
+
     pub fn push_root<P: Into<PathBuf>>(&mut self, path: P) {
         let path = path.into();
         if !self.contains(&path) {
             self.roots.push(ResolverRoot::Filesystem(path))
         }
+    }
+
+    pub fn prepend_root<P: Into<PathBuf>>(&mut self, path: P) {
+        let path = path.into();
+        self.roots.retain(|root| match root {
+            ResolverRoot::Filesystem(existing) => existing != &path,
+            ResolverRoot::Embedded => true,
+        });
+        self.roots.insert(0, ResolverRoot::Filesystem(path));
     }
 
     pub fn push_embedded(&mut self) {
@@ -168,11 +189,25 @@ impl PathResolver {
         }
     }
 
+    pub fn prepend_embedded(&mut self) {
+        self.roots.retain(|root| root != &ResolverRoot::Embedded);
+        self.roots.insert(0, ResolverRoot::Embedded);
+    }
+
     pub fn append(&mut self, other: PathResolver) {
         for root in other.roots {
             match root {
                 ResolverRoot::Filesystem(path) => self.push_root(path),
                 ResolverRoot::Embedded => self.push_embedded(),
+            }
+        }
+    }
+
+    pub fn prepend(&mut self, other: PathResolver) {
+        for root in other.roots.into_iter().rev() {
+            match root {
+                ResolverRoot::Filesystem(path) => self.prepend_root(path),
+                ResolverRoot::Embedded => self.prepend_embedded(),
             }
         }
     }
@@ -272,23 +307,6 @@ impl TryFrom<&str> for SurfaceProjection {
             _ => Err(ConfigError::InvalidFormat(format!("unknown projection: {value}")).into()),
         }
     }
-}
-
-/// Setting data loaded from config file
-#[derive(Debug, Default, Clone)]
-pub struct Config {
-    /// Paths will be resolved against these roots, until a file will be found
-    resolver: PathResolver,
-    pub system_dict: Option<PathBuf>,
-    pub user_dicts: Vec<PathBuf>,
-    pub character_definition_file: PathBuf,
-
-    pub connection_cost_plugins: Vec<Value>,
-    pub input_text_plugins: Vec<Value>,
-    pub oov_provider_plugins: Vec<Value>,
-    pub path_rewrite_plugins: Vec<Value>,
-    // this option is Python-only and is ignored in Rust APIs
-    pub projection: SurfaceProjection,
 }
 
 /// Struct corresponds with raw config json file.
@@ -399,6 +417,16 @@ impl ConfigBuilder {
         self
     }
 
+    pub fn character_definition_file(mut self, path: impl Into<PathBuf>) -> Self {
+        self.data.characterDefinitionFile = Some(path.into());
+        self
+    }
+
+    pub fn projection(mut self, projection: SurfaceProjection) -> Self {
+        self.data.projection = Some(projection);
+        self
+    }
+
     pub fn with_resolver(mut self, resolver: PathResolver) -> Self {
         self.resolver = resolver;
         self
@@ -409,8 +437,18 @@ impl ConfigBuilder {
         self
     }
 
+    pub fn prepend_resolver(mut self, other: PathResolver) -> Self {
+        self.resolver.prepend(other);
+        self
+    }
+
     pub fn push_resolver_root(mut self, path: impl Into<PathBuf>) -> Self {
         self.resolver.push_root(path);
+        self
+    }
+
+    pub fn prepend_resolver_root(mut self, path: impl Into<PathBuf>) -> Self {
+        self.resolver.prepend_root(path);
         self
     }
 
@@ -461,6 +499,23 @@ impl ConfigBuilder {
     }
 }
 
+/// Setting data loaded from config file
+#[derive(Debug, Default, Clone)]
+pub struct Config {
+    /// Paths will be resolved against these roots, until a file will be found
+    pub resolver: PathResolver,
+    pub system_dict: Option<PathBuf>,
+    pub user_dicts: Vec<PathBuf>,
+    pub character_definition_file: PathBuf,
+
+    pub connection_cost_plugins: Vec<Value>,
+    pub input_text_plugins: Vec<Value>,
+    pub oov_provider_plugins: Vec<Value>,
+    pub path_rewrite_plugins: Vec<Value>,
+    // this option is Python-only and is ignored in Rust APIs
+    pub projection: SurfaceProjection,
+}
+
 impl Config {
     pub fn new(
         config_file: Option<PathBuf>,
@@ -491,15 +546,12 @@ impl Config {
 
     pub fn new_embedded() -> Result<Self, ConfigError> {
         let raw_config = ConfigBuilder::from_embedded()?.push_embedded();
-
         Ok(raw_config.build())
     }
 
-    /// Creates a minimal config with the provided resource directory
-    pub fn minimal_at(resource_dir: impl Into<PathBuf>) -> Config {
-        let mut cfg = ConfigBuilder::empty()
-            .push_resolver_root(resource_dir)
-            .build();
+    /// Creates a minimal config with the provided path resolver
+    pub fn minimal_at(resolver: PathResolver) -> Config {
+        let mut cfg = ConfigBuilder::empty().append_resolver(resolver).build();
         cfg.oov_provider_plugins = vec![serde_json::json!(
             { "class" : "com.worksap.nlp.sudachi.SimpleOovPlugin",
               "oovPOS" : [ "名詞", "普通名詞", "一般", "*", "*", "*" ],
@@ -679,10 +731,38 @@ mod tests {
     }
 
     #[test]
+    fn prepend_resolver_root_takes_priority() {
+        let cfg = ConfigBuilder::from_bytes(br#"{ "path": "config-root" }"#)
+            .unwrap()
+            .prepend_resolver_root("resource-root");
+        let roots: Vec<_> = cfg.resolver.filesystem_roots().cloned().collect();
+        assert_eq!(
+            roots,
+            vec![PathBuf::from("resource-root"), PathBuf::from("config-root")]
+        );
+    }
+
+    #[test]
     fn surface_projection_tryfrom() {
         assert_eq!(
             SurfaceProjection::Surface,
             SurfaceProjection::try_from("surface").unwrap()
         );
+    }
+
+    #[test]
+    fn config_builder_sets_character_definition_file() {
+        let cfg = ConfigBuilder::empty()
+            .character_definition_file("custom.def")
+            .build();
+        assert_eq!(cfg.character_definition_file, PathBuf::from("custom.def"));
+    }
+
+    #[test]
+    fn config_builder_sets_projection() {
+        let cfg = ConfigBuilder::empty()
+            .projection(SurfaceProjection::Reading)
+            .build();
+        assert_eq!(cfg.projection, SurfaceProjection::Reading);
     }
 }

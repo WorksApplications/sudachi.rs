@@ -21,12 +21,11 @@ use std::path::Path;
 use pyo3::prelude::*;
 use pyo3::types::{PyBytes, PyList, PyString, PyType};
 
-use sudachi::config::Config;
+use sudachi::config::{Config, PathResolver};
 use sudachi::dic::build::{DataSource, DictBuilder};
 use sudachi::dic::dictionary::JapaneseDictionary;
 use sudachi::dic::{DictionaryAccess, ReferenceIdAccess};
 
-use crate::dictionary::get_default_resource_dir;
 use crate::errors;
 
 pub fn register_functions(m: &Bound<PyModule>) -> PyResult<()> {
@@ -133,8 +132,7 @@ fn build_user_dic<'py>(
     let system_path = resolve_as_pypathstr(py, system)?;
     let system_dic = match as_data_source(system_path.as_ref(), system)? {
         DataSource::File(f) => {
-            let resource_path = get_default_resource_dir(py)?;
-            let cfg = Config::minimal_at(resource_path).with_system_dic(f);
+            let cfg = Config::minimal_at(PathResolver::from_embedded()).with_system_dic(f);
             errors::wrap_ctx(JapaneseDictionary::from_cfg(&cfg), f)?
         }
         DataSource::Data(_) => {
