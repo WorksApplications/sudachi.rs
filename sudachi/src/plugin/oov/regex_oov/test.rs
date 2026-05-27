@@ -57,7 +57,7 @@ fn plugin(
 ) -> RegexOovProvider {
     let mut plugin = RegexOovProvider::default();
     let mut grammar = zero_grammar();
-    let cfg = Config::minimal_at("");
+    let cfg = Config::empty();
     let jval = json!({
         "leftId": 0,
         "rightId": 0,

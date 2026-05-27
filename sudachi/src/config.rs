@@ -23,7 +23,7 @@ use std::path::{Path, PathBuf};
 use crate::dic::subset::InfoSubset;
 use crate::error::SudachiError;
 use lazy_static::lazy_static;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use thiserror::Error;
 
@@ -146,23 +146,35 @@ enum ResolverRoot {
 }
 
 #[derive(Default, Debug, Clone)]
-struct PathResolver {
+pub struct PathResolver {
     roots: Vec<ResolverRoot>,
 }
 
 impl PathResolver {
-    fn with_capacity(capacity: usize) -> PathResolver {
-        PathResolver {
-            roots: Vec::with_capacity(capacity),
+    pub fn new() -> PathResolver {
+        Self::default()
+    }
+
+    pub fn push_root<P: Into<PathBuf>>(&mut self, path: P) {
+        let path = path.into();
+        if !self.contains(&path) {
+            self.roots.push(ResolverRoot::Filesystem(path))
         }
     }
 
-    fn add<P: Into<PathBuf>>(&mut self, path: P) {
-        self.roots.push(ResolverRoot::Filesystem(path.into()))
+    pub fn push_embedded(&mut self) {
+        if !self.contains_embedded() {
+            self.roots.push(ResolverRoot::Embedded)
+        }
     }
 
-    fn add_embedded(&mut self) {
-        self.roots.push(ResolverRoot::Embedded)
+    pub fn append(&mut self, other: PathResolver) {
+        for root in other.roots {
+            match root {
+                ResolverRoot::Filesystem(path) => self.push_root(path),
+                ResolverRoot::Embedded => self.push_embedded(),
+            }
+        }
     }
 
     fn contains<P: AsRef<Path>>(&self, path: P) -> bool {
@@ -177,7 +189,7 @@ impl PathResolver {
         self.roots.contains(&ResolverRoot::Embedded)
     }
 
-    pub fn first_existing<P: AsRef<Path> + Clone>(&self, path: P) -> Option<ResolvedResource> {
+    fn first_existing<P: AsRef<Path> + Clone>(&self, path: P) -> Option<ResolvedResource> {
         self.roots.iter().find_map(|root| match root {
             ResolverRoot::Filesystem(base) => {
                 let candidate = base.join(path.clone());
@@ -191,13 +203,13 @@ impl PathResolver {
         })
     }
 
-    pub fn resolution_failure<P: AsRef<Path> + Clone>(&self, path: P) -> ConfigError {
+    fn resolution_failure<P: AsRef<Path> + Clone>(&self, path: P) -> ConfigError {
         let candidates = self.all_candidates(path.clone()).collect();
 
         ConfigError::PathResolution(path.as_ref().to_string_lossy().into_owned(), candidates)
     }
 
-    pub fn all_candidates<'a, P: AsRef<Path> + Clone + 'a>(
+    fn all_candidates<'a, P: AsRef<Path> + Clone + 'a>(
         &'a self,
         path: P,
     ) -> impl Iterator<Item = String> + 'a {
@@ -209,7 +221,7 @@ impl PathResolver {
         })
     }
 
-    pub fn filesystem_roots(&self) -> impl Iterator<Item = &PathBuf> {
+    fn filesystem_roots(&self) -> impl Iterator<Item = &PathBuf> {
         self.roots.iter().filter_map(|root| match root {
             ResolverRoot::Filesystem(path) => Some(path),
             ResolverRoot::Embedded => None,
@@ -217,7 +229,7 @@ impl PathResolver {
     }
 }
 
-#[derive(Deserialize, Clone, Copy, Debug, Eq, PartialEq, Default)]
+#[derive(Deserialize, Serialize, Clone, Copy, Debug, Eq, PartialEq, Default)]
 #[serde(rename_all = "snake_case")]
 pub enum SurfaceProjection {
     #[default]
@@ -283,20 +295,10 @@ pub struct Config {
 /// You must use filed names defined here as json object key.
 /// For plugins, refer to each plugin.
 #[allow(non_snake_case)]
-#[derive(Deserialize, Debug, Clone)]
-pub struct ConfigBuilder {
+#[derive(Deserialize, Serialize, Debug, Clone, Default)]
+pub struct RawConfig {
     /// Analogue to Java Implementation path Override.
     path: Option<PathBuf>,
-    /// User-passed resourcePath.
-    #[serde(skip)]
-    resourcePath: Option<PathBuf>,
-    /// User-passed root directory.
-    /// Is also automatically set on from_file.
-    #[serde(skip)]
-    rootDirectory: Option<PathBuf>,
-    /// Use embedded resource data if true.
-    #[serde(skip)]
-    embedded_resources: bool,
     #[serde(alias = "system")]
     systemDict: Option<PathBuf>,
     #[serde(alias = "user")]
@@ -309,13 +311,33 @@ pub struct ConfigBuilder {
     projection: Option<SurfaceProjection>,
 }
 
+#[derive(Debug, Clone, Default)]
+/// Editable configuration source consisting of normalized config data and
+/// explicit resource-resolution state.
+pub struct ConfigBuilder {
+    data: RawConfig,
+    resolver: PathResolver,
+}
+
 macro_rules! merge_cfg_value {
-    ($base: ident, $o: ident, $name: tt) => {
+    ($base: expr, $o: expr, $name: tt) => {
         $base.$name = $base.$name.or_else(|| $o.$name.clone())
     };
 }
 
 impl ConfigBuilder {
+    /// Creates a builder from already-deserialized config data.
+    ///
+    /// If the raw config contains `path`, it is immediately appended to the
+    /// resolver so runtime resolution state is explicit from construction time.
+    fn from_data(data: RawConfig) -> Self {
+        let mut resolver = PathResolver::new();
+        if let Some(path) = data.path.clone() {
+            resolver.push_root(path);
+        }
+        Self { data, resolver }
+    }
+
     pub fn from_opt_file(config_file: Option<&Path>) -> Result<Self, ConfigError> {
         match config_file {
             None => Self::from_embedded(),
@@ -323,39 +345,53 @@ impl ConfigBuilder {
         }
     }
 
+    /// Loads config JSON from a file.
+    ///
+    /// The resulting builder contains the deserialized config data, appends the
+    /// config's `path` field to the resolver if present, and then appends the
+    /// parent directory of `config_file` as an additional filesystem root.
     pub fn from_file(config_file: &Path) -> Result<Self, ConfigError> {
         let file = File::open(config_file)?;
         let reader = BufReader::new(file);
-        serde_json::from_reader(reader)
-            .map_err(|e| e.into())
-            .map(|cfg: ConfigBuilder| match config_file.parent() {
-                Some(p) => cfg.root_directory(p),
-                None => cfg,
-            })
+        let data: RawConfig = serde_json::from_reader(reader).map_err(ConfigError::from)?;
+        let mut cfg = Self::from_data(data);
+        if let Some(parent) = config_file.parent() {
+            cfg.resolver.push_root(parent);
+        }
+        Ok(cfg)
     }
 
+    /// Loads config JSON from raw bytes.
+    ///
+    /// The resulting builder contains the deserialized config data and appends
+    /// the config's `path` field to the resolver if present.
     pub fn from_bytes(data: &[u8]) -> Result<Self, ConfigError> {
-        serde_json::from_slice(data).map_err(|e| e.into())
+        let data = serde_json::from_slice(data).map_err(ConfigError::from)?;
+        Ok(Self::from_data(data))
     }
 
+    /// Loads the bundled default config JSON.
+    ///
+    /// This only loads the embedded JSON contents; embedded resources
+    /// themselves are not enabled unless `push_embedded()` is called.
     pub fn from_embedded() -> Result<Self, ConfigError> {
         Self::from_bytes(DEFAULT_SETTING_BYTES)
     }
 
     pub fn empty() -> Self {
-        serde_json::from_slice(b"{}").unwrap()
+        Self::default()
     }
 
     pub fn system_dict(mut self, dict: impl Into<PathBuf>) -> Self {
-        self.systemDict = Some(dict.into());
+        self.data.systemDict = Some(dict.into());
         self
     }
 
     pub fn user_dict(mut self, dict: impl Into<PathBuf>) -> Self {
-        let dicts = match self.userDict.as_mut() {
+        let dicts = match self.data.userDict.as_mut() {
             None => {
-                self.userDict = Some(Default::default());
-                self.userDict.as_mut().unwrap()
+                self.data.userDict = Some(Default::default());
+                self.data.userDict.as_mut().unwrap()
             }
             Some(dicts) => dicts,
         };
@@ -363,67 +399,65 @@ impl ConfigBuilder {
         self
     }
 
-    pub fn resource_path(mut self, path: impl Into<PathBuf>) -> Self {
-        self.resourcePath = Some(path.into());
+    pub fn with_resolver(mut self, resolver: PathResolver) -> Self {
+        self.resolver = resolver;
         self
     }
 
-    pub fn root_directory(mut self, path: impl Into<PathBuf>) -> Self {
-        self.rootDirectory = Some(path.into());
+    pub fn append_resolver(mut self, other: PathResolver) -> Self {
+        self.resolver.append(other);
         self
     }
 
-    pub fn embedded_resources(mut self, enabled: bool) -> Self {
-        self.embedded_resources = enabled;
+    pub fn push_resolver_root(mut self, path: impl Into<PathBuf>) -> Self {
+        self.resolver.push_root(path);
         self
+    }
+
+    pub fn push_embedded(mut self) -> Self {
+        self.resolver.push_embedded();
+        self
+    }
+
+    pub fn fallback_data(mut self, other: &ConfigBuilder) -> ConfigBuilder {
+        merge_cfg_value!(self.data, other.data, path);
+        merge_cfg_value!(self.data, other.data, systemDict);
+        merge_cfg_value!(self.data, other.data, userDict);
+        merge_cfg_value!(self.data, other.data, characterDefinitionFile);
+        merge_cfg_value!(self.data, other.data, connectionCostPlugin);
+        merge_cfg_value!(self.data, other.data, inputTextPlugin);
+        merge_cfg_value!(self.data, other.data, oovProviderPlugin);
+        merge_cfg_value!(self.data, other.data, pathRewritePlugin);
+        merge_cfg_value!(self.data, other.data, projection);
+        self
+    }
+
+    pub fn raw_config(&self) -> &RawConfig {
+        &self.data
+    }
+
+    pub fn into_raw_config(self) -> RawConfig {
+        self.data
     }
 
     pub fn build(self) -> Config {
-        let mut resolver = PathResolver::with_capacity(3);
-        let mut add_path = |buf: PathBuf| {
-            if !resolver.contains(&buf) {
-                resolver.add(buf);
-            }
-        };
-        self.path.map(&mut add_path);
-        self.resourcePath.map(&mut add_path);
-        self.rootDirectory.map(&mut add_path);
-        if self.embedded_resources && !resolver.contains_embedded() {
-            resolver.add_embedded();
-        }
-
         let character_definition_file = self
+            .data
             .characterDefinitionFile
             .unwrap_or(PathBuf::from(DEFAULT_CHAR_DEF_FILE));
 
         Config {
-            resolver,
-            system_dict: self.systemDict,
-            user_dicts: self.userDict.unwrap_or_default(),
+            resolver: self.resolver,
+            system_dict: self.data.systemDict,
+            user_dicts: self.data.userDict.unwrap_or_default(),
             character_definition_file,
 
-            connection_cost_plugins: self.connectionCostPlugin.unwrap_or_default(),
-            input_text_plugins: self.inputTextPlugin.unwrap_or_default(),
-            oov_provider_plugins: self.oovProviderPlugin.unwrap_or_default(),
-            path_rewrite_plugins: self.pathRewritePlugin.unwrap_or_default(),
-            projection: self.projection.unwrap_or(SurfaceProjection::Surface),
+            connection_cost_plugins: self.data.connectionCostPlugin.unwrap_or_default(),
+            input_text_plugins: self.data.inputTextPlugin.unwrap_or_default(),
+            oov_provider_plugins: self.data.oovProviderPlugin.unwrap_or_default(),
+            path_rewrite_plugins: self.data.pathRewritePlugin.unwrap_or_default(),
+            projection: self.data.projection.unwrap_or(SurfaceProjection::Surface),
         }
-    }
-
-    pub fn fallback(mut self, other: &ConfigBuilder) -> ConfigBuilder {
-        merge_cfg_value!(self, other, path);
-        merge_cfg_value!(self, other, resourcePath);
-        merge_cfg_value!(self, other, rootDirectory);
-        merge_cfg_value!(self, other, systemDict);
-        merge_cfg_value!(self, other, userDict);
-        merge_cfg_value!(self, other, characterDefinitionFile);
-        merge_cfg_value!(self, other, connectionCostPlugin);
-        merge_cfg_value!(self, other, inputTextPlugin);
-        merge_cfg_value!(self, other, oovProviderPlugin);
-        merge_cfg_value!(self, other, pathRewritePlugin);
-        merge_cfg_value!(self, other, projection);
-        self.embedded_resources |= other.embedded_resources;
-        self
     }
 }
 
@@ -438,7 +472,7 @@ impl Config {
 
         // prioritize arg (cli option) > config file
         let raw_config = match resource_dir {
-            Some(p) => raw_config.resource_path(p),
+            Some(p) => raw_config.push_resolver_root(p),
             None => raw_config,
         };
 
@@ -451,20 +485,21 @@ impl Config {
         Ok(raw_config.build())
     }
 
+    pub fn empty() -> Self {
+        Self::default()
+    }
+
     pub fn new_embedded() -> Result<Self, ConfigError> {
-        let raw_config = ConfigBuilder::from_embedded()?;
+        let raw_config = ConfigBuilder::from_embedded()?.push_embedded();
 
         Ok(raw_config.build())
     }
 
     /// Creates a minimal config with the provided resource directory
     pub fn minimal_at(resource_dir: impl Into<PathBuf>) -> Config {
-        let mut cfg = Config::default();
-        let resource = resource_dir.into();
-        cfg.character_definition_file = PathBuf::from(DEFAULT_CHAR_DEF_FILE);
-        let mut resolver = PathResolver::with_capacity(1);
-        resolver.add(resource);
-        cfg.resolver = resolver;
+        let mut cfg = ConfigBuilder::empty()
+            .push_resolver_root(resource_dir)
+            .build();
         cfg.oov_provider_plugins = vec![serde_json::json!(
             { "class" : "com.worksap.nlp.sudachi.SimpleOovPlugin",
               "oovPOS" : [ "名詞", "普通名詞", "一般", "*", "*", "*" ],
@@ -597,16 +632,15 @@ mod tests {
 
     #[test]
     fn config_builder_fallback() {
-        let mut cfg = ConfigBuilder::empty();
-        cfg.path = Some("test".into());
+        let cfg = ConfigBuilder::from_bytes(br#"{ "path": "test" }"#).unwrap();
         let cfg2 = ConfigBuilder::empty();
-        let cfg2 = cfg2.fallback(&cfg);
-        assert_eq!(cfg2.path, Some("test".into()));
+        let cfg2 = cfg2.fallback_data(&cfg);
+        assert_eq!(cfg2.raw_config().path, Some("test".into()));
     }
 
     #[test]
-    fn embedded_resources_are_enabled_by_default() -> SudachiResult<()> {
-        let cfg = ConfigBuilder::empty().build();
+    fn embedded_resources_can_be_enabled_explicitly() -> SudachiResult<()> {
+        let cfg = ConfigBuilder::empty().push_embedded().build();
         let res = cfg.resolve_resource(DEFAULT_CHAR_DEF_FILE)?;
         assert!(matches!(
             res,
@@ -616,20 +650,32 @@ mod tests {
     }
 
     #[test]
-    fn embedded_resources_can_be_disabled() {
-        let cfg = ConfigBuilder::empty().embedded_resources(false).build();
+    fn embedded_resources_are_disabled_by_default() {
+        let cfg = ConfigBuilder::empty().build();
         let err = cfg.resolve_resource(DEFAULT_CHAR_DEF_FILE).unwrap_err();
         assert!(matches!(err, ConfigError::PathResolution(_, _)));
     }
 
     #[test]
     fn embedded_resource_can_not_be_forced_into_path() {
-        let cfg = ConfigBuilder::empty().build();
+        let cfg = ConfigBuilder::empty().push_embedded().build();
         let err = cfg.complete_path(DEFAULT_CHAR_DEF_FILE).unwrap_err();
         assert!(matches!(
             err,
             ConfigError::EmbeddedResourcePath(name) if name == DEFAULT_CHAR_DEF_FILE
         ));
+    }
+
+    #[test]
+    fn from_file_sets_path_before_parent() -> SudachiResult<()> {
+        let cfg_path = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/resources/sudachi.json");
+        let cfg = ConfigBuilder::from_file(&cfg_path)?;
+        let roots: Vec<_> = cfg.raw_config().path.iter().cloned().collect();
+        assert_eq!(roots, vec![PathBuf::from("tests/resources/")]);
+        let npath = cfg.build().resolve_paths("$cfg/data".to_owned());
+        assert_eq!(npath[0], "tests/resources/data");
+        assert!(npath[1].ends_with("sudachi/tests/resources/data"));
+        Ok(())
     }
 
     #[test]
