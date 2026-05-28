@@ -90,6 +90,31 @@ impl JapaneseDictionary {
         Self::from_cfg_storage_chardef(cfg, sb, chardef)
     }
 
+    /// Creates a dictionary from the specified configuration and storage
+    pub fn from_cfg_storage(
+        cfg: &Config,
+        storage: SudachiDicData,
+    ) -> SudachiResult<JapaneseDictionary> {
+        let chardef = CharacterCategory::from_bytes(
+            &cfg.resolve_resource(&cfg.character_definition_file)?
+                .read_bytes()?,
+        )?;
+        Self::from_cfg_storage_chardef(cfg, storage, chardef)
+    }
+
+    #[deprecated(
+        since = "0.7.0",
+        note = "embedded resources are now resolved through Config; use from_cfg_storage instead"
+    )]
+    /// Creates a dictionary from the specified configuration and storage, with embedded character definition
+    pub fn from_cfg_storage_with_embedded_chardef(
+        cfg: &Config,
+        storage: SudachiDicData,
+    ) -> SudachiResult<JapaneseDictionary> {
+        let chardef = CharacterCategory::from_embedded();
+        Self::from_cfg_storage_chardef(cfg, storage, chardef)
+    }
+
     pub fn from_cfg_storage_chardef(
         cfg: &Config,
         storage: SudachiDicData,
@@ -138,27 +163,6 @@ impl JapaneseDictionary {
         }
 
         Ok(dic)
-    }
-
-    /// Creates a dictionary from the specified configuration and storage
-    pub fn from_cfg_storage(
-        cfg: &Config,
-        storage: SudachiDicData,
-    ) -> SudachiResult<JapaneseDictionary> {
-        let chardef = CharacterCategory::from_bytes(
-            &cfg.resolve_resource(&cfg.character_definition_file)?
-                .read_bytes()?,
-        )?;
-        Self::from_cfg_storage_chardef(cfg, storage, chardef)
-    }
-
-    /// Creates a dictionary from the specified configuration and storage, with embedded character definition
-    pub fn from_cfg_storage_with_embedded_chardef(
-        cfg: &Config,
-        storage: SudachiDicData,
-    ) -> SudachiResult<JapaneseDictionary> {
-        let chardef = CharacterCategory::from_embedded();
-        Self::from_cfg_storage_chardef(cfg, storage, chardef)
     }
 
     /// Returns grammar with the correct lifetime
