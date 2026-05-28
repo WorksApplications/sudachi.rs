@@ -93,6 +93,11 @@ class MyTestCase(unittest.TestCase):
         result = tok.tokenize("すだちにいく")
         self.assertEqual(result.size(), 3)
         self.assertEqual(result[0].dictionary_id(), 1)
+        self.assertEqual(result[0].user_data(), "徳島県産")
+
+        subset_tok = dict.create(fields={"user_data"})
+        subset_result = subset_tok.tokenize("すだちにいく")
+        self.assertEqual(subset_result[0].user_data(), "徳島県産")
 
     def test_build_user2(self):
         sys_dic = self.make_tempfile("sudachi_sy", ".dic")

@@ -764,6 +764,7 @@ fn parse_field_subset(data: Option<&Bound<PySet>>) -> PyResult<InfoSubset> {
             "split_a" => InfoSubset::SPLIT_A,
             "split_b" => InfoSubset::SPLIT_B,
             "synonym_group_id" => InfoSubset::SYNONYM_GROUP_IDS,
+            "user_data" => InfoSubset::USER_DATA,
             x => return errors::wrap(Err(format!("Invalid WordInfo field name {}", x))),
         };
     }

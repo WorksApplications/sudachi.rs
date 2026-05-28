@@ -318,6 +318,17 @@ class TestTokenizer(unittest.TestCase):
         m = self.tokenizer_obj.tokenize('東京府')[0]
         self.assertEqual(m.synonym_group_ids(), [1, 3])
 
+    def test_morpheme_user_data(self):
+        m = self.tokenizer_obj.tokenize('すだち')[0]
+        self.assertEqual(m.user_data(), '徳島県産')
+
+        m = self.tokenizer_obj.tokenize('京都')[0]
+        self.assertEqual(m.user_data(), '')
+
+        tokenizer = self.dict_.create(fields={'user_data'})
+        m = tokenizer.tokenize('すだち')[0]
+        self.assertEqual(m.user_data(), '徳島県産')
+
     def test_normalize_half_full(self):
         m = self.tokenizer_obj.tokenize('特Ａ東京')
         self.assertEqual(len(m), 2)

@@ -71,6 +71,12 @@ class TestDictionary(unittest.TestCase):
         self.assertEqual(1, len(normalized))
         self.assertEqual("トクエー", normalized[0].reading_form())
 
+    def test_lookup_user_data(self):
+        entries = self.dict_.lookup("すだち")
+        user_entry = next(m for m in entries if m.raw_surface() == "すだち")
+        self.assertEqual(1, user_entry.dictionary_id())
+        self.assertEqual("徳島県産", user_entry.user_data())
+
     def test_entries(self):
         entries = list(self.dict_.entries())
         surfaces = [m.raw_surface() for m in entries]
@@ -88,6 +94,7 @@ class TestDictionary(unittest.TestCase):
         user_entry = next(m for m in entries if m.raw_surface() == "すだち")
         self.assertEqual(1, user_entry.dictionary_id())
         self.assertEqual("すだち", user_entry.normalized_form())
+        self.assertEqual("徳島県産", user_entry.user_data())
 
     def test_lookup_all_entries(self):
         self.assertFalse(self.dict_.lookup_all_entries("存在しない語"))
@@ -110,6 +117,7 @@ class TestDictionary(unittest.TestCase):
         self.assertEqual(1, len(user_entry))
         self.assertEqual(1, user_entry[0].dictionary_id())
         self.assertEqual("スダチ", user_entry[0].reading_form())
+        self.assertEqual("徳島県産", user_entry[0].user_data())
 
         out = self.dict_.lookup("京都")
         reused = self.dict_.lookup_all_entries("東京都", out=out)

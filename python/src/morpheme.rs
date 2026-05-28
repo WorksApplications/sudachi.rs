@@ -783,6 +783,12 @@ impl PyMorpheme {
         }
     }
 
+    /// Returns user-defined data associated with this morpheme.
+    #[pyo3(text_signature = "(self, /) -> str")]
+    fn user_data<'py>(&'py self, py: Python<'py>) -> PyResult<Bound<'py, PyString>> {
+        self.with_morpheme(py, |m| PyString::new(py, m.user_data()))
+    }
+
     /// Returns morpheme length in codepoints.
     pub fn __len__(&self, py: Python) -> PyResult<usize> {
         self.with_morpheme(py, |m| m.end_c() - m.begin_c())

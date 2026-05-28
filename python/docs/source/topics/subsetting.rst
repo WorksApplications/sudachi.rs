@@ -16,8 +16,9 @@ Allowed values:
 * ``reading_form``
 * ``word_structure``
 * ``synonym_group_id``
-* ``splits_a``
-* ``splits_b``
+* ``user_data``
+* ``split_a``
+* ``split_b``
 
 .. note::
     If you want only tokenization (e.g. use only :py:meth:`sudachipy.Morpheme.surface()`,
@@ -26,7 +27,17 @@ Allowed values:
 You need to load splits if you want to use :py:meth:`sudachipy.Morpheme.split` method.
 If performing the tokenization with non-default mode, the required splits will be loaded automatically and can be omitted.::
 
-    dic.create(SplitMode.B, fields={}) # implicitly becomes fields={'splits_b'}
+    dic.create(SplitMode.B, fields=set()) # implicitly becomes fields={'split_b'}
+
+To access user-defined dictionary data when field subsetting is enabled, load
+``user_data`` explicitly.::
+
+    tokenizer = dic.create(fields={"surface", "user_data"})
+    morpheme = tokenizer.tokenize("すだち")[0]
+    assert morpheme.user_data() == "徳島県産"
+
+If ``fields`` is specified without ``user_data``, :py:meth:`sudachipy.Morpheme.user_data()`
+follows the same partial-loading rule as other fields and may return an incorrect result.
 
 .. warning::
     Using a field not included in the passed subset will produce an incorrect result without any warning.
