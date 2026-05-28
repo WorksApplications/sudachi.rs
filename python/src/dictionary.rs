@@ -196,6 +196,12 @@ impl PyDictionary {
     /// If both config.systemDict and dict are given, dict is used.
     /// If dict is an absolute path to a file, it is used as a dictionary.
     ///
+    /// Resolution precedence is:
+    /// 1. `resource_dir` (if given).
+    /// 2. `path` field in the `config_file` (if set).
+    /// 3. The parent directory of the `config_file` (if given).
+    /// 4. The default resources.
+    ///
     /// :param config_path: path to the configuration JSON file, config json as a string, or a [sudachipy.Config] object.
     /// :param config: alias to config_path, only one of them can be specified at the same time.
     /// :param resource_dir: path to the resource directory folder.

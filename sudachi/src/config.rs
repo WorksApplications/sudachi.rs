@@ -517,6 +517,16 @@ pub struct Config {
 }
 
 impl Config {
+    /// Creates a config from optional config, resource, and dictionary paths.
+    ///
+    /// Resolution precedence is:
+    /// 1. `resource_dir` (if given).
+    /// 2. The `path` field in the `config_file` (if set).
+    /// 3. The parent directory of the `config_file` (if given).
+    /// 4. The default (embedded) resources.
+    ///
+    /// When `config_file` is `None`, the embedded default `sudachi.json` is used as config
+    /// data.
     pub fn new(
         config_file: Option<PathBuf>,
         resource_dir: Option<PathBuf>,
@@ -527,9 +537,10 @@ impl Config {
 
         // prioritize arg (cli option) > config file
         let raw_config = match resource_dir {
-            Some(p) => raw_config.push_resolver_root(p),
+            Some(p) => raw_config.prepend_resolver_root(p),
             None => raw_config,
-        };
+        }
+        .push_embedded();
 
         // prioritize arg (cli option) > config file
         let raw_config = match dictionary_path {
