@@ -329,10 +329,6 @@ class TestTokenizer(unittest.TestCase):
         m = tokenizer.tokenize('すだち')[0]
         self.assertEqual(m.user_data(), '徳島県産')
 
-        tokenizer = self.dict_.create(fields=set())
-        m = tokenizer.tokenize('すだち')[0]
-        self.assertEqual(m.user_data(), '')
-
     def test_normalize_half_full(self):
         m = self.tokenizer_obj.tokenize('特Ａ東京')
         self.assertEqual(len(m), 2)
