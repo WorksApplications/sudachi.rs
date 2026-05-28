@@ -17,7 +17,7 @@
 use super::*;
 
 #[test]
-fn parse_legacy_detection_by_integer_literal_in_legacy_format() {
+fn parse_v0_detection_by_integer_literal_in_v0_format() {
     let mut rdr = LexiconReader::new();
     let data = "京都,40000,6,5293,京都,名詞,固有名詞,地名,一般,*,*,キョウト,京都,*,A,*,*,*,*";
     assert_matches!(

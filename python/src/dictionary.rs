@@ -567,6 +567,59 @@ impl PyDictionary {
         }
     }
 
+    /// Create an out-of-vocabulary morpheme from the POS id and string forms.
+    ///
+    /// Begin/end are set from the surface. When optional string forms are not
+    /// provided, the surface is used for them.
+    ///
+    /// :param pos_id: part-of-speech id of the morpheme
+    /// :param surface: surface of the morpheme
+    /// :param reading: reading form of the morpheme
+    /// :param normalized_form: normalized form of the morpheme
+    /// :param dictionary_form: dictionary form of the morpheme
+    ///
+    /// :type pos_id: int
+    /// :type surface: str
+    /// :type reading: str | None
+    /// :type normalized_form: str | None
+    /// :type dictionary_form: str | None
+    #[pyo3(
+        signature = (
+            pos_id,
+            surface,
+            reading=None,
+            normalized_form=None,
+            dictionary_form=None
+        ),
+        text_signature = "(self, /, pos_id, surface, reading=None, normalized_form=None, dictionary_form=None) -> Morpheme",
+    )]
+    fn oov_morpheme(
+        &self,
+        pos_id: u16,
+        surface: &str,
+        reading: Option<&str>,
+        normalized_form: Option<&str>,
+        dictionary_form: Option<&str>,
+    ) -> PyResult<PyMorpheme> {
+        let dict = self.dictionary.clone().unwrap();
+        let projection = dict.projection.clone();
+        let reading = reading.unwrap_or(surface);
+        let normalized_form = normalized_form.unwrap_or(surface);
+        let dictionary_form = dictionary_form.unwrap_or(surface);
+        let morpheme = errors::wrap_ctx(
+            SingleMorpheme::oov(
+                dict,
+                pos_id,
+                surface.to_owned(),
+                reading.to_owned(),
+                normalized_form.to_owned(),
+                dictionary_form.to_owned(),
+            ),
+            surface,
+        )?;
+        Ok(PyMorpheme::single_backed(morpheme, projection))
+    }
+
     /// Close this dictionary.
     #[pyo3(text_signature = "(self, /) -> ()")]
     fn close(&mut self) {
@@ -711,6 +764,7 @@ fn parse_field_subset(data: Option<&Bound<PySet>>) -> PyResult<InfoSubset> {
             "split_a" => InfoSubset::SPLIT_A,
             "split_b" => InfoSubset::SPLIT_B,
             "synonym_group_id" => InfoSubset::SYNONYM_GROUP_IDS,
+            "user_data" => InfoSubset::USER_DATA,
             x => return errors::wrap(Err(format!("Invalid WordInfo field name {}", x))),
         };
     }

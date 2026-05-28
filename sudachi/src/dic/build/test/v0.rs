@@ -17,7 +17,7 @@
 use super::*;
 
 #[test]
-fn split_user_ref_in_legacy_format() {
+fn split_user_ref_in_v0_format() {
     let mut sys = DictBuilder::new_system();
     sys.read_conn(MATRIX_10_10).unwrap();
     sys.read_lexicon(
@@ -71,7 +71,7 @@ fn split_user_ref_in_legacy_format() {
 }
 
 #[test]
-fn split_user_entrykey_ref_system_in_legacy_format() {
+fn split_user_entrykey_ref_system_in_v0_format() {
     let mut sys = DictBuilder::new_system();
     sys.read_conn(MATRIX_10_10).unwrap();
     sys.read_lexicon(
@@ -123,7 +123,7 @@ fn split_user_entrykey_ref_system_in_legacy_format() {
 }
 
 #[test]
-fn split_user_entrykey_ref_user_in_legacy_format() {
+fn split_user_entrykey_ref_user_in_v0_format() {
     let mut sys = DictBuilder::new_system();
     sys.read_conn(MATRIX_10_10).unwrap();
     sys.read_lexicon(
@@ -176,7 +176,7 @@ fn split_user_entrykey_ref_user_in_legacy_format() {
 
 #[test]
 #[ignore = "sudachi.rs currently allows system dictionary_form reference from user lexicon"]
-fn fail_dictionary_form_in_system_in_legacy_format() {
+fn fail_dictionary_form_in_system_in_v0_format() {
     let mut sys = DictBuilder::new_system();
     sys.read_conn(MATRIX_10_10).unwrap();
     sys.read_lexicon(
@@ -204,7 +204,7 @@ fn fail_dictionary_form_in_system_in_legacy_format() {
 }
 
 #[test]
-fn word_id_too_big_dicform_in_legacy_format() {
+fn word_id_too_big_dicform_in_v0_format() {
     let mut bldr = DictBuilder::new_system();
     bldr.read_conn(MATRIX_10_10).unwrap();
     bldr.read_lexicon(
@@ -221,7 +221,7 @@ fn word_id_too_big_dicform_in_legacy_format() {
 }
 
 #[test]
-fn word_id_too_big_split_a_in_legacy_format() {
+fn word_id_too_big_split_a_in_v0_format() {
     let mut bldr = DictBuilder::new_system();
     bldr.read_conn(MATRIX_10_10).unwrap();
     bldr.read_lexicon(
@@ -238,7 +238,7 @@ fn word_id_too_big_split_a_in_legacy_format() {
 }
 
 #[test]
-fn word_id_too_big_split_b_in_legacy_format() {
+fn word_id_too_big_split_b_in_v0_format() {
     let mut bldr = DictBuilder::new_system();
     bldr.read_conn(MATRIX_10_10).unwrap();
     bldr.read_lexicon(
@@ -255,7 +255,7 @@ fn word_id_too_big_split_b_in_legacy_format() {
 }
 
 #[test]
-fn word_id_too_big_word_structure_in_legacy_format() {
+fn word_id_too_big_word_structure_in_v0_format() {
     let mut bldr = DictBuilder::new_system();
     bldr.read_conn(MATRIX_10_10).unwrap();
     bldr.read_lexicon(
@@ -272,7 +272,7 @@ fn word_id_too_big_word_structure_in_legacy_format() {
 }
 
 #[test]
-fn word_id_too_big_dicform_userdic_insystem_in_legacy_format() {
+fn word_id_too_big_dicform_userdic_insystem_in_v0_format() {
     let mut bldr = DictBuilder::new_system();
     bldr.read_conn(MATRIX_10_10).unwrap();
     bldr.read_lexicon(
@@ -296,7 +296,7 @@ fn word_id_too_big_dicform_userdic_insystem_in_legacy_format() {
 }
 
 #[test]
-fn word_id_too_big_dicform_userdic_inuser_in_legacy_format() {
+fn word_id_too_big_dicform_userdic_inuser_in_v0_format() {
     let mut bldr = DictBuilder::new_system();
     bldr.read_conn(MATRIX_10_10).unwrap();
     bldr.read_lexicon(

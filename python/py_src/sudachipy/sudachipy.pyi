@@ -33,7 +33,8 @@ Fields that can be specified for partial dictionary loading.
 See https://worksapplications.github.io/sudachi.rs/python/topics/subsetting.html.
 """
 FieldSet = Optional[Set[Literal["surface", "pos", "normalized_form", "dictionary_form", "reading_form",
-                                "word_structure", "split_a", "split_b", "synonym_group_id"]]]
+                                "word_structure", "split_a", "split_b", "synonym_group_id",
+                                "user_data"]]]
 
 
 """
@@ -199,6 +200,28 @@ class Dictionary:
         """
         ...
 
+    def oov_morpheme(
+        self,
+        pos_id: int,
+        surface: str,
+        reading: Optional[str] = None,
+        normalized_form: Optional[str] = None,
+        dictionary_form: Optional[str] = None,
+    ) -> Morpheme:
+        """
+        Create an out-of-vocabulary morpheme from the POS id and string forms.
+
+        Begin/end are set from the surface. When optional string forms are not
+        provided, the surface is used for them.
+
+        :param pos_id: part-of-speech id of the morpheme
+        :param surface: surface of the morpheme
+        :param reading: reading form of the morpheme
+        :param normalized_form: normalized form of the morpheme
+        :param dictionary_form: dictionary form of the morpheme
+        """
+        ...
+
 
 class Morpheme:
     """
@@ -310,6 +333,12 @@ class Morpheme:
     def synonym_group_ids(self) -> List[int]:
         """
         Returns the list of synonym group ids.
+        """
+        ...
+
+    def user_data(self) -> str:
+        """
+        Returns user-defined data associated with this morpheme.
         """
         ...
 

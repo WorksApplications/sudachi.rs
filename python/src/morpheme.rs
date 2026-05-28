@@ -178,7 +178,7 @@ impl PyMorphemeListWrapper {
     fn __getitem__(slf: Bound<PyMorphemeListWrapper>, mut idx: isize) -> PyResult<PyMorpheme> {
         enum Item {
             List(usize),
-            Single(SingleMorpheme<Arc<PyDicData>>, PyProjector),
+            Single(Box<SingleMorpheme<Arc<PyDicData>>>, PyProjector),
         }
 
         let item = {
@@ -201,7 +201,7 @@ impl PyMorphemeListWrapper {
             match &list.inner {
                 PyMorphemeListBacking::List(_) => Item::List(idx),
                 PyMorphemeListBacking::Singles(items) => {
-                    Item::Single(items[idx].clone(), list.projection.clone())
+                    Item::Single(Box::new(items[idx].clone()), list.projection.clone())
                 }
             }
         };
@@ -212,7 +212,7 @@ impl PyMorphemeListWrapper {
                 Ok(PyMorpheme::list_backed(py_list, idx))
             }
             Item::Single(morpheme, projection) => {
-                Ok(PyMorpheme::single_backed(morpheme, projection))
+                Ok(PyMorpheme::single_backed_boxed(morpheme, projection))
             }
         }
     }
@@ -283,7 +283,7 @@ impl PyMorphemeIter {
     fn __next__(&mut self, py: Python) -> Option<PyMorpheme> {
         enum Item {
             List(usize),
-            Single(SingleMorpheme<Arc<PyDicData>>, PyProjector),
+            Single(Box<SingleMorpheme<Arc<PyDicData>>>, PyProjector),
         }
 
         let item = {
@@ -295,7 +295,7 @@ impl PyMorphemeIter {
             match &list.inner {
                 PyMorphemeListBacking::List(_) => Item::List(self.index),
                 PyMorphemeListBacking::Singles(items) => {
-                    Item::Single(items[self.index].clone(), list.projection.clone())
+                    Item::Single(Box::new(items[self.index].clone()), list.projection.clone())
                 }
             }
         };
@@ -304,7 +304,7 @@ impl PyMorphemeIter {
         match item {
             Item::List(index) => Some(PyMorpheme::list_backed(self.list.clone_ref(py), index)),
             Item::Single(morpheme, projection) => {
-                Some(PyMorpheme::single_backed(morpheme, projection))
+                Some(PyMorpheme::single_backed_boxed(morpheme, projection))
             }
         }
     }
@@ -332,7 +332,7 @@ enum PyMorphemeBacking {
         index: usize,
     },
     Single {
-        morpheme: SingleMorpheme<Arc<PyDicData>>,
+        morpheme: Box<SingleMorpheme<Arc<PyDicData>>>,
         projection: PyProjector,
     },
 }
@@ -360,6 +360,13 @@ impl PyMorpheme {
         morpheme: SingleMorpheme<Arc<PyDicData>>,
         projection: PyProjector,
     ) -> Self {
+        Self::single_backed_boxed(Box::new(morpheme), projection)
+    }
+
+    pub(crate) fn single_backed_boxed(
+        morpheme: Box<SingleMorpheme<Arc<PyDicData>>>,
+        projection: PyProjector,
+    ) -> Self {
         Self {
             backing: PyMorphemeBacking::Single {
                 morpheme,
@@ -375,7 +382,11 @@ impl PyMorpheme {
     ) -> PyResult<MorphemeBorrow<'py>> {
         let list = list.borrow(py);
         // workaround for self-referential structs
-        let morph = unsafe { std::mem::transmute(list.as_list()?.get(index)) };
+        let morph = unsafe {
+            std::mem::transmute::<Morpheme<'_, Arc<PyDicData>>, Morpheme<'_, Arc<PyDicData>>>(
+                list.as_list()?.get(index),
+            )
+        };
         Ok(MorphemeBorrow { list, morph })
     }
 
@@ -419,7 +430,7 @@ impl PyMorpheme {
             PyMorphemeBacking::Single {
                 morpheme,
                 projection,
-            } => PyMorpheme::single_backed(morpheme.clone(), projection.clone()),
+            } => PyMorpheme::single_backed_boxed((*morpheme).clone(), projection.clone()),
         }
     }
 
@@ -433,7 +444,7 @@ impl PyMorpheme {
                 let mrp = Self::borrow_morpheme(list, py, *index)?;
                 Ok(f(mrp.deref()))
             }
-            PyMorphemeBacking::Single { morpheme, .. } => Ok(f(morpheme)),
+            PyMorphemeBacking::Single { morpheme, .. } => Ok(f(morpheme.as_ref())),
         }
     }
 
@@ -582,9 +593,9 @@ impl PyMorpheme {
                 let list = list.borrow(py);
                 Ok(list.as_list()?.dict().pos_of(pos_id).clone_ref(py))
             }
-            PyMorphemeBacking::Single { morpheme, .. } => {
-                Ok(MorphemeView::dict(morpheme).pos_of(pos_id).clone_ref(py))
-            }
+            PyMorphemeBacking::Single { morpheme, .. } => Ok(MorphemeView::dict(morpheme.as_ref())
+                .pos_of(pos_id)
+                .clone_ref(py)),
         }
     }
 }
@@ -627,7 +638,7 @@ impl PyMorpheme {
                 projection,
             } => match projection {
                 None => Ok(PyString::new(py, morpheme.surface())),
-                Some(proj) => Ok(proj.project(morpheme, py)),
+                Some(proj) => Ok(proj.project(morpheme.as_ref(), py)),
             },
         }
     }
@@ -770,6 +781,12 @@ impl PyMorpheme {
                 PyList::new(py, morpheme.get_word_info().synonym_group_ids())
             }
         }
+    }
+
+    /// Returns user-defined data associated with this morpheme.
+    #[pyo3(text_signature = "(self, /) -> str")]
+    fn user_data<'py>(&'py self, py: Python<'py>) -> PyResult<Bound<'py, PyString>> {
+        self.with_morpheme(py, |m| PyString::new(py, m.user_data()))
     }
 
     /// Returns morpheme length in codepoints.

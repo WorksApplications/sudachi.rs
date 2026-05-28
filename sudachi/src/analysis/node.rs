@@ -303,16 +303,16 @@ pub fn concat_nodes(
     let mut index_form_length = 0;
 
     for node in path[begin..end].iter() {
-        headword.push_str(node.word_info().headword(&resolver));
-        reading_form.push_str(node.word_info().reading_form(&resolver));
-        dictionary_form.push_str(node.word_info().dictionary_form(&resolver));
+        headword.push_str(node.word_info().headword(resolver));
+        reading_form.push_str(node.word_info().reading_form(resolver));
+        dictionary_form.push_str(node.word_info().dictionary_form(resolver));
         index_form_length += node.word_info().index_form_length();
     }
 
     let normalized_form = normalized_form.unwrap_or_else(|| {
         let mut norm = String::with_capacity(end_bytes - beg_bytes);
         for node in path[begin..end].iter() {
-            norm.push_str(node.word_info().normalized_form(&resolver));
+            norm.push_str(node.word_info().normalized_form(resolver));
         }
         norm
     });
@@ -366,8 +366,8 @@ pub fn concat_oov_nodes(
         return Err(SudachiError::InvalidRange(begin, end));
     }
 
-    let byte_begin = path[begin].begin_bytes as u16;
-    let byte_end = path[end - 1].end_bytes as u16;
+    let byte_begin = path[begin].begin_bytes;
+    let byte_end = path[end - 1].end_bytes;
     let node_begin = path[begin].begin();
     let node_end = path[end - 1].end();
 
@@ -403,7 +403,7 @@ pub fn concat_oov_nodes(
     let mut headword = String::with_capacity(capa);
     let mut index_form_length = 0;
     for node in path[begin..end].iter() {
-        headword.push_str(node.word_info().headword(&resolver));
+        headword.push_str(node.word_info().headword(resolver));
         index_form_length += node.word_info().index_form_length();
     }
 

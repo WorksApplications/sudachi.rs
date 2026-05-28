@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2024 Works Applications Co., Ltd.
+ * Copyright (c) 2021-2026 Works Applications Co., Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,6 @@ impl<'a> NonBreakChecker<'a> {
 
 impl NonBreakChecker<'_> {
     /// Returns whether there is a word that crosses the boundary
-
     fn has_non_break_word(&self, input: &str, length: usize) -> bool {
         // assume that SentenceDetector::get_eos called with self.input[self.bos..]
         let eos_byte = self.bos + length;

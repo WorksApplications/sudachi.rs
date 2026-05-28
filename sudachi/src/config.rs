@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2024 Works Applications Co., Ltd.
+ * Copyright (c) 2021-2026 Works Applications Co., Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -72,7 +72,7 @@ impl PathResolver {
 
     fn contains<P: AsRef<Path>>(&self, path: P) -> bool {
         let query = path.as_ref();
-        return self.roots.iter().any(|p| p.as_path() == query);
+        self.roots.iter().any(|p| p.as_path() == query)
     }
 
     pub fn first_existing<P: AsRef<Path> + Clone>(&self, path: P) -> Option<PathBuf> {

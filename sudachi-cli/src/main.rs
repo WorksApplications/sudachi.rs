@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2024 Works Applications Co., Ltd.
+ * Copyright (c) 2021-2026 Works Applications Co., Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,12 +29,10 @@ use crate::analysis::{Analysis, AnalyzeNonSplitted, AnalyzeSplitted, SplitSenten
 use crate::build::{build_main, is_build_mode, BuildCli};
 use sudachi::config::Config;
 use sudachi::dic::dictionary::JapaneseDictionary;
+use sudachi::dic::DictionaryAccess;
 use sudachi::prelude::*;
 
-#[cfg(feature = "bake_dictionary")]
-const BAKED_DICTIONARY_BYTES: &[u8] = include_bytes!(env!("SUDACHI_DICT_PATH"));
-
-#[derive(Clone, Debug, Eq, PartialEq, Default)]
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub enum SentenceSplitMode {
     /// Do both sentence splitting and analysis
     #[default]
@@ -117,16 +115,33 @@ struct Cli {
     command: Option<BuildCli>,
 }
 
-// want to instantiate a different type for different output format
-// this takes a f as a function which will be created with a different actual type
-macro_rules! with_output {
-    ($cli: expr, $f: expr) => {
-        if $cli.wakati {
-            Box::new($f(output::Wakachi::default()))
-        } else {
-            Box::new($f(output::Simple::new($cli.print_all)))
-        }
-    };
+pub fn setup_output<D: DictionaryAccess>(
+    wakachi: bool,
+    print_all: bool,
+) -> Box<dyn output::SudachiOutput<D>> {
+    if wakachi {
+        Box::new(output::Wakachi::default())
+    } else {
+        Box::new(output::Simple::new(print_all))
+    }
+}
+
+fn setup_analyzer<'a>(args: &Cli, dict: &'a impl DictionaryAccess) -> Box<dyn Analysis + 'a> {
+    match args.split_sentences {
+        SentenceSplitMode::Only => Box::new(SplitSentencesOnly::new(dict)),
+        SentenceSplitMode::Default => Box::new(AnalyzeSplitted::new(
+            setup_output(args.wakati, args.print_all),
+            dict,
+            args.mode,
+            args.enable_debug,
+        )),
+        SentenceSplitMode::None => Box::new(AnalyzeNonSplitted::new(
+            setup_output(args.wakati, args.print_all),
+            dict,
+            args.mode,
+            args.enable_debug,
+        )),
+    }
 }
 
 fn main() {
@@ -169,15 +184,7 @@ fn main() {
     let dict = JapaneseDictionary::from_cfg(&config)
         .unwrap_or_else(|e| panic!("Failed to create dictionary: {:?}", e));
 
-    let mut analyzer: Box<dyn Analysis> = match args.split_sentences {
-        SentenceSplitMode::Only => Box::new(SplitSentencesOnly::new(&dict)),
-        SentenceSplitMode::Default => with_output!(args, |o| {
-            AnalyzeSplitted::new(o, &dict, args.mode, args.enable_debug)
-        }),
-        SentenceSplitMode::None => with_output!(args, |o| {
-            AnalyzeNonSplitted::new(o, &dict, args.mode, args.enable_debug)
-        }),
-    };
+    let mut analyzer: Box<dyn Analysis> = setup_analyzer(&args, &dict);
 
     let mut data = String::with_capacity(4 * 1024);
     let is_stdout = args.output_file.is_none();
@@ -213,6 +220,7 @@ fn strip_eol(data: &str) -> &str {
     // Safety: str was correct and we only removed full characters
     unsafe { std::str::from_utf8_unchecked(bytes) }
 }
+
 #[cfg(test)]
 mod tests {
     use clap::CommandFactory;

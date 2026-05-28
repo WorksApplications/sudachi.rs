@@ -16,7 +16,7 @@
 
 use std::time::{Duration, UNIX_EPOCH};
 
-mod legacy;
+mod v0;
 mod with_analysis;
 
 use crate::dic::binary_loader::{BinaryDictionary, LoadedDictionary};

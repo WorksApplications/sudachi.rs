@@ -31,6 +31,7 @@ use sudachi::dic::grammar::Grammar;
 use sudachi::dic::lexicon::Lexicon;
 use sudachi::dic::lexicon_set::LexiconSet;
 use sudachi::dic::word_id::WordId;
+use sudachi::dic::word_info::WordInfo;
 use sudachi::error::SudachiResult;
 use sudachi::text_normalizer::TextNormalizer;
 
@@ -368,7 +369,7 @@ fn dump_word_info<W: Write>(
         (((grammar, lexicon_set), system_reference_ids), None)
     };
 
-    let ((mut grammar, mut lex), system_reference_ids) = base;
+    let ((mut grammar, mut lexicon), system_reference_ids) = base;
     let mut word_ids = Vec::new();
     let mut user_reference_ids = HashMap::new();
     if let Some(udic) = user {
@@ -377,27 +378,34 @@ fn dump_word_info<W: Write>(
         for entry in user_lex.entry_ids_in_order() {
             word_ids.push(WordId::new(1, entry.as_raw()));
         }
-        lex.append(user_lex, grammar.pos_list.len())?;
+        lexicon.append(user_lex, grammar.pos_list.len())?;
         grammar.merge_binary(udic.grammar);
     } else {
-        for entry in lex.system_word_ids_in_order() {
+        for entry in lexicon.system_word_ids_in_order() {
             word_ids.push(entry);
         }
     }
-
     let normalizer = TextNormalizer::new(&grammar)?;
+    let ctx = WordInfoDumpCtx {
+        grammar,
+        lexicon,
+        system_reference_ids,
+        user_reference_ids,
+        pos_format,
+    };
+
     writeln!(w, "{}", word_info_header(pos_format))?;
     for wid in word_ids {
         if wid.dict().as_raw() != did {
             continue;
         }
-        let (left, right, cost) = lex.get_word_param(wid);
+        let (left, right, cost) = ctx.lexicon.get_word_param(wid);
         // Internally generated phantom entries should not be dumped as source CSV rows.
         if left == -1 && right == -1 && cost == i16::MAX {
             continue;
         }
-        let winfo = lex.get_word_info(wid)?;
-        let headword = winfo.headword(&lex);
+        let winfo = ctx.lexicon.get_word_info(wid)?;
+        let headword = winfo.headword(&ctx.lexicon);
         let index_form = normalizer.normalize(headword)?;
         write!(w, "{},", csv_field(&index_form))?;
         write!(w, "{},{},{},", left, right, cost)?;
@@ -406,76 +414,29 @@ fn dump_word_info<W: Write>(
         } else {
             write!(w, "{},", csv_field(headword))?;
         }
-        write!(w, "{},", pos_string(&grammar, winfo.pos_id(), pos_format))?;
-        let reading = winfo.reading_form(&lex);
+        write!(w, "{},", ctx.pos_string(winfo.pos_id()))?;
+        let reading = winfo.reading_form(&ctx.lexicon);
         write!(w, "{},", csv_field(reading))?;
-        let normalized = winfo.normalized_form(&lex);
+        let normalized = winfo.normalized_form(&ctx.lexicon);
         if normalized == headword {
             write!(w, ",")?;
         } else {
             write!(w, "{},", csv_field(normalized))?;
         }
-        let dict_form = dictionary_form_string(
-            &grammar,
-            &lex,
-            wid,
-            winfo.borrow_data().dictionary_form_word_id(),
-            pos_format,
-            &system_reference_ids,
-            &user_reference_ids,
-        )?;
+        let dict_form =
+            ctx.dictionary_form_string(wid, winfo.borrow_data().dictionary_form_word_id())?;
         write!(w, "{},", dict_form)?;
-        dump_wids(
-            w,
-            &grammar,
-            &lex,
-            winfo.a_unit_split(),
-            pos_format,
-            &system_reference_ids,
-            &user_reference_ids,
-        )?;
+        ctx.dump_wids(w, winfo.a_unit_split())?;
         w.write_all(b",")?;
-        dump_wids(
-            w,
-            &grammar,
-            &lex,
-            winfo.b_unit_split(),
-            pos_format,
-            &system_reference_ids,
-            &user_reference_ids,
-        )?;
+        ctx.dump_wids(w, winfo.b_unit_split())?;
         w.write_all(b",")?;
-        dump_wids(
-            w,
-            &grammar,
-            &lex,
-            winfo.c_unit_split(),
-            pos_format,
-            &system_reference_ids,
-            &user_reference_ids,
-        )?;
+        ctx.dump_wids(w, winfo.c_unit_split())?;
         w.write_all(b",")?;
-        dump_wids(
-            w,
-            &grammar,
-            &lex,
-            winfo.word_structure(),
-            pos_format,
-            &system_reference_ids,
-            &user_reference_ids,
-        )?;
+        ctx.dump_wids(w, winfo.word_structure())?;
         w.write_all(b",")?;
         dump_gids(w, winfo.synonym_group_ids())?;
-        write!(
-            w,
-            ",{},{}",
-            csv_field(winfo.user_data()),
-            csv_field(&reference_id_for_word_id(
-                wid,
-                &system_reference_ids,
-                &user_reference_ids
-            ))
-        )?;
+        write!(w, ",{}", csv_field(winfo.user_data()))?;
+        write!(w, ",{}", csv_field(&ctx.reference_id_for_word_id(wid)))?;
         w.write_all(b"\n")?;
     }
     Ok(())
@@ -512,136 +473,109 @@ fn word_info_header(pos_format: PosDumpFormat) -> &'static str {
     }
 }
 
-fn pos_string(grammar: &Grammar, posid: u16, pos_format: PosDumpFormat) -> String {
-    match pos_format {
-        PosDumpFormat::Components => grammar
-            .pos_components(posid)
-            .into_iter()
-            .map(|p| csv_field(p))
-            .collect::<Vec<_>>()
-            .join(","),
-        PosDumpFormat::Id => posid.to_string(),
-    }
-}
-
-fn pos_string_for_entrykey(grammar: &Grammar, posid: u16, pos_format: PosDumpFormat) -> String {
-    match pos_format {
-        PosDumpFormat::Components => grammar
-            .pos_components(posid)
-            .into_iter()
-            .map(|p| entrykey_ref_escape(p))
-            .collect::<Vec<_>>()
-            .join(","),
-        PosDumpFormat::Id => posid.to_string(),
-    }
-}
-
-fn dictionary_form_string(
-    grammar: &Grammar,
-    lex: &LexiconSet,
-    self_wid: WordId,
-    wid: WordId,
+struct WordInfoDumpCtx<'a> {
+    grammar: Grammar<'a>,
+    lexicon: LexiconSet<'a>,
+    system_reference_ids: HashMap<u32, String>,
+    user_reference_ids: HashMap<u32, String>,
     pos_format: PosDumpFormat,
-    system_reference_ids: &HashMap<u32, String>,
-    user_reference_ids: &HashMap<u32, String>,
-) -> SudachiResult<String> {
-    if self_wid == wid {
-        return Ok(String::new());
-    }
-
-    let dict_form_wi = lex.get_word_info(wid)?;
-    Ok(format!(
-        "\"{}\"",
-        entrykey_ref_string(
-            grammar,
-            wid,
-            dict_form_wi.headword(lex),
-            dict_form_wi.pos_id(),
-            dict_form_wi.reading_form(lex),
-            pos_format,
-            system_reference_ids,
-            user_reference_ids,
-        )
-    ))
 }
 
-fn entrykey_ref_string(
-    grammar: &Grammar,
-    wid: WordId,
-    headword: &str,
-    pos_id: u16,
-    reading: &str,
-    pos_format: PosDumpFormat,
-    system_reference_ids: &HashMap<u32, String>,
-    user_reference_ids: &HashMap<u32, String>,
-) -> String {
-    let mut data = format!(
-        "{},{},{}",
-        entrykey_ref_escape(headword),
-        pos_string_for_entrykey(grammar, pos_id, pos_format),
-        entrykey_ref_escape(reading),
-    );
-    let reference_id = reference_id_for_word_id(wid, system_reference_ids, user_reference_ids);
-    if !reference_id.is_empty() {
-        data.push(',');
-        data.push_str(&entrykey_ref_escape(&reference_id));
-    }
-    data
-}
-
-fn dump_wids<W: Write>(
-    w: &mut W,
-    grammar: &Grammar,
-    lex: &LexiconSet,
-    data: &[WordId],
-    pos_format: PosDumpFormat,
-    system_reference_ids: &HashMap<u32, String>,
-    user_reference_ids: &HashMap<u32, String>,
-) -> SudachiResult<()> {
-    if data.is_empty() {
-        return Ok(());
-    }
-
-    let mut refs = Vec::with_capacity(data.len());
-    for wid in data {
-        let wi = lex.get_word_info(*wid)?;
-        refs.push(entrykey_ref_string(
-            grammar,
-            *wid,
-            wi.headword(lex),
-            wi.pos_id(),
-            wi.reading_form(lex),
-            pos_format,
-            system_reference_ids,
-            user_reference_ids,
-        ));
-    }
-    w.write_all(b"\"")?;
-    for (i, r) in refs.iter().enumerate() {
-        write!(w, "{}", r)?;
-        if i + 1 != refs.len() {
-            w.write_all(b"/")?;
+impl<'a> WordInfoDumpCtx<'a> {
+    fn pos_string(&self, posid: u16) -> String {
+        match self.pos_format {
+            PosDumpFormat::Components => self
+                .grammar
+                .pos_components(posid)
+                .iter()
+                .map(|p| csv_field(p))
+                .collect::<Vec<_>>()
+                .join(","),
+            PosDumpFormat::Id => posid.to_string(),
         }
     }
-    w.write_all(b"\"")?;
-    Ok(())
-}
 
-fn reference_id_for_word_id(
-    wid: WordId,
-    system_reference_ids: &HashMap<u32, String>,
-    user_reference_ids: &HashMap<u32, String>,
-) -> String {
-    match wid.dict().as_raw() {
-        0 => system_reference_ids
-            .get(&wid.entry().as_raw())
-            .cloned()
-            .unwrap_or_default(),
-        1 => user_reference_ids
-            .get(&wid.entry().as_raw())
-            .cloned()
-            .unwrap_or_default(),
-        _ => String::new(),
+    fn pos_string_for_entrykey(&self, posid: u16) -> String {
+        match self.pos_format {
+            PosDumpFormat::Components => self
+                .grammar
+                .pos_components(posid)
+                .iter()
+                .map(|p| entrykey_ref_escape(p))
+                .collect::<Vec<_>>()
+                .join(","),
+            PosDumpFormat::Id => posid.to_string(),
+        }
+    }
+
+    fn reference_id_for_word_id(&self, wid: WordId) -> String {
+        match wid.dict().as_raw() {
+            0 => self
+                .system_reference_ids
+                .get(&wid.entry().as_raw())
+                .cloned()
+                .unwrap_or_default(),
+            1 => self
+                .user_reference_ids
+                .get(&wid.entry().as_raw())
+                .cloned()
+                .unwrap_or_default(),
+            _ => String::new(),
+        }
+    }
+
+    fn entrykey_ref_string(&self, word_info: WordInfo, reference_id: &str) -> String {
+        let headword = word_info.headword(&self.lexicon);
+        let pos_id = word_info.pos_id();
+        let reading = word_info.reading_form(&self.lexicon);
+
+        let mut data = format!(
+            "{},{},{}",
+            entrykey_ref_escape(headword),
+            self.pos_string_for_entrykey(pos_id),
+            entrykey_ref_escape(reading),
+        );
+        if !reference_id.is_empty() {
+            data.push(',');
+            data.push_str(&entrykey_ref_escape(reference_id));
+        }
+        data
+    }
+
+    fn dictionary_form_string(&self, self_wid: WordId, wid: WordId) -> SudachiResult<String> {
+        if self_wid == wid {
+            return Ok(String::new());
+        }
+
+        Ok(format!(
+            "\"{}\"",
+            self.entrykey_ref_string(
+                self.lexicon.get_word_info(wid)?,
+                &self.reference_id_for_word_id(wid),
+            )
+        ))
+    }
+
+    fn dump_wids<W: Write>(&self, w: &mut W, data: &[WordId]) -> SudachiResult<()> {
+        if data.is_empty() {
+            return Ok(());
+        }
+
+        let mut refs = Vec::with_capacity(data.len());
+        for wid in data {
+            let wi = self.lexicon.get_word_info(*wid)?;
+            let reference_id = self.reference_id_for_word_id(*wid);
+            refs.push(self.entrykey_ref_string(wi, &reference_id));
+        }
+        w.write_all(b"\"")?;
+        for (i, r) in refs.iter().enumerate() {
+            write!(w, "{}", r)?;
+            if i + 1 != refs.len() {
+                w.write_all(b"/")?;
+            }
+        }
+        w.write_all(b"\"")?;
+        Ok(())
     }
 }
 

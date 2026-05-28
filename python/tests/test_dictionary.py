@@ -71,6 +71,12 @@ class TestDictionary(unittest.TestCase):
         self.assertEqual(1, len(normalized))
         self.assertEqual("トクエー", normalized[0].reading_form())
 
+    def test_lookup_user_data(self):
+        entries = self.dict_.lookup("すだち")
+        user_entry = next(m for m in entries if m.raw_surface() == "すだち")
+        self.assertEqual(1, user_entry.dictionary_id())
+        self.assertEqual("徳島県産", user_entry.user_data())
+
     def test_entries(self):
         entries = list(self.dict_.entries())
         surfaces = [m.raw_surface() for m in entries]
@@ -88,6 +94,7 @@ class TestDictionary(unittest.TestCase):
         user_entry = next(m for m in entries if m.raw_surface() == "すだち")
         self.assertEqual(1, user_entry.dictionary_id())
         self.assertEqual("すだち", user_entry.normalized_form())
+        self.assertEqual("徳島県産", user_entry.user_data())
 
     def test_lookup_all_entries(self):
         self.assertFalse(self.dict_.lookup_all_entries("存在しない語"))
@@ -110,6 +117,7 @@ class TestDictionary(unittest.TestCase):
         self.assertEqual(1, len(user_entry))
         self.assertEqual(1, user_entry[0].dictionary_id())
         self.assertEqual("スダチ", user_entry[0].reading_form())
+        self.assertEqual("徳島県産", user_entry[0].user_data())
 
         out = self.dict_.lookup("京都")
         reused = self.dict_.lookup_all_entries("東京都", out=out)
@@ -170,6 +178,40 @@ class TestDictionary(unittest.TestCase):
                 self.assertFalse(phantom)
             finally:
                 dictionary.close()
+
+    def test_oov_morpheme(self):
+        pos_id1 = 1
+        m1 = self.dict_.oov_morpheme(pos_id1, "OOV")
+        self.assertEqual(0, m1.begin())
+        self.assertEqual(3, m1.end())
+        self.assertEqual(pos_id1, m1.part_of_speech_id())
+        self.assertEqual("OOV", m1.surface())
+        self.assertEqual("OOV", m1.reading_form())
+        self.assertEqual("OOV", m1.normalized_form())
+        self.assertEqual("OOV", m1.dictionary_form())
+        self.assertTrue(m1.is_oov())
+        self.assertEqual(-1, m1.dictionary_id())
+        self.assertEqual([], m1.synonym_group_ids())
+
+        pos_id2 = 2
+        m2 = self.dict_.oov_morpheme(pos_id2, "OOVs", "OOVr", "OOVn", "OOVd")
+        self.assertEqual(0, m2.begin())
+        self.assertEqual(4, m2.end())
+        self.assertEqual(pos_id2, m2.part_of_speech_id())
+        self.assertEqual("OOVs", m2.surface())
+        self.assertEqual("OOVr", m2.reading_form())
+        self.assertEqual("OOVn", m2.normalized_form())
+        self.assertEqual("OOVd", m2.dictionary_form())
+
+        # form_morpheme return self for OOV morphemes
+        self.assertEqual("OOV", m1.normalized_form_morpheme().surface())
+        self.assertEqual("OOV", m1.dictionary_form_morpheme().surface())
+        self.assertTrue(m1.normalized_form_morpheme().is_oov())
+        self.assertTrue(m1.dictionary_form_morpheme().is_oov())
+        self.assertEqual("OOVs", m2.normalized_form_morpheme().surface())
+        self.assertEqual("OOVs", m2.dictionary_form_morpheme().surface())
+        self.assertTrue(m2.normalized_form_morpheme().is_oov())
+        self.assertTrue(m2.dictionary_form_morpheme().is_oov())
 
 
 if __name__ == '__main__':

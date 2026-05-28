@@ -24,8 +24,8 @@ use memmap2::Mmap;
 use crate::analysis::Mode;
 use crate::dic::build::error::{BuildFailure, DicWriteResult};
 use crate::dic::build::parse::{
-    it_next, none_if_equal, parse_i16, parse_legacy_line_ref, parse_mode, parse_slash_list,
-    parse_u32_list_with_asterisk, unescape, unescape_cow, WORD_ID_LITERAL,
+    it_next, none_if_equal, parse_i16, parse_mode, parse_slash_list, parse_u32_list_with_asterisk,
+    parse_v0_line_ref, unescape, unescape_cow, LINE_REF_LITERAL,
 };
 use crate::dic::build::pos::read_pos_bytes as read_pos_csv_bytes;
 use crate::dic::build::MAX_POS_IDS;
@@ -73,7 +73,7 @@ impl LexiconReader {
             .trim(Trim::None)
             .flexible(true)
             .from_reader(data);
-        let mut layout = ColumnLayout::Legacy;
+        let mut layout = ColumnLayout::V0;
         let mut first_row = true;
         let mut nread = 0;
         for record in reader.records() {
@@ -130,23 +130,21 @@ impl LexiconReader {
 
         let reading = rec.get_col(layout, Column::ReadingForm, unescape)?;
         let normalized = rec.get_col(layout, Column::NormalizedForm, |s| Ok(s.to_owned()))?;
-        let dic_form_ref = rec.get_col_or(layout, Column::DictionaryForm, "".to_owned(), |s| {
-            Ok(s.to_owned())
-        })?;
+        let dic_form_ref = rec.get_col(layout, Column::DictionaryForm, |s| Ok(s.to_owned()))?;
         let splitting = rec.get_col_or(layout, Column::Mode, Mode::C, parse_mode)?;
-        let allow_word_id_ref = layout.is_legacy();
-        let allow_asterisk = layout.is_legacy();
+        let allow_line_ref = layout.is_v0();
+        let allow_asterisk = layout.is_v0();
         let splits_a = rec.get_col(layout, Column::SplitA, |s| {
-            self.parse_splits_with_asterisk(s, allow_word_id_ref, allow_asterisk)
+            self.parse_splits_with_asterisk(s, allow_line_ref, allow_asterisk)
         })?;
         let splits_b = rec.get_col(layout, Column::SplitB, |s| {
-            self.parse_splits_with_asterisk(s, allow_word_id_ref, allow_asterisk)
+            self.parse_splits_with_asterisk(s, allow_line_ref, allow_asterisk)
         })?;
         let splits_c = rec.get_col_or_default(layout, Column::SplitC, |s| {
-            self.parse_splits_with_asterisk(s, allow_word_id_ref, allow_asterisk)
+            self.parse_splits_with_asterisk(s, allow_line_ref, allow_asterisk)
         })?;
         let word_structure = rec.get_col(layout, Column::WordStructure, |s| {
-            self.parse_splits_with_asterisk(s, allow_word_id_ref, allow_asterisk)
+            self.parse_splits_with_asterisk(s, allow_line_ref, allow_asterisk)
         })?;
         let synonym_groups = rec.get_col_or_default(layout, Column::SynonymGroups, |s| {
             parse_u32_list_with_asterisk(s, allow_asterisk)
@@ -221,14 +219,14 @@ impl LexiconReader {
 
         let dic_form = rec
             .ctx
-            .transform(self.parse_dic_form(&dic_form_ref, allow_word_id_ref))?;
+            .transform(self.parse_dic_form(&dic_form_ref, allow_line_ref))?;
         let norm_form = rec.ctx.transform(self.parse_norm_form(
             &normalized,
             effective_headword.as_ref(),
             pos,
             &reading,
             reference_id.as_deref(),
-            layout.is_legacy(),
+            layout.is_v0(),
         ))?;
 
         if index_form.is_empty() {
@@ -279,15 +277,15 @@ impl LexiconReader {
     pub(super) fn parse_splits(
         &mut self,
         data: &str,
-        allow_word_id_ref: bool,
+        allow_line_ref: bool,
     ) -> DicWriteResult<Vec<WordRef>> {
-        self.parse_splits_with_asterisk(data, allow_word_id_ref, true)
+        self.parse_splits_with_asterisk(data, allow_line_ref, true)
     }
 
     fn parse_splits_with_asterisk(
         &mut self,
         data: &str,
-        allow_word_id_ref: bool,
+        allow_line_ref: bool,
         allow_asterisk: bool,
     ) -> DicWriteResult<Vec<WordRef>> {
         if data.is_empty() || data == "*" {
@@ -297,15 +295,15 @@ impl LexiconReader {
             return Ok(Vec::new());
         }
 
-        parse_slash_list(data, |s| self.parse_split(s, allow_word_id_ref))
+        parse_slash_list(data, |s| self.parse_split(s, allow_line_ref))
     }
 
-    fn parse_split(&mut self, data: &str, allow_word_id_ref: bool) -> DicWriteResult<WordRef> {
-        if WORD_ID_LITERAL.is_match(data) {
-            if !allow_word_id_ref {
+    fn parse_split(&mut self, data: &str, allow_line_ref: bool) -> DicWriteResult<WordRef> {
+        if LINE_REF_LITERAL.is_match(data) {
+            if !allow_line_ref {
                 return Err(BuildFailure::InvalidSplit(data.to_owned()));
             }
-            Ok(WordRef::LineRef(parse_legacy_line_ref(data)?))
+            Ok(WordRef::LineRef(parse_v0_line_ref(data)?))
         } else if matches!(data.matches(',').count(), 2 | 3) {
             let mut iter = data.splitn(4, ',');
             let headword = it_next(data, &mut iter, "(1) headword", unescape)?;
@@ -338,15 +336,15 @@ impl LexiconReader {
         }
     }
 
-    fn parse_dic_form(&mut self, data: &str, allow_word_id_ref: bool) -> DicWriteResult<WordRef> {
-        if data.is_empty() || (allow_word_id_ref && data == "*") {
+    fn parse_dic_form(&mut self, data: &str, allow_line_ref: bool) -> DicWriteResult<WordRef> {
+        if data.is_empty() || (allow_line_ref && data == "*") {
             return Ok(WordRef::SelfRef);
         }
         if data == "*" {
             return Err(BuildFailure::InvalidSplit(data.to_owned()));
         }
 
-        self.parse_split(data, allow_word_id_ref)
+        self.parse_split(data, allow_line_ref)
     }
 
     fn parse_norm_form(

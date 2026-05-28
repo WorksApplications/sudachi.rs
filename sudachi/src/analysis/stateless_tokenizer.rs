@@ -45,7 +45,7 @@ where
     <T as Deref>::Target: DictionaryAccess,
 {
     pub fn as_dict(&self) -> &<T as Deref>::Target {
-        return Deref::deref(&self.dict);
+        Deref::deref(&self.dict)
     }
 }
 
@@ -92,7 +92,7 @@ pub(super) fn split_path<T: DictionaryAccess + ?Sized>(
     Ok(new_path)
 }
 
-pub(super) fn dump_path(path: &Vec<ResultNode>) {
+pub(super) fn dump_path(path: &[ResultNode]) {
     for (i, node) in path.iter().enumerate() {
         println!("{}: {}", i, node);
     }
