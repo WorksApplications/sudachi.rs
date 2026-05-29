@@ -196,6 +196,12 @@ impl PyDictionary {
     /// If both config.systemDict and dict are given, dict is used.
     /// If dict is an absolute path to a file, it is used as a dictionary.
     ///
+    /// Resolution precedence is:
+    /// 1. `resource_dir` (if given).
+    /// 2. `path` field in the `config_file` (if set).
+    /// 3. The parent directory of the `config_file` (if given).
+    /// 4. The default resources.
+    ///
     /// :param config_path: path to the configuration JSON file, config json as a string, or a [sudachipy.Config] object.
     /// :param config: alias to config_path, only one of them can be specified at the same time.
     /// :param resource_dir: path to the resource directory folder.
@@ -225,22 +231,16 @@ impl PyDictionary {
             return errors::wrap(Err("Both config and config_path options were specified at the same time, use one of them"));
         }
 
-        let default_config = read_default_config(py)?;
+        let mut builder = read_default_config(py)?;
 
-        let config_builder = match config.or(config_path) {
-            None => default_config,
-            Some(v) => read_config(v)?.fallback(&default_config),
-        };
+        if let Some(v) = config.or(config_path) {
+            builder = read_config(v)?.fallback_data(&builder);
+        }
 
-        let resource_dir = match resource_dir {
-            None => Some(get_default_resource_dir(py)?),
-            Some(v) => Some(v),
-        };
-
-        let dict_path = match dict.or(dict_type) {
-            None => None,
-            Some(dt) => Some(locate_system_dict(py, Path::new(dt))?),
-        };
+        if let Some(p) = resource_dir {
+            builder = builder.prepend_resolver_root(p);
+        }
+        builder = builder.push_resolver_root(get_default_resource_dir(py)?);
 
         if dict_type.is_some() {
             errors::warn_deprecation(
@@ -248,18 +248,12 @@ impl PyDictionary {
                 c_str!("Parameter dict_type of Dictionary() is deprecated, use dict instead"),
             )?
         }
-
-        let config_builder = match resource_dir {
-            Some(p) => config_builder.resource_path(p),
-            None => config_builder,
+        if let Some(dt) = dict.or(dict_type) {
+            let dict_path = locate_system_dict(py, Path::new(dt))?;
+            builder = builder.system_dict(dict_path)
         };
 
-        let config_builder = match dict_path {
-            Some(p) => config_builder.system_dict(p),
-            None => config_builder,
-        };
-
-        let mut config = config_builder.build();
+        let mut config = builder.build();
 
         // Load a dictionary from `sudachidict_core` as the default one.
         // For this behavior, the value of `systemDict` key in the default setting file must be
@@ -567,6 +561,59 @@ impl PyDictionary {
         }
     }
 
+    /// Create an out-of-vocabulary morpheme from the POS id and string forms.
+    ///
+    /// Begin/end are set from the surface. When optional string forms are not
+    /// provided, the surface is used for them.
+    ///
+    /// :param pos_id: part-of-speech id of the morpheme
+    /// :param surface: surface of the morpheme
+    /// :param reading: reading form of the morpheme
+    /// :param normalized_form: normalized form of the morpheme
+    /// :param dictionary_form: dictionary form of the morpheme
+    ///
+    /// :type pos_id: int
+    /// :type surface: str
+    /// :type reading: str | None
+    /// :type normalized_form: str | None
+    /// :type dictionary_form: str | None
+    #[pyo3(
+        signature = (
+            pos_id,
+            surface,
+            reading=None,
+            normalized_form=None,
+            dictionary_form=None
+        ),
+        text_signature = "(self, /, pos_id, surface, reading=None, normalized_form=None, dictionary_form=None) -> Morpheme",
+    )]
+    fn oov_morpheme(
+        &self,
+        pos_id: u16,
+        surface: &str,
+        reading: Option<&str>,
+        normalized_form: Option<&str>,
+        dictionary_form: Option<&str>,
+    ) -> PyResult<PyMorpheme> {
+        let dict = self.dictionary.clone().unwrap();
+        let projection = dict.projection.clone();
+        let reading = reading.unwrap_or(surface);
+        let normalized_form = normalized_form.unwrap_or(surface);
+        let dictionary_form = dictionary_form.unwrap_or(surface);
+        let morpheme = errors::wrap_ctx(
+            SingleMorpheme::oov(
+                dict,
+                pos_id,
+                surface.to_owned(),
+                reading.to_owned(),
+                normalized_form.to_owned(),
+                dictionary_form.to_owned(),
+            ),
+            surface,
+        )?;
+        Ok(PyMorpheme::single_backed(morpheme, projection))
+    }
+
     /// Close this dictionary.
     #[pyo3(text_signature = "(self, /) -> ()")]
     fn close(&mut self) {
@@ -711,6 +758,7 @@ fn parse_field_subset(data: Option<&Bound<PySet>>) -> PyResult<InfoSubset> {
             "split_a" => InfoSubset::SPLIT_A,
             "split_b" => InfoSubset::SPLIT_B,
             "synonym_group_id" => InfoSubset::SYNONYM_GROUP_IDS,
+            "user_data" => InfoSubset::USER_DATA,
             x => return errors::wrap(Err(format!("Invalid WordInfo field name {}", x))),
         };
     }

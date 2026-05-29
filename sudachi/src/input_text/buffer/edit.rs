@@ -89,7 +89,7 @@ impl<'a> InputEditor<'a> {
 // Current plugin implementations satisfy this criteria.
 pub fn resolve_edits(
     source: &str,
-    source_mapping: &Vec<usize>,
+    source_mapping: &[usize],
     target: &mut String,
     target_mapping: &mut Vec<usize>,
     edits: &mut Vec<ReplaceOp>,
@@ -127,7 +127,7 @@ pub fn resolve_edits(
 }
 
 fn add_replace(
-    source_mapping: &Vec<usize>,
+    source_mapping: &[usize],
     target: &mut String,
     target_mapping: &mut Vec<usize>,
     what: Range<usize>,

@@ -15,7 +15,6 @@
  */
 
 use std::fmt::Debug;
-use std::io::Error;
 use thiserror::Error;
 
 use crate::config::ConfigError;
@@ -55,7 +54,7 @@ pub enum SudachiError {
     FromUtf16(#[from] std::string::FromUtf16Error),
 
     #[error("Regex error")]
-    RegexError(#[from] fancy_regex::Error),
+    RegexError { cause: Box<fancy_regex::Error> },
 
     #[error("Error from nom {0}")]
     NomParseError(String),
@@ -128,11 +127,17 @@ pub enum SudachiError {
 }
 
 impl From<std::io::Error> for SudachiError {
-    fn from(e: Error) -> Self {
+    fn from(e: std::io::Error) -> Self {
         SudachiError::Io {
             cause: e,
             context: String::from("IO Error"),
         }
+    }
+}
+
+impl From<fancy_regex::Error> for SudachiError {
+    fn from(e: fancy_regex::Error) -> Self {
+        SudachiError::RegexError { cause: Box::new(e) }
     }
 }
 

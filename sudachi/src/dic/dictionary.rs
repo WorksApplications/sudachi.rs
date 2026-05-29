@@ -33,7 +33,8 @@ use crate::dic::subset::InfoSubset;
 use crate::dic::{
     lookup_all_entries, DescriptionAccess, DictionaryAccess, LexiconAccess, ReferenceIdAccess,
 };
-use crate::error::{SudachiError, SudachiResult};
+use crate::error::SudachiError;
+use crate::error::SudachiResult;
 use crate::plugin::input_text::InputTextPlugin;
 use crate::plugin::oov::OovProviderPlugin;
 use crate::plugin::path_rewrite::PathRewritePlugin;
@@ -81,10 +82,37 @@ impl JapaneseDictionary {
             )
         }
 
-        let chardef_path = cfg.complete_path(&cfg.character_definition_file)?;
-        let chardef = CharacterCategory::from_file(chardef_path.as_path())?;
+        let chardef = CharacterCategory::from_bytes(
+            &cfg.resolve_resource(&cfg.character_definition_file)?
+                .read_bytes()?,
+        )?;
 
         Self::from_cfg_storage_chardef(cfg, sb, chardef)
+    }
+
+    /// Creates a dictionary from the specified configuration and storage
+    pub fn from_cfg_storage(
+        cfg: &Config,
+        storage: SudachiDicData,
+    ) -> SudachiResult<JapaneseDictionary> {
+        let chardef = CharacterCategory::from_bytes(
+            &cfg.resolve_resource(&cfg.character_definition_file)?
+                .read_bytes()?,
+        )?;
+        Self::from_cfg_storage_chardef(cfg, storage, chardef)
+    }
+
+    #[deprecated(
+        since = "0.7.0",
+        note = "embedded resources are now resolved through Config; use from_cfg_storage instead"
+    )]
+    /// Creates a dictionary from the specified configuration and storage, with embedded character definition
+    pub fn from_cfg_storage_with_embedded_chardef(
+        cfg: &Config,
+        storage: SudachiDicData,
+    ) -> SudachiResult<JapaneseDictionary> {
+        let chardef = CharacterCategory::from_embedded();
+        Self::from_cfg_storage_chardef(cfg, storage, chardef)
     }
 
     pub fn from_cfg_storage_chardef(
@@ -137,25 +165,6 @@ impl JapaneseDictionary {
         Ok(dic)
     }
 
-    /// Creates a dictionary from the specified configuration and storage
-    pub fn from_cfg_storage(
-        cfg: &Config,
-        storage: SudachiDicData,
-    ) -> SudachiResult<JapaneseDictionary> {
-        let chardef_path = cfg.complete_path(&cfg.character_definition_file)?;
-        let chardef = CharacterCategory::from_file(chardef_path.as_path())?;
-        Self::from_cfg_storage_chardef(cfg, storage, chardef)
-    }
-
-    /// Creates a dictionary from the specified configuration and storage, with embedded character definition
-    pub fn from_cfg_storage_with_embedded_chardef(
-        cfg: &Config,
-        storage: SudachiDicData,
-    ) -> SudachiResult<JapaneseDictionary> {
-        let chardef = CharacterCategory::from_embedded();
-        Self::from_cfg_storage_chardef(cfg, storage, chardef)
-    }
-
     /// Returns grammar with the correct lifetime
     pub fn grammar(&self) -> &Grammar<'_> {
         &self._grammar
@@ -196,19 +205,43 @@ impl JapaneseDictionary {
     /// This normalizes the query using dictionary input-text plugins and scans
     /// every public lexicon entry. It can find entries that are not indexed for
     /// normal lookup. Use `lookup` for normal indexed lookup.
-    #[allow(clippy::result_large_err)]
     pub fn lookup_all_entries(&self, surface: &str) -> SudachiResult<Vec<SingleMorpheme<&Self>>> {
         self.lookup_all_entries_subset(surface, InfoSubset::all())
     }
 
     /// Looks up all matching dictionary entries, loading only requested fields.
-    #[allow(clippy::result_large_err)]
     pub fn lookup_all_entries_subset(
         &self,
         surface: &str,
         subset: InfoSubset,
     ) -> SudachiResult<Vec<SingleMorpheme<&Self>>> {
         lookup_all_entries(self, surface, subset)
+    }
+
+    /// Creates an out-of-vocabulary standalone morpheme from the pos id and the surface.
+    ///
+    /// Uses the surface for reading, normalized, and dictionary forms.
+    pub fn oov_morpheme(&self, pos_id: u16, surface: &str) -> SudachiResult<SingleMorpheme<&Self>> {
+        self.oov_morpheme_with_forms(pos_id, surface, surface, surface, surface)
+    }
+
+    /// Creates an out-of-vocabulary standalone morpheme from the pos id and string forms.
+    pub fn oov_morpheme_with_forms(
+        &self,
+        pos_id: u16,
+        surface: &str,
+        reading: &str,
+        normalized_form: &str,
+        dictionary_form: &str,
+    ) -> SudachiResult<SingleMorpheme<&Self>> {
+        SingleMorpheme::oov(
+            self,
+            pos_id,
+            surface.to_owned(),
+            reading.to_owned(),
+            normalized_form.to_owned(),
+            dictionary_form.to_owned(),
+        )
     }
 
     fn merge_user_dictionary(

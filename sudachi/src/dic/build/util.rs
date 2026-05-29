@@ -43,8 +43,8 @@ pub fn java_string_hash(data: &str) -> i32 {
 #[cfg(unix)]
 pub fn local_tm(secs: libc::time_t) -> Option<libc::tm> {
     let mut out = std::mem::MaybeUninit::<libc::tm>::uninit();
-    let mut input = secs;
-    let result = unsafe { libc::localtime_r(&mut input, out.as_mut_ptr()) };
+    let input = secs;
+    let result = unsafe { libc::localtime_r(&input, out.as_mut_ptr()) };
     if result.is_null() {
         None
     } else {
@@ -67,8 +67,8 @@ pub fn local_tm(secs: libc::time_t) -> Option<libc::tm> {
 #[cfg(unix)]
 pub fn utc_tm(secs: libc::time_t) -> libc::tm {
     let mut out = std::mem::MaybeUninit::<libc::tm>::uninit();
-    let mut input = secs;
-    let result = unsafe { libc::gmtime_r(&mut input, out.as_mut_ptr()) };
+    let input = secs;
+    let result = unsafe { libc::gmtime_r(&input, out.as_mut_ptr()) };
     if result.is_null() {
         zero_tm()
     } else {

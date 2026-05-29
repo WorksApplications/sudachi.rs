@@ -23,10 +23,9 @@ use std::path::Path;
 
 use thiserror::Error;
 
+use crate::config::DEFAULT_CHAR_DEF_BYTES;
 use crate::dic::category_type::CategoryType;
 use crate::prelude::*;
-
-const DEFAULT_CHAR_DEF_BYTES: &[u8] = include_bytes!("../../../resources/char.def");
 
 /// Sudachi error
 #[derive(Error, Debug, Eq, PartialEq)]

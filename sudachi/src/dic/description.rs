@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 Works Applications Co., Ltd.
+ * Copyright (c) 2025-2026 Works Applications Co., Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 
 use nom::number::complete::le_u64;
+use std::fmt::Display;
 use std::time::Duration;
 use thiserror::Error;
 
@@ -26,7 +27,7 @@ use super::read::{
 };
 use crate::error::SudachiResult;
 
-static MAGIC_BYTES: &'static [u8] = b"SudachiBinaryDic";
+static MAGIC_BYTES: &[u8] = b"SudachiBinaryDic";
 
 /// Sudachi error
 #[derive(Error, Debug, Eq, PartialEq)]
@@ -38,8 +39,8 @@ pub enum DescriptionError {
     #[error("Invalid magic bytes")]
     InvalidMagicBytes,
 
-    #[error("Legacy version")]
-    LegacyVersion,
+    #[error("V0 version")]
+    V0Version,
 
     #[error("Invalid header version {0}")]
     InvalidVersion(u64),
@@ -76,7 +77,7 @@ pub enum Block {
 impl Block {
     /// return the string representation of the block
     /// This must be same as the name defined in the Java version.
-    fn to_str(&self) -> &str {
+    fn as_string_representation(&self) -> &str {
         match self {
             Block::ConnectionMatrix => "ConnMatrix",
             Block::POSTable => "POS",
@@ -89,9 +90,9 @@ impl Block {
     }
 }
 
-impl ToString for Block {
-    fn to_string(&self) -> String {
-        self.to_str().to_string()
+impl Display for Block {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.as_string_representation())
     }
 }
 
@@ -143,25 +144,25 @@ pub struct Description {
 
 impl Description {
     pub fn load(buf: &[u8]) -> SudachiResult<Self> {
-        Self::check_legacy_format(buf)?;
+        Self::check_v0_format(buf)?;
 
         let rest = Self::check_magic(buf)?;
         let (rest, version) = le_u64(rest)?;
         if version == 1 {
-            return Self::load_v1(rest);
+            Self::load_v1(rest)
         } else {
-            return Err(DescriptionError::InvalidVersion(version).into());
+            Err(DescriptionError::InvalidVersion(version).into())
         }
     }
 
-    /// Check if the dictionary is in legacy (V0) format.
+    /// Check if the dictionary is in V0 format.
     ///
     /// In V0 format, the version is stored as a u64 (long) at the beginning of the binary.
-    fn check_legacy_format(buf: &[u8]) -> SudachiResult<()> {
+    fn check_v0_format(buf: &[u8]) -> SudachiResult<()> {
         let (_rest, version) = le_u64(buf)?;
-        let legacy_version = HeaderVersion::from_u64(version);
-        match legacy_version {
-            Some(_) => Err(DescriptionError::LegacyVersion.into()),
+        let v0_version = HeaderVersion::from_u64(version);
+        match v0_version {
+            Some(_) => Err(DescriptionError::V0Version.into()),
             None => Ok(()),
         }
     }
@@ -255,7 +256,7 @@ impl Description {
         buf: &'a [u8],
         block: Block,
     ) -> SudachiResult<Option<&'a [u8]>> {
-        let block_name = block.to_str();
+        let block_name = block.as_string_representation();
         match self.blocks.iter().find(|block| block.name() == block_name) {
             Some(block) => {
                 let start = block.start() as usize;
@@ -265,7 +266,7 @@ impl Description {
                 }
                 Ok(Some(&buf[start..end]))
             }
-            None => return Ok(None),
+            None => Ok(None),
         }
     }
 

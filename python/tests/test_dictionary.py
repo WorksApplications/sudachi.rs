@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
 import os
 import tempfile
 import unittest
@@ -71,6 +72,12 @@ class TestDictionary(unittest.TestCase):
         self.assertEqual(1, len(normalized))
         self.assertEqual("トクエー", normalized[0].reading_form())
 
+    def test_lookup_user_data(self):
+        entries = self.dict_.lookup("すだち")
+        user_entry = next(m for m in entries if m.raw_surface() == "すだち")
+        self.assertEqual(1, user_entry.dictionary_id())
+        self.assertEqual("徳島県産", user_entry.user_data())
+
     def test_entries(self):
         entries = list(self.dict_.entries())
         surfaces = [m.raw_surface() for m in entries]
@@ -88,6 +95,7 @@ class TestDictionary(unittest.TestCase):
         user_entry = next(m for m in entries if m.raw_surface() == "すだち")
         self.assertEqual(1, user_entry.dictionary_id())
         self.assertEqual("すだち", user_entry.normalized_form())
+        self.assertEqual("徳島県産", user_entry.user_data())
 
     def test_lookup_all_entries(self):
         self.assertFalse(self.dict_.lookup_all_entries("存在しない語"))
@@ -110,6 +118,7 @@ class TestDictionary(unittest.TestCase):
         self.assertEqual(1, len(user_entry))
         self.assertEqual(1, user_entry[0].dictionary_id())
         self.assertEqual("スダチ", user_entry[0].reading_form())
+        self.assertEqual("徳島県産", user_entry[0].user_data())
 
         out = self.dict_.lookup("京都")
         reused = self.dict_.lookup_all_entries("東京都", out=out)
@@ -170,6 +179,79 @@ class TestDictionary(unittest.TestCase):
                 self.assertFalse(phantom)
             finally:
                 dictionary.close()
+
+    def test_resource_dir_precedes_config_parent(self):
+        resource_dir = Path(__file__).parent / "resources"
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            config_path = temp_path / "sudachi.json"
+            # If the config directory is searched first, dictionary creation will try to
+            # open this directory as `char.def` and fail before reaching `resource_dir`.
+            (temp_path / "char.def").mkdir()
+            config_path.write_text(json.dumps({
+                "systemDict": str(resource_dir / "system.dic.test"),
+                "userDict": [str(resource_dir / "user.dic.test")],
+                "characterDefinitionFile": "char.def",
+                "inputTextPlugin": [
+                    {"class": "com.worksap.nlp.sudachi.DefaultInputTextPlugin"}
+                ],
+                "oovProviderPlugin": [
+                    {"class": "com.worksap.nlp.sudachi.SimpleOovPlugin",
+                     "oovPOS": ["名詞", "普通名詞", "一般", "*", "*", "*"],
+                     "leftId": 8,
+                     "rightId": 8,
+                     "cost": 6000}
+                ],
+                "pathRewritePlugin": [
+                    {"class": "com.worksap.nlp.sudachi.JoinNumericPlugin",
+                     "enableNormalize": True},
+                    {"class": "com.worksap.nlp.sudachi.JoinKatakanaOovPlugin",
+                     "oovPOS": ["名詞", "普通名詞", "一般", "*", "*", "*"],
+                     "minLength": 3}
+                ]
+            }), encoding="utf-8")
+
+            dictionary = Dictionary(str(config_path), resource_dir=str(resource_dir))
+            try:
+                morphemes = dictionary.lookup("東京都")
+                self.assertEqual(1, len(morphemes))
+                self.assertEqual("トウキョウト", morphemes[0].reading_form())
+            finally:
+                dictionary.close()
+
+    def test_oov_morpheme(self):
+        pos_id1 = 1
+        m1 = self.dict_.oov_morpheme(pos_id1, "OOV")
+        self.assertEqual(0, m1.begin())
+        self.assertEqual(3, m1.end())
+        self.assertEqual(pos_id1, m1.part_of_speech_id())
+        self.assertEqual("OOV", m1.surface())
+        self.assertEqual("OOV", m1.reading_form())
+        self.assertEqual("OOV", m1.normalized_form())
+        self.assertEqual("OOV", m1.dictionary_form())
+        self.assertTrue(m1.is_oov())
+        self.assertEqual(-1, m1.dictionary_id())
+        self.assertEqual([], m1.synonym_group_ids())
+
+        pos_id2 = 2
+        m2 = self.dict_.oov_morpheme(pos_id2, "OOVs", "OOVr", "OOVn", "OOVd")
+        self.assertEqual(0, m2.begin())
+        self.assertEqual(4, m2.end())
+        self.assertEqual(pos_id2, m2.part_of_speech_id())
+        self.assertEqual("OOVs", m2.surface())
+        self.assertEqual("OOVr", m2.reading_form())
+        self.assertEqual("OOVn", m2.normalized_form())
+        self.assertEqual("OOVd", m2.dictionary_form())
+
+        # form_morpheme return self for OOV morphemes
+        self.assertEqual("OOV", m1.normalized_form_morpheme().surface())
+        self.assertEqual("OOV", m1.dictionary_form_morpheme().surface())
+        self.assertTrue(m1.normalized_form_morpheme().is_oov())
+        self.assertTrue(m1.dictionary_form_morpheme().is_oov())
+        self.assertEqual("OOVs", m2.normalized_form_morpheme().surface())
+        self.assertEqual("OOVs", m2.dictionary_form_morpheme().surface())
+        self.assertTrue(m2.normalized_form_morpheme().is_oov())
+        self.assertTrue(m2.dictionary_form_morpheme().is_oov())
 
 
 if __name__ == '__main__':

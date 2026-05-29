@@ -86,17 +86,17 @@ pub(crate) fn parse_u32(data: &str) -> DicWriteResult<u32> {
 }
 
 #[inline]
-pub(crate) fn parse_legacy_line_ref(data: &str) -> DicWriteResult<WordRef> {
+pub(crate) fn parse_v0_line_ref(data: &str) -> DicWriteResult<WordRef> {
     if let Some(stripped) = data.strip_prefix('U') {
-        let wref = parse_legacy_line_ref_raw(stripped);
+        let wref = parse_v0_line_ref_raw(stripped);
         wref.map(|w| WordRef::new(false, w.entry().as_raw()))
     } else {
-        parse_legacy_line_ref_raw(data)
+        parse_v0_line_ref_raw(data)
     }
 }
 
 #[inline]
-fn parse_legacy_line_ref_raw(data: &str) -> DicWriteResult<WordRef> {
+fn parse_v0_line_ref_raw(data: &str) -> DicWriteResult<WordRef> {
     match u32::from_str(data) {
         Ok(v) => match WordRef::checked(true, v) {
             Ok(wref) => Ok(wref),
@@ -123,7 +123,7 @@ pub(crate) fn parse_u32_list_with_asterisk(
 
 lazy_static! {
     // pattern for an entry reference by line number
-    pub(crate) static ref WORD_ID_LITERAL: Regex = Regex::new(r"^U?\d+$").unwrap();
+    pub(crate) static ref LINE_REF_LITERAL: Regex = Regex::new(r"^U?\d+$").unwrap();
 }
 
 #[inline]

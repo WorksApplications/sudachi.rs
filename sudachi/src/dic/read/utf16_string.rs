@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2025 Works Applications Co., Ltd.
+ *  Copyright (c) 2025-2026 Works Applications Co., Ltd.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ pub fn utf16_string_of_length(input: &[u8], char_length: usize) -> SudachiNomRes
         .split_at_checked(num_bytes)
         .ok_or(nom::Err::Failure(SudachiNomError::Utf16String))?;
 
-    let decoded = string_from_utf16le(data).map_err(|e| nom::Err::Failure(e))?;
+    let decoded = string_from_utf16le(data).map_err(nom::Err::Failure)?;
     Ok((rest, decoded))
 }
 

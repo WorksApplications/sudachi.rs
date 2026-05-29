@@ -15,8 +15,7 @@
  */
 
 use std::collections::{HashMap, HashSet};
-use std::fs;
-use std::io::{BufRead, BufReader};
+use std::io::BufRead;
 use std::path::PathBuf;
 
 use aho_corasick::{
@@ -26,7 +25,7 @@ use serde::Deserialize;
 use serde_json::Value;
 use unicode_normalization::{is_nfkc_quick, IsNormalized, UnicodeNormalization};
 
-use crate::config::Config;
+use crate::config::{Config, DEFAULT_REWRITE_DEF_FILE};
 use crate::dic::grammar::Grammar;
 use crate::hash::RoMu;
 use crate::input_text::{InputBuffer, InputEditor};
@@ -36,9 +35,6 @@ use crate::prelude::*;
 
 #[cfg(test)]
 mod tests;
-
-const DEFAULT_REWRITE_DEF_FILE: &str = "rewrite.def";
-const DEFAULT_REWRITE_DEF_BYTES: &[u8] = include_bytes!("../../../../resources/rewrite.def");
 
 /// Provides basic normalization of the input text
 #[derive(Default)]
@@ -263,19 +259,12 @@ impl InputTextPlugin for DefaultInputTextPlugin {
         let settings: PluginSettings =
             serde_json::from_value(settings.clone()).map_err(PluginError::from)?;
 
-        let rewrite_file_path = config.complete_path(
+        let rewrite_def = config.resolve_resource(
             settings
                 .rewriteDef
                 .unwrap_or_else(|| DEFAULT_REWRITE_DEF_FILE.into()),
-        );
-
-        if rewrite_file_path.is_ok() {
-            let reader = BufReader::new(fs::File::open(rewrite_file_path?)?);
-            self.read_rewrite_lists(reader)?;
-        } else {
-            let reader = BufReader::new(DEFAULT_REWRITE_DEF_BYTES);
-            self.read_rewrite_lists(reader)?;
-        }
+        )?;
+        self.read_rewrite_lists(rewrite_def.reader()?)?;
 
         Ok(())
     }

@@ -50,3 +50,7 @@ crate-type = ["rlib"]
 [[bench]]
 name = "trie_layout"
 harness = false
+
+[[bench]]
+name = "sentence_detector"
+harness = false
