@@ -26,7 +26,7 @@
 
 use std::path::PathBuf;
 use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 use sudachi::analysis::mlist::MorphemeList;
 use sudachi::analysis::stateful_tokenizer::StatefulTokenizer;
@@ -98,8 +98,8 @@ fn main() {
         "scalar and pipelined disagree on total morpheme count"
     );
 
-    let mut best_scalar = Duration::MAX;
-    let mut best_pipelined = Duration::MAX;
+    let mut scalar_ms: Vec<f64> = Vec::new();
+    let mut pipelined_ms: Vec<f64> = Vec::new();
     for t in 0..trials {
         // Alternate which path runs first so neither systematically benefits
         // from the other warming the caches.
@@ -109,39 +109,69 @@ fn main() {
             [true, false]
         };
         for &pipelined in &order {
+            // SUDACHI_BENCH_ONLY=scalar|pipelined restricts to one path (for profiling).
+            match std::env::var("SUDACHI_BENCH_ONLY").ok().as_deref() {
+                Some("scalar") if pipelined => continue,
+                Some("pipelined") if !pipelined => continue,
+                _ => {}
+            }
             tok.set_pipelined_lookup(pipelined);
             let start = Instant::now();
             run_pass(&mut tok, &mut result, &lines);
-            let elapsed = start.elapsed();
+            let ms = start.elapsed().as_secs_f64() * 1e3;
             if pipelined {
-                best_pipelined = best_pipelined.min(elapsed);
+                pipelined_ms.push(ms);
             } else {
-                best_scalar = best_scalar.min(elapsed);
+                scalar_ms.push(ms);
             }
         }
     }
 
+    // (min, median, mean, coefficient-of-variation %)
+    fn stats(samples: &mut [f64]) -> (f64, f64, f64, f64) {
+        samples.sort_by(|a, b| a.partial_cmp(b).unwrap());
+        let min = samples[0];
+        let median = samples[samples.len() / 2];
+        let mean = samples.iter().sum::<f64>() / samples.len() as f64;
+        let var = samples.iter().map(|x| (x - mean).powi(2)).sum::<f64>() / samples.len() as f64;
+        let cv = if mean > 0.0 {
+            var.sqrt() / mean * 100.0
+        } else {
+            0.0
+        };
+        (min, median, mean, cv)
+    }
+
     let n = lines.len().max(1);
-    let report = |name: &str, d: Duration| {
-        let ns = d.as_nanos() as f64;
+    let report = |name: &str, samples: &mut Vec<f64>| -> (f64, f64) {
+        if samples.is_empty() {
+            return (0.0, 0.0);
+        }
+        let (min, median, mean, cv) = stats(samples);
         println!(
-            "{name:<20} {:>9.2} ms  {:>8.0} ns/sentence  {:>6.2} ns/char  {:>9.0} sent/s",
-            ns / 1e6,
-            ns / n as f64,
-            ns / total_chars.max(1) as f64,
-            n as f64 / d.as_secs_f64(),
+            "{name:<20} min {:>7.2}  median {:>7.2}  mean {:>7.2} ms  cv {:>4.1}%  | {:>8.0} sent/s  {:>6.2} ns/char",
+            min,
+            median,
+            mean,
+            cv,
+            n as f64 / (median / 1e3),
+            median * 1e6 / total_chars.max(1) as f64,
         );
+        (min, median)
     };
 
     println!("# config: {}", config_path.display());
     println!("# inputs: {}", inputs_path.display());
     println!(
-        "# sentences: {n}, chars: {total_chars}, morphemes: {morphs_scalar}, trials: {trials} (best-of)"
+        "# sentences: {n}, chars: {total_chars}, morphemes: {morphs_scalar}, trials: {trials}"
     );
-    report("scalar", best_scalar);
-    report("pipelined+prefetch", best_pipelined);
-    println!(
-        "# speedup (scalar / pipelined): {:.4}x",
-        best_scalar.as_secs_f64() / best_pipelined.as_secs_f64()
-    );
+    let (smin, smed) = report("scalar", &mut scalar_ms);
+    let (pmin, pmed) = report("pipelined+prefetch", &mut pipelined_ms);
+    if smed > 0.0 && pmed > 0.0 {
+        println!(
+            "# speedup  median {:.4}x   best-of {:.4}x",
+            smed / pmed,
+            smin / pmin
+        );
+    }
 }
