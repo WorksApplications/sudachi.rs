@@ -29,13 +29,22 @@ thiserror = "1.0" # MIT/Apache 2.0
 unicode-normalization = "0.1" # MIT/Apache 2.0
 yada = "0.5" # MIT/Apache 2.0
 
+# Optional alternative matchers used only by the `dictionary_matcher_report`
+# example (issue #117 cross-method comparison). Gated behind the
+# `matcher-comparison` feature so they stay out of the default build/CI graph.
+crawdad = { version = "0.4", optional = true } # MIT/Apache 2.0
+daachorse = { git = "https://github.com/daac-tools/daachorse", tag = "v3.0.0", optional = true } # MIT/Apache 2.0
+fst = { version = "0.4", optional = true } # Unlicense/MIT
+rsmarisa = { version = "0.4", optional = true } # BSD-2-Clause
+
+[features]
+# Build the cross-method matcher comparison example, pulling in the optional
+# alternative trie/automaton crates above.
+matcher-comparison = ["dep:crawdad", "dep:daachorse", "dep:fst", "dep:rsmarisa"]
+
 [dev-dependencies]
 claim = "0.5" # MIT/Apache 2.0
 criterion = "0.5" # MIT/Apache 2.0
-crawdad = "0.4" # MIT/Apache 2.0
-daachorse = { git = "https://github.com/daac-tools/daachorse", tag = "v3.0.0" } # MIT/Apache 2.0
-fst = "0.4" # Unlicense/MIT
-rsmarisa = "0.4" # BSD-2-Clause
 tempfile = "3" # MIT/Apache 2.0
 
 # Plugins for tests
@@ -46,6 +55,10 @@ join_katakana_oov = { path = "../plugin/path_rewrite/join_katakana_oov" }
 
 [lib]
 crate-type = ["rlib"]
+
+[[example]]
+name = "dictionary_matcher_report"
+required-features = ["matcher-comparison"]
 
 [[bench]]
 name = "trie_layout"

@@ -99,6 +99,13 @@ struct FailedMatcher {
 
 enum Matcher {
     Yada(BinaryDictionary<'static>),
+    /// Same serialized Yada/Darts trie as `Yada`, driven by the pipelined +
+    /// prefetched batch matcher (issue #117). Shares bytes with `classic_yada`.
+    YadaPipelined {
+        dict: BinaryDictionary<'static>,
+        lanes: usize,
+        prefetch: bool,
+    },
     DaachorseBytewise(DoubleArrayAhoCorasick<u32>),
     DaachorseCharwise(CharwiseDoubleArrayAhoCorasick<u32>),
     CrawdadTrie(CrawdadTrie),
@@ -400,11 +407,15 @@ impl TextInput {
 
 fn build_yada_variants(fixture: &Fixture) -> ReportResult<Vec<BuiltMatcher>> {
     let mut built = Vec::new();
+    let mut classic: Option<(&'static [u8], Duration, usize)> = None;
     for variant in yada_variants(&fixture.profile_path) {
         let (bytes, build_time) = timed(|| compile(fixture, variant.strategy))?;
         let leaked: &'static [u8] = Box::leak(bytes.into_boxed_slice());
         let dictionary = BinaryDictionary::load_system(leaked)?;
         let trie_bytes = dictionary.lexicon.trie.total_size();
+        if variant.name == "classic_yada" {
+            classic = Some((leaked, build_time, trie_bytes));
+        }
         built.push(BuiltMatcher {
             name: variant.name,
             family: "yada",
@@ -415,34 +426,102 @@ fn build_yada_variants(fixture: &Fixture) -> ReportResult<Vec<BuiltMatcher>> {
             matcher: Matcher::Yada(dictionary),
         });
     }
+
+    // Pipelined + prefetched variants run over the *same* serialized classic
+    // Yada bytes — no rebuild, identical trie/heap/serialized size. This is the
+    // issue #117 runtime change: only the lookup driver differs.
+    if let Some((leaked, build_time, trie_bytes)) = classic {
+        for spec in pipelined_specs() {
+            let dictionary = BinaryDictionary::load_system(leaked)?;
+            built.push(BuiltMatcher {
+                name: spec.name,
+                family: "yada",
+                mode: MatchMode::PrefixAllStarts,
+                build_time,
+                heap_bytes: trie_bytes,
+                serialized_bytes: trie_bytes,
+                matcher: Matcher::YadaPipelined {
+                    dict: dictionary,
+                    lanes: spec.lanes,
+                    prefetch: spec.prefetch,
+                },
+            });
+        }
+    }
     Ok(built)
 }
 
-fn yada_variants(profile_path: &Path) -> Vec<YadaVariant> {
+struct PipelinedSpec {
+    name: &'static str,
+    lanes: usize,
+    prefetch: bool,
+}
+
+/// Lane-count / prefetch sweep for the runtime matcher. `yada_pipelined`
+/// isolates pure software pipelining (no explicit prefetch) from the
+/// prefetch-assisted rows.
+fn pipelined_specs() -> Vec<PipelinedSpec> {
     vec![
-        YadaVariant {
-            name: "classic_yada",
-            strategy: TrieBuildStrategy::ClassicYada,
+        PipelinedSpec {
+            name: "yada_pipelined",
+            lanes: 8,
+            prefetch: false,
         },
-        YadaVariant {
-            name: "cache_aware_uniform",
-            strategy: TrieBuildStrategy::CacheAware(CacheAwareOptions {
-                profile_mode: TrieProfileMode::Uniform,
-                ..CacheAwareOptions::default()
-            }),
+        PipelinedSpec {
+            name: "yada_pipelined_prefetch_k4",
+            lanes: 4,
+            prefetch: true,
         },
-        YadaVariant {
-            name: "cache_aware_prefix",
-            strategy: TrieBuildStrategy::CacheAware(CacheAwareOptions::default()),
+        PipelinedSpec {
+            name: "yada_pipelined_prefetch_k8",
+            lanes: 8,
+            prefetch: true,
         },
-        YadaVariant {
-            name: "cache_aware_external_profile",
-            strategy: TrieBuildStrategy::CacheAware(CacheAwareOptions {
-                profile_mode: TrieProfileMode::ExternalKeyProfile(profile_path.to_owned()),
-                ..CacheAwareOptions::default()
-            }),
+        PipelinedSpec {
+            name: "yada_pipelined_prefetch_k12",
+            lanes: 12,
+            prefetch: true,
+        },
+        PipelinedSpec {
+            name: "yada_pipelined_prefetch_k16",
+            lanes: 16,
+            prefetch: true,
         },
     ]
+}
+
+fn yada_variants(profile_path: &Path) -> Vec<YadaVariant> {
+    let mut variants = vec![YadaVariant {
+        name: "classic_yada",
+        strategy: TrieBuildStrategy::ClassicYada,
+    }];
+    // The cache-aware *build-time* relayout variants are expensive to build
+    // (minutes per tier). Set SUDACHI_SKIP_BUILD_TIME_VARIANTS=1 to benchmark
+    // only the classic trie vs the runtime pipelined/prefetch matcher, which
+    // all share the same classic bytes and need just one fast build.
+    if !env_flag("SUDACHI_SKIP_BUILD_TIME_VARIANTS") {
+        variants.extend([
+            YadaVariant {
+                name: "cache_aware_uniform",
+                strategy: TrieBuildStrategy::CacheAware(CacheAwareOptions {
+                    profile_mode: TrieProfileMode::Uniform,
+                    ..CacheAwareOptions::default()
+                }),
+            },
+            YadaVariant {
+                name: "cache_aware_prefix",
+                strategy: TrieBuildStrategy::CacheAware(CacheAwareOptions::default()),
+            },
+            YadaVariant {
+                name: "cache_aware_external_profile",
+                strategy: TrieBuildStrategy::CacheAware(CacheAwareOptions {
+                    profile_mode: TrieProfileMode::ExternalKeyProfile(profile_path.to_owned()),
+                    ..CacheAwareOptions::default()
+                }),
+            },
+        ]);
+    }
+    variants
 }
 
 fn compile(fixture: &Fixture, strategy: TrieBuildStrategy) -> ReportResult<Vec<u8>> {
@@ -807,6 +886,22 @@ impl Matcher {
                     }
                 }
             }
+            Matcher::YadaPipelined {
+                dict,
+                lanes,
+                prefetch,
+            } => {
+                let bytes = input.text.as_bytes();
+                dict.lexicon.trie.common_prefix_batch_cfg(
+                    bytes,
+                    &input.starts,
+                    *lanes,
+                    *prefetch,
+                    |bucket, value, end| {
+                        storage.push(bucket, StoredMatch { end, value });
+                    },
+                );
+            }
             Matcher::DaachorseBytewise(matcher) => {
                 for entry in matcher.find_overlapping_iter(input.text.as_bytes()) {
                     if !input.is_boundary(entry.end()) {
@@ -907,7 +1002,10 @@ impl Matcher {
         let mut storage = Storage::new(StorageKind::VecBucketsClearAll);
         storage.begin(text.starts.len().min(1));
         match self {
-            Matcher::Yada(dictionary) => {
+            Matcher::Yada(dictionary)
+            | Matcher::YadaPipelined {
+                dict: dictionary, ..
+            } => {
                 for entry in dictionary
                     .lexicon
                     .trie
