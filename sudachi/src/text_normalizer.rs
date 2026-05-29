@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-use crate::config::Config;
+use crate::config::ConfigBuilder;
 use crate::dic::grammar::Grammar;
 use crate::input_text::InputBuffer;
 use crate::plugin::input_text::default_input_text::DefaultInputTextPlugin;
@@ -29,7 +29,7 @@ pub struct TextNormalizer {
 impl TextNormalizer {
     pub fn new(grammar: &Grammar) -> SudachiResult<Self> {
         let mut plugin = DefaultInputTextPlugin::default();
-        let cfg = Config::minimal_at(crate::config::default_resource_dir());
+        let cfg = ConfigBuilder::empty().push_embedded().build();
         plugin.set_up(
             &serde_json::Value::Object(serde_json::Map::default()),
             &cfg,

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
 import os
 import tempfile
 import unittest
@@ -176,6 +177,45 @@ class TestDictionary(unittest.TestCase):
 
                 phantom = dictionary.lookup_all_entries("舞台芸術")
                 self.assertFalse(phantom)
+            finally:
+                dictionary.close()
+
+    def test_resource_dir_precedes_config_parent(self):
+        resource_dir = Path(__file__).parent / "resources"
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            config_path = temp_path / "sudachi.json"
+            # If the config directory is searched first, dictionary creation will try to
+            # open this directory as `char.def` and fail before reaching `resource_dir`.
+            (temp_path / "char.def").mkdir()
+            config_path.write_text(json.dumps({
+                "systemDict": str(resource_dir / "system.dic.test"),
+                "userDict": [str(resource_dir / "user.dic.test")],
+                "characterDefinitionFile": "char.def",
+                "inputTextPlugin": [
+                    {"class": "com.worksap.nlp.sudachi.DefaultInputTextPlugin"}
+                ],
+                "oovProviderPlugin": [
+                    {"class": "com.worksap.nlp.sudachi.SimpleOovPlugin",
+                     "oovPOS": ["名詞", "普通名詞", "一般", "*", "*", "*"],
+                     "leftId": 8,
+                     "rightId": 8,
+                     "cost": 6000}
+                ],
+                "pathRewritePlugin": [
+                    {"class": "com.worksap.nlp.sudachi.JoinNumericPlugin",
+                     "enableNormalize": True},
+                    {"class": "com.worksap.nlp.sudachi.JoinKatakanaOovPlugin",
+                     "oovPOS": ["名詞", "普通名詞", "一般", "*", "*", "*"],
+                     "minLength": 3}
+                ]
+            }), encoding="utf-8")
+
+            dictionary = Dictionary(str(config_path), resource_dir=str(resource_dir))
+            try:
+                morphemes = dictionary.lookup("東京都")
+                self.assertEqual(1, len(morphemes))
+                self.assertEqual("トウキョウト", morphemes[0].reading_form())
             finally:
                 dictionary.close()
 

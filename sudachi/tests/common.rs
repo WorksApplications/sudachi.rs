@@ -39,6 +39,8 @@ use sudachi::dic::subset::InfoSubset;
 use sudachi::dic::{grammar::Grammar, lexicon::Lexicon};
 use sudachi::prelude::*;
 
+// used in lazy_static
+#[allow(unused)]
 pub fn dictionary_bytes_from_path<P: AsRef<Path>>(dictionary_path: P) -> SudachiResult<Vec<u8>> {
     let dictionary_path = dictionary_path.as_ref();
     let dictionary_stat = fs::metadata(dictionary_path)?;

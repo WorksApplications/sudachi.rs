@@ -196,6 +196,12 @@ impl PyDictionary {
     /// If both config.systemDict and dict are given, dict is used.
     /// If dict is an absolute path to a file, it is used as a dictionary.
     ///
+    /// Resolution precedence is:
+    /// 1. `resource_dir` (if given).
+    /// 2. `path` field in the `config_file` (if set).
+    /// 3. The parent directory of the `config_file` (if given).
+    /// 4. The default resources.
+    ///
     /// :param config_path: path to the configuration JSON file, config json as a string, or a [sudachipy.Config] object.
     /// :param config: alias to config_path, only one of them can be specified at the same time.
     /// :param resource_dir: path to the resource directory folder.
@@ -225,22 +231,16 @@ impl PyDictionary {
             return errors::wrap(Err("Both config and config_path options were specified at the same time, use one of them"));
         }
 
-        let default_config = read_default_config(py)?;
+        let mut builder = read_default_config(py)?;
 
-        let config_builder = match config.or(config_path) {
-            None => default_config,
-            Some(v) => read_config(v)?.fallback(&default_config),
-        };
+        if let Some(v) = config.or(config_path) {
+            builder = read_config(v)?.fallback_data(&builder);
+        }
 
-        let resource_dir = match resource_dir {
-            None => Some(get_default_resource_dir(py)?),
-            Some(v) => Some(v),
-        };
-
-        let dict_path = match dict.or(dict_type) {
-            None => None,
-            Some(dt) => Some(locate_system_dict(py, Path::new(dt))?),
-        };
+        if let Some(p) = resource_dir {
+            builder = builder.prepend_resolver_root(p);
+        }
+        builder = builder.push_resolver_root(get_default_resource_dir(py)?);
 
         if dict_type.is_some() {
             errors::warn_deprecation(
@@ -248,18 +248,12 @@ impl PyDictionary {
                 c_str!("Parameter dict_type of Dictionary() is deprecated, use dict instead"),
             )?
         }
-
-        let config_builder = match resource_dir {
-            Some(p) => config_builder.resource_path(p),
-            None => config_builder,
+        if let Some(dt) = dict.or(dict_type) {
+            let dict_path = locate_system_dict(py, Path::new(dt))?;
+            builder = builder.system_dict(dict_path)
         };
 
-        let config_builder = match dict_path {
-            Some(p) => config_builder.system_dict(p),
-            None => config_builder,
-        };
-
-        let mut config = config_builder.build();
+        let mut config = builder.build();
 
         // Load a dictionary from `sudachidict_core` as the default one.
         // For this behavior, the value of `systemDict` key in the default setting file must be
