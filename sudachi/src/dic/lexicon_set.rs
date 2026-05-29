@@ -128,6 +128,29 @@ impl LexiconSet<'_> {
             .flat_map(move |l| l.lookup(input, offset))
     }
 
+    /// Pipelined + prefetched batch form of [`LexiconSet::lookup`] (issue #117).
+    ///
+    /// Calls `emit(bucket, entry)` for every match at every start, where
+    /// `bucket` indexes into `starts`. For each bucket the entries are emitted
+    /// in exactly the order repeated [`LexiconSet::lookup`] calls would yield
+    /// (user dictionaries first, then system, each in trie-walk order), so
+    /// grouping by `bucket` reproduces the scalar result. The trie walks of the
+    /// independent starts are overlapped to hide memory latency.
+    #[inline]
+    pub fn lookup_batch<F: FnMut(usize, LexiconEntry)>(
+        &self,
+        input: &[u8],
+        starts: &[usize],
+        mut emit: F,
+    ) {
+        // Dictionaries are processed in the same reverse order as lookup(), and
+        // sequentially, so each bucket accumulates one lexicon's matches fully
+        // before the next lexicon's — matching lookup()'s flat_map order.
+        for lexicon in self.lexicons.iter().rev() {
+            lexicon.lookup_batch(input, starts, &mut emit);
+        }
+    }
+
     /// Checks prefix end offsets in the same dictionary order as lookup(), but
     /// without expanding trie leaves into word IDs.
     #[inline]
