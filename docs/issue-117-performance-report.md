@@ -1,5 +1,11 @@
 # Issue #117 Trie Layout And Matcher Comparison
 
+> **Note:** this report covers a *build-time* node-relayout experiment
+> (`--trie-layout cache-aware`) that was **rejected** (≤1.10x lookup for ~14x
+> build time). The accepted issue #117 answer is a *runtime*
+> software-pipelined prefetch that needs no format or build change and is
+> ~8–12% faster end-to-end — see `docs/trie-prefetch.md`.
+
 Issue #117 asks whether Sudachi can build a `darts-clone`/Yada-compatible trie
 whose node placement is friendlier to speculative cache prefetch. This report
 keeps that scope: trie layout and dictionary matcher candidates only. It does
