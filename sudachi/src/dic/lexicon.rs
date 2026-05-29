@@ -129,6 +129,18 @@ impl<'a> Lexicon<'a> {
             })
     }
 
+    /// Returns end offsets of trie prefixes that match given input.
+    #[inline]
+    pub(crate) fn lookup_prefix_ends(
+        &'a self,
+        input: &'a [u8],
+        offset: usize,
+    ) -> impl Iterator<Item = usize> + 'a {
+        self.trie
+            .common_prefix_iterator(input, offset)
+            .map(|entry| entry.end)
+    }
+
     /// Returns WordInfo for given word_id
     ///
     /// WordInfo will contain only fields included in InfoSubset

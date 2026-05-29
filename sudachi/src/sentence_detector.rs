@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
-use fancy_regex::Regex;
-use lazy_static::lazy_static;
 use std::cmp::Ordering;
+use std::sync::OnceLock;
 
 use crate::dic::lexicon_set::LexiconSet;
 use crate::prelude::*;
@@ -37,35 +36,36 @@ impl NonBreakChecker<'_> {
     fn has_non_break_word(&self, input: &str, length: usize) -> bool {
         // assume that SentenceDetector::get_eos called with self.input[self.bos..]
         let eos_byte = self.bos + length;
+        if eos_byte > input.len() || !input.is_char_boundary(eos_byte) {
+            return false;
+        }
+
         let input_bytes = input.as_bytes();
         const LOOKUP_BYTE_LENGTH: usize = 10 * 3; // 10 Japanese characters in UTF-8
-        let lookup_start = std::cmp::max(LOOKUP_BYTE_LENGTH, eos_byte) - LOOKUP_BYTE_LENGTH;
-        for i in lookup_start..eos_byte {
-            for entry in self.lexicon.lookup(input_bytes, i) {
-                let end_byte = entry.end;
+        let mut lookup_start = eos_byte.saturating_sub(LOOKUP_BYTE_LENGTH);
+        while lookup_start < eos_byte && !input.is_char_boundary(lookup_start) {
+            lookup_start += 1;
+        }
+
+        for (relative, _) in input[lookup_start..eos_byte].char_indices() {
+            let i = lookup_start + relative;
+            if let Some(result) = self.lexicon.check_prefix_ends(input_bytes, i, |end_byte| {
                 // handling cases like モーニング娘。
                 match end_byte.cmp(&eos_byte) {
                     // end is after than boundary candidate, this boundary is bad
-                    Ordering::Greater => return true,
+                    Ordering::Greater => Some(true),
                     // end is on boundary candidate,
                     // check that there are more than one character in the matched word
-                    Ordering::Equal => return input[i..].chars().take(2).count() > 1,
-                    _ => {}
+                    Ordering::Equal => Some(input[i..].chars().nth(1).is_some()),
+                    _ => None,
                 }
+            }) {
+                return result;
             }
         }
         false
     }
 }
-
-const PERIODS: &str = "。？！♪…\\?\\!";
-const DOT: &str = "\\.．";
-const CDOTS: &str = "・{3,}";
-const COMMA: &str = ",，、";
-const BR_TAG: &str = "(<br>|<BR>){2,}";
-const ALPHABET_OR_NUMBER: &str = "a-zA-Z0-9ａ-ｚＡ-Ｚ０-９〇一二三四五六七八九十百千万億兆";
-const OPEN_PARENTHESIS: &str = "\\(\\{｛\\[（「【『［≪〔“";
-const CLOSE_PARENTHESIS: &str = "\\)\\}\\]）」｝】』］〕≫”";
 
 const DEFAULT_LIMIT: usize = 4096;
 
@@ -112,58 +112,16 @@ impl SentenceDetector {
             return Ok(0);
         }
 
-        // handle at most self.limit chars at once
-        let s: String = input.chars().take(self.limit).collect();
-        let input_exceeds_limit = s.len() < input.len();
+        let (s, input_exceeds_limit) = limited_prefix(input, self.limit);
 
-        lazy_static! {
-            static ref SENTENCE_BREAKER: Regex = Regex::new(&format!(
-                "([{}]|{}+|(?<![{}])[{}](?![{}{}]))[{}{}]*|{}",
-                PERIODS,
-                CDOTS,
-                ALPHABET_OR_NUMBER,
-                DOT,
-                ALPHABET_OR_NUMBER,
-                COMMA,
-                DOT,
-                PERIODS,
-                BR_TAG
-            ))
-            .unwrap();
-            static ref ITEMIZE_HEADER: Regex =
-                Regex::new(&format!("^([{}])([{}])$", ALPHABET_OR_NUMBER, DOT)).unwrap();
-        }
-
-        for mat in SENTENCE_BREAKER.find_iter(&s) {
-            // check if we can split at the match
-            let mut eos = mat?.end();
-            if parenthesis_level(&s[..eos])? > 0 {
-                continue;
-            }
-            if eos < s.len() {
-                eos += prohibited_bos(&s[eos..])?;
-            }
-            if ITEMIZE_HEADER.is_match(&s)? {
-                continue;
-            }
-            if eos < s.len() && is_continuous_phrase(&s, eos)? {
-                continue;
-            }
-            if let Some(ck) = checker {
-                if ck.has_non_break_word(input, eos) {
-                    continue;
-                }
-            }
+        if let Some(eos) = find_sentence_boundary(s, input, checker) {
             return Ok(eos as isize);
         }
 
         if input_exceeds_limit {
             // search the final whitespace as a provisional split.
-            lazy_static! {
-                static ref SPACES: Regex = Regex::new(".+\\s+").unwrap();
-            }
-            if let Some(mat) = SPACES.find(&s)? {
-                return Ok(-(mat.end() as isize));
+            if let Some(end) = legacy_whitespace_end(s) {
+                return Ok(-(end as isize));
             }
         }
 
@@ -171,67 +129,284 @@ impl SentenceDetector {
     }
 }
 
-/// Returns the count of non-closed open parentheses remaining at the end of input.
-fn parenthesis_level(s: &str) -> SudachiResult<usize> {
-    lazy_static! {
-        static ref PARENTHESIS: Regex = Regex::new(&format!(
-            "([{}])|([{}])",
-            OPEN_PARENTHESIS, CLOSE_PARENTHESIS
-        ))
-        .unwrap();
+#[inline]
+fn limited_prefix(input: &str, limit: usize) -> (&str, bool) {
+    if input.len() <= limit {
+        return (input, false);
     }
-    let mut level: usize = 0;
-    for caps in PARENTHESIS.captures_iter(s) {
-        if caps?.get(1).is_some() {
-            // open
-            level += 1;
-        } else {
-            level = level.saturating_sub(1);
-        }
+
+    match input.char_indices().nth(limit) {
+        Some((idx, _)) => (&input[..idx], true),
+        None => (input, false),
     }
-    Ok(level)
 }
 
-/// Returns a byte length of chars at the beggining of str, which cannot be a bos
-fn prohibited_bos(s: &str) -> SudachiResult<usize> {
-    lazy_static! {
-        static ref PROHIBITED_BOS: Regex = Regex::new(&format!(
-            "\\A([{}{}{}])+",
-            CLOSE_PARENTHESIS, COMMA, PERIODS
-        ))
-        .unwrap();
+fn find_sentence_boundary(
+    limited: &str,
+    original: &str,
+    checker: Option<&NonBreakChecker>,
+) -> Option<usize> {
+    let mut index = 0;
+    let mut previous = None;
+    let mut parenthesis_level = 0usize;
+
+    while index < limited.len() {
+        let c = limited[index..]
+            .chars()
+            .next()
+            .expect("valid char boundary");
+        let next_index = index + c.len_utf8();
+
+        if is_open_parenthesis(c) {
+            parenthesis_level += 1;
+            previous = Some(c);
+            index = next_index;
+            continue;
+        }
+
+        if is_close_parenthesis(c) {
+            parenthesis_level = parenthesis_level.saturating_sub(1);
+            previous = Some(c);
+            index = next_index;
+            continue;
+        }
+
+        if let Some(candidate_end) = sentence_candidate_end(limited, index, c, previous) {
+            if parenthesis_level == 0 {
+                let mut eos = candidate_end;
+                if eos < limited.len() {
+                    eos += prohibited_bos_len(&limited[eos..]);
+                }
+
+                if !is_itemize_header(limited) && !continues_phrase(limited, eos) {
+                    if let Some(ck) = checker {
+                        if ck.has_non_break_word(original, eos) {
+                            previous = limited[..candidate_end].chars().next_back();
+                            index = candidate_end;
+                            continue;
+                        }
+                    }
+                    return Some(eos);
+                }
+            }
+
+            previous = limited[..candidate_end].chars().next_back();
+            index = candidate_end;
+            continue;
+        }
+
+        previous = Some(c);
+        index = next_index;
     }
 
-    if let Some(mat) = PROHIBITED_BOS.find(s)? {
-        Ok(mat.end())
+    None
+}
+
+fn sentence_candidate_end(s: &str, index: usize, c: char, previous: Option<char>) -> Option<usize> {
+    if is_sentence_period(c) {
+        return Some(consume_trailing_break_chars(s, index + c.len_utf8()));
+    }
+
+    if c == '・' {
+        return cdots_candidate_end(s, index);
+    }
+
+    if is_dot(c) {
+        let next_index = index + c.len_utf8();
+        let previous_blocks = previous.map(is_alphabet_or_number).unwrap_or(false);
+        let next_blocks = s[next_index..]
+            .chars()
+            .next()
+            .map(|next| is_alphabet_or_number(next) || is_comma(next))
+            .unwrap_or(false);
+
+        if !previous_blocks && !next_blocks {
+            return Some(consume_trailing_break_chars(s, next_index));
+        }
+    }
+
+    if c == '<' {
+        return br_sequence_end(s, index);
+    }
+
+    None
+}
+
+fn cdots_candidate_end(s: &str, index: usize) -> Option<usize> {
+    let mut count = 0;
+    let mut end = index;
+    while let Some(c) = s[end..].chars().next() {
+        if c != '・' {
+            break;
+        }
+        count += 1;
+        end += c.len_utf8();
+    }
+
+    if count >= 3 {
+        Some(consume_trailing_break_chars(s, end))
     } else {
-        Ok(0)
+        None
     }
 }
 
-// Returns if eos is the middle of phrase
-fn is_continuous_phrase(s: &str, eos: usize) -> SudachiResult<bool> {
-    lazy_static! {
-        static ref QUOTE_MARKER: Regex = Regex::new(&format!(
-            "(！|？|\\!|\\?|[{}])(と|っ|です)",
-            CLOSE_PARENTHESIS
-        ))
-        .unwrap();
-        static ref EOS_ITEMIZE_HEADER: Regex =
-            Regex::new(&format!("([{}])([{}])\\z", ALPHABET_OR_NUMBER, DOT)).unwrap();
+fn br_sequence_end(s: &str, index: usize) -> Option<usize> {
+    let mut count = 0;
+    let mut end = index;
+    while let Some(len) = br_tag_len(&s[end..]) {
+        count += 1;
+        end += len;
     }
 
-    // we can safely unwrap since eos > 0
-    let last_char_len = s[..eos].chars().last().unwrap().to_string().len();
-    if let Some(mat) = QUOTE_MARKER.find(&s[(eos - last_char_len)..])? {
-        if mat.start() == 0 {
-            return Ok(true);
+    if count >= 2 {
+        Some(end)
+    } else {
+        None
+    }
+}
+
+#[inline]
+fn br_tag_len(s: &str) -> Option<usize> {
+    if s.starts_with("<br>") || s.starts_with("<BR>") {
+        Some(4)
+    } else {
+        None
+    }
+}
+
+fn consume_trailing_break_chars(s: &str, mut index: usize) -> usize {
+    while let Some(c) = s[index..].chars().next() {
+        if !is_dot(c) && !is_sentence_period(c) {
+            break;
         }
+        index += c.len_utf8();
+    }
+    index
+}
+
+/// Returns a byte length of chars at the beginning of str, which cannot be a bos.
+fn prohibited_bos_len(s: &str) -> usize {
+    let mut end = 0;
+    for (index, c) in s.char_indices() {
+        if !is_close_parenthesis(c) && !is_comma(c) && !is_sentence_period(c) {
+            break;
+        }
+        end = index + c.len_utf8();
+    }
+    end
+}
+
+fn continues_phrase(s: &str, eos: usize) -> bool {
+    if eos >= s.len() {
+        return false;
     }
 
-    // we can safely unwrap since eos < s.len()
-    let c = s[eos..].chars().next().unwrap();
-    Ok((c == 'と' || c == 'や' || c == 'の') && EOS_ITEMIZE_HEADER.is_match(&s[..eos])?)
+    let last = s[..eos]
+        .chars()
+        .next_back()
+        .expect("eos is after a boundary candidate");
+    let rest = &s[eos..];
+    if is_quote_marker(last)
+        && (rest.starts_with("と") || rest.starts_with("っ") || rest.starts_with("です"))
+    {
+        return true;
+    }
+
+    let next = rest.chars().next().expect("eos is a valid char boundary");
+    (next == 'と' || next == 'や' || next == 'の') && ends_with_itemize_header(&s[..eos])
+}
+
+fn is_itemize_header(s: &str) -> bool {
+    let mut chars = s.chars();
+    let Some(first) = chars.next() else {
+        return false;
+    };
+    let Some(second) = chars.next() else {
+        return false;
+    };
+    chars.next().is_none() && is_alphabet_or_number(first) && is_dot(second)
+}
+
+fn ends_with_itemize_header(s: &str) -> bool {
+    let mut chars = s.chars().rev();
+    let Some(last) = chars.next() else {
+        return false;
+    };
+    let Some(previous) = chars.next() else {
+        return false;
+    };
+    is_dot(last) && is_alphabet_or_number(previous)
+}
+
+fn legacy_whitespace_end(s: &str) -> Option<usize> {
+    static SPACES: OnceLock<regex::Regex> = OnceLock::new();
+    SPACES
+        .get_or_init(|| regex::Regex::new(r".+\s+").unwrap())
+        .find(s)
+        .map(|mat| mat.end())
+}
+
+#[inline]
+fn is_sentence_period(c: char) -> bool {
+    matches!(c, '。' | '？' | '！' | '♪' | '…' | '?' | '!')
+}
+
+#[inline]
+fn is_dot(c: char) -> bool {
+    matches!(c, '.' | '．')
+}
+
+#[inline]
+fn is_comma(c: char) -> bool {
+    matches!(c, ',' | '，' | '、')
+}
+
+#[inline]
+fn is_alphabet_or_number(c: char) -> bool {
+    c.is_ascii_alphanumeric()
+        || matches!(
+            c,
+            'ａ'..='ｚ'
+                | 'Ａ'..='Ｚ'
+                | '０'..='９'
+                | '〇'
+                | '一'
+                | '二'
+                | '三'
+                | '四'
+                | '五'
+                | '六'
+                | '七'
+                | '八'
+                | '九'
+                | '十'
+                | '百'
+                | '千'
+                | '万'
+                | '億'
+                | '兆'
+        )
+}
+
+#[inline]
+fn is_open_parenthesis(c: char) -> bool {
+    matches!(
+        c,
+        '(' | '{' | '｛' | '[' | '（' | '「' | '【' | '『' | '［' | '≪' | '〔' | '“' | '"'
+    )
+}
+
+#[inline]
+fn is_close_parenthesis(c: char) -> bool {
+    matches!(
+        c,
+        ')' | '}' | ']' | '）' | '」' | '｝' | '】' | '』' | '］' | '〕' | '≫' | '”' | '"'
+    )
+}
+
+#[inline]
+fn is_quote_marker(c: char) -> bool {
+    matches!(c, '！' | '？' | '!' | '?') || is_close_parenthesis(c)
 }
 
 #[cfg(test)]
@@ -261,6 +436,20 @@ mod tests {
     }
 
     #[test]
+    fn get_eos_with_multibyte_limit_boundary() {
+        let sd = SentenceDetector::with_limit(4);
+        assert_eq!(sd.get_eos("あいう。", None).unwrap(), 12);
+        assert_eq!(sd.get_eos("あいうえ。", None).unwrap(), -12);
+        assert_eq!(sd.get_eos("あい うえ。", None).unwrap(), -7);
+    }
+
+    #[test]
+    fn get_eos_with_limit_multiline_whitespace_legacy_behavior() {
+        let sd = SentenceDetector::with_limit(5);
+        assert_eq!(sd.get_eos("a\n b c d", None).unwrap(), -3);
+    }
+
+    #[test]
     fn get_eos_with_period() {
         let sd = SentenceDetector::new();
         assert_eq!(sd.get_eos("あいう.えお", None).unwrap(), 10);
@@ -275,11 +464,36 @@ mod tests {
     }
 
     #[test]
+    fn get_eos_with_cdots() {
+        let sd = SentenceDetector::new();
+        assert_eq!(sd.get_eos("あ・・・い", None).unwrap(), 12);
+        assert_eq!(sd.get_eos("あ・・い", None).unwrap(), -12);
+        assert_eq!(sd.get_eos("あ・・・?!い", None).unwrap(), 14);
+    }
+
+    #[test]
+    fn get_eos_with_br_tags() {
+        let sd = SentenceDetector::new();
+        assert_eq!(sd.get_eos("あ<br><br>い", None).unwrap(), 11);
+        assert_eq!(sd.get_eos("あ<BR><BR>い", None).unwrap(), 11);
+        assert_eq!(sd.get_eos("あ<br><BR>い", None).unwrap(), 11);
+        assert_eq!(sd.get_eos("あ<br>い", None).unwrap(), -10);
+    }
+
+    #[test]
     fn get_eos_with_parentheses() {
         let sd = SentenceDetector::new();
         assert_eq!(sd.get_eos("あ（いう。え）お", None).unwrap(), -24);
         assert_eq!(sd.get_eos("（あ（いう）。え）お", None).unwrap(), -30);
         assert_eq!(sd.get_eos("あ（いう）。えお", None).unwrap(), 18);
+    }
+
+    #[test]
+    fn get_eos_with_ascii_quote_legacy_behavior() {
+        let sd = SentenceDetector::new();
+        assert_eq!(sd.get_eos("\"あ。\"", None).unwrap(), -8);
+        assert_eq!(sd.get_eos("あ。\"です。", None).unwrap(), -16);
+        assert_eq!(sd.get_eos("あ。\")え。", None).unwrap(), 8);
     }
 
     #[test]

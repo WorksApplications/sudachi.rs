@@ -128,6 +128,28 @@ impl LexiconSet<'_> {
             .flat_map(move |l| l.lookup(input, offset))
     }
 
+    /// Checks prefix end offsets in the same dictionary order as lookup(), but
+    /// without expanding trie leaves into word IDs.
+    #[inline]
+    pub(crate) fn check_prefix_ends<F>(
+        &self,
+        input: &[u8],
+        offset: usize,
+        mut check: F,
+    ) -> Option<bool>
+    where
+        F: FnMut(usize) -> Option<bool>,
+    {
+        for lexicon in self.lexicons.iter().rev() {
+            for end in lexicon.lookup_prefix_ends(input, offset) {
+                if let Some(result) = check(end) {
+                    return Some(result);
+                }
+            }
+        }
+        None
+    }
+
     /// Returns WordInfo for given WordId
     pub fn get_word_info(&self, id: WordId) -> SudachiResult<WordInfo> {
         self.get_word_info_subset(id, InfoSubset::all())
@@ -225,5 +247,56 @@ impl LexiconSet<'_> {
             .into_iter()
             .map(|entry| WordId::from_parts(DictId::SYSTEM, entry))
             .collect()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::dic::binary_loader::LoadedDictionary;
+
+    const TEST_SYSTEM_DIC: &[u8] = include_bytes!("../../tests/resources/system.dic.test");
+
+    #[test]
+    fn check_prefix_ends_matches_lookup_end_order() {
+        let dictionary = LoadedDictionary::load_system(TEST_SYSTEM_DIC).unwrap();
+        let lexicon_set = &dictionary.lexicon_set;
+        let inputs = [
+            "ばな。なです。",
+            "東京都に行く",
+            "京都",
+            "あいうえお",
+            "1.と2.が。",
+        ];
+
+        for input in inputs {
+            let bytes = input.as_bytes();
+            for (offset, _) in input.char_indices() {
+                let mut checked_ends = Vec::new();
+                let decision = lexicon_set.check_prefix_ends(bytes, offset, |end| {
+                    checked_ends.push(end);
+                    None::<bool>
+                });
+
+                assert_eq!(decision, None);
+
+                let mut expected_ends = Vec::new();
+                for lexicon in lexicon_set.lexicons.iter().rev() {
+                    let mut lookup_ends = Vec::new();
+                    for entry in lexicon.lookup(bytes, offset) {
+                        if lookup_ends.last() != Some(&entry.end) {
+                            lookup_ends.push(entry.end);
+                        }
+                    }
+
+                    let prefix_ends = lexicon
+                        .lookup_prefix_ends(bytes, offset)
+                        .collect::<Vec<_>>();
+                    assert_eq!(lookup_ends, prefix_ends);
+                    expected_ends.extend(prefix_ends);
+                }
+
+                assert_eq!(checked_ends, expected_ends);
+            }
+        }
     }
 }

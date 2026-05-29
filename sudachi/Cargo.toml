@@ -31,6 +31,7 @@ yada = "0.5" # MIT/Apache 2.0
 
 [dev-dependencies]
 claim = "0.5" # MIT/Apache 2.0
+criterion = "0.5" # MIT/Apache 2.0
 tempfile = "3" # MIT/Apache 2.0
 
 # Plugins for tests
@@ -41,3 +42,7 @@ join_katakana_oov = { path = "../plugin/path_rewrite/join_katakana_oov" }
 
 [lib]
 crate-type = ["rlib"]
+
+[[bench]]
+name = "sentence_detector"
+harness = false
