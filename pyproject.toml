@@ -32,6 +32,10 @@ manifest-path = "python/Cargo.toml"
 python-source = "python/py_src"
 python-packages = ["sudachipy"]
 include = [
+    { path = "LICENSE", format = "sdist" },
+    { path = "README.md", format = "sdist" },
+    { path = "README.ja.md", format = "sdist" },
+    { path = "python/README.md", format = "sdist" },
     { path = "sudachipy/resources/*", format = ["sdist", "wheel"] },
     { path = "sudachipy/*.pyi", format = ["sdist", "wheel"] },
     { path = "resources/*", format = "sdist" },

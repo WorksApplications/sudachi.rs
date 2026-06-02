@@ -20,6 +20,10 @@ WHEEL_REQUIRED = (
 
 SDIST_REQUIRED = (
     "pyproject.toml",
+    "LICENSE",
+    "README.md",
+    "README.ja.md",
+    "python/README.md",
     "Cargo.toml",
     "Cargo.lock",
     "python/Cargo.toml",
