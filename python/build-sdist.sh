@@ -1,37 +1,12 @@
 #!/bin/bash
-set -ex
+set -euo pipefail
 
-## Create a symlink for sudachi.rs and resource to embed
-ln -sf ../sudachi sudachi-lib
-ln -sf ../resources resources
+SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+REPO_ROOT=$(cd -- "$SCRIPT_DIR/.." && pwd)
 
-## Copy root Cargo.lock for sdist
-cp ../Cargo.lock Cargo.lock
+if ! command -v uv >/dev/null 2>&1 ; then
+  echo "uv is required to build the SudachiPy sdist" >&2
+  exit 1
+fi
 
-## Resolve workspace.package value in Cargo.toml
-pip install tomlkit
-
-mv Cargo.toml Cargo.sudachipy.toml
-python modify_cargotoml_for_sdist.py \
-    ../Cargo.toml Cargo.sudachipy.toml --out Cargo.toml
-
-mv sudachi-lib/Cargo.toml Cargo.sudachilib.toml
-python modify_cargotoml_for_sdist.py \
-    ../Cargo.toml Cargo.sudachilib.toml --out sudachi-lib/Cargo.toml
-
-## Modify to include the symlink
-sed -i 's/\.\.\/sudachi/\.\/sudachi-lib/' Cargo.toml
-
-
-# Build the source distribution
-python -m build --sdist
-
-
-# clean up changes
-## Revert cargo.toml
-rm Cargo.toml sudachi-lib/Cargo.toml
-mv Cargo.sudachipy.toml Cargo.toml
-mv Cargo.sudachilib.toml sudachi-lib/Cargo.toml
-
-## rm files
-rm LICENSE sudachi-lib resources Cargo.lock
+uv run --no-project --with build python -m build --installer uv --sdist --outdir "$SCRIPT_DIR/dist" "$REPO_ROOT"

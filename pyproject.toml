@@ -1,0 +1,80 @@
+[build-system]
+requires = ["maturin>=1.9.4,<2"]
+build-backend = "maturin"
+
+[project]
+name = "SudachiPy"
+version = "0.6.12-a1"
+description = "Python version of Sudachi, the Japanese Morphological Analyzer"
+readme = "python/README.md"
+requires-python = ">=3.10"
+license = "Apache-2.0"
+authors = [
+    { name = "Works Applications", email = "sudachi@worksap.co.jp" },
+]
+
+[project.optional-dependencies]
+tests = [
+    "sudachidict_core",
+    "tokenizers",
+]
+
+[project.scripts]
+sudachipy = "sudachipy.command_line:main"
+
+[project.urls]
+Homepage = "https://github.com/WorksApplications/sudachi.rs/tree/develop/python"
+
+[tool.maturin]
+bindings = "pyo3"
+module-name = "sudachipy.sudachipy"
+manifest-path = "python/Cargo.toml"
+python-source = "python/py_src"
+python-packages = ["sudachipy"]
+include = [
+    { path = "LICENSE", format = "sdist" },
+    { path = "README.md", format = "sdist" },
+    { path = "README.ja.md", format = "sdist" },
+    { path = "python/README.md", format = "sdist" },
+    { path = "sudachipy/resources/*", format = ["sdist", "wheel"] },
+    { path = "sudachipy/*.pyi", format = ["sdist", "wheel"] },
+    { path = "resources/*", format = "sdist" },
+]
+
+[tool.cibuildwheel]
+build = "cp310-* cp313t-* cp314t-*"
+skip = "*t-win* *-win32 *-musllinux_*"
+enable = ["cpython-prerelease", "cpython-freethreading"]
+build-frontend = "build[uv]"
+test-requires = [
+    "sudachidict_core",
+    "tokenizers",
+]
+test-command = [
+    "python -c \"import sudachipy; print(sudachipy.__version__)\"",
+    "python -m unittest discover -s {project}/python/tests",
+    "sudachipy --help",
+]
+
+manylinux-x86_64-image = "manylinux_2_28"
+manylinux-aarch64-image = "manylinux_2_28"
+
+build-verbosity = 1
+before-build = "rustup show"
+
+[[tool.cibuildwheel.overrides]]
+select = "cp3??t-macosx_*"
+inherit.environment = "append"
+environment.RUSTFLAGS = "-C link-arg=-undefined -C link-arg=dynamic_lookup"
+
+[tool.cibuildwheel.linux]
+environment = { PATH = "$HOME/.cargo/bin:$PATH", CARGO_TERM_COLOR = "always", RUSTFLAGS = "-C profile-use=/tmp/sudachi-profdata.merged -C opt-level=3" }
+before-all = "python/generate-manylinux-profile.sh /tmp/sudachi-profdata.merged"
+
+[tool.cibuildwheel.macos]
+archs = ["x86_64", "universal2", "arm64"]
+environment = { PATH = "$HOME/.cargo/bin:$PATH", CARGO_TERM_COLOR = "always", MACOSX_DEPLOYMENT_TARGET = "10.12" }
+before-all = "rustup target add aarch64-apple-darwin x86_64-apple-darwin"
+
+[tool.cibuildwheel.windows]
+environment = { PATH = "$UserProfile\\.cargo\\bin;$PATH" }

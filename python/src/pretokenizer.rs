@@ -136,9 +136,9 @@ impl PyPretokenizer {
         string: &Bound<'py, PyAny>,
     ) -> PyResult<Bound<'py, PyAny>> {
         let pystr = string.str()?;
-        let input_data = pystr.to_str()?;
+        let input_data = pystr.to_cow()?.into_owned();
         // tokenization itself should work without GIL, we have thread-local tokenizers here
-        py.detach(|| self.tokenizer_cell().borrow_mut().tokenize(input_data))?;
+        py.detach(|| self.tokenizer_cell().borrow_mut().tokenize(&input_data))?;
         // then prepare results with GIL
         self.tokenizer_cell().borrow_mut().collect_results(py)?;
         let cell = self.tokenizer_cell().borrow();

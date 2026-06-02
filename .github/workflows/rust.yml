@@ -9,22 +9,25 @@ on:
 env:
   CARGO_TERM_COLOR: always
 
+permissions:
+  contents: read
+
 jobs:
   build:
 
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-latest, windows-latest, macOS-latest ]
+        os: [ ubuntu-latest, windows-latest, macos-latest ]
 
     runs-on: ${{ matrix.os }}
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6.0.2
     - name: Download dictionary
-      run: bash fetch_dictionary.sh "20220519" "core"
+      run: bash fetch_dictionary.sh "20220519" "core" "8de60382bde6b8307a10daa265569164a6296b28d52d793c3ed0757786969365"
 
-    - uses: actions/cache@v4
+    - uses: actions/cache@v5.0.5
       with:
         path: |
           ~/.cargo/bin/

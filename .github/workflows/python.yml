@@ -6,22 +6,25 @@ on:
   pull_request:
     branches: [ develop ]
 
+permissions:
+  contents: read
+
 jobs:
   build:
 
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-latest, windows-latest, macOS-latest ]
+        os: [ ubuntu-latest, windows-latest, macos-latest ]
 
     runs-on: ${{ matrix.os }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6.0.2
       - name: Download dictionary
-        run: bash fetch_dictionary.sh "20220519" "core"
+        run: bash fetch_dictionary.sh "20220519" "core" "8de60382bde6b8307a10daa265569164a6296b28d52d793c3ed0757786969365"
 
-      - uses: actions/cache@v4
+      - uses: actions/cache@v5.0.5
         with:
           path: |
             ~/.cargo/bin/
@@ -32,13 +35,14 @@ jobs:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Setup python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6.2.0
         with:
           python-version: '3.11'
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install --upgrade setuptools setuptools-rust
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v8.1.0
+
+      - name: Check version metadata
+        run: python python/check_version_consistency.py
 
       - name: Build and test
         working-directory: ./python

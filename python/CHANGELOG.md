@@ -6,6 +6,17 @@ Also check [rust changelog](../CHANGELOG.md).
 
 ## [Unreleased]
 
+### Changed
+
+- Migrate SudachiPy extension builds from setuptools-rust to maturin and produce
+  CPython abi3 wheels for Python 3.10 and later.
+- Linux wheels now target `manylinux_2_28`; older distributions with glibc
+  below 2.28 may need to build from sdist or upgrade their runtime.
+
+### Removed
+
+- Remove Python 3.9 support.
+
 ## [0.6.11](https://github.com/WorksApplications/sudachi.rs/releases/tag/v0.6.11) (2026-03-06)
 
 ### Added
