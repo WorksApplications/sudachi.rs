@@ -16,6 +16,13 @@ Dictionary
    :members:
 
 
+TextNormalizer
+----------------------
+
+.. autoclass:: sudachipy.TextNormalizer
+   :members:
+
+
 SplitMode
 ----------------------
 
@@ -52,4 +59,3 @@ WordInfo
 .. autoclass:: sudachipy.WordInfo
    :members:
    :undoc-members:
-

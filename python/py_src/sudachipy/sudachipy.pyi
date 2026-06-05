@@ -114,6 +114,15 @@ class Dictionary:
         """
         ...
 
+    def text_normalizer(self) -> TextNormalizer:
+        """
+        Creates a text normalizer from this dictionary.
+
+        The returned normalizer applies the same input-text plugins that this
+        dictionary uses before tokenization.
+        """
+        ...
+
     def pos_matcher(self, target: Union[Iterable[PartialPOS], Callable[[POS], bool]]) -> PosMatcher:
         """
         Creates a new POS matcher.
@@ -219,6 +228,32 @@ class Dictionary:
         :param reading: reading form of the morpheme
         :param normalized_form: normalized form of the morpheme
         :param dictionary_form: dictionary form of the morpheme
+        """
+        ...
+
+
+class TextNormalizer:
+    """
+    A text normalizer.
+
+    Create using ``Dictionary.text_normalizer()`` or by passing a ``Dictionary``
+    to this class.
+    """
+
+    def __init__(self, dictionary: Dictionary) -> None:
+        """
+        Creates a text normalizer from a dictionary.
+
+        The normalizer applies the same input-text plugins that the dictionary
+        uses before tokenization.
+        """
+        ...
+
+    def normalize(self, text: str) -> str:
+        """
+        Normalize text using dictionary input-text plugins.
+
+        :param text: text to normalize.
         """
         ...
 

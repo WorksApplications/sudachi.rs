@@ -27,3 +27,7 @@ class TestImport(unittest.TestCase):
     def test_import_morphemelist(self):
         from sudachipy.morphemelist import MorphemeList
         self.assertIsNotNone(MorphemeList)
+
+    def test_import_text_normalizer(self):
+        from sudachipy import TextNormalizer
+        self.assertIsNotNone(TextNormalizer)
