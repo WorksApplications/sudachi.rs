@@ -27,6 +27,9 @@ use crate::errors;
 
 /// A text normalizer.
 ///
+/// This applies dictionary input-text plugins to raw input text. It does not
+/// perform morphological analysis or return morpheme normalized forms.
+///
 /// Create using ``Dictionary.text_normalizer()`` or by passing a
 /// ``Dictionary`` to this class.
 #[pyclass(module = "sudachipy", name = "TextNormalizer")]
@@ -45,7 +48,8 @@ impl PyTextNormalizer {
     /// Creates a text normalizer from a dictionary.
     ///
     /// The normalizer applies the same input-text plugins that the dictionary
-    /// uses before tokenization.
+    /// uses before tokenization. The normalizer can keep normalizing text after
+    /// the source dictionary is closed.
     #[new]
     #[pyo3(text_signature = "(dictionary) -> TextNormalizer")]
     fn new(dictionary: PyRef<'_, PyDictionary>) -> PyTextNormalizer {
@@ -53,6 +57,9 @@ impl PyTextNormalizer {
     }
 
     /// Normalize text using dictionary input-text plugins.
+    ///
+    /// This normalizes tokenizer input text, not the dictionary-normalized form
+    /// returned by ``Morpheme.normalized_form()``.
     ///
     /// :param text: text to normalize.
     /// :type text: str

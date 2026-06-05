@@ -119,7 +119,8 @@ class Dictionary:
         Creates a text normalizer from this dictionary.
 
         The returned normalizer applies the same input-text plugins that this
-        dictionary uses before tokenization.
+        dictionary uses before tokenization. It can keep normalizing text after
+        this dictionary is closed.
         """
         ...
 
@@ -236,6 +237,9 @@ class TextNormalizer:
     """
     A text normalizer.
 
+    Applies dictionary input-text plugins to raw input text. This does not
+    perform morphological analysis or return morpheme normalized forms.
+
     Create using ``Dictionary.text_normalizer()`` or by passing a ``Dictionary``
     to this class.
     """
@@ -245,13 +249,17 @@ class TextNormalizer:
         Creates a text normalizer from a dictionary.
 
         The normalizer applies the same input-text plugins that the dictionary
-        uses before tokenization.
+        uses before tokenization. It can keep normalizing text after the source
+        dictionary is closed.
         """
         ...
 
     def normalize(self, text: str) -> str:
         """
         Normalize text using dictionary input-text plugins.
+
+        This normalizes tokenizer input text, not the dictionary-normalized form
+        returned by ``Morpheme.normalized_form()``.
 
         :param text: text to normalize.
         """

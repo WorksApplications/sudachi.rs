@@ -43,6 +43,26 @@ class TestTextNormalizer(unittest.TestCase):
         normalizer = TextNormalizer(self.dict_)
         self.assertEqual("abc", normalizer.normalize("ＡＢＣ"))
 
+    def test_repeated_calls_and_empty_text(self):
+        normalizer = self.dict_.text_normalizer()
+        self.assertEqual("", normalizer.normalize(""))
+        self.assertEqual("abc", normalizer.normalize("ＡＢＣ"))
+        self.assertEqual(NORMALIZED_TEXT, normalizer.normalize(ORIGINAL_TEXT))
+
+    def test_normalizer_outlives_dictionary_close(self):
+        normalizer = self.dict_.text_normalizer()
+        self.dict_.close()
+        self.assertEqual("abc", normalizer.normalize("ＡＢＣ"))
+
+    def test_normalize_rejects_non_string_input(self):
+        normalizer = self.dict_.text_normalizer()
+        with self.assertRaises(TypeError):
+            normalizer.normalize(1)
+
+    def test_normalize_is_not_morpheme_normalized_form(self):
+        normalizer = self.dict_.text_normalizer()
+        self.assertEqual("附属", normalizer.normalize("附属"))
+
     def test_uses_dictionary_input_text_plugins(self):
         dictionary = Dictionary(config=Config(
             system=str(self.resource_dir / "system.dic.test"),

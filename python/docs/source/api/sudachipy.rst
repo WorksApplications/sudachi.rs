@@ -19,6 +19,9 @@ Dictionary
 TextNormalizer
 ----------------------
 
+``TextNormalizer`` applies dictionary input-text plugins to raw input text.
+It does not perform morphological analysis or return morpheme normalized forms.
+
 .. autoclass:: sudachipy.TextNormalizer
    :members:
 
