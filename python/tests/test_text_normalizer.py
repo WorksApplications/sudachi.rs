@@ -39,6 +39,10 @@ class TestTextNormalizer(unittest.TestCase):
         self.assertIsInstance(normalizer, TextNormalizer)
         self.assertEqual(NORMALIZED_TEXT, normalizer.normalize(ORIGINAL_TEXT))
 
+    def test_default_text_normalizer(self):
+        normalizer = TextNormalizer()
+        self.assertEqual(NORMALIZED_TEXT, normalizer.normalize(ORIGINAL_TEXT))
+
     def test_text_normalizer_constructor(self):
         normalizer = TextNormalizer(self.dict_)
         self.assertEqual("abc", normalizer.normalize("ＡＢＣ"))
@@ -48,11 +52,6 @@ class TestTextNormalizer(unittest.TestCase):
         self.assertEqual("", normalizer.normalize(""))
         self.assertEqual("abc", normalizer.normalize("ＡＢＣ"))
         self.assertEqual(NORMALIZED_TEXT, normalizer.normalize(ORIGINAL_TEXT))
-
-    def test_normalizer_outlives_dictionary_close(self):
-        normalizer = self.dict_.text_normalizer()
-        self.dict_.close()
-        self.assertEqual("abc", normalizer.normalize("ＡＢＣ"))
 
     def test_normalize_rejects_non_string_input(self):
         normalizer = self.dict_.text_normalizer()

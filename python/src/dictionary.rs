@@ -367,8 +367,7 @@ impl PyDictionary {
     /// Creates a text normalizer from this dictionary.
     ///
     /// The returned normalizer applies the same input-text plugins that this
-    /// dictionary uses before tokenization. It can keep normalizing text after
-    /// this dictionary is closed.
+    /// dictionary uses before tokenization.
     #[pyo3(text_signature = "(self, /) -> TextNormalizer")]
     fn text_normalizer(&self) -> PyTextNormalizer {
         PyTextNormalizer::from_dictionary(self.data())

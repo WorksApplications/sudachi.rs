@@ -21,42 +21,65 @@ use pyo3::prelude::*;
 use sudachi::dic::DictionaryAccess;
 use sudachi::error::SudachiResult;
 use sudachi::input_text::InputBuffer;
+use sudachi::text_normalizer::TextNormalizer;
 
 use crate::dictionary::{PyDicData, PyDictionary};
 use crate::errors;
 
 /// A text normalizer.
 ///
-/// This applies dictionary input-text plugins to raw input text. It does not
-/// perform morphological analysis or return morpheme normalized forms.
+/// This applies input-text plugins to raw input text. It does not perform
+/// morphological analysis or return morpheme normalized forms.
 ///
 /// Create using ``Dictionary.text_normalizer()`` or by passing a
-/// ``Dictionary`` to this class.
+/// ``Dictionary`` to this class. Without a dictionary, this uses the default
+/// input-text normalization.
 #[pyclass(module = "sudachipy", name = "TextNormalizer")]
 pub struct PyTextNormalizer {
-    dict: Arc<PyDicData>,
+    inner: PyTextNormalizerInner,
+}
+
+enum PyTextNormalizerInner {
+    Default(TextNormalizer<'static>),
+    Dictionary {
+        dict: Arc<PyDicData>,
+        buffer: InputBuffer,
+    },
 }
 
 impl PyTextNormalizer {
     pub(crate) fn from_dictionary(dict: Arc<PyDicData>) -> Self {
-        Self { dict }
+        Self {
+            inner: PyTextNormalizerInner::Dictionary {
+                dict,
+                buffer: InputBuffer::new(),
+            },
+        }
     }
 }
 
 #[pymethods]
 impl PyTextNormalizer {
-    /// Creates a text normalizer from a dictionary.
+    /// Creates a text normalizer.
     ///
-    /// The normalizer applies the same input-text plugins that the dictionary
-    /// uses before tokenization. The normalizer can keep normalizing text after
-    /// the source dictionary is closed.
+    /// When dictionary is provided, this applies the same input-text plugins
+    /// used by that dictionary before tokenization. Without a dictionary, this
+    /// applies the default input-text normalization.
     #[new]
-    #[pyo3(text_signature = "(dictionary) -> TextNormalizer")]
-    fn new(dictionary: PyRef<'_, PyDictionary>) -> PyTextNormalizer {
-        PyTextNormalizer::from_dictionary(dictionary.data())
+    #[pyo3(
+        signature = (dictionary=None),
+        text_signature = "(dictionary=None) -> TextNormalizer"
+    )]
+    fn new(dictionary: Option<PyRef<'_, PyDictionary>>) -> PyResult<PyTextNormalizer> {
+        match dictionary {
+            Some(dictionary) => Ok(PyTextNormalizer::from_dictionary(dictionary.data())),
+            None => Ok(Self {
+                inner: PyTextNormalizerInner::Default(errors::wrap(TextNormalizer::default())?),
+            }),
+        }
     }
 
-    /// Normalize text using dictionary input-text plugins.
+    /// Normalize text using input-text plugins.
     ///
     /// This normalizes tokenizer input text, not the dictionary-normalized form
     /// returned by ``Morpheme.normalized_form()``.
@@ -64,20 +87,34 @@ impl PyTextNormalizer {
     /// :param text: text to normalize.
     /// :type text: str
     #[pyo3(text_signature = "(self, /, text: str) -> str")]
-    fn normalize(&self, py: Python<'_>, text: &str) -> PyResult<String> {
+    fn normalize(&mut self, py: Python<'_>, text: &str) -> PyResult<String> {
         errors::wrap_ctx(
-            py.detach(|| normalize_with_dictionary(&self.dict, text)),
+            py.detach(|| self.normalize_inner(text)),
             "Error during text normalization",
         )
     }
 }
 
-fn normalize_with_dictionary(dict: &PyDicData, text: &str) -> SudachiResult<String> {
-    let mut buffer = InputBuffer::new();
+impl PyTextNormalizer {
+    fn normalize_inner(&mut self, text: &str) -> SudachiResult<String> {
+        match &mut self.inner {
+            PyTextNormalizerInner::Default(normalizer) => normalizer.normalize(text),
+            PyTextNormalizerInner::Dictionary { dict, buffer } => {
+                normalize_with_dictionary(dict.as_ref(), buffer, text)
+            }
+        }
+    }
+}
+
+fn normalize_with_dictionary(
+    dict: &PyDicData,
+    buffer: &mut InputBuffer,
+    text: &str,
+) -> SudachiResult<String> {
     buffer.reset().push_str(text);
     buffer.start_build()?;
     for plugin in dict.input_text_plugins() {
-        plugin.rewrite(&mut buffer)?;
+        plugin.rewrite(buffer)?;
     }
     Ok(buffer.current().to_owned())
 }
