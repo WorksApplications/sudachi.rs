@@ -14,16 +14,11 @@
  *  limitations under the License.
  */
 
-use std::sync::Arc;
-
 use pyo3::prelude::*;
 
-use sudachi::dic::DictionaryAccess;
-use sudachi::error::SudachiResult;
-use sudachi::input_text::InputBuffer;
 use sudachi::text_normalizer::TextNormalizer;
 
-use crate::dictionary::{PyDicData, PyDictionary};
+use crate::dictionary::PyDictionary;
 use crate::errors;
 
 /// A text normalizer.
@@ -36,24 +31,13 @@ use crate::errors;
 /// input-text normalization.
 #[pyclass(module = "sudachipy", name = "TextNormalizer")]
 pub struct PyTextNormalizer {
-    inner: PyTextNormalizerInner,
-}
-
-enum PyTextNormalizerInner {
-    Default(TextNormalizer<'static>),
-    Dictionary {
-        dict: Arc<PyDicData>,
-        buffer: InputBuffer,
-    },
+    normalizer: TextNormalizer<'static>,
 }
 
 impl PyTextNormalizer {
-    pub(crate) fn from_dictionary(dict: Arc<PyDicData>) -> Self {
+    pub(crate) fn from_dictionary(dictionary: &PyDictionary) -> Self {
         Self {
-            inner: PyTextNormalizerInner::Dictionary {
-                dict,
-                buffer: InputBuffer::new(),
-            },
+            normalizer: TextNormalizer::from_shared_dictionary(dictionary.data()),
         }
     }
 }
@@ -72,9 +56,9 @@ impl PyTextNormalizer {
     )]
     fn new(dictionary: Option<PyRef<'_, PyDictionary>>) -> PyResult<PyTextNormalizer> {
         match dictionary {
-            Some(dictionary) => Ok(PyTextNormalizer::from_dictionary(dictionary.data())),
+            Some(dictionary) => Ok(PyTextNormalizer::from_dictionary(&dictionary)),
             None => Ok(Self {
-                inner: PyTextNormalizerInner::Default(errors::wrap(TextNormalizer::default())?),
+                normalizer: errors::wrap(TextNormalizer::default())?,
             }),
         }
     }
@@ -89,32 +73,8 @@ impl PyTextNormalizer {
     #[pyo3(text_signature = "(self, /, text: str) -> str")]
     fn normalize(&mut self, py: Python<'_>, text: &str) -> PyResult<String> {
         errors::wrap_ctx(
-            py.detach(|| self.normalize_inner(text)),
+            py.detach(|| self.normalizer.normalize(text)),
             "Error during text normalization",
         )
     }
-}
-
-impl PyTextNormalizer {
-    fn normalize_inner(&mut self, text: &str) -> SudachiResult<String> {
-        match &mut self.inner {
-            PyTextNormalizerInner::Default(normalizer) => normalizer.normalize(text),
-            PyTextNormalizerInner::Dictionary { dict, buffer } => {
-                normalize_with_dictionary(dict.as_ref(), buffer, text)
-            }
-        }
-    }
-}
-
-fn normalize_with_dictionary(
-    dict: &PyDicData,
-    buffer: &mut InputBuffer,
-    text: &str,
-) -> SudachiResult<String> {
-    buffer.reset().push_str(text);
-    buffer.start_build()?;
-    for plugin in dict.input_text_plugins() {
-        plugin.rewrite(buffer)?;
-    }
-    Ok(buffer.current().to_owned())
 }

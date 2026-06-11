@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+use std::sync::Arc;
+
 use crate::config::ConfigBuilder;
 use crate::dic::connect::ConnectionMatrix;
 use crate::dic::grammar::Grammar;
@@ -34,7 +36,8 @@ pub struct TextNormalizer<'a> {
 
 enum TextNormalizerSource<'a> {
     Default(DefaultInputTextPlugin),
-    Dictionary(&'a (dyn DictionaryAccess + Sync)),
+    BorrowedDictionary(&'a (dyn DictionaryAccess + Sync)),
+    SharedDictionary(Arc<dyn DictionaryAccess + Sync + Send>),
 }
 
 impl<'a> TextNormalizer<'a> {
@@ -58,7 +61,19 @@ impl<'a> TextNormalizer<'a> {
         D: DictionaryAccess + Sync + 'a,
     {
         Self {
-            source: TextNormalizerSource::Dictionary(dictionary),
+            source: TextNormalizerSource::BorrowedDictionary(dictionary),
+            input: InputBuffer::new(),
+        }
+    }
+
+    /// Create a text normalizer using the input-text plugins from a shared dictionary handle.
+    pub fn from_shared_dictionary<D>(dictionary: Arc<D>) -> TextNormalizer<'static>
+    where
+        D: DictionaryAccess + Sync + Send + 'static,
+    {
+        let dictionary: Arc<dyn DictionaryAccess + Sync + Send> = dictionary;
+        TextNormalizer {
+            source: TextNormalizerSource::SharedDictionary(dictionary),
             input: InputBuffer::new(),
         }
     }
@@ -68,10 +83,11 @@ impl<'a> TextNormalizer<'a> {
         self.input.start_build()?;
         match &self.source {
             TextNormalizerSource::Default(plugin) => plugin.rewrite(&mut self.input)?,
-            TextNormalizerSource::Dictionary(dictionary) => {
-                for plugin in dictionary.input_text_plugins() {
-                    plugin.rewrite(&mut self.input)?;
-                }
+            TextNormalizerSource::BorrowedDictionary(dictionary) => {
+                rewrite_with_dictionary(*dictionary, &mut self.input)?;
+            }
+            TextNormalizerSource::SharedDictionary(dictionary) => {
+                rewrite_with_dictionary(dictionary.as_ref(), &mut self.input)?;
             }
         }
         Ok(self.input.current().to_owned())
@@ -92,6 +108,16 @@ fn set_up_default_plugin(grammar: &Grammar) -> SudachiResult<DefaultInputTextPlu
 fn empty_grammar() -> SudachiResult<Grammar<'static>> {
     let connection = ConnectionMatrix::from_bytes(ZERO_CONNECTION_BYTES)?;
     Ok(Grammar::from_parts(PosList::default(), connection))
+}
+
+fn rewrite_with_dictionary<D>(dictionary: &D, input: &mut InputBuffer) -> SudachiResult<()>
+where
+    D: DictionaryAccess + ?Sized,
+{
+    for plugin in dictionary.input_text_plugins() {
+        plugin.rewrite(input)?;
+    }
+    Ok(())
 }
 
 #[cfg(test)]
@@ -184,6 +210,15 @@ mod tests {
     fn dictionary_normalizer_uses_dictionary_plugins() {
         let dictionary = MockDictionary::new(vec![Box::new(ReplaceAllPlugin)]);
         let mut normalizer = TextNormalizer::from_dictionary(&dictionary);
+
+        assert_eq!("rewritten", normalizer.normalize("abc").unwrap());
+        assert_eq!("rewritten", normalizer.normalize("ＡＢＣ").unwrap());
+    }
+
+    #[test]
+    fn shared_dictionary_normalizer_uses_dictionary_plugins() {
+        let dictionary = Arc::new(MockDictionary::new(vec![Box::new(ReplaceAllPlugin)]));
+        let mut normalizer = TextNormalizer::from_shared_dictionary(dictionary);
 
         assert_eq!("rewritten", normalizer.normalize("abc").unwrap());
         assert_eq!("rewritten", normalizer.normalize("ＡＢＣ").unwrap());

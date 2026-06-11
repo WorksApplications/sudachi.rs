@@ -370,7 +370,7 @@ impl PyDictionary {
     /// dictionary uses before tokenization.
     #[pyo3(text_signature = "(self, /) -> TextNormalizer")]
     fn text_normalizer(&self) -> PyTextNormalizer {
-        PyTextNormalizer::from_dictionary(self.data())
+        PyTextNormalizer::from_dictionary(self)
     }
 
     /// Creates a POS matcher object
