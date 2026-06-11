@@ -28,7 +28,10 @@ use crate::prelude::*;
 
 const ZERO_CONNECTION_BYTES: &[u8] = &[0, 0, 0, 0];
 
-/// Applies the same default input-text normalization used by tokenizer input processing.
+/// Applies input-text normalization used by tokenizer input processing.
+///
+/// By default, this uses `DefaultInputTextPlugin`. When built from a dictionary,
+/// it applies that dictionary's configured input-text plugins.
 pub struct TextNormalizer<'a> {
     source: TextNormalizerSource<'a>,
     input: InputBuffer,

@@ -85,6 +85,7 @@ class TestTextNormalizer(unittest.TestCase):
         try:
             normalizer = dictionary.text_normalizer()
             self.assertEqual("京都", normalizer.normalize("京都（キョウト）"))
+            self.assertEqual("京都", TextNormalizer(dictionary).normalize("京都（キョウト）"))
         finally:
             dictionary.close()
 
