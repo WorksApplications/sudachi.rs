@@ -29,7 +29,7 @@ class TestTokenizer(unittest.TestCase):
             os.path.abspath(__file__)), 'resources')
         self.dict_ = Dictionary(os.path.join(
             resource_dir, 'sudachi.json'), resource_dir)
-        self.tokenizer_obj = self.dict_.create()
+        self.tokenizer_obj = self.dict_.tokenizer()
 
     def test_empty_list(self):
         ms = self.tokenizer_obj.tokenize('')
@@ -153,13 +153,13 @@ class TestTokenizer(unittest.TestCase):
             with open(config_path, 'w', encoding='utf-8') as out:
                 json.dump(config, out, ensure_ascii=False)
 
-            tokenizer = Dictionary(config_path, resource_dir).create()
+            tokenizer = Dictionary(config_path, resource_dir).tokenizer()
             m = tokenizer.tokenize('首都旧')[0]
             nf = m.normalized_form_morpheme()
             splits = nf.split(SplitMode.A, add_single=True)
             out = self.tokenizer_obj.tokenize('')
             out_result = nf.split(SplitMode.A, out=out, add_single=True)
-            surface_tokenizer = Dictionary(config_path, resource_dir).create(
+            surface_tokenizer = Dictionary(config_path, resource_dir).tokenizer(
                 fields={'surface', 'normalized_form', 'split_a'})
             surface_nf = surface_tokenizer.tokenize(
                 '首都旧')[0].normalized_form_morpheme()
@@ -198,7 +198,7 @@ class TestTokenizer(unittest.TestCase):
         self.assertEqual(nf.surface(), m.surface())
 
     def test_form_morpheme_with_surface_subset(self):
-        tokenizer = self.dict_.create(
+        tokenizer = self.dict_.tokenizer(
             fields={'surface', 'dictionary_form', 'normalized_form'})
         m = tokenizer.tokenize('行っ')[0]
         df = m.dictionary_form_morpheme()
@@ -210,7 +210,7 @@ class TestTokenizer(unittest.TestCase):
         self.assertEqual(nf.raw_surface(), '行く')
 
     def test_form_morpheme_with_reading_subset(self):
-        tokenizer = self.dict_.create(
+        tokenizer = self.dict_.tokenizer(
             fields={
                 'surface',
                 'reading_form',
@@ -227,7 +227,7 @@ class TestTokenizer(unittest.TestCase):
         self.assertEqual(nf.reading_form(), 'イク')
 
     def test_single_backed_form_morpheme_uses_projection(self):
-        tokenizer = self.dict_.create(
+        tokenizer = self.dict_.tokenizer(
             fields={'dictionary_form'}, projection='reading')
         m = tokenizer.tokenize('行っ')[0]
         df = m.dictionary_form_morpheme()
@@ -325,7 +325,7 @@ class TestTokenizer(unittest.TestCase):
         m = self.tokenizer_obj.tokenize('京都')[0]
         self.assertEqual(m.user_data(), '')
 
-        tokenizer = self.dict_.create(fields={'user_data'})
+        tokenizer = self.dict_.tokenizer(fields={'user_data'})
         m = tokenizer.tokenize('すだち')[0]
         self.assertEqual(m.user_data(), '徳島県産')
 

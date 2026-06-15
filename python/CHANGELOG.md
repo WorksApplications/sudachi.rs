@@ -16,6 +16,7 @@ Also check [rust changelog](../CHANGELOG.md).
 
 - Changed `Dictionary.lookup()` to normalize queries before indexed lookup,
   matching Java Sudachi behavior.
+- Deprecate `Dictionary.create()` in favor of `Dictionary.tokenizer()`.
 
 ### Fixed
 

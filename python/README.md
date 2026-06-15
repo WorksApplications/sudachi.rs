@@ -43,7 +43,7 @@ EOS
 ```python
 from sudachipy import Dictionary, SplitMode
 
-tokenizer = Dictionary().create()
+tokenizer = Dictionary().tokenizer()
 
 morphemes = tokenizer.tokenize("国会議事堂前駅")
 print(morphemes[0].surface())  # '国会議事堂前駅'
@@ -157,7 +157,7 @@ See [API reference page](https://worksapplications.github.io/sudachi.rs/python/)
 ```python
 from sudachipy import Dictionary, SplitMode
 
-tokenizer_obj = Dictionary().create()
+tokenizer_obj = Dictionary().tokenizer()
 ```
 
 ```python
@@ -246,19 +246,19 @@ class Dictionary(config=None, resource_dir=None, dict=None)
 from sudachipy import Dictionary
 
 # default: sudachidict_core
-tokenizer_obj = Dictionary().create()
+tokenizer_obj = Dictionary().tokenizer()
 
 # The dictionary given by the `systemDict` key in the config file (/path/to/sudachi.json) will be used
-tokenizer_obj = Dictionary(config="/path/to/sudachi.json").create()
+tokenizer_obj = Dictionary(config="/path/to/sudachi.json").tokenizer()
 
 # The dictionary specified by `dict` will be used.
-tokenizer_obj = Dictionary(dict="core").create()  # sudachidict_core (same as default)
-tokenizer_obj = Dictionary(dict="small").create()  # sudachidict_small
-tokenizer_obj = Dictionary(dict="full").create()  # sudachidict_full
+tokenizer_obj = Dictionary(dict="core").tokenizer()  # sudachidict_core (same as default)
+tokenizer_obj = Dictionary(dict="small").tokenizer()  # sudachidict_small
+tokenizer_obj = Dictionary(dict="full").tokenizer()  # sudachidict_full
 
 # The dictionary specified by `dict` overrides those defined in the config.
 # In the following code, `sudachidict_full` will be used regardless of a dictionary defined in the config file.
-tokenizer_obj = Dictionary(config="/path/to/sudachi.json", dict="full").create()
+tokenizer_obj = Dictionary(config="/path/to/sudachi.json", dict="full").tokenizer()
 ```
 
 ### Dictionary in The Setting File

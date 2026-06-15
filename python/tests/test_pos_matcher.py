@@ -25,7 +25,7 @@ class PosMatcherTestCase(unittest.TestCase):
             os.path.abspath(__file__)), 'resources')
         self.dict = Dictionary(os.path.join(
             resource_dir, 'sudachi.json'), resource_dir)
-        self.tokenizer_obj = self.dict.create()
+        self.tokenizer_obj = self.dict.tokenizer()
 
     def test_create_fn(self):
         m = self.dict.pos_matcher(lambda p: p[0] == "名詞")
@@ -62,7 +62,7 @@ class PosMatcherTestCase(unittest.TestCase):
                                    ('動詞', '非自立可能', '*', '*', '五段-カ行', '終止形-一般')])
 
     def test_match_nouns(self):
-        tok = self.dict.create(mode=sudachipy.SplitMode.A)
+        tok = self.dict.tokenizer(mode=sudachipy.SplitMode.A)
         m = self.dict.pos_matcher([("名詞",)])
         data = [x.surface() for x in tok.tokenize("東京に行く") if m(x)]
         self.assertEqual(data, ["東京"])

@@ -99,6 +99,21 @@ class Dictionary:
         """
         ...
 
+    def tokenizer(self,
+                  mode: Union[SplitMode, SplitModeStr, None] = SplitMode.C,
+                  fields: Optional[FieldSet] = None,
+                  *,
+                  projection: Optional[str] = None) -> Tokenizer:
+        """
+        Creates a sudachi tokenizer.
+
+        :param mode: sets the analysis mode for this Tokenizer
+        :param fields: load only a subset of fields.
+            See https://worksapplications.github.io/sudachi.rs/python/topics/subsetting.html.
+        :param projection: Projection override for created Tokenizer. See Config.projection for values.
+        """
+        ...
+
     def create(self,
                mode: Union[SplitMode, SplitModeStr, None] = SplitMode.C,
                fields: Optional[FieldSet] = None,
@@ -106,6 +121,9 @@ class Dictionary:
                projection: Optional[str] = None) -> Tokenizer:
         """
         Creates a sudachi tokenizer.
+
+        .. deprecated::
+            Use ``Dictionary.tokenizer()`` instead.
 
         :param mode: sets the analysis mode for this Tokenizer
         :param fields: load only a subset of fields.
@@ -438,7 +456,7 @@ class Tokenizer:
     """
     A sudachi tokenizer
 
-    Create using Dictionary.create method.
+    Create using Dictionary.tokenizer method.
     """
     SplitMode: ClassVar[SplitMode] = ...
 
