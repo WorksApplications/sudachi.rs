@@ -153,6 +153,12 @@ impl<'a> Grammar<'a> {
     }
 }
 
+impl Grammar<'static> {
+    pub fn empty() -> Self {
+        Self::from_parts(PosList::default(), ConnectionMatrix::empty())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

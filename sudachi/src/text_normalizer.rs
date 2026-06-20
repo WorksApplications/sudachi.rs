@@ -17,66 +17,53 @@
 use std::sync::Arc;
 
 use crate::config::ConfigBuilder;
-use crate::dic::connect::ConnectionMatrix;
 use crate::dic::grammar::Grammar;
-use crate::dic::pos::PosList;
 use crate::dic::DictionaryAccess;
 use crate::input_text::InputBuffer;
 use crate::plugin::input_text::default_input_text::DefaultInputTextPlugin;
 use crate::plugin::input_text::InputTextPlugin;
 use crate::prelude::*;
 
-const ZERO_CONNECTION_BYTES: &[u8] = &[0, 0, 0, 0];
-
 /// Applies input-text normalization used by tokenizer input processing.
 ///
 /// By default, this uses `DefaultInputTextPlugin`. When built from a dictionary,
 /// it applies that dictionary's configured input-text plugins.
-pub struct TextNormalizer<'a> {
-    source: TextNormalizerSource<'a>,
+pub struct TextNormalizer<D = DefaultInputTextPlugin> {
+    source: D,
     input: InputBuffer,
 }
 
-enum TextNormalizerSource<'a> {
-    Default(DefaultInputTextPlugin),
-    BorrowedDictionary(&'a (dyn DictionaryAccess + Sync)),
-    SharedDictionary(Arc<dyn DictionaryAccess + Sync + Send>),
-}
-
-impl<'a> TextNormalizer<'a> {
+impl TextNormalizer<DefaultInputTextPlugin> {
     /// Create a text normalizer using the default input-text plugin.
     pub fn new(grammar: &Grammar) -> SudachiResult<Self> {
         Ok(Self {
-            source: TextNormalizerSource::Default(set_up_default_plugin(grammar)?),
+            source: set_up_default_plugin(grammar)?,
             input: InputBuffer::new(),
         })
     }
 
     /// Create a text normalizer using the default input-text plugin and an empty grammar.
-    pub fn default() -> SudachiResult<Self> {
-        let grammar = empty_grammar()?;
+    pub fn try_default() -> SudachiResult<Self> {
+        let grammar = Grammar::empty();
         Self::new(&grammar)
     }
 
-    /// Create a text normalizer using the input-text plugins from a dictionary.
-    pub fn from_dictionary<D>(dictionary: &'a D) -> Self
-    where
-        D: DictionaryAccess + Sync + 'a,
-    {
-        Self {
-            source: TextNormalizerSource::BorrowedDictionary(dictionary),
-            input: InputBuffer::new(),
-        }
+    pub fn normalize(&mut self, text: &str) -> SudachiResult<String> {
+        self.input.reset().push_str(text);
+        self.input.start_build()?;
+        self.source.rewrite(&mut self.input)?;
+        Ok(self.input.current().to_owned())
     }
+}
 
-    /// Create a text normalizer using the input-text plugins from a shared dictionary handle.
-    pub fn from_shared_dictionary<D>(dictionary: Arc<D>) -> TextNormalizer<'static>
-    where
-        D: DictionaryAccess + Sync + Send + 'static,
-    {
-        let dictionary: Arc<dyn DictionaryAccess + Sync + Send> = dictionary;
-        TextNormalizer {
-            source: TextNormalizerSource::SharedDictionary(dictionary),
+impl<D> TextNormalizer<D>
+where
+    D: DictionaryAccess,
+{
+    /// Create a text normalizer using the input-text plugins from a dictionary.
+    pub fn from_dictionary(dictionary: D) -> Self {
+        Self {
+            source: dictionary,
             input: InputBuffer::new(),
         }
     }
@@ -84,16 +71,18 @@ impl<'a> TextNormalizer<'a> {
     pub fn normalize(&mut self, text: &str) -> SudachiResult<String> {
         self.input.reset().push_str(text);
         self.input.start_build()?;
-        match &self.source {
-            TextNormalizerSource::Default(plugin) => plugin.rewrite(&mut self.input)?,
-            TextNormalizerSource::BorrowedDictionary(dictionary) => {
-                rewrite_with_dictionary(*dictionary, &mut self.input)?;
-            }
-            TextNormalizerSource::SharedDictionary(dictionary) => {
-                rewrite_with_dictionary(dictionary.as_ref(), &mut self.input)?;
-            }
-        }
+        rewrite_with_dictionary(&self.source, &mut self.input)?;
         Ok(self.input.current().to_owned())
+    }
+}
+
+impl<D> TextNormalizer<Arc<D>>
+where
+    D: DictionaryAccess + ?Sized,
+{
+    /// Create a text normalizer using the input-text plugins from a shared dictionary handle.
+    pub fn from_shared_dictionary(dictionary: Arc<D>) -> Self {
+        TextNormalizer::from_dictionary(dictionary)
     }
 }
 
@@ -106,11 +95,6 @@ fn set_up_default_plugin(grammar: &Grammar) -> SudachiResult<DefaultInputTextPlu
         grammar,
     )?;
     Ok(plugin)
-}
-
-fn empty_grammar() -> SudachiResult<Grammar<'static>> {
-    let connection = ConnectionMatrix::from_bytes(ZERO_CONNECTION_BYTES)?;
-    Ok(Grammar::from_parts(PosList::default(), connection))
 }
 
 fn rewrite_with_dictionary<D>(dictionary: &D, input: &mut InputBuffer) -> SudachiResult<()>
@@ -168,7 +152,7 @@ mod tests {
     impl MockDictionary {
         fn new(input_text_plugins: Vec<Box<dyn InputTextPlugin + Sync + Send>>) -> Self {
             Self {
-                grammar: empty_grammar().unwrap(),
+                grammar: Grammar::empty(),
                 input_text_plugins,
                 oov_provider_plugins: Vec::new(),
                 path_rewrite_plugins: Vec::new(),
@@ -201,8 +185,8 @@ mod tests {
     }
 
     #[test]
-    fn default_normalizer_reuses_buffer() {
-        let mut normalizer = TextNormalizer::default().unwrap();
+    fn default_normalizer_works() {
+        let mut normalizer = TextNormalizer::try_default().unwrap();
 
         assert_eq!("abc", normalizer.normalize("ＡＢＣ").unwrap());
         assert_eq!("", normalizer.normalize("").unwrap());

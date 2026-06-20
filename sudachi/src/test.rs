@@ -15,18 +15,12 @@
  */
 
 use crate::dic::character_category::CharacterCategory;
-use crate::dic::connect::ConnectionMatrix;
 use crate::dic::grammar::Grammar;
-use crate::dic::pos::PosList;
 use lazy_static::lazy_static;
-
-const ZERO_CONNECTION_BYTES: &[u8] = &[0, 0, 0, 0];
 
 /// Returns Grammar with empty data
 pub fn zero_grammar() -> Grammar<'static> {
-    let connection = ConnectionMatrix::from_bytes(ZERO_CONNECTION_BYTES)
-        .expect("Failed to make connection matrix");
-    Grammar::from_parts(PosList::default(), connection)
+    Grammar::empty()
 }
 
 const TEST_CHAR_DEF: &[u8] = include_bytes!("../tests/resources/char.def");

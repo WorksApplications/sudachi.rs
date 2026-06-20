@@ -14,11 +14,13 @@
  *  limitations under the License.
  */
 
+use std::sync::Arc;
+
 use pyo3::prelude::*;
 
 use sudachi::text_normalizer::TextNormalizer;
 
-use crate::dictionary::PyDictionary;
+use crate::dictionary::{PyDicData, PyDictionary};
 use crate::errors;
 
 /// A text normalizer.
@@ -31,13 +33,20 @@ use crate::errors;
 /// input-text normalization.
 #[pyclass(module = "sudachipy", name = "TextNormalizer")]
 pub struct PyTextNormalizer {
-    normalizer: TextNormalizer<'static>,
+    normalizer: PyTextNormalizerInner,
+}
+
+enum PyTextNormalizerInner {
+    Default(TextNormalizer),
+    Dictionary(TextNormalizer<Arc<PyDicData>>),
 }
 
 impl PyTextNormalizer {
     pub(crate) fn from_dictionary(dictionary: &PyDictionary) -> Self {
         Self {
-            normalizer: TextNormalizer::from_shared_dictionary(dictionary.data()),
+            normalizer: PyTextNormalizerInner::Dictionary(TextNormalizer::from_shared_dictionary(
+                dictionary.data(),
+            )),
         }
     }
 }
@@ -58,7 +67,9 @@ impl PyTextNormalizer {
         match dictionary {
             Some(dictionary) => Ok(PyTextNormalizer::from_dictionary(&dictionary)),
             None => Ok(Self {
-                normalizer: errors::wrap(TextNormalizer::default())?,
+                normalizer: PyTextNormalizerInner::Default(errors::wrap(
+                    TextNormalizer::try_default(),
+                )?),
             }),
         }
     }
@@ -73,7 +84,10 @@ impl PyTextNormalizer {
     #[pyo3(text_signature = "(self, /, text: str) -> str")]
     fn normalize(&mut self, py: Python<'_>, text: &str) -> PyResult<String> {
         errors::wrap_ctx(
-            py.detach(|| self.normalizer.normalize(text)),
+            py.detach(|| match &mut self.normalizer {
+                PyTextNormalizerInner::Default(normalizer) => normalizer.normalize(text),
+                PyTextNormalizerInner::Dictionary(normalizer) => normalizer.normalize(text),
+            }),
             "Error during text normalization",
         )
     }
