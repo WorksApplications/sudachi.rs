@@ -195,8 +195,9 @@ impl<'a> Trie<'a> {
                 }
             };
         }
-        match lanes {
-            0..=2 => dispatch!(2),
+        match lanes.clamp(1, Self::MAX_PREFETCH_LANES) {
+            1 => dispatch!(1),
+            2 => dispatch!(2),
             3..=4 => dispatch!(4),
             5..=6 => dispatch!(6),
             7..=8 => dispatch!(8),
@@ -377,7 +378,7 @@ mod tests {
             let input = text.as_bytes();
             let starts: Vec<usize> = (0..=input.len()).collect();
             let reference = scalar_reference(&trie, input, &starts);
-            for &lanes in &[1usize, 2, 3, 8, 16] {
+            for &lanes in &[1usize, 2, 4, 6, 8, 12, 16] {
                 for &prefetch in &[false, true] {
                     let got = batch_grouped(&trie, input, &starts, lanes, prefetch);
                     assert_eq!(
@@ -397,7 +398,7 @@ mod tests {
         // Non-contiguous, repeated, and out-of-order starts.
         let starts = [6usize, 0, 3, 0, 3];
         let reference = scalar_reference(&trie, input, &starts);
-        for &lanes in &[1usize, 2, 16] {
+        for &lanes in &[1usize, 2, 4, 16] {
             for &prefetch in &[false, true] {
                 let got = batch_grouped(&trie, input, &starts, lanes, prefetch);
                 assert_eq!(got, reference, "lanes={lanes} prefetch={prefetch}");

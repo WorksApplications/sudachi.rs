@@ -16,8 +16,9 @@
 
 //! Portable software-prefetch hint.
 
-/// Hint the CPU to pull the cache line containing `ptr` into L1. Never
-/// dereferences `ptr`, so any address is safe; a no-op where unsupported.
+/// Hint the CPU to fetch the cache line containing `ptr`. Does not dereference
+/// `ptr`, so any address is sound; callers must not rely on whether the hint is
+/// honored. A no-op on unsupported targets.
 #[inline(always)]
 pub fn prefetch_l1<T>(ptr: *const T) {
     #[cfg(target_arch = "x86_64")]
@@ -30,7 +31,7 @@ pub fn prefetch_l1<T>(ptr: *const T) {
         }
     }
 
-    #[cfg(target_arch = "x86")]
+    #[cfg(all(target_arch = "x86", target_feature = "sse"))]
     {
         // SAFETY: `_mm_prefetch` is a hint and never dereferences the pointer.
         unsafe {
@@ -51,7 +52,11 @@ pub fn prefetch_l1<T>(ptr: *const T) {
         }
     }
 
-    #[cfg(not(any(target_arch = "x86_64", target_arch = "x86", target_arch = "aarch64")))]
+    #[cfg(not(any(
+        target_arch = "x86_64",
+        all(target_arch = "x86", target_feature = "sse"),
+        target_arch = "aarch64"
+    )))]
     {
         let _ = ptr;
     }
