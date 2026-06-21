@@ -21,6 +21,7 @@ use crate::analysis::node::{LatticeNode, ResultNode};
 use crate::analysis::stateless_tokenizer::{dump_path, split_path};
 use crate::analysis::Mode;
 use crate::dic::connect::ConnectionMatrix;
+use crate::dic::lexicon::LexiconEntry;
 use crate::dic::lexicon_set::LexiconSet;
 use crate::dic::subset::InfoSubset;
 use crate::dic::word_info::WordInfo;
@@ -40,6 +41,10 @@ pub struct StatefulTokenizer<D> {
     top_path_ids: Vec<NodeIdx>,
     top_path: Option<Vec<ResultNode>>,
     subset: InfoSubset,
+    /// Per-boundary dictionary-match cache, reused across sentences.
+    match_cache: Vec<Vec<LexiconEntry>>,
+    /// Use the pipelined + prefetched dictionary lookup in `build_lattice`.
+    pipelined_lookup: bool,
 }
 
 impl<D: DictionaryAccess + Clone> StatefulTokenizer<D> {
@@ -67,7 +72,16 @@ impl<D: DictionaryAccess> StatefulTokenizer<D> {
             top_path_ids: Vec::new(),
             top_path: Some(Vec::new()),
             subset: InfoSubset::all(),
+            match_cache: Vec::new(),
+            pipelined_lookup: true,
         }
+    }
+
+    /// Enable or disable the pipelined + prefetched dictionary lookup. Output is
+    /// identical to the scalar path; this only affects performance. Returns the
+    /// previous value.
+    pub fn set_pipelined_lookup(&mut self, enabled: bool) -> bool {
+        std::mem::replace(&mut self.pipelined_lookup, enabled)
     }
 
     /// Set debug flag and returns the current one
@@ -228,6 +242,8 @@ impl<D: DictionaryAccess> StatefulTokenizer<D> {
             oov_providers: self.dictionary.oov_provider_plugins(),
             lexicon: self.dictionary.lexicon(),
             input: &self.input,
+            match_cache: &mut self.match_cache,
+            pipelined: self.pipelined_lookup,
         };
         builder.build_lattice()
     }
@@ -255,12 +271,25 @@ struct LatticeBuilder<'a> {
     input: &'a InputBuffer,
     lexicon: &'a LexiconSet<'a>,
     oov_providers: &'a [Box<dyn OovProviderPlugin + Sync + Send>],
+    match_cache: &'a mut Vec<Vec<LexiconEntry>>,
+    pipelined: bool,
 }
 
 impl<'a> LatticeBuilder<'a> {
     #[inline]
     fn build_lattice(&mut self) -> SudachiResult<()> {
         self.lattice.reset(self.input.current_chars().len());
+        if self.pipelined {
+            self.build_lattice_pipelined()
+        } else {
+            self.build_lattice_scalar()
+        }
+    }
+
+    /// Original lattice builder: one scalar common-prefix walk per reachable
+    /// boundary, interleaved with node insertion.
+    #[inline]
+    fn build_lattice_scalar(&mut self) -> SudachiResult<()> {
         let input_bytes = self.input.current().as_bytes();
 
         for (ch_off, &byte_off) in self.input.curr_byte_offsets().iter().enumerate() {
@@ -290,24 +319,89 @@ impl<'a> LatticeBuilder<'a> {
                 self.lattice.insert(node, self.matrix);
             }
 
-            // OOV
-            if self.input.can_oov_bow(ch_off) {
-                for provider in self.oov_providers {
-                    created = self.provide_oovs(ch_off, created, provider.as_ref())?;
-                }
-            }
-
-            if created.is_empty() {
-                let provider = self.oov_providers.last().unwrap();
-                created = self.provide_oovs(ch_off, created, provider.as_ref())?;
-            }
-
-            if created.is_empty() {
-                return Err(SudachiError::EosBosDisconnect);
-            }
+            self.insert_oovs(ch_off, created)?;
         }
         self.lattice.connect_eos(self.matrix)?;
 
+        Ok(())
+    }
+
+    /// Pre-compute every boundary's dictionary matches with overlapped trie
+    /// memory latency, then insert nodes for reachable boundaries in scalar
+    /// order. The walks depend only on the input, so precomputing them all is
+    /// exact; reachability still gates insertion.
+    #[inline]
+    fn build_lattice_pipelined(&mut self) -> SudachiResult<()> {
+        let input_bytes = self.input.current().as_bytes();
+
+        {
+            let lexicon = self.lexicon;
+            let starts = self.input.curr_byte_offsets();
+            let cache = &mut *self.match_cache;
+            if cache.len() < starts.len() {
+                cache.resize_with(starts.len(), Vec::new);
+            }
+            for bucket in cache.iter_mut() {
+                bucket.clear();
+            }
+            lexicon.lookup_batch(input_bytes, starts, |bucket, entry| {
+                cache[bucket].push(entry);
+            });
+        }
+
+        let boundaries = self.input.curr_byte_offsets().len();
+        for ch_off in 0..boundaries {
+            if !self.lattice.has_previous_node(ch_off) {
+                continue;
+            }
+
+            self.node_buffer.clear();
+            let mut created = CreatedWords::default();
+            for entry in &self.match_cache[ch_off] {
+                let (word_id, end) = (entry.word_id, entry.end);
+                if (end < input_bytes.len()) && !self.input.can_bow(end) {
+                    continue;
+                }
+                let (left_id, right_id, cost) = self.lexicon.get_word_param(word_id);
+                let end_c = self.input.ch_idx(end);
+                let node = Node::new(
+                    ch_off as u16,
+                    end_c as u16,
+                    left_id as u16,
+                    right_id as u16,
+                    cost,
+                    word_id,
+                );
+                created = created.add_word((end_c - ch_off) as i64);
+                self.node_buffer.push(node.clone());
+                self.lattice.insert(node, self.matrix);
+            }
+
+            self.insert_oovs(ch_off, created)?;
+        }
+        self.lattice.connect_eos(self.matrix)?;
+
+        Ok(())
+    }
+
+    /// OOV handling shared by both lattice builders. Mirrors the original
+    /// in-loop logic exactly.
+    #[inline]
+    fn insert_oovs(&mut self, ch_off: usize, mut created: CreatedWords) -> SudachiResult<()> {
+        if self.input.can_oov_bow(ch_off) {
+            for provider in self.oov_providers {
+                created = self.provide_oovs(ch_off, created, provider.as_ref())?;
+            }
+        }
+
+        if created.is_empty() {
+            let provider = self.oov_providers.last().unwrap();
+            created = self.provide_oovs(ch_off, created, provider.as_ref())?;
+        }
+
+        if created.is_empty() {
+            return Err(SudachiError::EosBosDisconnect);
+        }
         Ok(())
     }
 

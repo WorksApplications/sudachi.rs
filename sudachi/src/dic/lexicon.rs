@@ -129,6 +129,27 @@ impl<'a> Lexicon<'a> {
             })
     }
 
+    /// Pipelined + prefetched batch form of [`Lexicon::lookup`].
+    ///
+    /// Calls `emit(bucket, entry)` for every match; `bucket` indexes `starts`.
+    /// Within a bucket the order matches [`Lexicon::lookup`], so grouping by
+    /// `bucket` reproduces the scalar result.
+    #[inline]
+    pub fn lookup_batch<F: FnMut(usize, LexiconEntry)>(
+        &self,
+        input: &[u8],
+        starts: &[usize],
+        mut emit: F,
+    ) {
+        debug_assert!(self.lex_id < MAX_DICTIONARIES as u8);
+        self.trie
+            .common_prefix_batch(input, starts, |bucket, value, end| {
+                for eid in self.word_id_table.entries(value as usize) {
+                    emit(bucket, LexiconEntry::new(self.word_id(eid.as_raw()), end));
+                }
+            });
+    }
+
     /// Returns end offsets of trie prefixes that match given input.
     #[inline]
     pub(crate) fn lookup_prefix_ends(
