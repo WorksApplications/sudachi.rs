@@ -101,3 +101,13 @@ impl<'a> ConnectionMatrix<'a> {
         self.num_right
     }
 }
+
+impl ConnectionMatrix<'static> {
+    pub fn empty() -> Self {
+        ConnectionMatrix {
+            data: CowArray::from_owned(Vec::new()),
+            num_left: 0,
+            num_right: 0,
+        }
+    }
+}

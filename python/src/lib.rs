@@ -23,6 +23,7 @@ mod morpheme;
 mod pos_matcher;
 mod pretokenizer;
 mod projection;
+mod text_normalizer;
 mod tokenizer;
 
 /// SudachiPy raw module root.
@@ -32,6 +33,7 @@ mod tokenizer;
 fn sudachipy(_py: Python, m: &Bound<PyModule>) -> PyResult<()> {
     m.add_class::<dictionary::PyDictionary>()?;
     m.add_class::<dictionary::PyDictionaryEntryIterator>()?;
+    m.add_class::<text_normalizer::PyTextNormalizer>()?;
     m.add_class::<tokenizer::PySplitMode>()?;
     m.add_class::<tokenizer::PyTokenizer>()?;
     m.add_class::<morpheme::PyMorphemeListWrapper>()?;

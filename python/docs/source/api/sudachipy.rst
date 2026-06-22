@@ -16,6 +16,17 @@ Dictionary
    :members:
 
 
+TextNormalizer
+----------------------
+
+``TextNormalizer`` applies input-text plugins to raw input text.
+It does not perform morphological analysis or return morpheme normalized forms.
+Without a dictionary, it uses the default input-text normalization.
+
+.. autoclass:: sudachipy.TextNormalizer
+   :members:
+
+
 SplitMode
 ----------------------
 
@@ -52,4 +63,3 @@ WordInfo
 .. autoclass:: sudachipy.WordInfo
    :members:
    :undoc-members:
-

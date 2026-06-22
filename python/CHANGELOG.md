@@ -10,6 +10,7 @@ Also check [rust changelog](../CHANGELOG.md).
 
 - Add `Morpheme.dictionary_form_morpheme()` and `Morpheme.normalized_form_morpheme()`.
 - Added `Dictionary.entries()` and `Dictionary.lookup_all_entries()`.
+- Added `TextNormalizer` and `Dictionary.text_normalizer()`.
 
 ### Changed
 

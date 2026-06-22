@@ -43,6 +43,7 @@ use crate::morpheme::{PyMorpheme, PyMorphemeListWrapper};
 use crate::pos_matcher::PyPosMatcher;
 use crate::pretokenizer::PyPretokenizer;
 use crate::projection::{pyprojection, PyProjector};
+use crate::text_normalizer::PyTextNormalizer;
 use crate::tokenizer::{PySplitMode, PyTokenizer};
 
 pub(crate) struct PyDicData {
@@ -81,6 +82,12 @@ impl LexiconAccess for PyDicData {
 impl PyDicData {
     pub fn pos_of(&self, pos_id: u16) -> &Py<PyTuple> {
         &self.pos[pos_id as usize]
+    }
+}
+
+impl PyDictionary {
+    pub(crate) fn data(&self) -> Arc<PyDicData> {
+        self.dictionary.as_ref().unwrap().clone()
     }
 }
 
@@ -355,6 +362,15 @@ impl PyDictionary {
 
         let tok = PyTokenizer::new(dict, mode, fields | required_fields, projection);
         Ok(tok)
+    }
+
+    /// Creates a text normalizer from this dictionary.
+    ///
+    /// The returned normalizer applies the same input-text plugins that this
+    /// dictionary uses before tokenization.
+    #[pyo3(text_signature = "(self, /) -> TextNormalizer")]
+    fn text_normalizer(&self) -> PyTextNormalizer {
+        PyTextNormalizer::from_dictionary(self)
     }
 
     /// Creates a POS matcher object

@@ -1,5 +1,6 @@
 from .sudachipy import (
     Dictionary,
+    TextNormalizer,
     Tokenizer,
     SplitMode,
     MorphemeList,

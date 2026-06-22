@@ -385,7 +385,7 @@ fn dump_word_info<W: Write>(
             word_ids.push(entry);
         }
     }
-    let normalizer = TextNormalizer::new(&grammar)?;
+    let mut normalizer = TextNormalizer::new(&grammar)?;
     let ctx = WordInfoDumpCtx {
         grammar,
         lexicon,
