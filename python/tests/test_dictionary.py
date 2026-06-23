@@ -44,8 +44,8 @@ class TestDictionary(unittest.TestCase):
     def tearDown(self) -> None:
         self.dict_.close()
 
-    def test_create(self):
-        self.assertEqual(Tokenizer, type(self.dict_.create()))
+    def test_tokenizer(self):
+        self.assertEqual(Tokenizer, type(self.dict_.tokenizer()))
 
     def test_pos_of(self):
         self.assertIsNotNone(self.dict_.pos_of(0))

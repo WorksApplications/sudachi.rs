@@ -69,7 +69,7 @@ class MyTestCase(unittest.TestCase):
         self.assertIsNotNone(stats)
         cfg = replace(CFG_TEMPLATE, system=out_tmp)
         dict = sudachipy.Dictionary(config_path=cfg)
-        tok = dict.create()
+        tok = dict.tokenizer()
         result = tok.tokenize("東京にいく")
         self.assertEqual(result.size(), 3)
 
@@ -89,13 +89,13 @@ class MyTestCase(unittest.TestCase):
 
         cfg = replace(CFG_TEMPLATE, system=sys_dic, user=[u1_dic])
         dict = sudachipy.Dictionary(config=cfg)
-        tok = dict.create()
+        tok = dict.tokenizer()
         result = tok.tokenize("すだちにいく")
         self.assertEqual(result.size(), 3)
         self.assertEqual(result[0].dictionary_id(), 1)
         self.assertEqual(result[0].user_data(), "徳島県産")
 
-        subset_tok = dict.create(fields={"user_data"})
+        subset_tok = dict.tokenizer(fields={"user_data"})
         subset_result = subset_tok.tokenize("すだちにいく")
         self.assertEqual(subset_result[0].user_data(), "徳島県産")
 
@@ -122,7 +122,7 @@ class MyTestCase(unittest.TestCase):
 
         cfg = replace(CFG_TEMPLATE, system=sys_dic, user=[u1_dic, u2_dic])
         dict = sudachipy.Dictionary(config_path=cfg)
-        tok = dict.create()
+        tok = dict.tokenizer()
         result = tok.tokenize("かぼすにいく")
         self.assertEqual(result.size(), 3)
         self.assertEqual(result[0].dictionary_id(), 2)

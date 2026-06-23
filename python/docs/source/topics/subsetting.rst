@@ -2,7 +2,7 @@ WordInfo subsetting
 ===================
 
 It is possible to ask Suachi to return only a subset of fields in the WordInfo.
-To do that, you can use the ``fields`` parameter of the :py:meth:`sudachipy.Dictionary.create()` method.
+To do that, you can use the ``fields`` parameter of the :py:meth:`sudachipy.Dictionary.tokenizer()` method.
 The parameter accepts a set of strings, each one representing a field to be returned.
 By default, all fields are returned.
 
@@ -27,12 +27,12 @@ Allowed values:
 You need to load splits if you want to use :py:meth:`sudachipy.Morpheme.split` method.
 If performing the tokenization with non-default mode, the required splits will be loaded automatically and can be omitted.::
 
-    dic.create(SplitMode.B, fields=set()) # implicitly becomes fields={'split_b'}
+    dic.tokenizer(SplitMode.B, fields=set()) # implicitly becomes fields={'split_b'}
 
 To access user-defined dictionary data when field subsetting is enabled, load
 ``user_data`` explicitly.::
 
-    tokenizer = dic.create(fields={"surface", "user_data"})
+    tokenizer = dic.tokenizer(fields={"surface", "user_data"})
     morpheme = tokenizer.tokenize("すだち")[0]
     assert morpheme.user_data() == "徳島県産"
 

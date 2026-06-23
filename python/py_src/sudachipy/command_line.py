@@ -120,7 +120,7 @@ def _command_tokenize(args, print_usage):
         # precompute output POS strings
         pos_list = [",".join(ms) for ms in all_pos_matcher]
 
-        tokenizer_obj = dict_.create(mode=args.mode)
+        tokenizer_obj = dict_.tokenizer(mode=args.mode)
         input_ = fileinput.input(
             args.in_files, openhook=fileinput.hook_encoded("utf-8"))
         run(tokenizer_obj, input_, output, print_all,

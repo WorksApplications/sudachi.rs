@@ -195,6 +195,39 @@ pub struct PyDictionary {
     pub config: Config,
 }
 
+impl PyDictionary {
+    fn create_tokenizer<'py>(
+        &'py self,
+        mode: Option<&Bound<'py, PyAny>>,
+        fields: Option<&Bound<'py, PySet>>,
+        projection: Option<&Bound<'py, PyString>>,
+    ) -> PyResult<PyTokenizer> {
+        let mode = match mode {
+            Some(m) => extract_mode(m)?,
+            None => Mode::C,
+        };
+        let fields = parse_field_subset(fields)?;
+        let dict = self.dictionary.as_ref().unwrap().clone();
+
+        let (projection, required_fields) = if let Some(s) = projection {
+            let projection = errors::wrap(SurfaceProjection::try_from(s.to_str()?))?;
+            (pyprojection(projection, &dict), projection.required_subset())
+        } else {
+            (
+                dict.projection.clone(),
+                self.config.projection.required_subset(),
+            )
+        };
+
+        Ok(PyTokenizer::new(
+            dict,
+            mode,
+            fields | required_fields,
+            projection,
+        ))
+    }
+}
+
 #[pymethods]
 impl PyDictionary {
     /// Creates a sudachi dictionary.
@@ -334,34 +367,44 @@ impl PyDictionary {
         text_signature="(self, /, mode=SplitMode.C, fields=None, *, projection=None) -> Tokenizer",
         signature=(mode=None, fields=None, *, projection=None)
     )]
-    fn create<'py>(
+    fn tokenizer<'py>(
         &'py self,
+        _py: Python<'py>,
         mode: Option<&Bound<'py, PyAny>>,
         fields: Option<&Bound<'py, PySet>>,
         projection: Option<&Bound<'py, PyString>>,
     ) -> PyResult<PyTokenizer> {
-        let mode = match mode {
-            Some(m) => extract_mode(m)?,
-            None => Mode::C,
-        };
-        let fields = parse_field_subset(fields)?;
-        let dict = self.dictionary.as_ref().unwrap().clone();
+        self.create_tokenizer(mode, fields, projection)
+    }
 
-        let (projection, required_fields) = if let Some(s) = projection {
-            let projection = errors::wrap(SurfaceProjection::try_from(s.to_str()?))?;
-            (
-                pyprojection(projection, &dict),
-                projection.required_subset(),
-            )
-        } else {
-            (
-                dict.projection.clone(),
-                self.config.projection.required_subset(),
-            )
-        };
-
-        let tok = PyTokenizer::new(dict, mode, fields | required_fields, projection);
-        Ok(tok)
+    /// Creates a sudachi tokenizer.
+    ///
+    /// This method is deprecated, use :py:meth:`Dictionary.tokenizer` instead.
+    ///
+    /// :param mode: sets the analysis mode for this Tokenizer
+    /// :param fields: load only a subset of fields.
+    ///     See https://worksapplications.github.io/sudachi.rs/python/topics/subsetting.html.
+    /// :param projection: Projection override for created Tokenizer. See Config.projection for values.
+    ///
+    /// :type mode: SplitMode | str | None
+    /// :type fields: set[str] | None
+    /// :type projection: str | None
+    #[pyo3(
+        text_signature="(self, /, mode=SplitMode.C, fields=None, *, projection=None) -> Tokenizer",
+        signature=(mode=None, fields=None, *, projection=None)
+    )]
+    fn create<'py>(
+        &'py self,
+        py: Python<'py>,
+        mode: Option<&Bound<'py, PyAny>>,
+        fields: Option<&Bound<'py, PySet>>,
+        projection: Option<&Bound<'py, PyString>>,
+    ) -> PyResult<PyTokenizer> {
+        errors::warn_deprecation(
+            py,
+            c_str!("Dictionary.create() is deprecated, use Dictionary.tokenizer() instead"),
+        )?;
+        self.create_tokenizer(mode, fields, projection)
     }
 
     /// Creates a text normalizer from this dictionary.
