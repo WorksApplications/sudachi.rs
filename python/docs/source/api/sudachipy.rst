@@ -51,8 +51,6 @@ Morpheme
    :members:
 
 
-* Method ``Morpheme.get_word_info(self) -> WordInfo`` is deprecated.
-
 .. autoclass:: sudachipy.Morpheme
    :members:
 
