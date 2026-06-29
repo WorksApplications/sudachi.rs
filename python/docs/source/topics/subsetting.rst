@@ -15,7 +15,7 @@ Allowed values:
 * ``dictionary_form``
 * ``reading_form``
 * ``word_structure``
-* ``synonym_group_id``
+* ``synonym_group_ids``
 * ``user_data``
 * ``split_a``
 * ``split_b``
