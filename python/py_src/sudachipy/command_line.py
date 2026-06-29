@@ -74,7 +74,7 @@ def run(tokenizer, input_, output, print_all, pos_list, is_stdout):
                     m.dictionary_form(),
                     m.reading_form(),
                     str(m.dictionary_id()),
-                    '[{}]'.format(','.join([str(synonym_group_id) for synonym_group_id in m.synonym_group_ids()]))]
+                    '[{}]'.format(','.join([str(synonym_group_ids) for synonym_group_ids in m.synonym_group_ids()]))]
                 if m.is_oov():
                     list_info.append("(OOV)")
             output.write("\t".join(list_info))

@@ -72,7 +72,7 @@ fn get_dictionary_id() {
 }
 
 #[test]
-fn get_synonym_group_id() {
+fn get_synonym_group_ids() {
     let mut tok = TestTokenizer::new_built(Mode::C);
     let ms = tok.tokenize("京都");
     assert_eq!(1, ms.len());
