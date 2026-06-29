@@ -81,3 +81,8 @@ v0.7 での解決順は、指定のリソースディレクトリ > コンフィ
 ### (Python) WordInfo
 
 `WordInfo` クラスおよびそれを取得するメソッド `Morpheme.get_word_info` は廃止されました。
+
+### (Python) サブセットでの同義語IDの指定
+
+解析時に取得するフィールドを指定する [subsetting](../python/docs/source/topics/subsetting.rst) について、同義語グループIDを指定する値 `synonym_group_id` は廃止されました。
+代わりに `synonym_group_ids` を使用してください。
