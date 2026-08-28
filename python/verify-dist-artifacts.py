@@ -42,11 +42,6 @@ EXPECTED_WHEEL_TAGS = {
     "cp310-abi3-manylinux_2_28_aarch64",
     "cp310-abi3-manylinux_2_28_x86_64",
     "cp310-abi3-win_amd64",
-    "cp313-cp313t-macosx_10_13_universal2",
-    "cp313-cp313t-macosx_10_13_x86_64",
-    "cp313-cp313t-macosx_11_0_arm64",
-    "cp313-cp313t-manylinux_2_28_aarch64",
-    "cp313-cp313t-manylinux_2_28_x86_64",
     "cp314-cp314t-macosx_10_15_universal2",
     "cp314-cp314t-macosx_10_15_x86_64",
     "cp314-cp314t-macosx_11_0_arm64",
@@ -89,7 +84,6 @@ def check_wheel(path: Path) -> None:
 
     if not (
         "cp310-abi3" in path.name
-        or "cp313-cp313t" in path.name
         or "cp314-cp314t" in path.name
     ):
         fail(f"{path.name} has an unexpected Python ABI tag")

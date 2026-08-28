@@ -42,7 +42,7 @@ include = [
 ]
 
 [tool.cibuildwheel]
-build = "cp310-* cp313t-* cp314t-*"
+build = "cp310-* cp314t-*"
 skip = "*t-win* *-win32 *-musllinux_*"
 enable = ["cpython-prerelease", "cpython-freethreading"]
 build-frontend = "build[uv]"

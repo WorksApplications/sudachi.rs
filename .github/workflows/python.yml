@@ -47,3 +47,16 @@ jobs:
       - name: Build and test
         working-directory: ./python
         run: bash build_and_test.sh
+
+  reject-python-313t:
+    name: Reject Python 3.13t
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6.0.2
+      - name: Setup Python 3.13t
+        uses: actions/setup-python@v6.2.0
+        with:
+          python-version: "3.13t"
+      - name: Check explicit ImportError
+        run: python -m unittest discover -s python/tests -p test_unsupported_python.py

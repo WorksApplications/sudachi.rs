@@ -1,3 +1,15 @@
+import sys as _sys
+import sysconfig as _sysconfig
+
+if (
+    _sys.version_info[:2] == (3, 13)
+    and _sysconfig.get_config_var("Py_GIL_DISABLED")
+):
+    raise ImportError(
+        "SudachiPy does not support Python 3.13 free-threaded; "
+        "use regular Python 3.13 or Python 3.14 free-threaded instead."
+    )
+
 from .sudachipy import (
     Dictionary,
     Tokenizer,

@@ -151,7 +151,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, ubuntu-24.04-arm, windows-latest, macos-latest]
-        target: ["3.10", "3.11", "3.12", "3.13", "3.13t", "3.14", "3.14t"]
+        target: ["3.10", "3.11", "3.12", "3.13", "3.14", "3.14t"]
         include:
           - os: "ubuntu-latest"
             target: "sdist"
@@ -160,8 +160,6 @@ jobs:
             target: "sdist"
             python-version: "3.14"
         exclude:
-          - os: "windows-latest"
-            target: "3.13t"
           - os: "windows-latest"
             target: "3.14t"
 
@@ -189,10 +187,10 @@ jobs:
         # this must be after sudachipy install
         run: uv pip install --system sudachidict_core
       - name: Install dependencies (test pretokenizer)
-        if: ${{ !(runner.os == 'macOS' && (matrix.target == '3.13t' || matrix.target == '3.14t')) }}
+        if: ${{ !(runner.os == 'macOS' && matrix.target == '3.14t') }}
         run: uv pip install --system tokenizers
       - name: Install dependencies (test pretokenizer, macOS free-threaded)
-        if: ${{ runner.os == 'macOS' && (matrix.target == '3.13t' || matrix.target == '3.14t') }}
+        if: ${{ runner.os == 'macOS' && matrix.target == '3.14t' }}
         env:
           RUSTFLAGS: -C link-arg=-undefined -C link-arg=dynamic_lookup
         run: uv pip install --system tokenizers
