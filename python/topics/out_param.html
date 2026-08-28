@@ -89,7 +89,7 @@ Instead, it is possible to reuse MorphemeLists for multiple analysis runs.</p>
 <p>The basic usage pattern is to pass a <a class="reference internal" href="../api/sudachipy.html#sudachipy.MorphemeList" title="sudachipy.MorphemeList"><code class="xref py py-class docutils literal notranslate"><span class="pre">sudachipy.MorphemeList</span></code></a> as an out parameter to
 <a class="reference internal" href="../api/sudachipy.html#sudachipy.Tokenizer.tokenize" title="sudachipy.Tokenizer.tokenize"><code class="xref py py-meth docutils literal notranslate"><span class="pre">sudachipy.Tokenizer.tokenize()</span></code></a> method:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">tok</span> <span class="o">=</span> <span class="n">dic</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">Mode</span><span class="o">.</span><span class="n">A</span><span class="p">)</span>
-<span class="n">morphemes</span> <span class="o">=</span> <span class="n">tok</span><span class="o">.</span><span class="n">tokenize</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+<span class="n">morphemes</span> <span class="o">=</span> <span class="n">tok</span><span class="o">.</span><span class="n">tokenize</span><span class="p">(</span><span class="s2">""</span><span class="p">)</span>
 <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
     <span class="n">tok</span><span class="o">.</span><span class="n">tokenize</span><span class="p">(</span><span class="n">line</span><span class="p">,</span> <span class="n">out</span><span class="o">=</span><span class="n">morphemes</span><span class="p">)</span>
     <span class="n">process</span><span class="p">(</span><span class="n">morphemes</span><span class="p">)</span>
@@ -100,9 +100,9 @@ Instead, it is possible to reuse MorphemeLists for multiple analysis runs.</p>
 In it’s case, you should be careful because the resulting MorphemeList will refer to the
 data of the parent MorphemeList and will be invalidated when using the parent list as an
 output parameter:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ml1</span> <span class="o">=</span> <span class="n">tok</span><span class="o">.</span><span class="n">tokenize</span><span class="p">(</span><span class="s2">&quot;外国人参政権&quot;</span><span class="p">)</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ml1</span> <span class="o">=</span> <span class="n">tok</span><span class="o">.</span><span class="n">tokenize</span><span class="p">(</span><span class="s2">"外国人参政権"</span><span class="p">)</span>
 <span class="n">subl1</span> <span class="o">=</span> <span class="n">ml1</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">SplitMode</span><span class="o">.</span><span class="n">A</span><span class="p">)</span>
-<span class="n">tok</span><span class="o">.</span><span class="n">tokenize</span><span class="p">(</span><span class="s2">&quot;something&quot;</span><span class="p">,</span> <span class="n">out</span><span class="o">=</span><span class="n">ml1</span><span class="p">)</span>
+<span class="n">tok</span><span class="o">.</span><span class="n">tokenize</span><span class="p">(</span><span class="s2">"something"</span><span class="p">,</span> <span class="n">out</span><span class="o">=</span><span class="n">ml1</span><span class="p">)</span>
 <span class="n">subl1</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">surface</span><span class="p">()</span> <span class="c1"># can raise an exception!</span>
 </pre></div>
 </div>
