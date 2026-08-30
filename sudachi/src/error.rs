@@ -19,6 +19,7 @@ use std::io::Error;
 use thiserror::Error;
 
 use crate::config::ConfigError;
+#[cfg(feature = "build-dictionary")]
 use crate::dic::build::error::DicBuildError;
 use crate::dic::character_category::Error as CharacterCategoryError;
 use crate::dic::header::HeaderError;
@@ -100,6 +101,7 @@ pub enum SudachiError {
     #[error("Input is too long, it can't be more than {1} bytes, was {0}")]
     InputTooLong(usize, usize),
 
+    #[cfg(feature = "build-dictionary")]
     #[error(transparent)]
     DictionaryCompilationError(#[from] DicBuildError),
 

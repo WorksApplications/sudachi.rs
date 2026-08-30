@@ -14,17 +14,21 @@
  *  limitations under the License.
  */
 
-use libloading::{Library, Symbol};
 use serde_json::Value;
+
+#[cfg(not(target_family = "wasm"))]
+use libloading::{Library, Symbol};
 
 use crate::config::{Config, ConfigError};
 use crate::dic::grammar::Grammar;
 use crate::error::{SudachiError, SudachiResult};
+#[cfg(not(target_family = "wasm"))]
 use crate::plugin::PluginError;
 
 /// Holds loaded plugins, whether they are bundled
 /// or loaded from DSOs
 pub struct PluginContainer<T: PluginCategory + ?Sized> {
+    #[cfg(not(target_family = "wasm"))]
     libraries: Vec<Library>,
     plugins: Vec<<T as PluginCategory>::BoxType>,
 }
@@ -41,6 +45,7 @@ impl<T: PluginCategory + ?Sized> PluginContainer<T> {
 impl<T: PluginCategory + ?Sized> Drop for PluginContainer<T> {
     fn drop(&mut self) {
         self.plugins.clear();
+        #[cfg(not(target_family = "wasm"))]
         self.libraries.clear();
     }
 }
@@ -48,6 +53,7 @@ impl<T: PluginCategory + ?Sized> Drop for PluginContainer<T> {
 struct PluginLoader<'a, 'b, T: PluginCategory + ?Sized> {
     cfg: &'a Config,
     grammar: &'a mut Grammar<'b>,
+    #[cfg(not(target_family = "wasm"))]
     libraries: Vec<Library>,
     plugins: Vec<<T as PluginCategory>::BoxType>,
 }
@@ -81,6 +87,7 @@ fn make_system_specific_name(_s: &str) -> Option<String> {
     None
 }
 
+#[cfg(not(target_family = "wasm"))]
 fn system_specific_name(s: &str) -> Option<String> {
     if s.contains('.') {
         None
@@ -103,6 +110,7 @@ impl<'a, 'b, T: PluginCategory + ?Sized> PluginLoader<'a, 'b, T> {
         PluginLoader {
             cfg: config,
             grammar,
+            #[cfg(not(target_family = "wasm"))]
             libraries: Vec::new(),
             plugins: Vec::new(),
         }
@@ -119,6 +127,7 @@ impl<'a, 'b, T: PluginCategory + ?Sized> PluginLoader<'a, 'b, T> {
 
     pub fn freeze(self) -> PluginContainer<T> {
         PluginContainer {
+            #[cfg(not(target_family = "wasm"))]
             libraries: self.libraries,
             plugins: self.plugins,
         }
@@ -137,8 +146,15 @@ impl<'a, 'b, T: PluginCategory + ?Sized> PluginLoader<'a, 'b, T> {
                 }
             // Otherwise treat name as DSO
             } else {
-                let candidates = self.resolve_dso_names(name);
-                self.load_plugin_from_dso(&candidates)?
+                #[cfg(not(target_family = "wasm"))]
+                {
+                    let candidates = self.resolve_dso_names(name);
+                    self.load_plugin_from_dso(&candidates)?
+                }
+                #[cfg(target_family = "wasm")]
+                return Err(SudachiError::ConfigError(ConfigError::InvalidFormat(
+                    format!("DSO plugin loading is not supported on WASM: {}", name),
+                )))
             };
 
         <T as PluginCategory>::do_setup(&mut plugin, plugin_cfg, self.cfg, self.grammar)
@@ -147,6 +163,7 @@ impl<'a, 'b, T: PluginCategory + ?Sized> PluginLoader<'a, 'b, T> {
         Ok(())
     }
 
+    #[cfg(not(target_family = "wasm"))]
     fn resolve_dso_names(&self, name: &str) -> Vec<String> {
         let mut resolved = self.cfg.resolve_paths(name.to_owned());
 
@@ -158,6 +175,7 @@ impl<'a, 'b, T: PluginCategory + ?Sized> PluginLoader<'a, 'b, T> {
         resolved
     }
 
+    #[cfg(not(target_family = "wasm"))]
     fn try_load_library_from(candidates: &[String]) -> SudachiResult<(Library, &str)> {
         if candidates.is_empty() {
             return Err(SudachiError::PluginError(PluginError::InvalidDataFormat(
@@ -178,6 +196,7 @@ impl<'a, 'b, T: PluginCategory + ?Sized> PluginLoader<'a, 'b, T> {
         }))
     }
 
+    #[cfg(not(target_family = "wasm"))]
     fn load_plugin_from_dso(
         &mut self,
         candidates: &[String],
