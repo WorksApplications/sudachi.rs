@@ -13,7 +13,7 @@ Python 版についてはこちらを参照してください： [SudachiPy Docu
 Python 版のインストール：
 
 ```bash
-pip install --upgrade 'sudachipy>=0.6.10'
+pip install --upgrade 'sudachipy>=0.6.11'
 ```
 
 Rust 版のインストール：

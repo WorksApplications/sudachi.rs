@@ -15,7 +15,7 @@ Python implementation is also available: [SudachiPy Documentation](./python/READ
 Install Python version
 
 ```bash
-pip install --upgrade 'sudachipy>=0.6.10'
+pip install --upgrade 'sudachipy>=0.6.11'
 ```
 
 or Rust version

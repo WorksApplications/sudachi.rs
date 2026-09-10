@@ -41,7 +41,14 @@ use crate::projection::PyProjector;
 ///     If None, returns SplitMode.C.
 ///
 /// :type mode: str | None
-#[pyclass(module = "sudachipy.tokenizer", name = "SplitMode", eq, eq_int, frozen)]
+#[pyclass(
+    module = "sudachipy.tokenizer",
+    name = "SplitMode",
+    eq,
+    eq_int,
+    frozen,
+    from_py_object
+)]
 #[derive(Clone, PartialEq, Eq, Copy, Debug)]
 #[repr(u8)]
 pub enum PySplitMode {
@@ -136,6 +143,10 @@ impl PyTokenizer {
     /// :param out: tokenization results will be written into this MorphemeList, a new one will be created instead.
     ///    See https://worksapplications.github.io/sudachi.rs/python/topics/out_param.html for details.
     ///
+    /// A Tokenizer instance cannot be used concurrently from multiple threads.
+    /// For parallel tokenization, share a Dictionary and create one Tokenizer
+    /// per worker/thread. Concurrent calls raise sudachipy.errors.SudachiError.
+    ///
     /// :type text: str
     /// :type mode: SplitMode | str | None
     /// :type out: MorphemeList
@@ -145,7 +156,7 @@ impl PyTokenizer {
     )]
     #[allow(unused_variables)]
     fn tokenize<'py>(
-        &'py mut self,
+        self_: &Bound<'py, Self>,
         py: Python<'py>,
         text: &'py str,
         mode: Option<&Bound<'py, PyAny>>,
@@ -157,8 +168,19 @@ impl PyTokenizer {
             None => None,
             Some(m) => Some(extract_mode(m)?),
         };
-        let default_mode = mode.map(|m| self.tokenizer.set_mode(m));
-        let mut tokenizer = scopeguard::guard(&mut self.tokenizer, |t| {
+
+        let mut this = match self_.try_borrow_mut() {
+            Ok(this) => this,
+            Err(_) => {
+                return errors::wrap(Err(
+                    "Tokenizer is already in use. A Tokenizer instance cannot be used concurrently; create a separate Tokenizer per thread or guard calls externally",
+                ))
+            }
+        };
+
+        let projection = this.projection.clone();
+        let default_mode = mode.map(|m| this.tokenizer.set_mode(m));
+        let mut tokenizer = scopeguard::guard(&mut this.tokenizer, |t| {
             default_mode.map(|m| t.set_mode(m));
         });
 
@@ -175,15 +197,13 @@ impl PyTokenizer {
             None => {
                 let dict = tokenizer.dict_clone();
                 let morphemes = MorphemeList::empty(dict);
-                let wrapper =
-                    PyMorphemeListWrapper::from_components(morphemes, self.projection.clone());
+                let wrapper = PyMorphemeListWrapper::from_components(morphemes, projection.clone());
                 Bound::new(py, wrapper)?
             }
             Some(list) => list,
         };
 
         let dict = tokenizer.dict_clone();
-        let projection = self.projection.clone();
         let mut borrow = out_list.try_borrow_mut();
         let morphemes = match borrow {
             Ok(ref mut ms) => ms.replace_with_empty_list(dict, projection)?,

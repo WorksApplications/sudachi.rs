@@ -90,7 +90,7 @@ impl PyPosMatcher {
                 if x.is_none() {
                     return Ok(false);
                 }
-                Ok(x.str()?.to_str()? != pos[idx])
+                Ok(x.str()?.to_cow()?.as_ref() != pos[idx])
             };
             if elen > 0 && check(0)? {
                 continue;

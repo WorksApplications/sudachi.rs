@@ -21,6 +21,17 @@ Also check [python changelog](python/CHANGELOG.md).
 
 - Reject invalid, OOV, and special word IDs in exact-entry morpheme materialization instead of panicking.
 
+## [0.6.11](https://github.com/WorksApplications/sudachi.rs/releases/tag/v0.6.11) (2026-03-06)
+
+### Added
+
+- Add support for Apple embedded platforms (iOS, tvOS, watchOS, visionOS) by disabling dynamic plugin loading on those targets (#308)
+
+### Changed
+
+- Update dependencies and lockfiles for the 0.6.11 release series (#303, #309)
+- Update PyO3 to v0.27 as part of the Python 3.14 / 3.14t support work (#307)
+
 ## [0.6.10](https://github.com/WorksApplications/sudachi.rs/releases/tag/v0.6.10) (2025-01-10)
 
 ### Other

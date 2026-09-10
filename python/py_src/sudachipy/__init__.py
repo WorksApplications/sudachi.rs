@@ -1,3 +1,15 @@
+import sys as _sys
+import sysconfig as _sysconfig
+
+if (
+    _sys.version_info[:2] == (3, 13)
+    and _sysconfig.get_config_var("Py_GIL_DISABLED")
+):
+    raise ImportError(
+        "SudachiPy does not support Python 3.13 free-threaded; "
+        "use regular Python 3.13 or Python 3.14 free-threaded instead."
+    )
+
 from .sudachipy import (
     Dictionary,
     TextNormalizer,
@@ -14,7 +26,7 @@ from importlib import import_module as _import_module
 from importlib.util import find_spec as _find_spec
 from pathlib import Path as _Path
 
-__version__ = "0.6.11-a1"
+__version__ = "0.6.12-a1"
 
 _DEFAULT_RESOURCEDIR = _Path(__file__).resolve().parent / 'resources'
 _DEFAULT_SETTINGFILE = _DEFAULT_RESOURCEDIR / 'sudachi.json'

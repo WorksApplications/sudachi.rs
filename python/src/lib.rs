@@ -29,7 +29,7 @@ mod tokenizer;
 /// SudachiPy raw module root.
 ///
 /// Users should not use this directly.
-#[pymodule]
+#[pymodule(gil_used = false)]
 fn sudachipy(_py: Python, m: &Bound<PyModule>) -> PyResult<()> {
     m.add_class::<dictionary::PyDictionary>()?;
     m.add_class::<dictionary::PyDictionaryEntryIterator>()?;

@@ -1,7 +1,0 @@
-include Cargo.toml
-include Cargo.lock
-include pyproject.toml
-include ../LICENSE
-recursive-include src *
-recursive-include sudachi-lib *
-recursive-include resources *

@@ -10,8 +10,12 @@ cd "$DIR/.."
 PROFDATA=/tmp/sudachi-profdata
 MERGED_PROFDATA=${1}
 
-# Install rust
-curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain stable -y --no-modify-path --component llvm-tools
+# Install rust toolchain only when it is not already available in the image.
+if ! command -v rustc >/dev/null 2>&1; then
+  curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain stable -y --no-modify-path
+fi
+export PATH="$HOME/.cargo/bin:$PATH"
+rustup component add llvm-tools
 ## target-triple of the default toolchain
 TARGET_TRIPLE=$(rustc -vV | awk '/^host/ {print $2}')
 

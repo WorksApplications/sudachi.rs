@@ -1,7 +1,7 @@
 # SudachiPy
 
 [![PyPi version](https://img.shields.io/pypi/v/sudachipy.svg)](https://pypi.python.org/pypi/sudachipy/)
-[![](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/release/python-390/)
+[![](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/release/python-3100/)
 [Documentation](https://worksapplications.github.io/sudachi.rs/python)
 
 SudachiPy is a Python version of [Sudachi](https://github.com/WorksApplications/Sudachi), a Japanese morphological analyzer.
@@ -358,22 +358,22 @@ $ sudachipy -r path/to/sudachi.json
 
 #### Install sdist via pip
 
-1. Install python module `setuptools` and `setuptools-rust`.
-2. Run `./build-sdist.sh` in `python` dir.
+1. Install `uv`.
+2. Run `python/build-sdist.sh` from the repository root.
    - source distribution will be generated under `python/dist/` dir.
 3. Install it via pip: `pip install ./python/dist/SudachiPy-[version].tar.gz`
 
 #### Install develop build
 
-1. Install python module `setuptools` and `setuptools-rust`.
-2. Run `python3 -m pip install -e .` to install sudachipy (editable install).
+1. Install `uv`.
+2. Run `uv pip install -e .` from the repository root to install sudachipy (editable install).
 3. Now you can import the module by `import sudachipy`.
 
-ref: [setuptools-rust](https://github.com/PyO3/setuptools-rust)
+ref: [maturin](https://github.com/PyO3/maturin)
 
 ### Test
 
-Run `build_and_test.sh` to run the tests.
+Run `python/build_and_test.sh` to run the tests.
 
 ## Contact
 
