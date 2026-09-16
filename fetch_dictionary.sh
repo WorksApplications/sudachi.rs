@@ -3,7 +3,8 @@ set -eu
 
 DICT_VERSION=${1:-"latest"}
 DICT_TYPE=${2:-"core"}
-DICT_SHA256=${3:-${SUDACHI_DICT_SHA256:-}}
+DICT_FORMAT=${3:-"v1"}
+DICT_SHA256=${4:-${SUDACHI_DICT_SHA256:-}}
 
 DICT_NAME="sudachi-dictionary-${DICT_VERSION}-${DICT_TYPE}"
 DICT_ZIP="${DICT_NAME}.zip"
@@ -12,7 +13,7 @@ echo "Downloading a dictionary file \`${DICT_NAME}\` ..."
 echo
 
 curl -fL \
-    https://d2ej7fkh96fzlu.cloudfront.net/sudachidict/${DICT_NAME}.zip \
+    https://d2ej7fkh96fzlu.cloudfront.net/sudachidict/${DICT_FORMAT}/${DICT_NAME}.zip \
     > "${DICT_ZIP}"
 
 if [ -n "${DICT_SHA256}" ] ; then

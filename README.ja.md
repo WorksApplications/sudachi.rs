@@ -99,8 +99,8 @@ git clone https://github.com/WorksApplications/sudachi.rs.git
 # fetch latest core dictionary
 ./fetch_dictionary.sh
 
-# fetch dictionary of specified version and type
-./fetch_dictionary.sh 20241021 small
+# fetch dictionary of specified version, type, and format
+./fetch_dictionary.sh 20241021 small v1
 ```
 
 ### 3. ビルド

@@ -16,6 +16,7 @@ Also check [python changelog](python/CHANGELOG.md).
 
 - Changed `MorphemeList::lookup` to normalize queries with dictionary input-text
   plugins before indexed lookup, matching Java Sudachi behavior.
+- `fetch_dictionary.sh` targets V1 dictionary by default.
 
 ### Fixed
 
