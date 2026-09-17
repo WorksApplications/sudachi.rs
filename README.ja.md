@@ -89,11 +89,11 @@ git clone https://github.com/WorksApplications/sudachi.rs.git
 ### 2. Sudachi 辞書のダウンロード
 
 [WorksApplications/SudachiDict](https://github.com/WorksApplications/SudachiDict)から辞書の zip ファイル（ `small` 、 `core` 、 `full` から一つ選択）し、解凍して、必要であれば中にある `system_*.dic` ファイルをわかりやすい位置に置いてください。
-デフォルトの設定ファイルでは、辞書ファイルが `resources/system.dic` に存在していると指定しています（ファイル名が `system.dic` に変わっていることに注意）。
+デフォルトの設定ファイルでは、辞書ファイルが `$PWD/system.dic` に存在していると指定しています（ファイル名が `system.dic` に変わっていることに注意）。
 
 #### ダウンロードスクリプト
 
-上記のように手動で設置する以外に、レポジトリにあるスクリプトを使って自動的に辞書をダウンロードし `resources/system.dic` として設置することもできます。
+上記のように手動で設置する以外に、レポジトリにあるスクリプトを使って自動的に辞書をダウンロードし `./system.dic` として設置することもできます。
 
 ```sh
 # fetch latest core dictionary

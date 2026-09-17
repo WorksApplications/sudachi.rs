@@ -33,9 +33,9 @@ fi
 
 unzip -j "${DICT_ZIP}" -d "${DICT_NAME}"
 
-mv "${DICT_NAME}/system_${DICT_TYPE}.dic" resources/system.dic
+mv "${DICT_NAME}/system_${DICT_TYPE}.dic" system.dic
 
 rm -rf "${DICT_ZIP}" "${DICT_NAME}"
 
 echo
-echo "Placed a dictionary file to \`resources/system.dic\` ."
+echo "Placed a dictionary file to \`system.dic\` ."

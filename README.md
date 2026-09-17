@@ -92,11 +92,11 @@ git clone https://github.com/WorksApplications/sudachi.rs.git
 
 Sudachi requires a dictionary to operate.
 You can download a dictionary ZIP file from [WorksApplications/SudachiDict](https://github.com/WorksApplications/SudachiDict) (choose one from `small`, `core`, or `full`), unzip it, and place the `system_*.dic` file somewhere.
-By the default setting file, sudachi.rs assumes that it is placed at `resources/system.dic`.
+By the default setting file, sudachi.rs assumes that it is placed at `$PWD/system.dic`.
 
 #### Convenience Script
 
-Optionally, you can use the [`fetch_dictionary.sh`](fetch_dictionary.sh) shell script to download a dictionary and install it to `resources/system.dic` (overrides).
+Optionally, you can use the [`fetch_dictionary.sh`](fetch_dictionary.sh) shell script to download a dictionary and install it to `./system.dic` (overrides).
 
 ```sh
 # fetch latest core dictionary
