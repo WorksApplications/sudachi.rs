@@ -6,32 +6,51 @@ Also check [rust changelog](../CHANGELOG.md).
 
 ## [Unreleased]
 
+- 
+
+## [0.7.0](https://github.com/WorksApplications/sudachi.rs/releases/tag/v0.7.0) (2026-09-18)
+
+### Breaking changes
+
+See [migration guide](../docs/migration_guide.md) for details.
+
+- Binary dictionary format is changed (#316)
+  - You CANNOT use old (V0) format dictionary binary.
+- Signatures of many methods are changed
+
 ### Added
 
-- Added `Morpheme.dictionary_form_morpheme()` and `Morpheme.normalized_form_morpheme()`.
-- Added `Dictionary.entries()` and `Dictionary.lookup_all_entries()`.
-- Added `TextNormalizer` and `Dictionary.text_normalizer()`.
+- Added `Morpheme.dictionary_form_morpheme()` and `Morpheme.normalized_form_morpheme()`. (#333)
+- Added `Dictionary.entries()` and `Dictionary.lookup_all_entries()`. (#336)
+- Added `Dictionary.oov_morpheme` to create OOV morpheme.(#344)
+- Added `TextNormalizer` and `Dictionary.text_normalizer()`. (#349)
+- Added `Dictionary.tokenizer()` to create tokenizer instance. (#350)
 
 ### Changed
 
+- Make Python Tokenizer concurrent-use errors explicit (#331)
+- Abort when the user dict and the system dict do not match (#335)
 - Changed `Dictionary.lookup()` to normalize queries before indexed lookup,
-  matching Java Sudachi behavior.
-- Deprecate `Dictionary.create()` in favor of `Dictionary.tokenizer()`.
-- Update PyO3 to v0.29.2.
+  matching Java Sudachi behavior. (#336)
 - Migrate SudachiPy extension builds from setuptools-rust to maturin and produce
-  CPython abi3 wheels for Python 3.10 and later.
+  CPython abi3 wheels for Python 3.10 and later. (#341)
 - Linux wheels now target `manylinux_2_28`; older distributions with glibc
-  below 2.28 may need to build from sdist or upgrade their runtime.
+  below 2.28 may need to build from sdist or upgrade their runtime. (#341)
+- Update PyO3 to v0.29.2. (#360)
 
 ### Fixed
 
-- Preserve standalone form-morpheme split behavior when Python wraps Rust form entries.
+- Preserve standalone form-morpheme split behavior when Python wraps Rust form entries. (#333)
+
+### Deprecated
+
+- Deprecate `Dictionary.create()` in favor of `Dictionary.tokenizer()`. (#350)
 
 ### Removed
 
+- Remove Python 3.9 support. (#341)
 - Remove Python 3.13t support. Importing SudachiPy with Python 3.13t now raises
-  an explicit `ImportError`; regular Python 3.13 and Python 3.14t remain supported.
-- Remove Python 3.9 support.
+  an explicit `ImportError`; regular Python 3.13 and Python 3.14t remain supported. (#360)
 
 ## [0.6.11](https://github.com/WorksApplications/sudachi.rs/releases/tag/v0.6.11) (2026-03-06)
 
