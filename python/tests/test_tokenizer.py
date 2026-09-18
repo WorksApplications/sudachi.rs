@@ -16,6 +16,7 @@ import os
 import queue
 import threading
 import unittest
+import warnings
 
 from sudachipy import Dictionary, SplitMode
 from sudachipy.errors import SudachiError
@@ -28,7 +29,7 @@ class TestTokenizer(unittest.TestCase):
             os.path.abspath(__file__)), 'resources')
         self.dict_ = Dictionary(os.path.join(
             resource_dir, 'sudachi.json'), resource_dir)
-        self.tokenizer_obj = self.dict_.create()
+        self.tokenizer_obj = self.dict_.tokenizer()
 
     def test_split_mode_default(self):
         mode_c = SplitMode()
@@ -47,8 +48,15 @@ class TestTokenizer(unittest.TestCase):
         self.assertEqual(mode, SplitMode.C)
 
     def test_tokenizer_with_split_mode_str(self):
-        tok_a = self.dict_.create("A")
+        tok_a = self.dict_.tokenizer("A")
         self.assertEqual(tok_a.mode, SplitMode.A)
+
+    def test_create_is_deprecated_alias(self):
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            tok = self.dict_.create("A")
+        self.assertEqual(tok.mode, SplitMode.A)
+        self.assertTrue(any("Dictionary.create() is deprecated" in str(w.message) for w in caught))
 
     def test_tokenize_small_katanana_only(self):
         ms = self.tokenizer_obj.tokenize('ァ')
@@ -156,7 +164,7 @@ class TestTokenizer(unittest.TestCase):
     def test_tokenizer_subset(self):
         ms1 = self.tokenizer_obj.tokenize('東京都')
 
-        tok = self.dict_.create(fields={"pos"})
+        tok = self.dict_.tokenizer(fields={"pos"})
         ms2 = tok.tokenize('東京都')
         self.assertEqual(ms1[0].part_of_speech_id(), ms2[0].part_of_speech_id())
 

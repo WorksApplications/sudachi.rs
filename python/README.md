@@ -9,14 +9,15 @@ SudachiPy is a Python version of [Sudachi](https://github.com/WorksApplications/
 This is not a pure Python implementation, but bindings for the
 [Sudachi.rs](https://github.com/WorksApplications/sudachi.rs).
 
-## Binary wheels
+> **IMPORTANT**
+> v0.7 introduces a new dictionary binary format (V1). When upgrading from v0.6, update the system dictionary and rebuild all user dictionaries against the exact system dictionary that will be used at runtime. If you download dictionaries from a pinned URL, update it. See the [migration guide](docs/migration_guide.md).
 
-We provide binary builds for macOS (10.14+), Windows and Linux x86_64/aarch64 architecture.
-x86 32-bit architecture is not supported and is not tested.
-MacOS source builds seem to work on ARM-based (Aarch64) Macs,
-but this architecture also is not tested and require installing Rust toolchain and Cargo.
+> **CAUTION**
+> SudachiDict-* does not provide V1 dictionary yet (we are planning to support V1 from v202610xx).
+> You need to download V1 dictionary binary by yourself and explicitly specify its path.
 
-More information [here](https://worksapplications.github.io/sudachi.rs/python/topics/wheels.html).
+> **CAUTION**
+> Release v0.7.* is unstable. It may include breaking changes even between patch versions, so please pin the exact version and review release notes carefully before upgrading.
 
 ## TL;DR
 
@@ -43,7 +44,7 @@ EOS
 ```python
 from sudachipy import Dictionary, SplitMode
 
-tokenizer = Dictionary().create()
+tokenizer = Dictionary().tokenizer()
 
 morphemes = tokenizer.tokenize("国会議事堂前駅")
 print(morphemes[0].surface())  # '国会議事堂前駅'
@@ -157,7 +158,7 @@ See [API reference page](https://worksapplications.github.io/sudachi.rs/python/)
 ```python
 from sudachipy import Dictionary, SplitMode
 
-tokenizer_obj = Dictionary().create()
+tokenizer_obj = Dictionary().tokenizer()
 ```
 
 ```python
@@ -212,6 +213,9 @@ Dictionaries can be installed as Python packages `sudachidict_small`, `sudachidi
 
 The dictionary files are not in the package itself, but it is downloaded upon installation.
 
+> **IMPORTANT**
+> After v20260723, SudachiDict-* will provide the dictionary in V1 binary format. You can only use latter versions with SudachiPy v0.7, and you can only use that or former versions with SudachiPy v0.6.
+
 ### Dictionary option: command line
 
 You can specify the dictionary with the tokenize option `-s`.
@@ -246,19 +250,19 @@ class Dictionary(config=None, resource_dir=None, dict=None)
 from sudachipy import Dictionary
 
 # default: sudachidict_core
-tokenizer_obj = Dictionary().create()
+tokenizer_obj = Dictionary().tokenizer()
 
 # The dictionary given by the `systemDict` key in the config file (/path/to/sudachi.json) will be used
-tokenizer_obj = Dictionary(config="/path/to/sudachi.json").create()
+tokenizer_obj = Dictionary(config="/path/to/sudachi.json").tokenizer()
 
 # The dictionary specified by `dict` will be used.
-tokenizer_obj = Dictionary(dict="core").create()  # sudachidict_core (same as default)
-tokenizer_obj = Dictionary(dict="small").create()  # sudachidict_small
-tokenizer_obj = Dictionary(dict="full").create()  # sudachidict_full
+tokenizer_obj = Dictionary(dict="core").tokenizer()  # sudachidict_core (same as default)
+tokenizer_obj = Dictionary(dict="small").tokenizer()  # sudachidict_small
+tokenizer_obj = Dictionary(dict="full").tokenizer()  # sudachidict_full
 
 # The dictionary specified by `dict` overrides those defined in the config.
 # In the following code, `sudachidict_full` will be used regardless of a dictionary defined in the config file.
-tokenizer_obj = Dictionary(config="/path/to/sudachi.json", dict="full").create()
+tokenizer_obj = Dictionary(config="/path/to/sudachi.json", dict="full").tokenizer()
 ```
 
 ### Dictionary in The Setting File
@@ -315,7 +319,7 @@ required named arguments:
   -s file     system dictionary path
 ```
 
-About the dictionary file format, please refer to [this document](https://github.com/WorksApplications/Sudachi/blob/develop/docs/user_dict.md) (written in Japanese, English version is not available yet).
+About the dictionary file format, please refer to [this document](https://github.com/WorksApplications/Sudachi/blob/develop/docs/user_dict_v1.md) (written in Japanese, English version is not available yet).
 
 ## Customized System Dictionary
 
@@ -351,6 +355,15 @@ Then specify your `sudachi.json` with the `-r` option.
 ```bash
 $ sudachipy -r path/to/sudachi.json
 ```
+
+## Binary wheels
+
+We provide binary builds for macOS (10.14+), Windows and Linux x86_64/aarch64 architecture.
+x86 32-bit architecture is not supported and is not tested.
+MacOS source builds seem to work on ARM-based (Aarch64) Macs,
+but this architecture also is not tested and require installing Rust toolchain and Cargo.
+
+More information [here](https://worksapplications.github.io/sudachi.rs/python/topics/wheels.html).
 
 ## For Developers
 

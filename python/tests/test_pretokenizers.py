@@ -1,4 +1,4 @@
-#   Copyright (c) 2021 Works Applications Co., Ltd.
+#   Copyright (c) 2021-2026 Works Applications Co., Ltd.
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -12,6 +12,8 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import json
+import os
 import unittest
 
 import tokenizers
@@ -19,12 +21,28 @@ from tokenizers.models import WordLevel
 
 import sudachipy
 from sudachipy import MorphemeList
+from sudachipy import Dictionary
 from sudachipy.config import Config
 
 
 class PretokenizerTestCase(unittest.TestCase):
     def setUp(self) -> None:
-        self.dict = sudachipy.Dictionary()
+        config, resource_dir = self.setup_config()
+        self.dict = Dictionary(config=json.dumps(
+            config), resource_dir=resource_dir)
+
+    def setup_config(self):
+        resource_dir = os.path.join(os.path.dirname(
+            os.path.abspath(__file__)), 'resources')
+        config_path = os.path.join(resource_dir, 'sudachi_projection.json')
+        with open(config_path, encoding='utf-8') as fi:
+            config = json.load(fi)
+        return config, resource_dir
+
+    def setup_dict_with_projection(self, projection) -> Dictionary:
+        config, resource_dir = self.setup_config()
+        config["projection"] = projection
+        return Dictionary(config=json.dumps(config), resource_dir=resource_dir)
 
     def test_instantiates_default(self):
         pretok = self.dict.pre_tokenizer()
@@ -76,7 +94,8 @@ class PretokenizerTestCase(unittest.TestCase):
     def test_with_handler(self):
         def _handler(index, sentence: tokenizers.NormalizedString, ml: MorphemeList):
             return [tokenizers.NormalizedString(ml[0].part_of_speech()[0]), tokenizers.NormalizedString(str(len(ml)))]
-        pretok = self.dict.pre_tokenizer(sudachipy.SplitMode.A, handler=_handler)
+        pretok = self.dict.pre_tokenizer(
+            sudachipy.SplitMode.A, handler=_handler)
         vocab = {
             "[UNK]": 0,
             "名詞": 6,
@@ -87,9 +106,9 @@ class PretokenizerTestCase(unittest.TestCase):
         res = tok.encode("外国人参政権")
         self.assertEqual(res.ids, [6, 7])
 
-
     def test_with_projection(self):
-        pretok = self.dict.pre_tokenizer(sudachipy.SplitMode.A, projection="reading")
+        pretok = self.dict.pre_tokenizer(
+            sudachipy.SplitMode.A, projection="reading")
         vocab = {
             "[UNK]": 0,
             "ノム": 1,
@@ -103,8 +122,9 @@ class PretokenizerTestCase(unittest.TestCase):
         self.assertEqual([2, 5, 1, 3], res.ids)
 
     def test_projection_surface_override(self):
-        dictobj = sudachipy.Dictionary(config=sudachipy.config.Config(projection="reading"))
-        pretok = dictobj.pre_tokenizer(sudachipy.SplitMode.A, projection="surface")
+        dictobj = self.setup_dict_with_projection("reading")
+        pretok = dictobj.pre_tokenizer(
+            sudachipy.SplitMode.A, projection="surface")
         vocab = {
             "[UNK]": 0,
             "サケ": 1,

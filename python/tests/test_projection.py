@@ -1,4 +1,4 @@
-#   Copyright (c) 2023 Works Applications Co., Ltd.
+#   Copyright (c) 2023-2026 Works Applications Co., Ltd.
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -12,17 +12,31 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import json
+import os
 import unittest
 
 from sudachipy import Dictionary
 from sudachipy.config import Config
 
+
 class MyTestCase(unittest.TestCase):
     def setUp(self) -> None:
-        self.dict = Dictionary(config=Config(projection="reading"))
+        config, resource_dir = self.setup_config()
+        config["projection"] = "reading"
+        self.dict = Dictionary(config=json.dumps(
+            config), resource_dir=resource_dir)
+
+    def setup_config(self):
+        resource_dir = os.path.join(os.path.dirname(
+            os.path.abspath(__file__)), 'resources')
+        config_path = os.path.join(resource_dir, 'sudachi_projection.json')
+        with open(config_path, encoding='utf-8') as fi:
+            config = json.load(fi)
+        return config, resource_dir
 
     def test_projection_surface_override(self):
-        tok = self.dict.create(projection="surface")
+        tok = self.dict.tokenizer(projection="surface")
         morphs = tok.tokenize("酒を飲む人")
         self.assertEqual(4, morphs.size())
         self.assertEqual("酒", morphs[0].surface())
@@ -31,7 +45,7 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual("人", morphs[3].surface())
 
     def test_projection_reading(self):
-        tok = self.dict.create()
+        tok = self.dict.tokenizer()
         morphs = tok.tokenize("酒を飲む人")
         self.assertEqual(4, morphs.size())
         self.assertEqual("サケ", morphs[0].surface())
@@ -40,7 +54,7 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual("ヒト", morphs[3].surface())
 
     def test_projection_dictionary(self):
-        tok = self.dict.create(projection="dictionary")
+        tok = self.dict.tokenizer(projection="dictionary")
         morphs = tok.tokenize("酒を飲まなかった人")
         self.assertEqual(6, morphs.size())
         self.assertEqual("酒", morphs[0].surface())
@@ -51,7 +65,7 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual("人", morphs[5].surface())
 
     def test_projection_normalized(self):
-        tok = self.dict.create(projection="normalized")
+        tok = self.dict.tokenizer(projection="normalized")
         morphs = tok.tokenize("MEGAへ行く")
         self.assertEqual(3, morphs.size())
         self.assertEqual("メガ", morphs[0].surface())
@@ -60,7 +74,7 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual("行く", morphs[2].surface())
 
     def test_projection_dictionary_and_surface(self):
-        tok = self.dict.create(projection="dictionary_and_surface")
+        tok = self.dict.tokenizer(projection="dictionary_and_surface")
         morphs = tok.tokenize("酒を飲まなかった人")
         self.assertEqual(6, morphs.size())
         self.assertEqual("酒", morphs[0].surface())
@@ -71,7 +85,7 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual("人", morphs[5].surface())
 
     def test_projection_normalized_and_surface(self):
-        tok = self.dict.create(projection="normalized_and_surface")
+        tok = self.dict.tokenizer(projection="normalized_and_surface")
         morphs = tok.tokenize("MEGAへ行こう")
         self.assertEqual(3, morphs.size())
         self.assertEqual("メガ", morphs[0].surface())
@@ -80,7 +94,7 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual("行こう", morphs[2].surface())
 
     def test_projection_normalized_nouns(self):
-        tok = self.dict.create(projection="normalized_nouns")
+        tok = self.dict.tokenizer(projection="normalized_nouns")
         morphs = tok.tokenize("MEGAへ行こう")
         self.assertEqual(3, morphs.size())
         self.assertEqual("メガ", morphs[0].surface())

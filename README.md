@@ -10,6 +10,12 @@ sudachi.rs is a Rust implementation of [Sudachi](https://github.com/WorksApplica
 
 Python implementation is also available: [SudachiPy Documentation](./python/README.md).
 
+> **IMPORTANT**
+> v0.7 introduces a new dictionary format (V1). When upgrading from v0.6, you need to update the system dictionary and rebuild all user dictionaries against the exact system dictionary that will be used at runtime. The URL of the dictionary distribution page is also changed. See the [migration guide](docs/migration_guide.md).
+
+> **CAUTION**
+> Release v0.7.* is unstable. It may include breaking changes even between patch versions, so please pin the exact version and review release notes carefully before upgrading.
+
 ## TL;DR
 
 Install Python version
@@ -91,19 +97,28 @@ git clone https://github.com/WorksApplications/sudachi.rs.git
 ### 2. Download a Sudachi Dictionary
 
 Sudachi requires a dictionary to operate.
-You can download a dictionary ZIP file from [WorksApplications/SudachiDict](https://github.com/WorksApplications/SudachiDict) (choose one from `small`, `core`, or `full`), unzip it, and place the `system_*.dic` file somewhere.
-By the default setting file, sudachi.rs assumes that it is placed at `resources/system.dic`.
+There are three types of dictionaries.
 
-#### Convenience Script
+- Small: includes only the vocabulary of UniDic
+- Core: includes basic vocabulary (default)
+- Full: includes miscellaneous proper nouns
 
-Optionally, you can use the [`fetch_dictionary.sh`](fetch_dictionary.sh) shell script to download a dictionary and install it to `resources/system.dic` (overrides).
+Click [here](http://sudachi.s3-website-ap-northeast-1.amazonaws.com/sudachidict/v1) for pre-built dictionaries.
+Download and unzip a dictionary zip file (choose one of `small`, `core`, `full` of any version), and place the `system_*.dic` file somewhere.
+By the default setting file, sudachi.rs assumes that it is placed at `$PWD/system.dic`.
+
+For more details, see [WorksApplications/SudachiDict](https://github.com/WorksApplications/SudachiDict).
+
+#### Download Script
+
+Optionally, you can use the [`fetch_dictionary.sh`](fetch_dictionary.sh) shell script to download a dictionary and install it to `./system.dic` (overrides).
 
 ```sh
 # fetch latest core dictionary
 ./fetch_dictionary.sh
 
-# fetch dictionary of specified version and type
-./fetch_dictionary.sh 20241021 small
+# fetch dictionary of specified version, type, and format
+./fetch_dictionary.sh 20241021 small v1
 ```
 
 ### 3. Build
@@ -148,7 +163,7 @@ $ which sudachi
 /Users/<USER>/.cargo/bin/sudachi
 
 $ sudachi -h
-sudachi 0.6.0
+sudachi 0.8.2
 A Japanese tokenizer
 ...
 ```

@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2021-2024 Works Applications Co., Ltd.
+ *  Copyright (c) 2021-2026 Works Applications Co., Ltd.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -19,13 +19,22 @@ use std::path::Path;
 
 use memmap2::Mmap;
 
-use crate::analysis::stateless_tokenizer::DictionaryAccess;
+use crate::analysis::morpheme::SingleMorpheme;
 use crate::config::Config;
+use crate::dic::binary_loader::BinaryDictionary;
+use crate::dic::character_category::CharacterCategory;
+use crate::dic::description::Description;
+use crate::dic::error::DictionaryCompatibilityError;
 use crate::dic::grammar::Grammar;
+use crate::dic::lexicon::Lexicon;
 use crate::dic::lexicon_set::LexiconSet;
 use crate::dic::storage::{Storage, SudachiDicData};
-use crate::dic::{DictionaryLoader, LoadedDictionary};
-use crate::error::{SudachiError, SudachiResult};
+use crate::dic::subset::InfoSubset;
+use crate::dic::{
+    lookup_all_entries, DescriptionAccess, DictionaryAccess, LexiconAccess, ReferenceIdAccess,
+};
+use crate::error::SudachiError;
+use crate::error::SudachiResult;
 use crate::plugin::input_text::InputTextPlugin;
 use crate::plugin::oov::OovProviderPlugin;
 use crate::plugin::path_rewrite::PathRewritePlugin;
@@ -43,6 +52,7 @@ use crate::plugin::Plugins;
 pub struct JapaneseDictionary {
     storage: SudachiDicData,
     plugins: Plugins,
+    description: Description,
     //'static is a a lie, lifetime is the same with StorageBackend
     _grammar: Grammar<'static>,
     //'static is a a lie, lifetime is the same with StorageBackend
@@ -72,7 +82,12 @@ impl JapaneseDictionary {
             )
         }
 
-        Self::from_cfg_storage(cfg, sb)
+        let chardef = CharacterCategory::from_bytes(
+            &cfg.resolve_resource(&cfg.character_definition_file)?
+                .read_bytes()?,
+        )?;
+
+        Self::from_cfg_storage_chardef(cfg, sb, chardef)
     }
 
     /// Creates a dictionary from the specified configuration and storage
@@ -80,73 +95,71 @@ impl JapaneseDictionary {
         cfg: &Config,
         storage: SudachiDicData,
     ) -> SudachiResult<JapaneseDictionary> {
-        let mut basic_dict = LoadedDictionary::from_system_dictionary(
-            unsafe { storage.system_static_slice() },
-            cfg.complete_path(&cfg.character_definition_file)?.as_path(),
+        let chardef = CharacterCategory::from_bytes(
+            &cfg.resolve_resource(&cfg.character_definition_file)?
+                .read_bytes()?,
         )?;
-
-        let plugins = {
-            let grammar = &mut basic_dict.grammar;
-            Plugins::load(cfg, grammar)?
-        };
-
-        if plugins.oov.is_empty() {
-            return Err(SudachiError::NoOOVPluginProvided);
-        }
-
-        for p in plugins.connect_cost.plugins() {
-            p.edit(&mut basic_dict.grammar);
-        }
-
-        let mut dic = JapaneseDictionary {
-            storage,
-            plugins,
-            _grammar: basic_dict.grammar,
-            _lexicon: basic_dict.lexicon_set,
-        };
-
-        // this Vec is needed to prevent double borrowing of dic
-        let user_dicts: Vec<_> = dic.storage.user_static_slice();
-        for udic in user_dicts {
-            dic = dic.merge_user_dictionary(udic)?;
-        }
-
-        Ok(dic)
+        Self::from_cfg_storage_chardef(cfg, storage, chardef)
     }
 
+    #[deprecated(
+        since = "0.7.0",
+        note = "embedded resources are now resolved through Config; use from_cfg_storage instead"
+    )]
     /// Creates a dictionary from the specified configuration and storage, with embedded character definition
     pub fn from_cfg_storage_with_embedded_chardef(
         cfg: &Config,
         storage: SudachiDicData,
     ) -> SudachiResult<JapaneseDictionary> {
-        let mut basic_dict = LoadedDictionary::from_system_dictionary_embedded(unsafe {
-            storage.system_static_slice()
-        })?;
+        let chardef = CharacterCategory::from_embedded();
+        Self::from_cfg_storage_chardef(cfg, storage, chardef)
+    }
 
-        let plugins = {
-            let grammar = &mut basic_dict.grammar;
-            Plugins::load(cfg, grammar)?
-        };
+    pub fn from_cfg_storage_chardef(
+        cfg: &Config,
+        storage: SudachiDicData,
+        chardef: CharacterCategory,
+    ) -> SudachiResult<JapaneseDictionary> {
+        let system_binary =
+            BinaryDictionary::load_system(unsafe { storage.system_static_slice() })?;
+        let system_signature = system_binary.compatibility_key().to_owned();
+        let description = system_binary.description.clone();
 
+        let mut grammar = Grammar::from_system_binary(system_binary.grammar)?;
+        grammar.set_character_category(chardef);
+
+        let lexicon_set =
+            LexiconSet::from_system_binary(system_binary.lexicon, grammar.pos_list.len());
+
+        let plugins = { Plugins::load(cfg, &mut grammar)? };
         if plugins.oov.is_empty() {
             return Err(SudachiError::NoOOVPluginProvided);
         }
-
         for p in plugins.connect_cost.plugins() {
-            p.edit(&mut basic_dict.grammar);
+            p.edit(&mut grammar);
         }
 
         let mut dic = JapaneseDictionary {
             storage,
             plugins,
-            _grammar: basic_dict.grammar,
-            _lexicon: basic_dict.lexicon_set,
+            description,
+            _grammar: grammar,
+            _lexicon: lexicon_set,
         };
 
         // this Vec is needed to prevent double borrowing of dic
         let user_dicts: Vec<_> = dic.storage.user_static_slice();
-        for udic in user_dicts {
-            dic = dic.merge_user_dictionary(udic)?;
+        for (user_index, udic) in user_dicts.into_iter().enumerate() {
+            let user_dict = BinaryDictionary::load_user(udic)?;
+            if user_dict.compatibility_key() != system_signature {
+                return Err(DictionaryCompatibilityError::UserDictionary {
+                    user_index,
+                    system_signature: system_signature.clone(),
+                    user_reference: user_dict.compatibility_key().to_owned(),
+                }
+                .into());
+            }
+            dic = dic.merge_user_dictionary(user_dict)?;
         }
 
         Ok(dic)
@@ -162,31 +175,100 @@ impl JapaneseDictionary {
         &self._lexicon
     }
 
-    fn merge_user_dictionary(mut self, dictionary_bytes: &'static [u8]) -> SudachiResult<Self> {
-        let user_dict = DictionaryLoader::read_user_dictionary(dictionary_bytes)?;
+    pub fn description(&self) -> &Description {
+        &self.description
+    }
 
+    /// Iterates over dictionary entries as standalone morphemes.
+    ///
+    /// This corresponds to public lexicon CSV rows. It includes entries that
+    /// are referred to from other entries, such as split or constituent units,
+    /// even when they are not indexed for normal lookup. Internal entries
+    /// automatically generated for literal normalized forms are not exposed.
+    /// The iteration order is not part of the public contract.
+    pub fn entries(&self) -> impl Iterator<Item = SudachiResult<SingleMorpheme<&Self>>> + '_ {
+        self.entries_subset(InfoSubset::all())
+    }
+
+    /// Iterates over dictionary entries, loading only the requested word-info fields.
+    pub fn entries_subset(
+        &self,
+        subset: InfoSubset,
+    ) -> impl Iterator<Item = SudachiResult<SingleMorpheme<&Self>>> + '_ {
+        self.lexicon()
+            .word_ids()
+            .map(move |word_id| SingleMorpheme::from_word_id(self, word_id?, subset))
+    }
+
+    /// Looks up all dictionary entries whose normalized surface matches `surface`.
+    ///
+    /// This normalizes the query using dictionary input-text plugins and scans
+    /// every public lexicon entry. It can find entries that are not indexed for
+    /// normal lookup. Use `lookup` for normal indexed lookup.
+    pub fn lookup_all_entries(&self, surface: &str) -> SudachiResult<Vec<SingleMorpheme<&Self>>> {
+        self.lookup_all_entries_subset(surface, InfoSubset::all())
+    }
+
+    /// Looks up all matching dictionary entries, loading only requested fields.
+    pub fn lookup_all_entries_subset(
+        &self,
+        surface: &str,
+        subset: InfoSubset,
+    ) -> SudachiResult<Vec<SingleMorpheme<&Self>>> {
+        lookup_all_entries(self, surface, subset)
+    }
+
+    /// Creates an out-of-vocabulary standalone morpheme from the pos id and the surface.
+    ///
+    /// Uses the surface for reading, normalized, and dictionary forms.
+    pub fn oov_morpheme(&self, pos_id: u16, surface: &str) -> SudachiResult<SingleMorpheme<&Self>> {
+        self.oov_morpheme_with_forms(pos_id, surface, surface, surface, surface)
+    }
+
+    /// Creates an out-of-vocabulary standalone morpheme from the pos id and string forms.
+    pub fn oov_morpheme_with_forms(
+        &self,
+        pos_id: u16,
+        surface: &str,
+        reading: &str,
+        normalized_form: &str,
+        dictionary_form: &str,
+    ) -> SudachiResult<SingleMorpheme<&Self>> {
+        SingleMorpheme::oov(
+            self,
+            pos_id,
+            surface.to_owned(),
+            reading.to_owned(),
+            normalized_form.to_owned(),
+            dictionary_form.to_owned(),
+        )
+    }
+
+    fn merge_user_dictionary(
+        mut self,
+        user_dict: BinaryDictionary<'static>,
+    ) -> SudachiResult<Self> {
         // we need to update lexicon first, since it needs the current number of pos
-        let mut user_lexicon = user_dict.lexicon;
+        let mut user_lexicon = Lexicon::from_binary(user_dict.lexicon);
         user_lexicon.update_cost(&self)?;
-
         self._lexicon
             .append(user_lexicon, self._grammar.pos_list.len())?;
 
-        if let Some(g) = user_dict.grammar {
-            self._grammar.merge(g);
-        }
+        self._grammar.merge_binary(user_dict.grammar);
 
         Ok(self)
+    }
+}
+
+impl LexiconAccess for JapaneseDictionary {
+    fn lexicon(&self) -> &LexiconSet<'_> {
+        self.lexicon()
     }
 }
 
 impl DictionaryAccess for JapaneseDictionary {
     fn grammar(&self) -> &Grammar<'_> {
         self.grammar()
-    }
-
-    fn lexicon(&self) -> &LexiconSet<'_> {
-        self.lexicon()
     }
 
     fn input_text_plugins(&self) -> &[Box<dyn InputTextPlugin + Sync + Send>] {
@@ -199,5 +281,19 @@ impl DictionaryAccess for JapaneseDictionary {
 
     fn path_rewrite_plugins(&self) -> &[Box<dyn PathRewritePlugin + Sync + Send>] {
         self.plugins.path_rewrite.plugins()
+    }
+}
+
+impl DescriptionAccess for JapaneseDictionary {
+    fn description(&self) -> &Description {
+        &self.description
+    }
+}
+
+impl ReferenceIdAccess for JapaneseDictionary {
+    fn reference_ids(&self) -> std::collections::HashMap<u32, String> {
+        BinaryDictionary::load_system(unsafe { self.storage.system_static_slice() })
+            .and_then(|dict| dict.reference_id_table())
+            .unwrap_or_default()
     }
 }

@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2021-2024 Works Applications Co., Ltd.
+ *  Copyright (c) 2021-2026 Works Applications Co., Ltd.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -24,22 +24,26 @@ use pyo3::ffi::c_str;
 use pyo3::prelude::*;
 use pyo3::types::{PySet, PyString, PyTuple};
 
-use sudachi::analysis::stateless_tokenizer::DictionaryAccess;
+use sudachi::analysis::morpheme::SingleMorpheme;
 use sudachi::analysis::Mode;
 use sudachi::config::{Config, ConfigBuilder, SurfaceProjection};
 use sudachi::dic::dictionary::JapaneseDictionary;
 use sudachi::dic::grammar::Grammar;
-use sudachi::dic::lexicon_set::LexiconSet;
+use sudachi::dic::lexicon_set::{LexiconSet, WordIdCursor};
 use sudachi::dic::subset::InfoSubset;
+use sudachi::dic::{DictionaryAccess, LexiconAccess};
+use sudachi::error::SudachiResult;
+use sudachi::input_text::InputBuffer;
 use sudachi::plugin::input_text::InputTextPlugin;
 use sudachi::plugin::oov::OovProviderPlugin;
 use sudachi::plugin::path_rewrite::PathRewritePlugin;
 
 use crate::errors;
-use crate::morpheme::PyMorphemeListWrapper;
+use crate::morpheme::{PyMorpheme, PyMorphemeListWrapper};
 use crate::pos_matcher::PyPosMatcher;
 use crate::pretokenizer::PyPretokenizer;
 use crate::projection::{pyprojection, PyProjector};
+use crate::text_normalizer::PyTextNormalizer;
 use crate::tokenizer::{PySplitMode, PyTokenizer};
 
 pub(crate) struct PyDicData {
@@ -56,10 +60,6 @@ impl DictionaryAccess for PyDicData {
         self.dictionary.grammar()
     }
 
-    fn lexicon(&self) -> &LexiconSet<'_> {
-        self.dictionary.lexicon()
-    }
-
     fn input_text_plugins(&self) -> &[Box<dyn InputTextPlugin + Sync + Send>] {
         self.dictionary.input_text_plugins()
     }
@@ -73,9 +73,100 @@ impl DictionaryAccess for PyDicData {
     }
 }
 
+impl LexiconAccess for PyDicData {
+    fn lexicon(&self) -> &LexiconSet<'_> {
+        self.dictionary.lexicon()
+    }
+}
+
 impl PyDicData {
     pub fn pos_of(&self, pos_id: u16) -> &Py<PyTuple> {
         &self.pos[pos_id as usize]
+    }
+}
+
+impl PyDictionary {
+    pub(crate) fn data(&self) -> Arc<PyDicData> {
+        self.dictionary.as_ref().unwrap().clone()
+    }
+}
+
+/// Applies input-text plugins and leaves the rewritten text in `buffer.current()`.
+///
+/// This intentionally does not build grammar/index metadata and must only be
+/// used when the rewritten string is needed for comparison, not for morpheme
+/// offsets or analysis.
+fn rewrite_input_text_for_comparison(
+    dict: &PyDicData,
+    text: &str,
+    buffer: &mut InputBuffer,
+) -> SudachiResult<()> {
+    buffer.reset().push_str(text);
+    buffer.start_build()?;
+    for plugin in dict.input_text_plugins() {
+        plugin.rewrite(buffer)?;
+    }
+    Ok(())
+}
+
+fn lookup_all_dictionary_entries(
+    dict: Arc<PyDicData>,
+    surface: &str,
+    subset: InfoSubset,
+) -> SudachiResult<Vec<SingleMorpheme<Arc<PyDicData>>>> {
+    let mut query_buffer = InputBuffer::new();
+    rewrite_input_text_for_comparison(&dict, surface, &mut query_buffer)?;
+    let query = query_buffer.current().to_owned();
+    let mut entry_buffer = InputBuffer::new();
+    let mut result = Vec::new();
+
+    for word_id in dict.lexicon().word_ids() {
+        let word_id = word_id?;
+        let word_info = dict
+            .lexicon()
+            .get_word_info_subset(word_id, InfoSubset::HEADWORD)?;
+        rewrite_input_text_for_comparison(
+            &dict,
+            word_info.headword(dict.lexicon()),
+            &mut entry_buffer,
+        )?;
+        if entry_buffer.current() == query {
+            result.push(SingleMorpheme::from_word_id(dict.clone(), word_id, subset)?);
+        }
+    }
+
+    Ok(result)
+}
+
+#[pyclass(module = "sudachipy.dictionary", name = "DictionaryEntryIterator")]
+pub struct PyDictionaryEntryIterator {
+    dict: Arc<PyDicData>,
+    projection: PyProjector,
+    cursor: WordIdCursor,
+}
+
+#[pymethods]
+impl PyDictionaryEntryIterator {
+    fn __iter__(slf: PyRef<Self>) -> PyRef<Self> {
+        slf
+    }
+
+    fn __next__(&mut self) -> PyResult<Option<PyMorpheme>> {
+        let Some(word_id) = errors::wrap_ctx(
+            self.dict.lexicon().next_word_id(&mut self.cursor),
+            "failed to scan dictionary entries",
+        )?
+        else {
+            return Ok(None);
+        };
+        let morpheme = errors::wrap_ctx(
+            SingleMorpheme::from_word_id(self.dict.clone(), word_id, InfoSubset::all()),
+            "failed to load dictionary entry",
+        )?;
+        Ok(Some(PyMorpheme::single_backed(
+            morpheme,
+            self.projection.clone(),
+        )))
     }
 }
 
@@ -108,6 +199,42 @@ pub struct PyDictionary {
     pub config: Config,
 }
 
+impl PyDictionary {
+    fn create_tokenizer<'py>(
+        &'py self,
+        mode: Option<&Bound<'py, PyAny>>,
+        fields: Option<&Bound<'py, PySet>>,
+        projection: Option<&Bound<'py, PyString>>,
+    ) -> PyResult<PyTokenizer> {
+        let mode = match mode {
+            Some(m) => extract_mode(m)?,
+            None => Mode::C,
+        };
+        let fields = parse_field_subset(fields)?;
+        let dict = self.dictionary.as_ref().unwrap().clone();
+
+        let (projection, required_fields) = if let Some(s) = projection {
+            let projection = errors::wrap(SurfaceProjection::try_from(s.to_cow()?.as_ref()))?;
+            (
+                pyprojection(projection, &dict),
+                projection.required_subset(),
+            )
+        } else {
+            (
+                dict.projection.clone(),
+                self.config.projection.required_subset(),
+            )
+        };
+
+        Ok(PyTokenizer::new(
+            dict,
+            mode,
+            fields | required_fields,
+            projection,
+        ))
+    }
+}
+
 #[pymethods]
 impl PyDictionary {
     /// Creates a sudachi dictionary.
@@ -115,6 +242,12 @@ impl PyDictionary {
     /// If both config.systemDict and dict are not given, `sudachidict_core` is used.
     /// If both config.systemDict and dict are given, dict is used.
     /// If dict is an absolute path to a file, it is used as a dictionary.
+    ///
+    /// Resolution precedence is:
+    /// 1. `resource_dir` (if given).
+    /// 2. `path` field in the `config_file` (if set).
+    /// 3. The parent directory of the `config_file` (if given).
+    /// 4. The default resources.
     ///
     /// :param config_path: path to the configuration JSON file, config json as a string, or a [sudachipy.Config] object.
     /// :param config: alias to config_path, only one of them can be specified at the same time.
@@ -145,22 +278,16 @@ impl PyDictionary {
             return errors::wrap(Err("Both config and config_path options were specified at the same time, use one of them"));
         }
 
-        let default_config = read_default_config(py)?;
+        let mut builder = read_default_config(py)?;
 
-        let config_builder = match config.or(config_path) {
-            None => default_config,
-            Some(v) => read_config(v)?.fallback(&default_config),
-        };
+        if let Some(v) = config.or(config_path) {
+            builder = read_config(v)?.fallback_data(&builder);
+        }
 
-        let resource_dir = match resource_dir {
-            None => Some(get_default_resource_dir(py)?),
-            Some(v) => Some(v),
-        };
-
-        let dict_path = match dict.or(dict_type) {
-            None => None,
-            Some(dt) => Some(locate_system_dict(py, Path::new(dt))?),
-        };
+        if let Some(p) = resource_dir {
+            builder = builder.prepend_resolver_root(p);
+        }
+        builder = builder.push_resolver_root(get_default_resource_dir(py)?);
 
         if dict_type.is_some() {
             errors::warn_deprecation(
@@ -168,18 +295,12 @@ impl PyDictionary {
                 c_str!("Parameter dict_type of Dictionary() is deprecated, use dict instead"),
             )?
         }
-
-        let config_builder = match resource_dir {
-            Some(p) => config_builder.resource_path(p),
-            None => config_builder,
+        if let Some(dt) = dict.or(dict_type) {
+            let dict_path = locate_system_dict(py, Path::new(dt))?;
+            builder = builder.system_dict(dict_path)
         };
 
-        let config_builder = match dict_path {
-            Some(p) => config_builder.system_dict(p),
-            None => config_builder,
-        };
-
-        let mut config = config_builder.build();
+        let mut config = builder.build();
 
         // Load a dictionary from `sudachidict_core` as the default one.
         // For this behavior, the value of `systemDict` key in the default setting file must be
@@ -253,34 +374,53 @@ impl PyDictionary {
         text_signature="(self, /, mode=SplitMode.C, fields=None, *, projection=None) -> Tokenizer",
         signature=(mode=None, fields=None, *, projection=None)
     )]
-    fn create<'py>(
+    fn tokenizer<'py>(
         &'py self,
+        _py: Python<'py>,
         mode: Option<&Bound<'py, PyAny>>,
         fields: Option<&Bound<'py, PySet>>,
         projection: Option<&Bound<'py, PyString>>,
     ) -> PyResult<PyTokenizer> {
-        let mode = match mode {
-            Some(m) => extract_mode(m)?,
-            None => Mode::C,
-        };
-        let fields = parse_field_subset(fields)?;
-        let dict = self.dictionary.as_ref().unwrap().clone();
+        self.create_tokenizer(mode, fields, projection)
+    }
 
-        let (projection, required_fields) = if let Some(s) = projection {
-            let projection = errors::wrap(SurfaceProjection::try_from(s.to_cow()?.as_ref()))?;
-            (
-                pyprojection(projection, &dict),
-                projection.required_subset(),
-            )
-        } else {
-            (
-                dict.projection.clone(),
-                self.config.projection.required_subset(),
-            )
-        };
+    /// Creates a sudachi tokenizer.
+    ///
+    /// This method is deprecated, use :py:meth:`Dictionary.tokenizer` instead.
+    ///
+    /// :param mode: sets the analysis mode for this Tokenizer
+    /// :param fields: load only a subset of fields.
+    ///     See https://worksapplications.github.io/sudachi.rs/python/topics/subsetting.html.
+    /// :param projection: Projection override for created Tokenizer. See Config.projection for values.
+    ///
+    /// :type mode: SplitMode | str | None
+    /// :type fields: set[str] | None
+    /// :type projection: str | None
+    #[pyo3(
+        text_signature="(self, /, mode=SplitMode.C, fields=None, *, projection=None) -> Tokenizer",
+        signature=(mode=None, fields=None, *, projection=None)
+    )]
+    fn create<'py>(
+        &'py self,
+        py: Python<'py>,
+        mode: Option<&Bound<'py, PyAny>>,
+        fields: Option<&Bound<'py, PySet>>,
+        projection: Option<&Bound<'py, PyString>>,
+    ) -> PyResult<PyTokenizer> {
+        errors::warn_deprecation(
+            py,
+            c_str!("Dictionary.create() is deprecated, use Dictionary.tokenizer() instead"),
+        )?;
+        self.create_tokenizer(mode, fields, projection)
+    }
 
-        let tok = PyTokenizer::new(dict, mode, fields | required_fields, projection);
-        Ok(tok)
+    /// Creates a text normalizer from this dictionary.
+    ///
+    /// The returned normalizer applies the same input-text plugins that this
+    /// dictionary uses before tokenization.
+    #[pyo3(text_signature = "(self, /) -> TextNormalizer")]
+    fn text_normalizer(&self) -> PyTextNormalizer {
+        PyTextNormalizer::from_dictionary(self)
     }
 
     /// Creates a POS matcher object
@@ -378,14 +518,34 @@ impl PyDictionary {
             .call1((pretokenizer,))
     }
 
+    /// Iterates over dictionary entries as standalone morphemes.
+    ///
+    /// This iterates public lexicon entries. It includes entries that are
+    /// referred to from other entries, such as split or constituent units, even
+    /// when they are not indexed for normal lookup. Internal entries
+    /// automatically generated for literal normalized forms are not exposed.
+    /// The iteration order is not part of the public contract.
+    #[pyo3(text_signature = "(self, /) -> Iterator[Morpheme]")]
+    fn entries(&self) -> PyDictionaryEntryIterator {
+        let dict = self.dictionary.clone().unwrap();
+        let projection = dict.projection.clone();
+        let cursor = dict.lexicon().word_id_cursor();
+        PyDictionaryEntryIterator {
+            dict,
+            projection,
+            cursor,
+        }
+    }
+
     /// Look up morphemes in the binary dictionary without performing the analysis.
     ///
-    /// All morphemes from the dictionary with the given surface string are returned,
-    /// with the last user dictionary searched first and the system dictionary searched last.
+    /// The given surface is normalized before lookup. All morphemes from the
+    /// dictionary with the normalized surface string are returned, with the last
+    /// user dictionary searched first and the system dictionary searched last.
     /// Inside a dictionary, morphemes are outputted in-binary-dictionary order.
     /// Morphemes which are not indexed are not returned.
     ///
-    /// :param surface: find all morphemes with the given surface
+    /// :param surface: input surface; normalized before indexed lookup.
     /// :param out: if passed, reuse the given morpheme list instead of creating a new one.
     ///     See https://worksapplications.github.io/sudachi.rs/python/topics/out_param.html for details.
     ///
@@ -409,16 +569,115 @@ impl PyDictionary {
             }
         };
 
+        let dict = self.dictionary.clone().unwrap();
+        let projection = dict.projection.clone();
         // this needs to be a variable
         let mut borrow = l.try_borrow_mut();
         let out_list = match borrow {
-            Ok(ref mut ms) => ms.internal_mut(py),
+            Ok(ref mut ms) => ms.replace_with_empty_list(dict, projection)?,
             Err(_) => return errors::wrap(Err("out was used twice at the same time")),
         };
 
         out_list.clear();
         errors::wrap_ctx(out_list.lookup(surface, InfoSubset::all()), surface)?;
         Ok(l)
+    }
+
+    /// Look up morphemes by scanning all dictionary entries.
+    ///
+    /// The given surface is normalized before matching. This scans public
+    /// lexicon entries and can find entries which are not indexed for normal
+    /// lookup. This can be slow on large dictionaries; use `lookup()` for
+    /// normal indexed lookup.
+    ///
+    /// :param surface: find all morphemes whose normalized surface matches this value
+    /// :param out: if passed, reuse the given morpheme list instead of creating a new one.
+    ///
+    /// :type surface: str
+    /// :type out: MorphemeList | None
+    #[pyo3(
+        signature = (surface, out=None),
+        text_signature = "(self, /, surface, out=None) -> MorphemeList",
+    )]
+    fn lookup_all_entries<'py>(
+        &'py self,
+        py: Python<'py>,
+        surface: &'py str,
+        out: Option<Bound<'py, PyMorphemeListWrapper>>,
+    ) -> PyResult<Bound<'py, PyMorphemeListWrapper>> {
+        let dict = self.dictionary.clone().unwrap();
+        let projection = dict.projection.clone();
+        let singles = errors::wrap_ctx(
+            lookup_all_dictionary_entries(dict, surface, InfoSubset::all()),
+            surface,
+        )?;
+
+        match out {
+            None => Bound::new(py, PyMorphemeListWrapper::from_singles(singles, projection)),
+            Some(cell) => {
+                {
+                    let mut wrapper = match cell.try_borrow_mut() {
+                        Ok(wrapper) => wrapper,
+                        Err(_) => return errors::wrap(Err("out was used twice at the same time")),
+                    };
+                    wrapper.replace_with_singles(singles, projection);
+                }
+                Ok(cell)
+            }
+        }
+    }
+
+    /// Create an out-of-vocabulary morpheme from the POS id and string forms.
+    ///
+    /// Begin/end are set from the surface. When optional string forms are not
+    /// provided, the surface is used for them.
+    ///
+    /// :param pos_id: part-of-speech id of the morpheme
+    /// :param surface: surface of the morpheme
+    /// :param reading: reading form of the morpheme
+    /// :param normalized_form: normalized form of the morpheme
+    /// :param dictionary_form: dictionary form of the morpheme
+    ///
+    /// :type pos_id: int
+    /// :type surface: str
+    /// :type reading: str | None
+    /// :type normalized_form: str | None
+    /// :type dictionary_form: str | None
+    #[pyo3(
+        signature = (
+            pos_id,
+            surface,
+            reading=None,
+            normalized_form=None,
+            dictionary_form=None
+        ),
+        text_signature = "(self, /, pos_id, surface, reading=None, normalized_form=None, dictionary_form=None) -> Morpheme",
+    )]
+    fn oov_morpheme(
+        &self,
+        pos_id: u16,
+        surface: &str,
+        reading: Option<&str>,
+        normalized_form: Option<&str>,
+        dictionary_form: Option<&str>,
+    ) -> PyResult<PyMorpheme> {
+        let dict = self.dictionary.clone().unwrap();
+        let projection = dict.projection.clone();
+        let reading = reading.unwrap_or(surface);
+        let normalized_form = normalized_form.unwrap_or(surface);
+        let dictionary_form = dictionary_form.unwrap_or(surface);
+        let morpheme = errors::wrap_ctx(
+            SingleMorpheme::oov(
+                dict,
+                pos_id,
+                surface.to_owned(),
+                reading.to_owned(),
+                normalized_form.to_owned(),
+                dictionary_form.to_owned(),
+            ),
+            surface,
+        )?;
+        Ok(PyMorpheme::single_backed(morpheme, projection))
     }
 
     /// Close this dictionary.
@@ -554,15 +813,16 @@ fn parse_field_subset(data: Option<&Bound<PySet>>) -> PyResult<InfoSubset> {
     let mut subset = InfoSubset::empty();
     for elem in data.unwrap().iter() {
         subset |= match elem.str()?.to_cow()?.as_ref() {
-            "surface" => InfoSubset::SURFACE,
+            "surface" => InfoSubset::HEADWORD,
             "pos" | "pos_id" => InfoSubset::POS_ID,
             "normalized_form" => InfoSubset::NORMALIZED_FORM,
-            "dictionary_form" => InfoSubset::DIC_FORM_WORD_ID,
+            "dictionary_form" => InfoSubset::DICTIONARY_FORM,
             "reading_form" => InfoSubset::READING_FORM,
             "word_structure" => InfoSubset::WORD_STRUCTURE,
             "split_a" => InfoSubset::SPLIT_A,
             "split_b" => InfoSubset::SPLIT_B,
-            "synonym_group_id" => InfoSubset::SYNONYM_GROUP_ID,
+            "synonym_group_ids" => InfoSubset::SYNONYM_GROUP_IDS,
+            "user_data" => InfoSubset::USER_DATA,
             x => return errors::wrap(Err(format!("Invalid WordInfo field name {}", x))),
         };
     }

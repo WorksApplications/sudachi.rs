@@ -1,4 +1,4 @@
-#   Copyright (c) 2021 Works Applications Co., Ltd.
+#   Copyright (c) 2021-2026 Works Applications Co., Ltd.
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ class PosMatcherTestCase(unittest.TestCase):
             os.path.abspath(__file__)), 'resources')
         self.dict = Dictionary(os.path.join(
             resource_dir, 'sudachi.json'), resource_dir)
-        self.tokenizer_obj = self.dict.create()
+        self.tokenizer_obj = self.dict.tokenizer()
 
     def test_create_fn(self):
         m = self.dict.pos_matcher(lambda p: p[0] == "名詞")
@@ -35,11 +35,14 @@ class PosMatcherTestCase(unittest.TestCase):
         m = self.dict.pos_matcher([("名詞",)])
         self.assertEqual(list(m), [('名詞', '固有名詞', '地名', '一般', '*', '*'),
                                    ('名詞', '普通名詞', '一般', '*', '*', '*'),
-                                   ('名詞', '数詞', '*', '*', '*', '*')])
+                                   ('名詞', '数詞', '*', '*', '*', '*'),
+                                   ('名詞', '普通名詞', 'サ変可能', '*', '*', '*'),
+                                   ('名詞', '固有名詞', '一般', '*', '*', '*'),
+                                   ('名詞', '固有名詞', '人名', '一般', '*', '*')])
 
     def test_create_declarative_empty(self):
         m = self.dict.pos_matcher([()])
-        self.assertEqual(len(m), 9)
+        self.assertEqual(len(m), 15)
 
     def test_iter(self):
         m = self.dict.pos_matcher(lambda p: p[0] != "名詞")
@@ -48,6 +51,9 @@ class PosMatcherTestCase(unittest.TestCase):
                                    ('助詞', '格助詞', '*', '*', '*', '*'),
                                    ('動詞', '非自立可能', '*', '*', '五段-カ行', '終止形-一般'),
                                    ('動詞', '非自立可能', '*', '*', '五段-カ行', '連用形-促音便'),
+                                   ('空白', '*', '*', '*', '*', '*'),
+                                   ('補助記号', '一般', '*', '*', '*', '*'),
+                                   ('感動詞', '一般', '*', '*', '*', '*'),
                                    ('被子植物門', '双子葉植物綱', 'ムクロジ目', 'ミカン科', 'ミカン属', 'スダチ')])
 
     def test_skips(self):
@@ -56,7 +62,7 @@ class PosMatcherTestCase(unittest.TestCase):
                                    ('動詞', '非自立可能', '*', '*', '五段-カ行', '終止形-一般')])
 
     def test_match_nouns(self):
-        tok = self.dict.create(mode=sudachipy.SplitMode.A)
+        tok = self.dict.tokenizer(mode=sudachipy.SplitMode.A)
         m = self.dict.pos_matcher([("名詞",)])
         data = [x.surface() for x in tok.tokenize("東京に行く") if m(x)]
         self.assertEqual(data, ["東京"])
@@ -72,7 +78,8 @@ class PosMatcherTestCase(unittest.TestCase):
         m2 = self.dict.pos_matcher(lambda p: p[0] == "動詞")
         m3 = m1 & m2
         self.assertEqual(1, len(m3))
-        self.assertEqual(list(m3), [('動詞', '非自立可能', '*', '*', '五段-カ行', '終止形-一般')])
+        self.assertEqual(
+            list(m3), [('動詞', '非自立可能', '*', '*', '五段-カ行', '終止形-一般')])
 
     def test_difference(self):
         m1 = self.dict.pos_matcher(lambda p: p[5] == "終止形-一般")
@@ -84,7 +91,7 @@ class PosMatcherTestCase(unittest.TestCase):
     def test_invert(self):
         m1 = self.dict.pos_matcher(lambda p: p[5] == "終止形-一般")
         self.assertEqual(len(m1), 2)
-        self.assertEqual(len(~m1), 7)
+        self.assertEqual(len(~m1), 13)
 
 
 if __name__ == '__main__':

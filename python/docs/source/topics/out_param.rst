@@ -8,7 +8,7 @@ Instead, it is possible to reuse MorphemeLists for multiple analysis runs.
 The basic usage pattern is to pass a :py:class:`sudachipy.MorphemeList` as an out parameter to
 :py:meth:`sudachipy.Tokenizer.tokenize()` method::
 
-    tok = dic.create(Mode.A)
+    tok = dic.tokenizer(Mode.A)
     morphemes = tok.tokenize("")
     for line in data:
         tok.tokenize(line, out=morphemes)

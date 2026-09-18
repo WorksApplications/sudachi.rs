@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2021-2024 Works Applications Co., Ltd.
+ *  Copyright (c) 2021-2026 Works Applications Co., Ltd.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -19,10 +19,11 @@ use std::iter::FusedIterator;
 use std::ops::Range;
 
 use crate::analysis::inner::Node;
-use crate::dic::lexicon::word_infos::{WordInfo, WordInfoData};
+use crate::analysis::lattice::Lattice;
 use crate::dic::lexicon_set::LexiconSet;
 use crate::dic::subset::InfoSubset;
 use crate::dic::word_id::WordId;
+use crate::dic::word_info::{WordInfo, WordInfoResolver};
 use crate::input_text::InputBuffer;
 use crate::prelude::*;
 
@@ -84,6 +85,7 @@ pub struct ResultNode {
     total_cost: i32,
     begin_bytes: u16,
     end_bytes: u16,
+
     word_info: WordInfo,
 }
 
@@ -181,7 +183,7 @@ impl ResultNode {
     pub fn split<'a>(
         &'a self,
         mode: Mode,
-        lexicon: &'a LexiconSet<'a>,
+        lexicon_set: &'a LexiconSet<'a>,
         subset: InfoSubset,
         text: &'a InputBuffer,
     ) -> NodeSplitIterator<'a> {
@@ -194,7 +196,7 @@ impl ResultNode {
         NodeSplitIterator {
             splits,
             index: 0,
-            lexicon,
+            lexicon_set,
             subset,
             text,
             byte_offset: self.begin_bytes,
@@ -209,10 +211,9 @@ impl fmt::Display for ResultNode {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "{} {} {}{} {} {} {} {}",
+            "{} {} {} {} {} {} {}",
             self.begin(),
             self.end(),
-            self.word_info.surface(),
             self.word_id(),
             self.word_info().pos_id(),
             self.left_id(),
@@ -224,7 +225,7 @@ impl fmt::Display for ResultNode {
 
 pub struct NodeSplitIterator<'a> {
     splits: &'a [WordId],
-    lexicon: &'a LexiconSet<'a>,
+    lexicon_set: &'a LexiconSet<'a>,
     index: usize,
     subset: InfoSubset,
     text: &'a InputBuffer,
@@ -234,7 +235,7 @@ pub struct NodeSplitIterator<'a> {
     byte_end: u16,
 }
 
-impl Iterator for NodeSplitIterator<'_> {
+impl<'a> Iterator for NodeSplitIterator<'a> {
     type Item = ResultNode;
 
     #[inline]
@@ -250,14 +251,14 @@ impl Iterator for NodeSplitIterator<'_> {
         let word_id = self.splits[idx];
         // data comes from dictionary, panicking here is OK
         let word_info = self
-            .lexicon
+            .lexicon_set
             .get_word_info_subset(word_id, self.subset)
             .unwrap();
 
         let (char_end, byte_end) = if idx + 1 == self.splits.len() {
             (self.char_end, self.byte_end)
         } else {
-            let byte_end = byte_start as usize + word_info.head_word_length();
+            let byte_end = byte_start as usize + word_info.index_form_length();
             let char_end = self.text.ch_idx(byte_end);
             (char_end as u16, byte_end as u16)
         };
@@ -287,6 +288,7 @@ pub fn concat_nodes(
     begin: usize,
     end: usize,
     normalized_form: Option<String>,
+    resolver: &dyn WordInfoResolver,
 ) -> SudachiResult<Vec<ResultNode>> {
     if begin >= end {
         return Err(SudachiError::InvalidRange(begin, end));
@@ -295,99 +297,38 @@ pub fn concat_nodes(
     let end_bytes = path[end - 1].end_bytes();
     let beg_bytes = path[begin].begin_bytes();
 
-    let mut surface = String::with_capacity(end_bytes - beg_bytes);
+    let mut headword = String::with_capacity(end_bytes - beg_bytes);
     let mut reading_form = String::with_capacity(end_bytes - beg_bytes);
     let mut dictionary_form = String::with_capacity(end_bytes - beg_bytes);
-    let mut head_word_length: u16 = 0;
+    let mut index_form_length = 0;
 
     for node in path[begin..end].iter() {
-        let data = node.word_info().borrow_data();
-        surface.push_str(&data.surface);
-        reading_form.push_str(&data.reading_form);
-        dictionary_form.push_str(&data.dictionary_form);
-        head_word_length += data.head_word_length;
+        headword.push_str(node.word_info().headword(resolver));
+        reading_form.push_str(node.word_info().reading_form(resolver));
+        dictionary_form.push_str(node.word_info().dictionary_form(resolver));
+        index_form_length += node.word_info().index_form_length();
     }
 
     let normalized_form = normalized_form.unwrap_or_else(|| {
         let mut norm = String::with_capacity(end_bytes - beg_bytes);
         for node in path[begin..end].iter() {
-            norm.push_str(&node.word_info().borrow_data().normalized_form);
+            norm.push_str(node.word_info().normalized_form(resolver));
         }
         norm
     });
 
-    let pos_id = path[begin].word_info().pos_id();
+    let pos_id = path[begin].word_info().pos_id() as i16;
 
-    let new_wi = WordInfoData {
-        surface,
-        head_word_length,
+    let wid = WordId::oov(pos_id as u32);
+    let new_wi = WordInfo::new_with_strings(
         pos_id,
-        normalized_form,
+        index_form_length as i16,
+        wid,
+        headword,
         reading_form,
+        normalized_form,
         dictionary_form,
-        dictionary_form_word_id: -1,
-        ..Default::default()
-    };
-
-    let inner = Node::new(
-        path[begin].begin() as u16,
-        path[end - 1].end() as u16,
-        u16::MAX,
-        u16::MAX,
-        i16::MAX,
-        WordId::INVALID,
     );
-
-    let node = ResultNode::new(
-        inner,
-        path[end - 1].total_cost,
-        path[begin].begin_bytes,
-        path[end - 1].end_bytes,
-        new_wi.into(),
-    );
-
-    path[begin] = node;
-    path.drain(begin + 1..end);
-    Ok(path)
-}
-
-/// Concatenate the nodes in the range and set pos_id.
-pub fn concat_oov_nodes(
-    mut path: Vec<ResultNode>,
-    begin: usize,
-    end: usize,
-    pos_id: u16,
-) -> SudachiResult<Vec<ResultNode>> {
-    if begin >= end {
-        return Err(SudachiError::InvalidRange(begin, end));
-    }
-
-    let capa = path[end - 1].end_bytes() - path[begin].begin_bytes();
-
-    let mut surface = String::with_capacity(capa);
-    let mut head_word_length: u16 = 0;
-    let mut wid = WordId::from_raw(0);
-
-    for node in path[begin..end].iter() {
-        let data = node.word_info().borrow_data();
-        surface.push_str(&data.surface);
-        head_word_length += data.head_word_length;
-        wid = wid.max(node.word_id());
-    }
-
-    if !wid.is_oov() {
-        wid = WordId::new(wid.dic(), WordId::MAX_WORD);
-    }
-
-    let new_wi = WordInfoData {
-        normalized_form: surface.clone(),
-        dictionary_form: surface.clone(),
-        surface,
-        head_word_length,
-        pos_id,
-        dictionary_form_word_id: -1,
-        ..Default::default()
-    };
 
     let inner = Node::new(
         path[begin].begin() as u16,
@@ -403,7 +344,90 @@ pub fn concat_oov_nodes(
         path[end - 1].total_cost,
         path[begin].begin_bytes,
         path[end - 1].end_bytes,
-        new_wi.into(),
+        new_wi,
+    );
+
+    path[begin] = node;
+    path.drain(begin + 1..end);
+    Ok(path)
+}
+
+/// Concatenate the nodes in the range and set pos_id.
+pub fn concat_oov_nodes(
+    mut path: Vec<ResultNode>,
+    begin: usize,
+    end: usize,
+    pos_id: u16,
+    text: &InputBuffer,
+    lattice: &Lattice,
+    resolver: &dyn WordInfoResolver,
+) -> SudachiResult<Vec<ResultNode>> {
+    if begin >= end {
+        return Err(SudachiError::InvalidRange(begin, end));
+    }
+
+    let byte_begin = path[begin].begin_bytes;
+    let byte_end = path[end - 1].end_bytes;
+    let node_begin = path[begin].begin();
+    let node_end = path[end - 1].end();
+
+    // Use node in the path if exists.
+    if let Some((existing_node, cost)) = lattice.get_minimum_node(node_begin, node_end) {
+        if !existing_node.is_special_node() {
+            let word_info = if existing_node.is_oov() {
+                let surface = text
+                    .curr_slice_c(existing_node.begin()..existing_node.end())
+                    .to_owned();
+                WordInfo::new_oov(
+                    existing_node.word_id().entry().as_raw() as u16,
+                    surface.len() as i16,
+                    existing_node.word_id(),
+                    surface,
+                )
+            } else {
+                resolver
+                    .lexicon()
+                    .get_word_info_subset(existing_node.word_id(), InfoSubset::all())?
+            };
+            let node =
+                ResultNode::new(existing_node.clone(), cost, byte_begin, byte_end, word_info);
+            path[begin] = node;
+            path.drain(begin + 1..end);
+            return Ok(path);
+        }
+    }
+
+    // concat nodes in the range to compose new oov node
+    let capa = path[end - 1].end_bytes() - path[begin].begin_bytes();
+
+    let mut headword = String::with_capacity(capa);
+    let mut index_form_length = 0;
+    for node in path[begin..end].iter() {
+        headword.push_str(node.word_info().headword(resolver));
+        index_form_length += node.word_info().index_form_length();
+    }
+
+    // Synthetic concatenation in Java's concatenateOov() is always marked as OOV
+    // when we are not reusing an existing lattice node.
+    let wid = WordId::oov(pos_id as u32);
+
+    let new_wi = WordInfo::new_oov(pos_id, index_form_length as i16, wid, headword);
+
+    let inner = Node::new(
+        path[begin].begin() as u16,
+        path[end - 1].end() as u16,
+        u16::MAX,
+        u16::MAX,
+        i16::MAX,
+        wid,
+    );
+
+    let node = ResultNode::new(
+        inner,
+        path[end - 1].total_cost,
+        byte_begin,
+        byte_end,
+        new_wi,
     );
 
     path[begin] = node;

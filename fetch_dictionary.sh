@@ -3,7 +3,8 @@ set -eu
 
 DICT_VERSION=${1:-"latest"}
 DICT_TYPE=${2:-"core"}
-DICT_SHA256=${3:-${SUDACHI_DICT_SHA256:-}}
+DICT_FORMAT=${3:-"v1"}
+DICT_SHA256=${4:-${SUDACHI_DICT_SHA256:-}}
 
 DICT_NAME="sudachi-dictionary-${DICT_VERSION}-${DICT_TYPE}"
 DICT_ZIP="${DICT_NAME}.zip"
@@ -12,7 +13,7 @@ echo "Downloading a dictionary file \`${DICT_NAME}\` ..."
 echo
 
 curl -fL \
-    https://d2ej7fkh96fzlu.cloudfront.net/sudachidict/${DICT_NAME}.zip \
+    https://d2ej7fkh96fzlu.cloudfront.net/sudachidict/${DICT_FORMAT}/${DICT_NAME}.zip \
     > "${DICT_ZIP}"
 
 if [ -n "${DICT_SHA256}" ] ; then
@@ -32,9 +33,9 @@ fi
 
 unzip -j "${DICT_ZIP}" -d "${DICT_NAME}"
 
-mv "${DICT_NAME}/system_${DICT_TYPE}.dic" resources/system.dic
+mv "${DICT_NAME}/system_${DICT_TYPE}.dic" system.dic
 
 rm -rf "${DICT_ZIP}" "${DICT_NAME}"
 
 echo
-echo "Placed a dictionary file to \`resources/system.dic\` ."
+echo "Placed a dictionary file to \`system.dic\` ."

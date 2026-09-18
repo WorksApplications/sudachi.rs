@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2021-2024 Works Applications Co., Ltd.
+ *  Copyright (c) 2021-2026 Works Applications Co., Ltd.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ use regex::Regex;
 use crate::analysis::Mode;
 use crate::dic::build::error::{BuildFailure, DicWriteResult};
 use crate::dic::build::{MAX_ARRAY_LEN, MAX_DIC_STRING_LEN};
-use crate::dic::word_id::WordId;
+use crate::dic::word_id::WordRef;
 
 #[inline(always)]
 pub fn it_next<'a, I, T, F>(
@@ -46,8 +46,8 @@ where
     }
 }
 
-pub(crate) fn none_if_equal(surface: &str, data: Cow<str>) -> Option<String> {
-    if surface == data {
+pub(crate) fn none_if_equal(expected: &str, data: Cow<str>) -> Option<String> {
+    if expected == data {
         None
     } else {
         match data {
@@ -60,6 +60,7 @@ pub(crate) fn none_if_equal(surface: &str, data: Cow<str>) -> Option<String> {
 #[inline]
 pub(crate) fn parse_mode(data: &str) -> DicWriteResult<Mode> {
     match data.trim() {
+        "" => Ok(Mode::C),
         "a" | "A" => Ok(Mode::A),
         "b" | "B" => Ok(Mode::B),
         "c" | "C" | "*" => Ok(Mode::C),
@@ -85,29 +86,20 @@ pub(crate) fn parse_u32(data: &str) -> DicWriteResult<u32> {
 }
 
 #[inline]
-pub(crate) fn parse_dic_form(data: &str) -> DicWriteResult<WordId> {
-    if data == "*" {
-        Ok(WordId::INVALID)
-    } else {
-        parse_wordid(data)
-    }
-}
-
-#[inline]
-pub(crate) fn parse_wordid(data: &str) -> DicWriteResult<WordId> {
+pub(crate) fn parse_v0_line_ref(data: &str) -> DicWriteResult<WordRef> {
     if let Some(stripped) = data.strip_prefix('U') {
-        let wid = parse_wordid_raw(stripped);
-        wid.map(|w| WordId::new(1, w.word()))
+        let wref = parse_v0_line_ref_raw(stripped);
+        wref.map(|w| WordRef::new(false, w.entry().as_raw()))
     } else {
-        parse_wordid_raw(data)
+        parse_v0_line_ref_raw(data)
     }
 }
 
 #[inline]
-fn parse_wordid_raw(data: &str) -> DicWriteResult<WordId> {
+fn parse_v0_line_ref_raw(data: &str) -> DicWriteResult<WordRef> {
     match u32::from_str(data) {
-        Ok(v) => match WordId::checked(0, v) {
-            Ok(id) => Ok(id),
+        Ok(v) => match WordRef::checked(true, v) {
+            Ok(wref) => Ok(wref),
             Err(_) => Err(BuildFailure::InvalidWordId(data.to_owned())),
         },
         Err(_) => Err(BuildFailure::InvalidWordId(data.to_owned())),
@@ -115,17 +107,14 @@ fn parse_wordid_raw(data: &str) -> DicWriteResult<WordId> {
 }
 
 #[inline]
-pub(crate) fn parse_wordid_list(data: &str) -> DicWriteResult<Vec<WordId>> {
+pub(crate) fn parse_u32_list_with_asterisk(
+    data: &str,
+    allow_asterisk: bool,
+) -> DicWriteResult<Vec<u32>> {
     if data.is_empty() || data == "*" {
-        return Ok(Vec::new());
-    }
-
-    parse_slash_list(data, parse_wordid)
-}
-
-#[inline]
-pub(crate) fn parse_u32_list(data: &str) -> DicWriteResult<Vec<u32>> {
-    if data.is_empty() || data == "*" {
+        if data == "*" && !allow_asterisk {
+            return Err(BuildFailure::InvalidSplit(data.to_owned()));
+        }
         return Ok(Vec::new());
     }
 
@@ -133,7 +122,8 @@ pub(crate) fn parse_u32_list(data: &str) -> DicWriteResult<Vec<u32>> {
 }
 
 lazy_static! {
-    pub(crate) static ref WORD_ID_LITERAL: Regex = Regex::new(r"^U?\d+$").unwrap();
+    // pattern for an entry reference by line number
+    pub(crate) static ref LINE_REF_LITERAL: Regex = Regex::new(r"^U?\d+$").unwrap();
 }
 
 #[inline]
@@ -163,10 +153,11 @@ lazy_static! {
 }
 
 fn check_str_len(data: &str) -> DicWriteResult<()> {
-    if data.len() > MAX_DIC_STRING_LEN {
+    let char_len = data.encode_utf16().count();
+    if char_len > MAX_DIC_STRING_LEN {
         Err(BuildFailure::InvalidSize {
             expected: MAX_DIC_STRING_LEN,
-            actual: data.len(),
+            actual: char_len,
         })
     } else {
         Ok(())
@@ -174,7 +165,7 @@ fn check_str_len(data: &str) -> DicWriteResult<()> {
 }
 
 #[inline]
-pub(crate) fn unescape_cow(data: &str) -> DicWriteResult<Cow<str>> {
+pub(crate) fn unescape_cow(data: &str) -> DicWriteResult<Cow<'_, str>> {
     check_str_len(data)?;
     if !UNICODE_LITERAL.is_match(data) {
         Ok(Cow::Borrowed(data))

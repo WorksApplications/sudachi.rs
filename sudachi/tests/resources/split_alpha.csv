@@ -1,3 +1,4 @@
-ab,6,6,1000,AB,名詞,普通名詞,一般,*,*,*,AB,AB,*,C,1/2,1/2,*,*
-a,-1,6,1000,A,名詞,数詞,*,*,*,*,A,A,*,A,*,*,*,*
-b,-1,6,1000,B,名詞,固有名詞,地名,一般,*,*,B,B,*,A,*,*,*,*
+index_form,left_id,right_id,cost,headword,pos1,pos2,pos3,pos4,pos5,pos6,reading_form,normalized_form,dictionary_form,split_a,split_b,split_c,word_structure,synonym_groups
+ab,6,6,1000,AB,名詞,普通名詞,一般,*,*,*,AB,,,"A,1,A/B,2,B","A,1,A/B,2,B",,,
+a,-1,6,1000,A,名詞,数詞,*,*,*,*,A,,,,,,,
+b,-1,6,1000,B,名詞,固有名詞,地名,一般,*,*,B,,,,,,,

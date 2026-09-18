@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2021-2024 Works Applications Co., Ltd.
+ *  Copyright (c) 2021-2026 Works Applications Co., Ltd.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -18,16 +18,16 @@ use crate::analysis::created::CreatedWords;
 use crate::analysis::inner::{Node, NodeIdx};
 use crate::analysis::lattice::Lattice;
 use crate::analysis::node::{LatticeNode, ResultNode};
-use crate::analysis::stateless_tokenizer::{dump_path, split_path, DictionaryAccess};
+use crate::analysis::stateless_tokenizer::{dump_path, split_path};
 use crate::analysis::Mode;
-use crate::dic::category_type::CategoryType;
 use crate::dic::connect::ConnectionMatrix;
-use crate::dic::lexicon::word_infos::WordInfoData;
+use crate::dic::lexicon::LexiconEntry;
 use crate::dic::lexicon_set::LexiconSet;
 use crate::dic::subset::InfoSubset;
+use crate::dic::word_info::WordInfo;
+use crate::dic::DictionaryAccess;
 use crate::error::{SudachiError, SudachiResult};
 use crate::input_text::InputBuffer;
-use crate::input_text::InputTextIndex;
 use crate::plugin::oov::OovProviderPlugin;
 use crate::prelude::MorphemeList;
 
@@ -41,6 +41,10 @@ pub struct StatefulTokenizer<D> {
     top_path_ids: Vec<NodeIdx>,
     top_path: Option<Vec<ResultNode>>,
     subset: InfoSubset,
+    /// Per-boundary dictionary-match cache, reused across sentences.
+    match_cache: Vec<Vec<LexiconEntry>>,
+    /// Use the pipelined + prefetched dictionary lookup in `build_lattice`.
+    pipelined_lookup: bool,
 }
 
 impl<D: DictionaryAccess + Clone> StatefulTokenizer<D> {
@@ -68,7 +72,16 @@ impl<D: DictionaryAccess> StatefulTokenizer<D> {
             top_path_ids: Vec::new(),
             top_path: Some(Vec::new()),
             subset: InfoSubset::all(),
+            match_cache: Vec::new(),
+            pipelined_lookup: true,
         }
+    }
+
+    /// Enable or disable the pipelined + prefetched dictionary lookup. Output is
+    /// identical to the scalar path; this only affects performance. Returns the
+    /// previous value.
+    pub fn set_pipelined_lookup(&mut self, enabled: bool) -> bool {
+        std::mem::replace(&mut self.pipelined_lookup, enabled)
     }
 
     /// Set debug flag and returns the current one
@@ -152,7 +165,7 @@ impl<D: DictionaryAccess> StatefulTokenizer<D> {
         };
 
         for plugin in self.dictionary.path_rewrite_plugins() {
-            path = plugin.rewrite(&self.input, path, &self.lattice)?;
+            path = plugin.rewrite(&self.input, path, &self.lattice, self.dictionary.lexicon())?;
         }
 
         path = split_path(&self.dictionary, path, self.mode, self.subset, &self.input)?;
@@ -170,7 +183,7 @@ impl<D: DictionaryAccess> StatefulTokenizer<D> {
 
     /// Resolve the path (as ResultNodes) with the smallest cost
     fn resolve_best_path(&mut self) -> SudachiResult<Vec<ResultNode>> {
-        let lex = self.dictionary.lexicon();
+        let lexset = self.dictionary.lexicon();
         let mut path = self.top_path.take().unwrap_or_default();
         self.lattice.fill_top_path(&mut self.top_path_ids);
         self.top_path_ids.reverse();
@@ -178,14 +191,14 @@ impl<D: DictionaryAccess> StatefulTokenizer<D> {
             let (inner, cost) = self.lattice.node(pid);
             let wi = if inner.word_id().is_oov() {
                 let curr_slice = self.input.curr_slice_c(inner.char_range()).to_owned();
-                WordInfoData {
-                    pos_id: inner.word_id().word() as u16,
-                    surface: curr_slice,
-                    ..Default::default()
-                }
-                .into()
+                WordInfo::new_oov(
+                    inner.word_id().entry().as_raw() as u16,
+                    curr_slice.len() as i16,
+                    inner.word_id(),
+                    curr_slice,
+                )
             } else {
-                lex.get_word_info_subset(inner.word_id(), self.subset)?
+                lexset.get_word_info_subset(inner.word_id(), self.subset)?
             };
 
             let byte_begin = self.input.to_curr_byte_idx(inner.begin());
@@ -229,6 +242,8 @@ impl<D: DictionaryAccess> StatefulTokenizer<D> {
             oov_providers: self.dictionary.oov_provider_plugins(),
             lexicon: self.dictionary.lexicon(),
             input: &self.input,
+            match_cache: &mut self.match_cache,
+            pipelined: self.pipelined_lookup,
         };
         builder.build_lattice()
     }
@@ -256,12 +271,25 @@ struct LatticeBuilder<'a> {
     input: &'a InputBuffer,
     lexicon: &'a LexiconSet<'a>,
     oov_providers: &'a [Box<dyn OovProviderPlugin + Sync + Send>],
+    match_cache: &'a mut Vec<Vec<LexiconEntry>>,
+    pipelined: bool,
 }
 
 impl<'a> LatticeBuilder<'a> {
     #[inline]
     fn build_lattice(&mut self) -> SudachiResult<()> {
         self.lattice.reset(self.input.current_chars().len());
+        if self.pipelined {
+            self.build_lattice_pipelined()
+        } else {
+            self.build_lattice_scalar()
+        }
+    }
+
+    /// Original lattice builder: one scalar common-prefix walk per reachable
+    /// boundary, interleaved with node insertion.
+    #[inline]
+    fn build_lattice_scalar(&mut self) -> SudachiResult<()> {
         let input_bytes = self.input.current().as_bytes();
 
         for (ch_off, &byte_off) in self.input.curr_byte_offsets().iter().enumerate() {
@@ -291,28 +319,89 @@ impl<'a> LatticeBuilder<'a> {
                 self.lattice.insert(node, self.matrix);
             }
 
-            // OOV
-            if !self
-                .input
-                .cat_at_char(ch_off)
-                .intersects(CategoryType::NOOOVBOW | CategoryType::NOOOVBOW2)
-            {
-                for provider in self.oov_providers {
-                    created = self.provide_oovs(ch_off, created, provider.as_ref())?;
-                }
-            }
-
-            if created.is_empty() {
-                let provider = self.oov_providers.last().unwrap();
-                created = self.provide_oovs(ch_off, created, provider.as_ref())?;
-            }
-
-            if created.is_empty() {
-                return Err(SudachiError::EosBosDisconnect);
-            }
+            self.insert_oovs(ch_off, created)?;
         }
         self.lattice.connect_eos(self.matrix)?;
 
+        Ok(())
+    }
+
+    /// Pre-compute every boundary's dictionary matches with overlapped trie
+    /// memory latency, then insert nodes for reachable boundaries in scalar
+    /// order. The walks depend only on the input, so precomputing them all is
+    /// exact; reachability still gates insertion.
+    #[inline]
+    fn build_lattice_pipelined(&mut self) -> SudachiResult<()> {
+        let input_bytes = self.input.current().as_bytes();
+
+        {
+            let lexicon = self.lexicon;
+            let starts = self.input.curr_byte_offsets();
+            let cache = &mut *self.match_cache;
+            if cache.len() < starts.len() {
+                cache.resize_with(starts.len(), Vec::new);
+            }
+            for bucket in cache.iter_mut() {
+                bucket.clear();
+            }
+            lexicon.lookup_batch(input_bytes, starts, |bucket, entry| {
+                cache[bucket].push(entry);
+            });
+        }
+
+        let boundaries = self.input.curr_byte_offsets().len();
+        for ch_off in 0..boundaries {
+            if !self.lattice.has_previous_node(ch_off) {
+                continue;
+            }
+
+            self.node_buffer.clear();
+            let mut created = CreatedWords::default();
+            for entry in &self.match_cache[ch_off] {
+                let (word_id, end) = (entry.word_id, entry.end);
+                if (end < input_bytes.len()) && !self.input.can_bow(end) {
+                    continue;
+                }
+                let (left_id, right_id, cost) = self.lexicon.get_word_param(word_id);
+                let end_c = self.input.ch_idx(end);
+                let node = Node::new(
+                    ch_off as u16,
+                    end_c as u16,
+                    left_id as u16,
+                    right_id as u16,
+                    cost,
+                    word_id,
+                );
+                created = created.add_word((end_c - ch_off) as i64);
+                self.node_buffer.push(node.clone());
+                self.lattice.insert(node, self.matrix);
+            }
+
+            self.insert_oovs(ch_off, created)?;
+        }
+        self.lattice.connect_eos(self.matrix)?;
+
+        Ok(())
+    }
+
+    /// OOV handling shared by both lattice builders. Mirrors the original
+    /// in-loop logic exactly.
+    #[inline]
+    fn insert_oovs(&mut self, ch_off: usize, mut created: CreatedWords) -> SudachiResult<()> {
+        if self.input.can_oov_bow(ch_off) {
+            for provider in self.oov_providers {
+                created = self.provide_oovs(ch_off, created, provider.as_ref())?;
+            }
+        }
+
+        if created.is_empty() {
+            let provider = self.oov_providers.last().unwrap();
+            created = self.provide_oovs(ch_off, created, provider.as_ref())?;
+        }
+
+        if created.is_empty() {
+            return Err(SudachiError::EosBosDisconnect);
+        }
         Ok(())
     }
 

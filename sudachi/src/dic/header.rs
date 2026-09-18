@@ -19,7 +19,8 @@ use std::io::Write;
 use std::time::{Duration, SystemTime};
 use thiserror::Error;
 
-use crate::error::{SudachiError, SudachiNomResult, SudachiResult};
+use super::read::SudachiNomResult;
+use crate::error::{SudachiError, SudachiResult};
 
 /// Sudachi error
 #[derive(Error, Debug, Eq, PartialEq)]

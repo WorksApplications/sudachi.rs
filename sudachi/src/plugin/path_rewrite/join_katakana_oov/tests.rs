@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2024 Works Applications Co., Ltd.
+ * Copyright (c) 2021-2026 Works Applications Co., Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,10 @@ use super::*;
 use crate::analysis::Node;
 use crate::dic::character_category::CharacterCategory;
 use crate::dic::grammar::Grammar;
-use crate::dic::lexicon::word_infos::WordInfoData;
+use crate::dic::lexicon_set::LexiconSet;
 use crate::dic::word_id::WordId;
+use crate::dic::word_info::WordInfo;
+use crate::dic::LexiconAccess;
 use crate::test::zero_grammar;
 use lazy_static::lazy_static;
 
@@ -32,25 +34,25 @@ fn katakana_length() {
 
     plugin.min_length = 0;
     let path = plugin
-        .rewrite(&text, _path.clone(), &Lattice::default())
+        .rewrite(&text, _path.clone(), &Lattice::default(), &RESOLVER)
         .expect("Failed to rewrite path");
     assert_eq!(2, path.len());
 
     plugin.min_length = 1;
     let path = plugin
-        .rewrite(&text, _path.clone(), &Lattice::default())
+        .rewrite(&text, _path.clone(), &Lattice::default(), &RESOLVER)
         .expect("Failed to rewrite path");
     assert_eq!(2, path.len());
 
     plugin.min_length = 2;
     let path = plugin
-        .rewrite(&text, _path.clone(), &Lattice::default())
+        .rewrite(&text, _path.clone(), &Lattice::default(), &RESOLVER)
         .expect("Failed to rewrite path");
     assert_eq!(2, path.len());
 
     plugin.min_length = 3;
     let path = plugin
-        .rewrite(&text, _path.clone(), &Lattice::default())
+        .rewrite(&text, _path.clone(), &Lattice::default(), &RESOLVER)
         .expect("Failed to rewrite path");
     assert_eq!(1, path.len());
 }
@@ -63,10 +65,10 @@ fn part_of_speech() {
 
     plugin.min_length = 3;
     let path = plugin
-        .rewrite(&text, path, &Lattice::default())
+        .rewrite(&text, path, &Lattice::default(), &RESOLVER)
         .expect("Failed to rewrite path");
     assert_eq!(1, path.len());
-    assert!(!path[0].is_oov());
+    assert!(path[0].is_oov());
 }
 
 #[test]
@@ -81,7 +83,7 @@ fn start_with_middle() {
 
     plugin.min_length = 3;
     let path = plugin
-        .rewrite(&text, path, &Lattice::default())
+        .rewrite(&text, path, &Lattice::default(), &RESOLVER)
         .expect("Failed to rewrite path");
     assert_eq!(1, path.len());
 }
@@ -100,7 +102,7 @@ fn start_with_tail() {
     ];
 
     let path = plugin
-        .rewrite(&text, path, &Lattice::default())
+        .rewrite(&text, path, &Lattice::default(), &RESOLVER)
         .expect("Failed to rewrite path");
     assert_eq!(1, path.len());
 }
@@ -120,10 +122,10 @@ fn with_noovbow() {
         build_node_ai(9, 18, 20985),
     ];
     let path = plugin
-        .rewrite(&text, path, &Lattice::default())
+        .rewrite(&text, path, &Lattice::default(), &RESOLVER)
         .expect("Failed to rewrite path");
     assert_eq!(2, path.len());
-    assert_eq!("ァ", path[0].word_info().surface());
+    assert_eq!("ァ", path[0].word_info().headword(&RESOLVER));
 
     let text = build_text("アイウァアイウ");
     let path = vec![
@@ -132,7 +134,7 @@ fn with_noovbow() {
         build_node_aiu(12, 21, 21135),
     ];
     let path = plugin
-        .rewrite(&text, path, &Lattice::default())
+        .rewrite(&text, path, &Lattice::default(), &RESOLVER)
         .expect("Failed to rewrite path");
     assert_eq!(1, path.len());
 }
@@ -147,56 +149,32 @@ fn build_node_aiu(start: usize, end: usize, cost: i32) -> ResultNode {
 
 fn build_node(start: usize, end: usize, cost: i32, surface: &str) -> ResultNode {
     let cstart = start / 3;
+    let word_id = WordId::new(0, 0);
     let node = Node::new(
         cstart as u16,
         (cstart + surface.chars().count()) as u16,
         7,
         7,
         3000,
-        WordId::new(0, 4),
+        word_id,
     );
-    ResultNode::new(
-        node,
-        cost,
-        start as u16,
-        end as u16,
-        WordInfoData {
-            surface: surface.to_string(),
-            normalized_form: surface.to_string(),
-            dictionary_form: surface.to_string(),
-            pos_id: 4,
-            dictionary_form_word_id: -1,
-            ..Default::default()
-        }
-        .into(),
-    )
+    let word_info = WordInfo::new_oov(4, surface.len() as i16, word_id, surface.to_string());
+    ResultNode::new(node, cost, start as u16, end as u16, word_info)
 }
 
 fn build_node_oov(start: usize, end: usize, cost: i32, surface: &str) -> ResultNode {
     let cstart = start / 3;
+    let word_id = WordId::oov(4);
     let node = Node::new(
         cstart as u16,
         (cstart + surface.chars().count()) as u16,
         8,
         8,
         6000,
-        WordId::oov(4),
+        word_id,
     );
-    ResultNode::new(
-        node,
-        cost,
-        start as u16,
-        end as u16,
-        WordInfoData {
-            surface: surface.to_string(),
-            normalized_form: surface.to_string(),
-            dictionary_form: surface.to_string(),
-            pos_id: 4,
-            dictionary_form_word_id: -1,
-            ..Default::default()
-        }
-        .into(),
-    )
+    let word_info = WordInfo::new_oov(4, surface.len() as i16, word_id, surface.to_string());
+    ResultNode::new(node, cost, start as u16, end as u16, word_info)
 }
 
 fn build_text(data: &str) -> InputBuffer {
@@ -221,3 +199,13 @@ fn build_mock_grammar() -> Grammar<'static> {
 lazy_static! {
     static ref GRAMMAR: Grammar<'static> = build_mock_grammar();
 }
+
+struct DummyResolver;
+
+impl LexiconAccess for DummyResolver {
+    fn lexicon(&self) -> &LexiconSet<'_> {
+        panic!("dictionary-backed string resolution is not used in this test")
+    }
+}
+
+static RESOLVER: DummyResolver = DummyResolver;

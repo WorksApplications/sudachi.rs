@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2021-2024 Works Applications Co., Ltd.
+ *  Copyright (c) 2021-2026 Works Applications Co., Ltd.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -21,12 +21,11 @@ use std::path::{Path, PathBuf};
 use pyo3::prelude::*;
 use pyo3::types::{PyBytes, PyList, PyString, PyType};
 
-use sudachi::analysis::stateless_tokenizer::DictionaryAccess;
-use sudachi::config::Config;
+use sudachi::config::{Config, PathResolver};
 use sudachi::dic::build::{AsDataSource, DataSource, DictBuilder};
 use sudachi::dic::dictionary::JapaneseDictionary;
+use sudachi::dic::{DictionaryAccess, ReferenceIdAccess};
 
-use crate::dictionary::get_default_resource_dir;
 use crate::errors;
 
 pub fn register_functions(m: &Bound<PyModule>) -> PyResult<()> {
@@ -56,7 +55,10 @@ impl<'a, 'py: 'a> AsDataSource<'a> for &'a PyDataSource<'py> {
     }
 }
 
-fn to_stats<T: DictionaryAccess>(py: Python, builder: DictBuilder<T>) -> PyResult<Bound<PyList>> {
+fn to_stats<T: DictionaryAccess + ReferenceIdAccess>(
+    py: Python,
+    builder: DictBuilder<T>,
+) -> PyResult<Bound<PyList>> {
     let stats = PyList::empty(py);
 
     for p in builder.report() {
@@ -153,8 +155,7 @@ fn build_user_dic<'py>(
     let system_src = as_data_source(system_path.as_ref(), system)?;
     let system_dic = match &system_src {
         PyDataSource::File(f) => {
-            let resource_path = get_default_resource_dir(py)?;
-            let cfg = Config::minimal_at(resource_path).with_system_dic(f);
+            let cfg = Config::minimal_at(PathResolver::from_embedded()).with_system_dic(f);
             errors::wrap_ctx(JapaneseDictionary::from_cfg(&cfg), f)?
         }
         PyDataSource::Data(_) => {

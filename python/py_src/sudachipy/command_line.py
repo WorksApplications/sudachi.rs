@@ -74,7 +74,7 @@ def run(tokenizer, input_, output, print_all, pos_list, is_stdout):
                     m.dictionary_form(),
                     m.reading_form(),
                     str(m.dictionary_id()),
-                    '[{}]'.format(','.join([str(synonym_group_id) for synonym_group_id in m.synonym_group_ids()]))]
+                    '[{}]'.format(','.join([str(synonym_group_ids) for synonym_group_ids in m.synonym_group_ids()]))]
                 if m.is_oov():
                     list_info.append("(OOV)")
             output.write("\t".join(list_info))
@@ -120,7 +120,7 @@ def _command_tokenize(args, print_usage):
         # precompute output POS strings
         pos_list = [",".join(ms) for ms in all_pos_matcher]
 
-        tokenizer_obj = dict_.create(mode=args.mode)
+        tokenizer_obj = dict_.tokenizer(mode=args.mode)
         input_ = fileinput.input(
             args.in_files, openhook=fileinput.hook_encoded("utf-8"))
         run(tokenizer_obj, input_, output, print_all,

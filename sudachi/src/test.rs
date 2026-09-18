@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2021 Works Applications Co., Ltd.
+ *  Copyright (c) 2021-2026 Works Applications Co., Ltd.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -18,11 +18,9 @@ use crate::dic::character_category::CharacterCategory;
 use crate::dic::grammar::Grammar;
 use lazy_static::lazy_static;
 
-const ZERO_GRAMMAR_BYTES: &[u8] = &[0u8; 6];
-
 /// Returns Grammar with empty data
 pub fn zero_grammar() -> Grammar<'static> {
-    Grammar::parse(ZERO_GRAMMAR_BYTES, 0).expect("Failed to make grammar")
+    Grammar::empty()
 }
 
 const TEST_CHAR_DEF: &[u8] = include_bytes!("../tests/resources/char.def");

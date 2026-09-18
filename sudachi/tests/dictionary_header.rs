@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Works Applications Co., Ltd.
+ * Copyright (c) 2021-2026 Works Applications Co., Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,28 +17,24 @@
 extern crate lazy_static;
 
 extern crate sudachi;
-use sudachi::dic::header::{HeaderVersion, SystemDictVersion};
 
 mod common;
-use common::HEADER;
+use common::DESCRIPTION;
 
 #[test]
-fn version() {
-    assert_eq!(
-        HeaderVersion::SystemDict(SystemDictVersion::Version2),
-        HEADER.version
-    );
+fn kind() {
+    assert!(DESCRIPTION.is_system_dictionary());
 }
 
 #[test]
 fn create_time() {
-    assert!(HEADER.create_time > 0);
+    assert!(DESCRIPTION.creation_time().as_secs() > 0);
 }
 
 #[test]
 fn description() {
     assert_eq!(
         "the system dictionary for the unit tests",
-        HEADER.description
+        DESCRIPTION.comment()
     );
 }

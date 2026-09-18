@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Works Applications Co., Ltd.
+ * Copyright (c) 2021-2026 Works Applications Co., Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,14 +15,18 @@
  */
 
 use std::fmt::Debug;
-use std::io::Error;
 use thiserror::Error;
 
 use crate::config::ConfigError;
 use crate::dic::build::error::DicBuildError;
 use crate::dic::character_category::Error as CharacterCategoryError;
+use crate::dic::description::DescriptionError;
+use crate::dic::error::DictionaryCompatibilityError;
 use crate::dic::header::HeaderError;
 use crate::dic::lexicon_set::LexiconSetError;
+use crate::dic::read::error::SudachiNomError;
+use crate::dic::word_id::WordId;
+use crate::dic::word_info::WordInfoError;
 use crate::plugin::PluginError;
 
 pub type SudachiResult<T> = Result<T, SudachiError>;
@@ -50,7 +54,7 @@ pub enum SudachiError {
     FromUtf16(#[from] std::string::FromUtf16Error),
 
     #[error("Regex error")]
-    RegexError(#[from] fancy_regex::Error),
+    RegexError { cause: Box<fancy_regex::Error> },
 
     #[error("Error from nom {0}")]
     NomParseError(String),
@@ -70,7 +74,10 @@ pub enum SudachiError {
     #[error("Invalid header: {0}")]
     InvalidHeader(#[from] HeaderError),
 
-    #[error("Lecicon error")]
+    #[error("Invalid description: {0}")]
+    InvalidDescription(#[from] DescriptionError),
+
+    #[error("Lexicon error")]
     LexiconSetError(#[from] LexiconSetError),
 
     #[error("Plugin error")]
@@ -85,17 +92,29 @@ pub enum SudachiError {
     #[error("Invalid data format: {1} at line {0}")]
     InvalidDataFormat(usize, String),
 
+    #[error(transparent)]
+    WordInfo(#[from] WordInfoError),
+
     #[error("Invalid grammar")]
     InvalidDictionaryGrammar,
 
+    #[error("Connection matrix is missing")]
+    ConnectionMatrixMissing,
+
     #[error("Invalid part of speech: {0}")]
     InvalidPartOfSpeech(String),
+
+    #[error("Invalid word id: {0}")]
+    InvalidWordId(WordId),
 
     #[error("Invalid range: {0}..{1}")]
     InvalidRange(usize, usize),
 
     #[error("No out of vocabulary plugin provided")]
     NoOOVPluginProvided,
+
+    #[error(transparent)]
+    DictionaryCompatibility(#[from] DictionaryCompatibilityError),
 
     #[error("Input is too long, it can't be more than {1} bytes, was {0}")]
     InputTooLong(usize, usize),
@@ -108,11 +127,17 @@ pub enum SudachiError {
 }
 
 impl From<std::io::Error> for SudachiError {
-    fn from(e: Error) -> Self {
+    fn from(e: std::io::Error) -> Self {
         SudachiError::Io {
             cause: e,
             context: String::from("IO Error"),
         }
+    }
+}
+
+impl From<fancy_regex::Error> for SudachiError {
+    fn from(e: fancy_regex::Error) -> Self {
+        SudachiError::RegexError { cause: Box::new(e) }
     }
 }
 
@@ -128,26 +153,6 @@ impl SudachiError {
                 context: ctx.into(),
             },
         }
-    }
-}
-
-pub type SudachiNomResult<I, O> = nom::IResult<I, O, SudachiNomError<I>>;
-
-/// Custum nom error
-#[derive(Debug, PartialEq)]
-pub enum SudachiNomError<I> {
-    /// Failed to parse utf16 string
-    Utf16String,
-    Nom(I, nom::error::ErrorKind),
-    OutOfBounds(String, usize, usize),
-}
-
-impl<I> nom::error::ParseError<I> for SudachiNomError<I> {
-    fn from_error_kind(input: I, kind: nom::error::ErrorKind) -> Self {
-        SudachiNomError::Nom(input, kind)
-    }
-    fn append(_: I, _: nom::error::ErrorKind, other: Self) -> Self {
-        other
     }
 }
 

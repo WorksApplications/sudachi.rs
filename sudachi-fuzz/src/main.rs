@@ -32,18 +32,18 @@ fn consume_mlist<'a, 'b: 'a>(
         black_box(m.begin_c());
         black_box(m.end());
         black_box(m.end_c());
-        black_box(m.word_id().word());
-        black_box(m.word_id().dic());
+        black_box(m.word_id().entry().as_raw());
+        black_box(m.word_id().dict().as_raw());
         black_box(m.part_of_speech_id());
         black_box(m.part_of_speech());
         black_box(m.get_word_info().a_unit_split());
         black_box(m.get_word_info().b_unit_split());
         black_box(m.get_word_info().synonym_group_ids());
-        black_box(m.get_word_info().dictionary_form());
-        black_box(m.get_word_info().dictionary_form_word_id());
-        black_box(m.get_word_info().reading_form());
-        black_box(m.get_word_info().surface());
-        black_box(m.get_word_info().normalized_form());
+        black_box(m.dictionary_form());
+        black_box(m.get_word_info().borrow_data().dictionary_form_word_id());
+        black_box(m.reading_form());
+        black_box(m.surface());
+        black_box(m.normalized_form());
 
         mlist2.clear();
         if m.split_into(Mode::A, mlist2).is_err() {
@@ -59,18 +59,18 @@ fn consume_mlist<'a, 'b: 'a>(
             black_box(m1.begin_c());
             black_box(m1.end());
             black_box(m1.end_c());
-            black_box(m1.word_id().word());
-            black_box(m1.word_id().dic());
+            black_box(m1.word_id().entry().as_raw());
+            black_box(m1.word_id().dict().as_raw());
             black_box(m1.part_of_speech_id());
             black_box(m1.part_of_speech());
             black_box(m1.get_word_info().a_unit_split());
             black_box(m1.get_word_info().b_unit_split());
             black_box(m1.get_word_info().synonym_group_ids());
-            black_box(m1.get_word_info().dictionary_form());
-            black_box(m1.get_word_info().dictionary_form_word_id());
-            black_box(m1.get_word_info().reading_form());
-            black_box(m1.get_word_info().surface());
-            black_box(m1.get_word_info().normalized_form());
+            black_box(m1.dictionary_form());
+            black_box(m1.get_word_info().borrow_data().dictionary_form_word_id());
+            black_box(m1.reading_form());
+            black_box(m1.surface());
+            black_box(m1.normalized_form());
         }
         if !mlist2.is_empty() {
             assert_eq!(surf.len(), mlen);

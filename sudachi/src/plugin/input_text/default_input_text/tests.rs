@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Works Applications Co., Ltd.
+ * Copyright (c) 2021-2026 Works Applications Co., Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ use serde_json::{Map, Value};
 
 use crate::config::Config;
 use crate::input_text::InputTextIndex;
+use crate::plugin::PluginError;
 use crate::test::zero_grammar;
 
 use super::*;
@@ -53,7 +54,12 @@ fn ignore_list_two_chars() {
     let data = "12";
     let mut plugin = DefaultInputTextPlugin::default();
     let result = plugin.read_rewrite_lists(data.as_bytes());
-    assert_matches!(result, Err(SudachiError::InvalidDataFormat(0, _)))
+    assert_matches!(
+        result,
+        Err(SudachiError::PluginError(
+            PluginError::InvalidDataFormatWithLine { line: 0, .. }
+        ))
+    )
 }
 
 #[test]
@@ -61,7 +67,12 @@ fn replace_list_three_entries() {
     let data = "12 21 31";
     let mut plugin = DefaultInputTextPlugin::default();
     let result = plugin.read_rewrite_lists(data.as_bytes());
-    assert_matches!(result, Err(SudachiError::InvalidDataFormat(0, _)))
+    assert_matches!(
+        result,
+        Err(SudachiError::PluginError(
+            PluginError::InvalidDataFormatWithLine { line: 0, .. }
+        ))
+    )
 }
 
 #[test]
@@ -72,7 +83,12 @@ fn replace_list_duplicates() {
 
     let mut plugin = DefaultInputTextPlugin::default();
     let result = plugin.read_rewrite_lists(data.as_bytes());
-    assert_matches!(result, Err(SudachiError::InvalidDataFormat(2, _)));
+    assert_matches!(
+        result,
+        Err(SudachiError::PluginError(
+            PluginError::InvalidDataFormatWithLine { line: 2, .. }
+        ))
+    );
 }
 
 #[test]

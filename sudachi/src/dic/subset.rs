@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2021 Works Applications Co., Ltd.
+ *  Copyright (c) 2021-2025 Works Applications Co., Ltd.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -20,16 +20,18 @@ bitflags! {
     #[repr(transparent)]
     #[derive(Copy, Clone, Eq, PartialEq, Debug)]
     pub struct InfoSubset: u32 {
-        const SURFACE = (1 << 0);
-        const HEAD_WORD_LENGTH = (1 << 1);
-        const POS_ID = (1 << 2);
+        const POS_ID = (1 << 0);
+        const HEADWORD = (1 << 1);
+        const READING_FORM = (1 << 2);
         const NORMALIZED_FORM = (1 << 3);
-        const DIC_FORM_WORD_ID = (1 << 4);
-        const READING_FORM = (1 << 5);
-        const SPLIT_A = (1 << 6);
+        const DICTIONARY_FORM = (1 << 4);
+        const INDEX_FORM_LENGTH = (1 << 5);
+        const SPLIT_C = (1 << 6);
         const SPLIT_B = (1 << 7);
-        const WORD_STRUCTURE = (1 << 8);
-        const SYNONYM_GROUP_ID = (1 << 9);
+        const SPLIT_A = (1 << 8);
+        const WORD_STRUCTURE = (1 << 9);
+        const SYNONYM_GROUP_IDS = (1 << 10);
+        const USER_DATA = (1 << 11);
     }
 }
 
@@ -41,14 +43,17 @@ impl Default for InfoSubset {
 
 impl InfoSubset {
     pub fn normalize(mut self) -> Self {
-        // need to read surface if reading any of one of these forms
-        if self.intersects(InfoSubset::READING_FORM | InfoSubset::NORMALIZED_FORM) {
-            self |= InfoSubset::SURFACE
+        // Normalized and dictionary forms are interpreted relative to the
+        // headword string, so parsers need HEADWORD even if callers did not
+        // request it explicitly.
+        if self.intersects(InfoSubset::NORMALIZED_FORM | InfoSubset::DICTIONARY_FORM) {
+            self |= InfoSubset::HEADWORD;
         }
 
-        // need to have head word length when splitting
-        if self.intersects(InfoSubset::SPLIT_A | InfoSubset::SPLIT_B) {
-            self |= InfoSubset::HEAD_WORD_LENGTH;
+        // Split requests need the index form length because split consumers use
+        // it when materializing the higher-level WordInfo view.
+        if self.intersects(InfoSubset::SPLIT_A | InfoSubset::SPLIT_B | InfoSubset::SPLIT_C) {
+            self |= InfoSubset::INDEX_FORM_LENGTH;
         }
 
         self

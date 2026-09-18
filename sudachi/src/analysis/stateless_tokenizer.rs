@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2021-2024 Works Applications Co., Ltd.
+ *  Copyright (c) 2021-2026 Works Applications Co., Ltd.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -14,56 +14,16 @@
  *  limitations under the License.
  */
 
-use crate::analysis::node::ResultNode;
-use crate::analysis::stateful_tokenizer::StatefulTokenizer;
 use std::ops::Deref;
 
-use crate::dic::grammar::Grammar;
-use crate::dic::lexicon_set::LexiconSet;
+use crate::analysis::mlist::MorphemeList;
+use crate::analysis::node::ResultNode;
+use crate::analysis::stateful_tokenizer::StatefulTokenizer;
+use crate::analysis::{Mode, Tokenize};
 use crate::dic::subset::InfoSubset;
+use crate::dic::DictionaryAccess;
 use crate::error::SudachiResult;
 use crate::input_text::InputBuffer;
-use crate::plugin::input_text::InputTextPlugin;
-use crate::plugin::oov::OovProviderPlugin;
-use crate::plugin::path_rewrite::PathRewritePlugin;
-
-use super::mlist::MorphemeList;
-use super::{Mode, Tokenize};
-
-/// Provides access to dictionary data
-pub trait DictionaryAccess {
-    fn grammar(&self) -> &Grammar<'_>;
-    fn lexicon(&self) -> &LexiconSet<'_>;
-    fn input_text_plugins(&self) -> &[Box<dyn InputTextPlugin + Sync + Send>];
-    fn oov_provider_plugins(&self) -> &[Box<dyn OovProviderPlugin + Sync + Send>];
-    fn path_rewrite_plugins(&self) -> &[Box<dyn PathRewritePlugin + Sync + Send>];
-}
-
-impl<T> DictionaryAccess for T
-where
-    T: Deref,
-    <T as Deref>::Target: DictionaryAccess,
-{
-    fn grammar(&self) -> &Grammar<'_> {
-        <T as Deref>::deref(self).grammar()
-    }
-
-    fn lexicon(&self) -> &LexiconSet<'_> {
-        <T as Deref>::deref(self).lexicon()
-    }
-
-    fn input_text_plugins(&self) -> &[Box<dyn InputTextPlugin + Sync + Send>] {
-        <T as Deref>::deref(self).input_text_plugins()
-    }
-
-    fn oov_provider_plugins(&self) -> &[Box<dyn OovProviderPlugin + Sync + Send>] {
-        <T as Deref>::deref(self).oov_provider_plugins()
-    }
-
-    fn path_rewrite_plugins(&self) -> &[Box<dyn PathRewritePlugin + Sync + Send>] {
-        <T as Deref>::deref(self).path_rewrite_plugins()
-    }
-}
 
 /// Implementation of a Tokenizer which does not have tokenization state.
 ///
@@ -85,7 +45,7 @@ where
     <T as Deref>::Target: DictionaryAccess,
 {
     pub fn as_dict(&self) -> &<T as Deref>::Target {
-        return Deref::deref(&self.dict);
+        Deref::deref(&self.dict)
     }
 }
 
@@ -132,7 +92,7 @@ pub(super) fn split_path<T: DictionaryAccess + ?Sized>(
     Ok(new_path)
 }
 
-pub(super) fn dump_path(path: &Vec<ResultNode>) {
+pub(super) fn dump_path(path: &[ResultNode]) {
     for (i, node) in path.iter().enumerate() {
         println!("{}: {}", i, node);
     }

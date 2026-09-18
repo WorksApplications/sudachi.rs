@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2021-2024 Works Applications Co., Ltd.
+ *  Copyright (c) 2021-2026 Works Applications Co., Ltd.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -141,7 +141,7 @@ fn system_plus_user_1() {
     let tok = StatelessTokenizer::new(&jd2);
     let result = tok.tokenize("すだちにいく", Mode::C, false).unwrap();
     assert_eq!(result.len(), 3);
-    assert_eq!(result.get(0).word_id().dic(), 1);
+    assert_eq!(result.get(0).word_id().dict().as_raw(), 1);
 }
 
 #[test]
@@ -166,7 +166,7 @@ fn system_plus_user_2() {
     let tok = StatelessTokenizer::new(&jd2);
     let result = tok.tokenize("かぼすにいく", Mode::C, false).unwrap();
     assert_eq!(result.len(), 3);
-    assert_eq!(result.get(0).word_id().dic(), 2);
+    assert_eq!(result.get(0).word_id().dict().as_raw(), 2);
     assert_eq!(result.get(0).part_of_speech()[0], "被子植物門");
 }
 
@@ -187,6 +187,6 @@ fn split_with_subset() {
     tok.do_tokenize().unwrap();
     res.collect_results(&mut tok).unwrap();
     assert_eq!(res.len(), 2);
-    //assert_eq!(res.get_end(0), 6);
+    assert_eq!(res.get(0).end(), 6);
     assert_eq!(res.get(1).end(), 9);
 }

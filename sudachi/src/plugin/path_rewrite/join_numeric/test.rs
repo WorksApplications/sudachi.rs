@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Works Applications Co., Ltd.
+ * Copyright (c) 2021-2026 Works Applications Co., Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,10 @@ use super::*;
 use crate::analysis::Node;
 use crate::dic::character_category::CharacterCategory;
 use crate::dic::grammar::Grammar;
-use crate::dic::lexicon::word_infos::WordInfoData;
+use crate::dic::lexicon_set::LexiconSet;
 use crate::dic::word_id::WordId;
+use crate::dic::word_info::WordInfo;
+use crate::dic::LexiconAccess;
 use crate::test::zero_grammar;
 use lazy_static::lazy_static;
 
@@ -44,11 +46,11 @@ fn digit_1() {
         build_node_oov("銭", "銭", 6, 8),
     ];
     let path = plugin
-        .rewrite(&text, path, &Lattice::default())
+        .rewrite(&text, path, &Lattice::default(), &RESOLVER)
         .expect("Failed to rewrite path");
     assert_eq!(4, path.len());
-    assert_eq!("123", path[0].word_info().surface());
-    assert_eq!("20", path[2].word_info().surface());
+    assert_eq!("123", path[0].word_info().headword(&RESOLVER));
+    assert_eq!("20", path[2].word_info().headword(&RESOLVER));
 }
 
 #[test]
@@ -65,11 +67,11 @@ fn digit_2() {
         build_node_num("1", "1", 6, 6),
     ];
     let path = plugin
-        .rewrite(&text, path, &Lattice::default())
+        .rewrite(&text, path, &Lattice::default(), &RESOLVER)
         .expect("Failed to rewrite path");
     assert_eq!(3, path.len());
-    assert_eq!("080", path[0].word_info().surface());
-    assert_eq!("121", path[2].word_info().surface());
+    assert_eq!("080", path[0].word_info().headword(&RESOLVER));
+    assert_eq!("121", path[2].word_info().headword(&RESOLVER));
 }
 
 #[test]
@@ -86,10 +88,10 @@ fn kanji_numeric() {
         build_node_oov("円", "円", 6, 18),
     ];
     let path = plugin
-        .rewrite(&text, path, &Lattice::default())
+        .rewrite(&text, path, &Lattice::default(), &RESOLVER)
         .expect("Failed to rewrite path");
     assert_eq!(2, path.len());
-    assert_eq!("一二三万二千", path[0].word_info().surface());
+    assert_eq!("一二三万二千", path[0].word_info().headword(&RESOLVER));
 
     let text = build_text("二百百");
     let path = vec![
@@ -98,7 +100,7 @@ fn kanji_numeric() {
         build_node_oov("百", "百", 2, 6),
     ];
     let path = plugin
-        .rewrite(&text, path, &Lattice::default())
+        .rewrite(&text, path, &Lattice::default(), &RESOLVER)
         .expect("Failed to rewrite path");
     assert_eq!(3, path.len());
 }
@@ -117,10 +119,10 @@ fn normalize() {
         build_node_oov("円", "円", 6, 18),
     ];
     let path = plugin
-        .rewrite(&text, path, &Lattice::default())
+        .rewrite(&text, path, &Lattice::default(), &RESOLVER)
         .expect("Failed to rewrite path");
     assert_eq!(2, path.len());
-    assert_eq!("1232000", path[0].word_info().normalized_form());
+    assert_eq!("1232000", path[0].word_info().normalized_form(&RESOLVER));
 }
 
 #[test]
@@ -130,10 +132,10 @@ fn normalized_with_not_numeric() {
     // 六三四 is in the dictionary
     let path = vec![build_node_oov("六三四", "六三四", 0, 0)];
     let path = plugin
-        .rewrite(&text, path, &Lattice::default())
+        .rewrite(&text, path, &Lattice::default(), &RESOLVER)
         .expect("Failed to rewrite path");
     assert_eq!(1, path.len());
-    assert_eq!("六三四", path[0].word_info().normalized_form());
+    assert_eq!("六三四", path[0].word_info().normalized_form(&RESOLVER));
 }
 
 #[test]
@@ -148,10 +150,10 @@ fn point() {
         build_node_num("2", "2", 4, 4),
     ];
     let path = plugin
-        .rewrite(&text, path, &Lattice::default())
+        .rewrite(&text, path, &Lattice::default(), &RESOLVER)
         .expect("Failed to rewrite path");
     assert_eq!(1, path.len());
-    assert_eq!("1.002", path[0].word_info().normalized_form());
+    assert_eq!("1.002", path[0].word_info().normalized_form(&RESOLVER));
 
     let text = build_text(".002");
     let path = vec![
@@ -161,11 +163,11 @@ fn point() {
         build_node_num("2", "2", 3, 3),
     ];
     let path = plugin
-        .rewrite(&text, path, &Lattice::default())
+        .rewrite(&text, path, &Lattice::default(), &RESOLVER)
         .expect("Failed to rewrite path");
     assert_eq!(2, path.len());
-    assert_eq!(".", path[0].word_info().normalized_form());
-    assert_eq!("002", path[1].word_info().normalized_form());
+    assert_eq!(".", path[0].word_info().normalized_form(&RESOLVER));
+    assert_eq!("002", path[1].word_info().normalized_form(&RESOLVER));
 
     let text = build_text("22.");
     let path = vec![
@@ -174,11 +176,11 @@ fn point() {
         build_node_oov(".", ".", 2, 2),
     ];
     let path = plugin
-        .rewrite(&text, path, &Lattice::default())
+        .rewrite(&text, path, &Lattice::default(), &RESOLVER)
         .expect("Failed to rewrite path");
     assert_eq!(2, path.len());
-    assert_eq!("22", path[0].word_info().normalized_form());
-    assert_eq!(".", path[1].word_info().normalized_form());
+    assert_eq!("22", path[0].word_info().normalized_form(&RESOLVER));
+    assert_eq!(".", path[1].word_info().normalized_form(&RESOLVER));
 
     let text = build_text("22.節");
     let path = vec![
@@ -188,11 +190,11 @@ fn point() {
         build_node_oov("節", "節", 3, 3),
     ];
     let path = plugin
-        .rewrite(&text, path, &Lattice::default())
+        .rewrite(&text, path, &Lattice::default(), &RESOLVER)
         .expect("Failed to rewrite path");
     assert_eq!(3, path.len());
-    assert_eq!("22", path[0].word_info().normalized_form());
-    assert_eq!(".", path[1].word_info().normalized_form());
+    assert_eq!("22", path[0].word_info().normalized_form(&RESOLVER));
+    assert_eq!(".", path[1].word_info().normalized_form(&RESOLVER));
 
     let text = build_text(".c");
     let path = vec![
@@ -200,10 +202,10 @@ fn point() {
         build_node_oov("c", "c", 1, 1),
     ];
     let path = plugin
-        .rewrite(&text, path, &Lattice::default())
+        .rewrite(&text, path, &Lattice::default(), &RESOLVER)
         .expect("Failed to rewrite path");
     assert_eq!(2, path.len());
-    assert_eq!(".", path[0].word_info().normalized_form());
+    assert_eq!(".", path[0].word_info().normalized_form(&RESOLVER));
 
     let text = build_text("1.20.3");
     let path = vec![
@@ -215,10 +217,10 @@ fn point() {
         build_node_num("3", "3", 5, 5),
     ];
     let path = plugin
-        .rewrite(&text, path, &Lattice::default())
+        .rewrite(&text, path, &Lattice::default(), &RESOLVER)
         .expect("Failed to rewrite path");
     assert_eq!(5, path.len());
-    assert_eq!("20", path[2].word_info().normalized_form());
+    assert_eq!("20", path[2].word_info().normalized_form(&RESOLVER));
 
     let text = build_text("652...");
     let path = vec![
@@ -230,10 +232,10 @@ fn point() {
         build_node_oov(".", ".", 5, 5),
     ];
     let path = plugin
-        .rewrite(&text, path, &Lattice::default())
+        .rewrite(&text, path, &Lattice::default(), &RESOLVER)
         .expect("Failed to rewrite path");
     assert_eq!(4, path.len());
-    assert_eq!("652", path[0].word_info().normalized_form());
+    assert_eq!("652", path[0].word_info().normalized_form(&RESOLVER));
 }
 
 #[test]
@@ -256,24 +258,24 @@ fn comma() {
         build_node_oov("円", "円", 12, 12),
     ];
     let path = plugin
-        .rewrite(&text, path, &Lattice::default())
+        .rewrite(&text, path, &Lattice::default(), &RESOLVER)
         .expect("Failed to rewrite path");
     assert_eq!(8, path.len());
-    assert_eq!("2", path[0].word_info().normalized_form());
-    assert_eq!(",", path[1].word_info().normalized_form());
-    assert_eq!("00", path[2].word_info().normalized_form());
-    assert_eq!(",", path[3].word_info().normalized_form());
-    assert_eq!("000", path[4].word_info().normalized_form());
-    assert_eq!(",", path[5].word_info().normalized_form());
-    assert_eq!("000", path[6].word_info().normalized_form());
+    assert_eq!("2", path[0].word_info().normalized_form(&RESOLVER));
+    assert_eq!(",", path[1].word_info().normalized_form(&RESOLVER));
+    assert_eq!("00", path[2].word_info().normalized_form(&RESOLVER));
+    assert_eq!(",", path[3].word_info().normalized_form(&RESOLVER));
+    assert_eq!("000", path[4].word_info().normalized_form(&RESOLVER));
+    assert_eq!(",", path[5].word_info().normalized_form(&RESOLVER));
+    assert_eq!("000", path[6].word_info().normalized_form(&RESOLVER));
 
     let text = build_text(",");
     let path = vec![build_node_oov(",", ",", 0, 0)];
     let path = plugin
-        .rewrite(&text, path, &Lattice::default())
+        .rewrite(&text, path, &Lattice::default(), &RESOLVER)
         .expect("Failed to rewrite path");
     assert_eq!(1, path.len());
-    assert_eq!(",", path[0].word_info().normalized_form());
+    assert_eq!(",", path[0].word_info().normalized_form(&RESOLVER));
 
     let text = build_text("652,,,");
     let path = vec![
@@ -285,10 +287,10 @@ fn comma() {
         build_node_oov(",", ",", 5, 5),
     ];
     let path = plugin
-        .rewrite(&text, path, &Lattice::default())
+        .rewrite(&text, path, &Lattice::default(), &RESOLVER)
         .expect("Failed to rewrite path");
     assert_eq!(4, path.len());
-    assert_eq!("652", path[0].word_info().normalized_form());
+    assert_eq!("652", path[0].word_info().normalized_form(&RESOLVER));
 
     let text = build_text("256,5.50389");
     let path = vec![
@@ -305,11 +307,11 @@ fn comma() {
         build_node_num("9", "9", 10, 10),
     ];
     let path = plugin
-        .rewrite(&text, path, &Lattice::default())
+        .rewrite(&text, path, &Lattice::default(), &RESOLVER)
         .expect("Failed to rewrite path");
     assert_eq!(3, path.len());
-    assert_eq!("256", path[0].word_info().normalized_form());
-    assert_eq!("5.50389", path[2].word_info().normalized_form());
+    assert_eq!("256", path[0].word_info().normalized_form(&RESOLVER));
+    assert_eq!("5.50389", path[2].word_info().normalized_form(&RESOLVER));
 
     let text = build_text("256,550.389");
     let path = vec![
@@ -326,10 +328,10 @@ fn comma() {
         build_node_num("9", "9", 10, 10),
     ];
     let path = plugin
-        .rewrite(&text, path, &Lattice::default())
+        .rewrite(&text, path, &Lattice::default(), &RESOLVER)
         .expect("Failed to rewrite path");
     assert_eq!(1, path.len());
-    assert_eq!("256550.389", path[0].word_info().normalized_form());
+    assert_eq!("256550.389", path[0].word_info().normalized_form(&RESOLVER));
 }
 
 #[test]
@@ -343,20 +345,21 @@ fn single_node() {
     ];
 
     let path = plugin
-        .rewrite(&text, _path.clone(), &Lattice::default())
+        .rewrite(&text, _path.clone(), &Lattice::default(), &RESOLVER)
         .expect("Failed to rewrite path");
     assert_eq!(3, path.len());
-    assert_eq!("3", path[1].word_info().normalized_form());
+    assert_eq!("3", path[1].word_info().normalized_form(&RESOLVER));
 
     plugin.enable_normalize = false;
     let path = plugin
-        .rewrite(&text, _path.clone(), &Lattice::default())
+        .rewrite(&text, _path.clone(), &Lattice::default(), &RESOLVER)
         .expect("Failed to rewrite path");
     assert_eq!(3, path.len());
-    assert_eq!("三", path[1].word_info().normalized_form());
+    assert_eq!("三", path[1].word_info().normalized_form(&RESOLVER));
 }
 
 fn build_node_num(surface: &str, normalized: &str, start_cp: usize, start_b: usize) -> ResultNode {
+    let word_id = WordId::new(0, 1);
     ResultNode::new(
         Node::new(
             start_cp as u16,
@@ -364,24 +367,24 @@ fn build_node_num(surface: &str, normalized: &str, start_cp: usize, start_b: usi
             9,
             9,
             2478,
-            WordId::new(0, 1),
+            word_id,
         ),
         9,
         start_b as u16,
         (start_b + surface.len()) as u16,
-        WordInfoData {
-            surface: surface.to_string(),
-            head_word_length: surface.len() as u16,
-            pos_id: 7,
-            normalized_form: normalized.to_string(),
-            dictionary_form_word_id: -1,
-            dictionary_form: surface.to_string(),
-            ..Default::default()
-        }
-        .into(),
+        WordInfo::new_with_strings(
+            7,
+            surface.len() as i16,
+            word_id,
+            surface.to_string(),
+            surface.to_string(),
+            normalized.to_string(),
+            surface.to_string(),
+        ),
     )
 }
 fn build_node_oov(surface: &str, normalized: &str, start_cp: usize, start_b: usize) -> ResultNode {
+    let word_id = WordId::oov(4);
     ResultNode::new(
         Node::new(
             start_cp as u16,
@@ -389,21 +392,20 @@ fn build_node_oov(surface: &str, normalized: &str, start_cp: usize, start_b: usi
             8,
             8,
             6000,
-            WordId::oov(4),
+            word_id,
         ),
         9,
         start_b as u16,
         (start_b + surface.len()) as u16,
-        WordInfoData {
-            surface: surface.to_string(),
-            head_word_length: surface.len() as u16,
-            pos_id: 4,
-            normalized_form: normalized.to_string(),
-            dictionary_form_word_id: -1,
-            dictionary_form: surface.to_string(),
-            ..Default::default()
-        }
-        .into(),
+        WordInfo::new_with_strings(
+            4,
+            surface.len() as i16,
+            word_id,
+            surface.to_string(),
+            surface.to_string(),
+            normalized.to_string(),
+            surface.to_string(),
+        ),
     )
 }
 
@@ -430,3 +432,13 @@ fn build_mock_grammar() -> Grammar<'static> {
 lazy_static! {
     static ref GRAMMAR: Grammar<'static> = build_mock_grammar();
 }
+
+struct DummyResolver;
+
+impl LexiconAccess for DummyResolver {
+    fn lexicon(&self) -> &LexiconSet<'_> {
+        panic!("dictionary-backed string resolution is not used in this test")
+    }
+}
+
+static RESOLVER: DummyResolver = DummyResolver;

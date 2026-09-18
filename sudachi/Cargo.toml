@@ -18,6 +18,7 @@ fancy-regex = "0.13" # MIT
 indexmap = "2.2" # MIT/Apache 2.0
 itertools = "0.13" # MIT/Apachie 2.0
 lazy_static = "1.4" # MIT/Apache 2.0
+libc = "0.2" # MIT/Apache 2.0
 libloading = "0.8" # ISC (MIT-compatible)
 memmap2 = "0.9" # MIT/Apache 2.0
 nom = "7" # MIT
@@ -30,6 +31,7 @@ yada = "0.5" # MIT/Apache 2.0
 
 [dev-dependencies]
 claim = "0.5" # MIT/Apache 2.0
+criterion = "0.5" # MIT/Apache 2.0
 tempfile = "3" # MIT/Apache 2.0
 
 # Plugins for tests
@@ -40,3 +42,7 @@ join_katakana_oov = { path = "../plugin/path_rewrite/join_katakana_oov" }
 
 [lib]
 crate-type = ["rlib"]
+
+[[bench]]
+name = "sentence_detector"
+harness = false

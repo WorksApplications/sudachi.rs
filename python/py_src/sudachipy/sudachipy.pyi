@@ -1,4 +1,4 @@
-#   Copyright (c) 2024 Works Applications Co., Ltd.
+#   Copyright (c) 2024-2026 Works Applications Co., Ltd.
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -33,7 +33,8 @@ Fields that can be specified for partial dictionary loading.
 See https://worksapplications.github.io/sudachi.rs/python/topics/subsetting.html.
 """
 FieldSet = Optional[Set[Literal["surface", "pos", "normalized_form", "dictionary_form", "reading_form",
-                                "word_structure", "split_a", "split_b", "synonym_group_id"]]]
+                                "word_structure", "split_a", "split_b", "synonym_group_ids",
+                                "user_data"]]]
 
 
 """
@@ -98,6 +99,21 @@ class Dictionary:
         """
         ...
 
+    def tokenizer(self,
+                  mode: Union[SplitMode, SplitModeStr, None] = SplitMode.C,
+                  fields: Optional[FieldSet] = None,
+                  *,
+                  projection: Optional[str] = None) -> Tokenizer:
+        """
+        Creates a sudachi tokenizer.
+
+        :param mode: sets the analysis mode for this Tokenizer
+        :param fields: load only a subset of fields.
+            See https://worksapplications.github.io/sudachi.rs/python/topics/subsetting.html.
+        :param projection: Projection override for created Tokenizer. See Config.projection for values.
+        """
+        ...
+
     def create(self,
                mode: Union[SplitMode, SplitModeStr, None] = SplitMode.C,
                fields: Optional[FieldSet] = None,
@@ -106,10 +122,22 @@ class Dictionary:
         """
         Creates a sudachi tokenizer.
 
+        .. deprecated::
+            Use ``Dictionary.tokenizer()`` instead.
+
         :param mode: sets the analysis mode for this Tokenizer
         :param fields: load only a subset of fields.
             See https://worksapplications.github.io/sudachi.rs/python/topics/subsetting.html.
         :param projection: Projection override for created Tokenizer. See Config.projection for values.
+        """
+        ...
+
+    def text_normalizer(self) -> TextNormalizer:
+        """
+        Creates a text normalizer from this dictionary.
+
+        The returned normalizer applies the same input-text plugins that this
+        dictionary uses before tokenization.
         """
         ...
 
@@ -157,18 +185,101 @@ class Dictionary:
         """
         ...
 
+    def entries(self) -> Iterator[Morpheme]:
+        """
+        Iterates over public lexicon entries as morphemes.
+
+        Entries referred to from other entries, such as split or constituent
+        units, are included even when they are not indexed for normal lookup.
+        Internal entries automatically generated for literal normalized forms
+        are not exposed. The iteration order is not part of the public contract.
+        """
+        ...
+
     def lookup(self, surface: str, out: Optional[MorphemeList] = None) -> MorphemeList:
         """
         Look up morphemes in the binary dictionary without performing the analysis.
 
-        All morphemes from the dictionary with the given surface string are returned,
+        The given surface is normalized before lookup.
+        All morphemes from the dictionary with the normalized surface string are returned,
         with the last user dictionary searched first and the system dictionary searched last.
         Inside a dictionary, morphemes are outputted in-binary-dictionary order.
         Morphemes which are not indexed are not returned.
 
-        :param surface: find all morphemes with the given surface
+        :param surface: input surface; normalized before indexed lookup.
         :param out: if passed, reuse the given morpheme list instead of creating a new one.
             See https://worksapplications.github.io/sudachi.rs/python/topics/out_param.html for details.
+        """
+        ...
+
+    def lookup_all_entries(self, surface: str, out: Optional[MorphemeList] = None) -> MorphemeList:
+        """
+        Look up morphemes by scanning all dictionary entries.
+
+        The given surface is normalized before matching. This scans public
+        lexicon entries and can find entries which are not indexed for normal
+        lookup. This can be slow on large dictionaries; use `lookup()` for
+        normal indexed lookup.
+
+        :param surface: find all morphemes whose normalized surface matches this value
+        :param out: if passed, reuse the given morpheme list instead of creating a new one.
+            See https://worksapplications.github.io/sudachi.rs/python/topics/out_param.html for details.
+        """
+        ...
+
+    def oov_morpheme(
+        self,
+        pos_id: int,
+        surface: str,
+        reading: Optional[str] = None,
+        normalized_form: Optional[str] = None,
+        dictionary_form: Optional[str] = None,
+    ) -> Morpheme:
+        """
+        Create an out-of-vocabulary morpheme from the POS id and string forms.
+
+        Begin/end are set from the surface. When optional string forms are not
+        provided, the surface is used for them.
+
+        :param pos_id: part-of-speech id of the morpheme
+        :param surface: surface of the morpheme
+        :param reading: reading form of the morpheme
+        :param normalized_form: normalized form of the morpheme
+        :param dictionary_form: dictionary form of the morpheme
+        """
+        ...
+
+
+class TextNormalizer:
+    """
+    A text normalizer.
+
+    Applies input-text plugins to raw input text. This does not perform
+    morphological analysis or return morpheme normalized forms.
+
+    Create using ``Dictionary.text_normalizer()`` or by passing a ``Dictionary``
+    to this class. Without a dictionary, this uses the default input-text
+    normalization.
+    """
+
+    def __init__(self, dictionary: Dictionary | None = None) -> None:
+        """
+        Creates a text normalizer.
+
+        When dictionary is provided, this applies the same input-text plugins
+        used by that dictionary before tokenization. Without a dictionary, this
+        applies the default input-text normalization.
+        """
+        ...
+
+    def normalize(self, text: str) -> str:
+        """
+        Normalize text using input-text plugins.
+
+        This normalizes tokenizer input text, not the dictionary-normalized form
+        returned by ``Morpheme.normalized_form()``.
+
+        :param text: text to normalize.
         """
         ...
 
@@ -192,6 +303,12 @@ class Morpheme:
         """
         ...
 
+    def dictionary_form_morpheme(self) -> Morpheme:
+        """
+        Returns the morpheme corresponding to this morpheme's dictionary form.
+        """
+        ...
+
     def dictionary_id(self) -> int:
         """
         Returns the dictionary id which this word belongs.
@@ -204,15 +321,6 @@ class Morpheme:
         """
         ...
 
-    def get_word_info(self) -> WordInfo:
-        """
-        Returns the word info.
-
-        ..deprecated:: v0.6.0
-           Users should not touch the raw WordInfo.
-        """
-        ...
-
     def is_oov(self) -> bool:
         """
         Returns whether if this is out of vocabulary word.
@@ -222,6 +330,12 @@ class Morpheme:
     def normalized_form(self) -> str:
         """
         Returns the normalized form.
+        """
+        ...
+
+    def normalized_form_morpheme(self) -> Morpheme:
+        """
+        Returns the morpheme corresponding to this morpheme's normalized form.
         """
         ...
 
@@ -283,6 +397,12 @@ class Morpheme:
         """
         ...
 
+    def user_data(self) -> str:
+        """
+        Returns user-defined data associated with this morpheme.
+        """
+        ...
+
     def word_id(self) -> int:
         """
         Returns word id of this word in the dictionary.
@@ -336,7 +456,7 @@ class Tokenizer:
     """
     A sudachi tokenizer
 
-    Create using Dictionary.create method.
+    Create using Dictionary.tokenizer method.
     """
     SplitMode: ClassVar[SplitMode] = ...
 
@@ -368,24 +488,6 @@ class Tokenizer:
         :return: current analysis mode
         """
         ...
-
-
-class WordInfo:
-    a_unit_split: ClassVar[List[int]] = ...
-    b_unit_split: ClassVar[List[int]] = ...
-    dictionary_form: ClassVar[str] = ...
-    dictionary_form_word_id: ClassVar[int] = ...
-    head_word_length: ClassVar[int] = ...
-    normalized_form: ClassVar[str] = ...
-    pos_id: ClassVar[int] = ...
-    reading_form: ClassVar[str] = ...
-    surface: ClassVar[str] = ...
-    synonym_group_ids: ClassVar[List[int]] = ...
-    word_structure: ClassVar[List[int]] = ...
-
-    @classmethod
-    def __init__(self) -> None: ...
-    def length(self) -> int: ...
 
 
 class PosMatcher:

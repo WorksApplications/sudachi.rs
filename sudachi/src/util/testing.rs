@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2021-2024 Works Applications Co., Ltd.
+ *  Copyright (c) 2021-2026 Works Applications Co., Ltd.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -15,7 +15,9 @@
  */
 
 use crate::dic::character_category::CharacterCategory;
+use crate::dic::connect::ConnectionMatrix;
 use crate::dic::grammar::Grammar;
+use crate::dic::pos::PosList;
 use crate::input_text::InputBuffer;
 use lazy_static::lazy_static;
 
@@ -29,18 +31,8 @@ pub fn char_cats() -> CharacterCategory {
     CharacterCategory::from_reader(ALL_KANJI_CAT.as_bytes()).unwrap()
 }
 
-pub fn build_mock_bytes() -> Vec<u8> {
+pub fn build_mock_connection_bytes() -> Vec<u8> {
     let mut buf = Vec::new();
-    // encode pos for oov
-    buf.extend(&1_i16.to_le_bytes());
-    let pos = vec!["補助記号", "一般", "*", "*", "*", "*"];
-    for s in pos {
-        let utf16: Vec<_> = s.encode_utf16().collect();
-        buf.extend(&(utf16.len() as u8).to_le_bytes());
-        for c in utf16 {
-            buf.extend(&(c).to_le_bytes());
-        }
-    }
     // set 10 for left and right id sizes
     buf.extend(&10_i16.to_le_bytes());
     buf.extend(&10_i16.to_le_bytes());
@@ -54,15 +46,28 @@ pub fn build_mock_bytes() -> Vec<u8> {
     buf
 }
 
-pub fn build_mock_grammar(bytes: &[u8]) -> Grammar {
-    let mut grammar = Grammar::parse(bytes, 0).expect("Failed to create grammar");
+pub fn build_mock_grammar(connection_bytes: &[u8]) -> Grammar<'_> {
+    let mut pos_list = PosList::default();
+    pos_list.push(vec![
+        "補助記号".to_string(),
+        "一般".to_string(),
+        "*".to_string(),
+        "*".to_string(),
+        "*".to_string(),
+        "*".to_string(),
+    ]);
+
+    let connection =
+        ConnectionMatrix::from_bytes(connection_bytes).expect("Failed to parse connection matrix");
+
+    let mut grammar = Grammar::from_parts(pos_list, connection);
     grammar.set_character_category(char_cats());
     grammar
 }
 
 lazy_static! {
-    pub static ref GRAMMAR_BYTES: Vec<u8> = build_mock_bytes();
-    pub static ref GRAMMAR: Grammar<'static> = build_mock_grammar(&GRAMMAR_BYTES);
+    pub static ref CONNECTION_BYTES: Vec<u8> = build_mock_connection_bytes();
+    pub static ref GRAMMAR: Grammar<'static> = build_mock_grammar(&CONNECTION_BYTES);
 }
 
 pub fn input_text(data: impl AsRef<str>) -> InputBuffer {

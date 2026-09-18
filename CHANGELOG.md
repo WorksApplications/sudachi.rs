@@ -6,6 +6,22 @@ Also check [python changelog](python/CHANGELOG.md).
 
 ## [Unreleased]
 
+### Added
+
+- Add Rust-side morpheme form accessors and standalone morpheme materialization.
+- Added dictionary entry iteration APIs: `JapaneseDictionary::entries`,
+  `entries_subset`, `lookup_all_entries`, and `lookup_all_entries_subset`.
+
+### Changed
+
+- Changed `MorphemeList::lookup` to normalize queries with dictionary input-text
+  plugins before indexed lookup, matching Java Sudachi behavior.
+- `fetch_dictionary.sh` targets V1 dictionary by default.
+
+### Fixed
+
+- Reject invalid, OOV, and special word IDs in exact-entry morpheme materialization instead of panicking.
+
 ## [0.6.11](https://github.com/WorksApplications/sudachi.rs/releases/tag/v0.6.11) (2026-03-06)
 
 ### Added

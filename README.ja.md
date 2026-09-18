@@ -8,6 +8,12 @@ sudachi.rs は日本語形態素解析器 [Sudachi](https://github.com/WorksAppl
 
 Python 版についてはこちらを参照してください： [SudachiPy Documentation](./python/README.md)。
 
+> **IMPORTANT**
+> v0.7 では辞書の形式が更新されました（V1）。v0.6 以前からアップデートする際は、システム辞書を再取得し、すべてのユーザー辞書を実行時に使用するものと同じシステム辞書を指定して再ビルドしてください。URL を指定して辞書をダウンロードしている場合は、その URL を更新してください。詳細は[バージョン移行ガイド](/docs/migration_guide.md)を参照してください。
+
+> **CAUTION**
+> v0.7.* ではSudachi v1のリリース準備が行われます。パッチバージョン間でもAPIや挙動の破壊的変更が行われる可能性があるため、利用時には完全なバージョンを指定するようにしてください。
+
 ## TL;DR
 
 Python 版のインストール：
@@ -88,19 +94,29 @@ git clone https://github.com/WorksApplications/sudachi.rs.git
 
 ### 2. Sudachi 辞書のダウンロード
 
-[WorksApplications/SudachiDict](https://github.com/WorksApplications/SudachiDict)から辞書の zip ファイル（ `small` 、 `core` 、 `full` から一つ選択）し、解凍して、必要であれば中にある `system_*.dic` ファイルをわかりやすい位置に置いてください。
-デフォルトの設定ファイルでは、辞書ファイルが `resources/system.dic` に存在していると指定しています（ファイル名が `system.dic` に変わっていることに注意）。
+Sudachi の実行には辞書データが必要です。
+辞書には以下の3種類があります。
+
+- Small: UniDic の収録語とその正規化表記、分割単位を収録
+- Core: 基本的な語彙を収録 (デフォルト)
+- Full: 雑多な固有名詞まで収録
+
+ビルド済みの辞書は[こちら](http://sudachi.s3-website-ap-northeast-1.amazonaws.com/sudachidict/v1)で配布しています。
+zip ファイル（いずれかのバージョンの `small`, `core`, `full` からひとつ）を解凍し、必要であれば中にある `system_*.dic` ファイルをわかりやすい位置に置いてください。
+デフォルトの設定ファイルでは、辞書ファイルが `$PWD/system.dic` に存在していると指定しています（ファイル名が `system.dic` に変わっていることに注意）。
+
+くわしくは [WorksApplications/SudachiDict](https://github.com/WorksApplications/SudachiDict) をごらんください。
 
 #### ダウンロードスクリプト
 
-上記のように手動で設置する以外に、レポジトリにあるスクリプトを使って自動的に辞書をダウンロードし `resources/system.dic` として設置することもできます。
+上記のように手動で設置する以外に、レポジトリにあるスクリプトを使って自動的に辞書をダウンロードし `./system.dic` として設置することもできます。
 
 ```sh
 # fetch latest core dictionary
 ./fetch_dictionary.sh
 
-# fetch dictionary of specified version and type
-./fetch_dictionary.sh 20241021 small
+# fetch dictionary of specified version, type, and format
+./fetch_dictionary.sh 20241021 small v1
 ```
 
 ### 3. ビルド

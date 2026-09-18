@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2021-2024 Works Applications Co., Ltd.
+ *  Copyright (c) 2021-2026 Works Applications Co., Ltd.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -14,9 +14,10 @@
  *  limitations under the License.
  */
 
-use std::io::{Cursor, Write};
+use std::io::{BufReader, Cursor, Write};
 
 use crate::analysis::node::LatticeNode;
+use crate::plugin::PluginError;
 use crate::util::testing::*;
 use claim::assert_matches;
 
@@ -388,7 +389,7 @@ fn read_oov() {
     writeln!(writer, "DEFAULT,1,2,3,補助記号,一般,*,*,*,*").unwrap();
     writeln!(writer, "DEFAULT,3,4,5,補助記号,一般,*,*,*,*").unwrap();
 
-    let mut grammar = build_mock_grammar(&GRAMMAR_BYTES);
+    let mut grammar = build_mock_grammar(&CONNECTION_BYTES);
     let mut categories = HashMap::with_hasher(RoMu::new());
     categories.insert(
         CategoryType::DEFAULT,
@@ -417,8 +418,7 @@ fn read_oov() {
 
 #[test]
 fn read_oov_with_too_few_columns() {
-    let bytes = build_mock_bytes();
-    let mut grammar = build_mock_grammar(&bytes);
+    let mut grammar = build_mock_grammar(&CONNECTION_BYTES);
     let mut categories = HashMap::with_hasher(RoMu::new());
     categories.insert(
         CategoryType::DEFAULT,
@@ -437,13 +437,18 @@ fn read_oov_with_too_few_columns() {
         &mut grammar,
         UserPosMode::Forbid,
     );
-    assert_matches!(result, Err(SudachiError::InvalidDataFormat(0, s)) if s.contains(data));
+    assert_matches!(
+        result,
+        Err(SudachiError::PluginError(PluginError::InvalidDataFormatWithLine {
+            line: 0,
+            message,
+        })) if message.contains(data)
+    );
 }
 
 #[test]
 fn read_oov_with_undefined_type() {
-    let bytes = build_mock_bytes();
-    let mut grammar = build_mock_grammar(&bytes);
+    let mut grammar = build_mock_grammar(&CONNECTION_BYTES);
     let mut categories = HashMap::with_hasher(RoMu::new());
     categories.insert(
         CategoryType::DEFAULT,
@@ -467,8 +472,7 @@ fn read_oov_with_undefined_type() {
 
 #[test]
 fn read_oov_with_category_not_in_character_property() {
-    let bytes = build_mock_bytes();
-    let mut grammar = build_mock_grammar(&bytes);
+    let mut grammar = build_mock_grammar(&CONNECTION_BYTES);
     let mut categories = HashMap::with_hasher(RoMu::new());
     categories.insert(
         CategoryType::DEFAULT,
@@ -487,7 +491,13 @@ fn read_oov_with_category_not_in_character_property() {
         &mut grammar,
         UserPosMode::Forbid,
     );
-    assert_matches!(result, Err(SudachiError::InvalidDataFormat(0, s)) if s.contains("ALPHA"))
+    assert_matches!(
+        result,
+        Err(SudachiError::PluginError(PluginError::InvalidDataFormatWithLine {
+            line: 0,
+            message,
+        })) if message.contains("ALPHA")
+    )
 }
 
 fn build_plugin() -> MeCabOovPlugin {

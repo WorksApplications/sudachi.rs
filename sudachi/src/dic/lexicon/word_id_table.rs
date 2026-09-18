@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2024 Works Applications Co., Ltd.
+ * Copyright (c) 2021-2026 Works Applications Co., Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,64 +15,95 @@
  */
 
 use std::iter::FusedIterator;
-use std::ptr::NonNull;
+
+use crate::dic::read::varint::varint32;
+use crate::dic::word_id::EntryId;
 
 pub struct WordIdTable<'a> {
     bytes: &'a [u8],
-    size: u32,
-    offset: usize,
 }
 
 impl<'a> WordIdTable<'a> {
-    pub fn new(bytes: &'a [u8], size: u32, offset: usize) -> WordIdTable<'a> {
-        WordIdTable {
-            bytes,
-            size,
-            offset,
-        }
+    pub fn from_bytes(bytes: &'a [u8]) -> WordIdTable<'a> {
+        WordIdTable { bytes }
     }
 
-    pub fn storage_size(&self) -> usize {
-        4 + self.size as usize
+    pub fn new(bytes: &'a [u8], size: u32, offset: usize) -> WordIdTable<'a> {
+        Self::from_bytes(&bytes[offset..offset + size as usize])
     }
 
     #[inline]
-    pub fn entries(&self, index: usize) -> WordIdIter {
+    pub fn entries(&self, index: usize) -> DeltaCompressedEntryIdIter<'a> {
         debug_assert!(index < self.bytes.len());
-        let ptr = unsafe { self.bytes.as_ptr().add(index + self.offset) };
-        let cnt = unsafe { ptr.read() } as usize;
-        let data_ptr = unsafe { ptr.offset(1) } as *const u32;
-        debug_assert!(index + cnt * std::mem::size_of::<u32>() < self.bytes.len());
-        WordIdIter {
-            data: unsafe { NonNull::new_unchecked(data_ptr as _) },
-            remaining: cnt,
+        DeltaCompressedEntryIdIter::new(&self.bytes[index..])
+    }
+
+    pub fn all_entries(&self) -> EntryIdIter<'a> {
+        EntryIdIter {
+            inner: DeltaCompressedEntryIdIter::new(self.bytes),
         }
     }
 }
 
-pub struct WordIdIter {
-    /// This pointer is unaligned and must be read from using unaligned reads.
-    /// Using NonNull makes Option<Self> be the same as the struct itself.
-    data: NonNull<u32>,
-    /// number of remaining elements
-    remaining: usize,
+/// Iterator over word ids in a delta-compressed varint32 format.
+pub struct DeltaCompressedEntryIdIter<'a> {
+    pub(crate) rest: &'a [u8],
+    remining: u32,
+    sum: u32,
 }
 
-impl Iterator for WordIdIter {
-    type Item = u32;
+impl<'a> DeltaCompressedEntryIdIter<'a> {
+    pub fn new(bytes: &'a [u8]) -> Self {
+        let (rest, remining) = varint32(bytes).expect("Failed to parse length in WordIdTable");
+
+        DeltaCompressedEntryIdIter {
+            rest,
+            remining,
+            sum: 0,
+        }
+    }
+}
+
+impl Iterator for DeltaCompressedEntryIdIter<'_> {
+    type Item = EntryId;
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
-        if self.remaining == 0 {
+        if self.remining == 0 {
             return None;
         }
-        let ptr = self.data.as_ptr();
 
-        let val = unsafe { ptr.read_unaligned() };
-        self.data = unsafe { NonNull::new_unchecked(ptr.offset(1)) };
-        self.remaining -= 1;
-        Some(val)
+        let (rest, delta) = varint32(self.rest).expect("Failed to parse next word id delta");
+
+        self.rest = rest;
+        self.remining -= 1;
+        self.sum += delta;
+        Some(EntryId::new(self.sum))
     }
 }
 
-impl FusedIterator for WordIdIter {}
+impl FusedIterator for DeltaCompressedEntryIdIter<'_> {}
+
+/// Iterator over all word ids in the table.
+pub struct EntryIdIter<'a> {
+    inner: DeltaCompressedEntryIdIter<'a>,
+}
+
+impl Iterator for EntryIdIter<'_> {
+    type Item = EntryId;
+
+    #[inline]
+    fn next(&mut self) -> Option<Self::Item> {
+        self.inner.next().or_else(|| {
+            // If we reached the end of the inner iterator, move to the next list (if exists)
+            if self.inner.rest.is_empty() {
+                None
+            } else {
+                self.inner = DeltaCompressedEntryIdIter::new(self.inner.rest);
+                self.next()
+            }
+        })
+    }
+}
+
+impl FusedIterator for EntryIdIter<'_> {}

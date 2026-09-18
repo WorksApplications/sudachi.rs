@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2021-2024 Works Applications Co., Ltd.
+ *  Copyright (c) 2021-2026 Works Applications Co., Ltd.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -73,8 +73,8 @@ pub enum BuildFailure {
         original: String,
     },
 
-    #[error("Surface can't be empty")]
-    EmptySurface,
+    #[error("IndexForm can't be empty")]
+    EmptyIndexForm,
 
     #[error("Maximum number of POS (2^15-1) exceeded with {0}")]
     PosLimitExceeded(String),
@@ -93,6 +93,21 @@ pub enum BuildFailure {
 
     #[error("Failed to build trie")]
     TrieBuildFailure,
+
+    #[error(
+        "Invalid string pointer during dictionary compilation: length={length}, offset={offset}, alignment={alignment}"
+    )]
+    InvalidStringPointer {
+        length: usize,
+        offset: usize,
+        alignment: usize,
+    },
+
+    #[error("Dictionary compile time must not be earlier than UNIX_EPOCH")]
+    InvalidCompileTime,
+
+    #[error("{0}")]
+    InvalidBuilderState(&'static str),
 }
 
 #[derive(Default)]

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2024 Works Applications Co., Ltd.
+ * Copyright (c) 2021-2026 Works Applications Co., Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ use std::path::Path;
 
 use thiserror::Error;
 
+use crate::config::DEFAULT_CHAR_DEF_BYTES;
 use crate::dic::category_type::CategoryType;
 use crate::prelude::*;
 
@@ -93,6 +94,10 @@ impl CharacterCategory {
     pub fn from_reader<T: BufRead>(data: T) -> SudachiResult<CharacterCategory> {
         let ranges = Self::read_character_definition(data)?;
         Ok(Self::compile(&ranges))
+    }
+
+    pub fn from_embedded() -> CharacterCategory {
+        Self::from_bytes(DEFAULT_CHAR_DEF_BYTES).unwrap()
     }
 
     /// Reads character type definition as a list of Ranges
@@ -262,7 +267,7 @@ impl CharacterCategory {
         }
     }
 
-    pub fn iter(&self) -> CharCategoryIter {
+    pub fn iter(&self) -> CharCategoryIter<'_> {
         CharCategoryIter {
             categories: self,
             current: 0,
@@ -313,6 +318,7 @@ mod tests {
 
     const TEST_RESOURCE_DIR: &str = "./tests/resources/";
     const TEST_CHAR_DEF_FILE: &str = "char.def";
+    type CT = CategoryType;
 
     #[test]
     fn get_category_types() {
@@ -320,7 +326,7 @@ mod tests {
         let cat = CharacterCategory::from_file(&path).expect("failed to load char.def for test");
         let cats = cat.get_category_types('熙');
         assert_eq!(1, cats.count());
-        assert!(cats.contains(CategoryType::KANJI));
+        assert!(cats.contains(CT::KANJI));
     }
 
     fn read_categories(data: &str) -> CharacterCategory {
@@ -328,8 +334,6 @@ mod tests {
             .expect("error when parsing character categories");
         CharacterCategory::compile(&ranges)
     }
-
-    type CT = CategoryType;
 
     #[test]
     fn read_cdef_1() {
@@ -509,6 +513,7 @@ mod tests {
         assert_eq!(c.get_category_types('ｂ'), CT::ALPHA);
         assert_eq!(c.get_category_types('C'), CT::ALPHA);
         assert_eq!(c.get_category_types('漢'), CT::KANJI);
+        assert_eq!(c.get_category_types('々'), CT::KANJI | CT::SYMBOL);
         assert_eq!(c.get_category_types('𡈽'), CT::DEFAULT);
         assert_eq!(c.get_category_types('ア'), CT::KATAKANA);
         assert_eq!(c.get_category_types('ｺ'), CT::KATAKANA);

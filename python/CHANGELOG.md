@@ -6,13 +6,26 @@ Also check [rust changelog](../CHANGELOG.md).
 
 ## [Unreleased]
 
+### Added
+
+- Added `Morpheme.dictionary_form_morpheme()` and `Morpheme.normalized_form_morpheme()`.
+- Added `Dictionary.entries()` and `Dictionary.lookup_all_entries()`.
+- Added `TextNormalizer` and `Dictionary.text_normalizer()`.
+
 ### Changed
 
+- Changed `Dictionary.lookup()` to normalize queries before indexed lookup,
+  matching Java Sudachi behavior.
+- Deprecate `Dictionary.create()` in favor of `Dictionary.tokenizer()`.
 - Update PyO3 to v0.29.2.
 - Migrate SudachiPy extension builds from setuptools-rust to maturin and produce
   CPython abi3 wheels for Python 3.10 and later.
 - Linux wheels now target `manylinux_2_28`; older distributions with glibc
   below 2.28 may need to build from sdist or upgrade their runtime.
+
+### Fixed
+
+- Preserve standalone form-morpheme split behavior when Python wraps Rust form entries.
 
 ### Removed
 

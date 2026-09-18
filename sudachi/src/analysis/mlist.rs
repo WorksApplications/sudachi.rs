@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2021-2024 Works Applications Co., Ltd.
+ *  Copyright (c) 2021-2026 Works Applications Co., Ltd.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -14,18 +14,19 @@
  *  limitations under the License.
  */
 
-use crate::analysis::morpheme::Morpheme;
-use crate::analysis::node::{PathCost, ResultNode};
-use crate::analysis::stateful_tokenizer::StatefulTokenizer;
-use crate::analysis::stateless_tokenizer::DictionaryAccess;
-use crate::analysis::{Mode, Node};
-use crate::dic::subset::InfoSubset;
-use crate::error::{SudachiError, SudachiResult};
-use crate::input_text::InputBuffer;
 use std::cell::{Ref, RefCell};
 use std::iter::FusedIterator;
 use std::ops::{Deref, DerefMut, Index};
 use std::rc::Rc;
+
+use crate::analysis::morpheme::Morpheme;
+use crate::analysis::node::{PathCost, ResultNode};
+use crate::analysis::stateful_tokenizer::StatefulTokenizer;
+use crate::analysis::{Mode, Node};
+use crate::dic::subset::InfoSubset;
+use crate::dic::{normalize_input_text, DictionaryAccess};
+use crate::error::{SudachiError, SudachiResult};
+use crate::input_text::InputBuffer;
 
 struct InputPart {
     input: InputBuffer,
@@ -54,15 +55,15 @@ impl Nodes {
     }
 }
 
-pub struct MorphemeList<T> {
-    dict: T,
+pub struct MorphemeList<D> {
+    dict: D,
     input: Rc<RefCell<InputPart>>,
     nodes: Nodes,
 }
 
-impl<T: DictionaryAccess> MorphemeList<T> {
+impl<D: DictionaryAccess> MorphemeList<D> {
     /// Returns an empty morpheme list
-    pub fn empty(dict: T) -> Self {
+    pub fn empty(dict: D) -> Self {
         let input = Default::default();
         Self {
             dict,
@@ -73,7 +74,7 @@ impl<T: DictionaryAccess> MorphemeList<T> {
 
     /// Creates MorphemeList from components
     pub fn from_components(
-        dict: T,
+        dict: D,
         input: InputBuffer,
         path: Vec<ResultNode>,
         subset: InfoSubset,
@@ -135,16 +136,16 @@ impl<T: DictionaryAccess> MorphemeList<T> {
         self.nodes.data.is_empty()
     }
 
-    pub fn get(&self, idx: usize) -> Morpheme<T> {
-        return Morpheme::for_list(self, idx);
+    pub fn get(&self, idx: usize) -> Morpheme<'_, D> {
+        Morpheme::for_list(self, idx)
     }
 
-    pub fn surface(&self) -> Ref<str> {
+    pub fn surface(&self) -> Ref<'_, str> {
         let inp = self.input();
         Ref::map(inp, |i| i.original())
     }
 
-    pub fn iter(&self) -> MorphemeIter<T> {
+    pub fn iter(&self) -> MorphemeIter<'_, D> {
         MorphemeIter {
             index: 0,
             list: self,
@@ -167,11 +168,11 @@ impl<T: DictionaryAccess> MorphemeList<T> {
         self.nodes.data.index(idx)
     }
 
-    pub fn dict(&self) -> &T {
+    pub fn dict(&self) -> &D {
         &self.dict
     }
 
-    pub(crate) fn input(&self) -> Ref<InputBuffer> {
+    pub(crate) fn input(&self) -> Ref<'_, InputBuffer> {
         Ref::map(self.input.deref().borrow(), |x| &x.input)
     }
 
@@ -191,26 +192,34 @@ impl<T: DictionaryAccess> MorphemeList<T> {
         out_data.extend_from_slice(&self.nodes.data[start..end]);
     }
 
+    /// Looks up the given query and reset the morpheme list to the result.
+    ///
+    /// The query is normalized with dictionary input-text plugins before lookup.
+    /// Returns the number of found entries.
     pub fn lookup(&mut self, query: &str, subset: InfoSubset) -> SudachiResult<usize> {
-        let end_chars = {
+        let (normalized, end_chars) = {
+            let dict = &self.dict;
             let input = &mut self.input.borrow_mut().input;
-            input.reset().push_str(query);
+            normalize_input_text(dict, query, input)?;
+            let normalized = input.current().to_owned();
+            input.reset().push_str(&normalized);
             input.start_build()?;
-            input.build(self.dict.grammar())?;
-            input.ch_idx(query.len())
+            input.build(dict.grammar())?;
+            let end_chars = input.ch_idx(normalized.len());
+            (normalized, end_chars)
         };
 
         let mut result = 0;
         let lex = self.dict.lexicon();
-        for entry in lex.lookup(query.as_bytes(), 0) {
-            if entry.end != query.len() {
+        for entry in lex.lookup(normalized.as_bytes(), 0) {
+            if entry.end != normalized.len() {
                 continue;
             }
             let info = lex.get_word_info_subset(entry.word_id, subset)?;
             let node = Node::new(0, end_chars as _, 0, 0, 0, entry.word_id);
             self.nodes
                 .data
-                .push(ResultNode::new(node, 0, 0, query.len() as _, info));
+                .push(ResultNode::new(node, 0, 0, normalized.len() as _, info));
             result += 1;
         }
         Ok(result)

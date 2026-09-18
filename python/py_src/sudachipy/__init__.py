@@ -12,11 +12,11 @@ if (
 
 from .sudachipy import (
     Dictionary,
+    TextNormalizer,
     Tokenizer,
     SplitMode,
     MorphemeList,
     Morpheme,
-    WordInfo,
     PosMatcher,
 )
 from .config import Config

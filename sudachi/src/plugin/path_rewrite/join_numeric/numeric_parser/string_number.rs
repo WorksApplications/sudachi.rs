@@ -100,7 +100,7 @@ impl StringNumber {
         self.significand.is_empty()
     }
 
-    pub fn to_string(&mut self) -> String {
+    pub fn get_normalized(&mut self) -> String {
         if self.is_zero() {
             return "0".to_owned();
         }

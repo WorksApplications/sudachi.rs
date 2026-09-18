@@ -1,5 +1,5 @@
 {
-  "resourcePath" : "tests/resources/",
+  "path" : "tests/resources/",
   "systemDict" : "$system_dict",
   "userDict" : "$user_dict",
   "characterDefinitionFile" : "char.def",
