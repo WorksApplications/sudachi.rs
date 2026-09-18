@@ -6,21 +6,42 @@ Also check [python changelog](python/CHANGELOG.md).
 
 ## [Unreleased]
 
+- 
+
+## [0.7.0](https://github.com/WorksApplications/sudachi.rs/releases/tag/v0.7.0) (2026-09-18)
+
+### Breaking changes
+
+See [migration guide](./docs/migration_guide.md) for details.
+
+- Binary dictionary format is changed (#316)
+  - You CANNOT use old (V0) format dictionary binary.
+- Signatures of many methods are changed
+- Config API is changed (#346)
+
 ### Added
 
-- Add Rust-side morpheme form accessors and standalone morpheme materialization.
+- Add Rust-side morpheme form accessors and standalone morpheme materialization. (#333, #344)
 - Added dictionary entry iteration APIs: `JapaneseDictionary::entries`,
-  `entries_subset`, `lookup_all_entries`, and `lookup_all_entries_subset`.
+  `entries_subset`, `lookup_all_entries`, and `lookup_all_entries_subset`. (#336)
+- Optimize sentence detector scanning (#340)
+- Added `Dictionary.oov_morpheme` to create OOV morpheme.(#344)
+- Added prefetch lookup for faster analysis. (#348)
 
 ### Changed
 
+- CLI writes tab for non-OOV morphemes to make output TSV (#327)
+- Abort when the user dict and the system dict do not match (#335)
 - Changed `MorphemeList::lookup` to normalize queries with dictionary input-text
-  plugins before indexed lookup, matching Java Sudachi behavior.
-- `fetch_dictionary.sh` targets V1 dictionary by default.
+  plugins before indexed lookup, matching Java Sudachi behavior. (#336)
+- Changed key of subsetting from `synonym_group_id` to `synonym_group_ids`. (#357)
+- `fetch_dictionary.sh` targets V1 dictionary by default. (#362)
 
 ### Fixed
 
-- Reject invalid, OOV, and special word IDs in exact-entry morpheme materialization instead of panicking.
+- Search minimum cost path in the lattice based on total-cost, not cost. (#323)
+- Fix char-category continuous length calculation. (#326)
+- Reject invalid, OOV, and special word IDs in exact-entry morpheme materialization instead of panicking. (#333)
 
 ## [0.6.11](https://github.com/WorksApplications/sudachi.rs/releases/tag/v0.6.11) (2026-03-06)
 

@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "SudachiPy"
-version = "0.6.12-a1"
+version = "0.7.0"
 description = "Python version of Sudachi, the Japanese Morphological Analyzer"
 readme = "python/README.md"
 requires-python = ">=3.10"
