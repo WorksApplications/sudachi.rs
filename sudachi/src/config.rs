@@ -736,8 +736,14 @@ mod tests {
         let roots: Vec<_> = cfg.raw_config().path.iter().cloned().collect();
         assert_eq!(roots, vec![PathBuf::from("tests/resources/")]);
         let npath = cfg.build().resolve_paths("$cfg/data".to_owned());
-        assert_eq!(npath[0], "tests/resources/data");
-        assert!(npath[1].ends_with("sudachi/tests/resources/data"));
+        assert_eq!(
+            PathBuf::from(&npath[0]),
+            Path::new("tests/resources").join("data")
+        );
+        assert_eq!(
+            PathBuf::from(&npath[1]),
+            cfg_path.parent().unwrap().join("data")
+        );
         Ok(())
     }
 
