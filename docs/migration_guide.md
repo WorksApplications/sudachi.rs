@@ -3,16 +3,25 @@
 
 ## バイナリ辞書
 
-Sudachi 辞書のバイナリ形式が変更され、v0.6 までのバイナリ辞書は使用できなくなりました。
-SudachiDict-\* (small/core/full) から取得できるシステム辞書は、バージョン v\* ([TBA]) 以降のみ使用可能です。
-それ以前の辞書を使用するには、個別にソースファイルからのビルドが必要です。
+sudachi.rs / SudachiPy v0.7 にて辞書のバイナリ形式が V1 形式に変更され、v0.6 までのバイナリ辞書（V0 形式）は使用できなくなりました。
+移行には以下の対応が必要です。
 
-ユーザー辞書についても再ビルドが必要です。
-詳細はJava版の[ユーザー辞書移行ガイド](https://github.com/WorksApplications/Sudachi/blob/develop/docs/migrate_user_dictionary.md)を参照してください。
-辞書バイナリは Java/Rust/Python で共通です。辞書のビルドには本リポジトリやCLIも使用可能です。
+- V1 形式のシステム辞書を取得する
+  - [V1 形式バイナリ辞書配布ページ](http://sudachi.s3-website-ap-northeast-1.amazonaws.com/sudachidict/v1) にて配布しています。
+- ユーザー辞書を V1 形式に再ビルドする
+  - このとき、実行時に使用するものと同じシステム辞書を使用する必要があります。
+- 辞書配布ページの URL を使用している場合は更新する
+  - V1 形式バイナリ辞書配布ページ：http://sudachi.s3-website-ap-northeast-1.amazonaws.com/sudachidict/v1
+  - V1 形式辞書ソース配布ページ：http://sudachi.s3-website-ap-northeast-1.amazonaws.com/sudachidict-raw/v1
 
-また、ユーザ辞書を使用する際は、システム辞書がそのユーザ辞書のビルドに使用したものと異なる場合はエラーとなるようになりました。
-システム辞書を変更・ビルドした際は、合わせてユーザ辞書の再ビルドが必要になります。
+SudachiDict-\* (small/core/full) から取得できるシステム辞書は、バージョン v202610xx (TBA) 以降のみ使用可能です。
+それ以前の辞書を使用するには、上記配布ページから取得するか、個別にソースファイルからのビルドが必要です。
+
+ユーザー辞書の再ビルドについてはJava版の[ユーザー辞書移行ガイド](https://github.com/WorksApplications/Sudachi/blob/develop/docs/migrate_user_dictionary.md)を参照してください。
+辞書バイナリは Java/Rust/Python で共通です。辞書のビルドには sudachi.rs/ SudachiPy も使用可能です。
+
+ユーザー辞書には、ビルド時に使用したシステム辞書の識別情報が記録されるようになりました。実行時にこれと異なるシステム辞書が指定された場合はエラーとなります。
+システム辞書を更新する際には、使用するすべてのユーザー辞書についてもそのシステム辞書で再ビルドする必要があります。
 
 ## 解析アルゴリズム
 
@@ -48,6 +57,12 @@ v0.6 ではこの候補が複数ある際に連接コスト込みで選択を行
 
 `-a` 指定時の出力について、その語がOOVでない場合に末尾に TAB (`\t`) が出力されるようになりました。
 これにより出力が EOS 表示行を除いて TSV 形式となります。
+
+### デフォルトリソースディレクトリの削除
+
+`char.def` などのデフォルトリソースファイルはバイナリに埋め込まれるようになりました。
+これに伴い v0.6 で CLI が使用していたデフォルトリソースディレクトリ（`resources/`）は使用されなくなりました。
+このためデフォルトで参照するシステム辞書ファイルも `resources/system.dic` から `$PWD/system.dic` に変更されています。
 
 ## Config
 
