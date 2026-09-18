@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["SudachiError","SudachiNomError"],"type":["SudachiNomResult","SudachiResult"]};
+window.SIDEBAR_ITEMS = {"enum":["SudachiError"],"type":["SudachiResult"]};

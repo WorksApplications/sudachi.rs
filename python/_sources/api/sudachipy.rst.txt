@@ -16,6 +16,17 @@ Dictionary
    :members:
 
 
+TextNormalizer
+----------------------
+
+``TextNormalizer`` applies input-text plugins to raw input text.
+It does not perform morphological analysis or return morpheme normalized forms.
+Without a dictionary, it uses the default input-text normalization.
+
+.. autoclass:: sudachipy.TextNormalizer
+   :members:
+
+
 SplitMode
 ----------------------
 
@@ -40,8 +51,6 @@ Morpheme
    :members:
 
 
-* Method ``Morpheme.get_word_info(self) -> WordInfo`` is deprecated.
-
 .. autoclass:: sudachipy.Morpheme
    :members:
 
@@ -52,4 +61,3 @@ WordInfo
 .. autoclass:: sudachipy.WordInfo
    :members:
    :undoc-members:
-

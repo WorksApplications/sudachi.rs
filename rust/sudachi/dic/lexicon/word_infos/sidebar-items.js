@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["WordInfo","WordInfoData","WordInfos"]};
+window.SIDEBAR_ITEMS = {};

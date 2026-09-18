@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["build","category_type","character_category","connect","dictionary","grammar","header","lexicon","lexicon_set","read","storage","subset","word_id"],"struct":["DictionaryLoader","LoadedDictionary"]};
+window.SIDEBAR_ITEMS = {"mod":["binary_loader","build","category_type","character_category","connect","description","dictionary","error","grammar","header","lexicon","lexicon_set","pos","read","storage","subset","word_id","word_info"],"trait":["DescriptionAccess","DictionaryAccess","LexiconAccess","ReferenceIdAccess"]};

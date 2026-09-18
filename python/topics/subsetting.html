@@ -84,7 +84,7 @@
   <section id="wordinfo-subsetting">
 <h1>WordInfo subsetting<a class="headerlink" href="#wordinfo-subsetting" title="Link to this heading"></a></h1>
 <p>It is possible to ask Suachi to return only a subset of fields in the WordInfo.
-To do that, you can use the <code class="docutils literal notranslate"><span class="pre">fields</span></code> parameter of the <a class="reference internal" href="../api/sudachipy.html#sudachipy.Dictionary.create" title="sudachipy.Dictionary.create"><code class="xref py py-meth docutils literal notranslate"><span class="pre">sudachipy.Dictionary.create()</span></code></a> method.
+To do that, you can use the <code class="docutils literal notranslate"><span class="pre">fields</span></code> parameter of the <a class="reference internal" href="../api/sudachipy.html#sudachipy.Dictionary.tokenizer" title="sudachipy.Dictionary.tokenizer"><code class="xref py py-meth docutils literal notranslate"><span class="pre">sudachipy.Dictionary.tokenizer()</span></code></a> method.
 The parameter accepts a set of strings, each one representing a field to be returned.
 By default, all fields are returned.</p>
 <p>Allowed values:</p>
@@ -99,9 +99,10 @@ By default, all fields are returned.</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">dictionary_form</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">reading_form</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">word_structure</span></code></p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">synonym_group_id</span></code></p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">splits_a</span></code></p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">splits_b</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">synonym_group_ids</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">user_data</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">split_a</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">split_b</span></code></p></li>
 </ul>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -110,9 +111,18 @@ passing empty set is allowed.</p>
 </div>
 <p>You need to load splits if you want to use <a class="reference internal" href="../api/sudachipy.html#sudachipy.Morpheme.split" title="sudachipy.Morpheme.split"><code class="xref py py-meth docutils literal notranslate"><span class="pre">sudachipy.Morpheme.split()</span></code></a> method.
 If performing the tokenization with non-default mode, the required splits will be loaded automatically and can be omitted.:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">dic</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">SplitMode</span><span class="o">.</span><span class="n">B</span><span class="p">,</span> <span class="n">fields</span><span class="o">=</span><span class="p">{})</span> <span class="c1"># implicitly becomes fields={'splits_b'}</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">dic</span><span class="o">.</span><span class="n">tokenizer</span><span class="p">(</span><span class="n">SplitMode</span><span class="o">.</span><span class="n">B</span><span class="p">,</span> <span class="n">fields</span><span class="o">=</span><span class="nb">set</span><span class="p">())</span> <span class="c1"># implicitly becomes fields={'split_b'}</span>
 </pre></div>
 </div>
+<p>To access user-defined dictionary data when field subsetting is enabled, load
+<code class="docutils literal notranslate"><span class="pre">user_data</span></code> explicitly.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">tokenizer</span> <span class="o">=</span> <span class="n">dic</span><span class="o">.</span><span class="n">tokenizer</span><span class="p">(</span><span class="n">fields</span><span class="o">=</span><span class="p">{</span><span class="s2">"surface"</span><span class="p">,</span> <span class="s2">"user_data"</span><span class="p">})</span>
+<span class="n">morpheme</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">tokenize</span><span class="p">(</span><span class="s2">"すだち"</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+<span class="k">assert</span> <span class="n">morpheme</span><span class="o">.</span><span class="n">user_data</span><span class="p">()</span> <span class="o">==</span> <span class="s2">"徳島県産"</span>
+</pre></div>
+</div>
+<p>If <code class="docutils literal notranslate"><span class="pre">fields</span></code> is specified without <code class="docutils literal notranslate"><span class="pre">user_data</span></code>, <a class="reference internal" href="../api/sudachipy.html#sudachipy.Morpheme.user_data" title="sudachipy.Morpheme.user_data"><code class="xref py py-meth docutils literal notranslate"><span class="pre">sudachipy.Morpheme.user_data()</span></code></a>
+follows the same partial-loading rule as other fields and may return an incorrect result.</p>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
 <p>Using a field not included in the passed subset will produce an incorrect result without any warning.

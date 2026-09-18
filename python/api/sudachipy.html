@@ -65,10 +65,22 @@
 <li class="toctree-l3"><a class="reference internal" href="#sudachipy.Dictionary"><code class="docutils literal notranslate"><span class="pre">Dictionary</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#sudachipy.Dictionary.close"><code class="docutils literal notranslate"><span class="pre">Dictionary.close()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#sudachipy.Dictionary.create"><code class="docutils literal notranslate"><span class="pre">Dictionary.create()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sudachipy.Dictionary.entries"><code class="docutils literal notranslate"><span class="pre">Dictionary.entries()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#sudachipy.Dictionary.lookup"><code class="docutils literal notranslate"><span class="pre">Dictionary.lookup()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sudachipy.Dictionary.lookup_all_entries"><code class="docutils literal notranslate"><span class="pre">Dictionary.lookup_all_entries()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sudachipy.Dictionary.oov_morpheme"><code class="docutils literal notranslate"><span class="pre">Dictionary.oov_morpheme()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#sudachipy.Dictionary.pos_matcher"><code class="docutils literal notranslate"><span class="pre">Dictionary.pos_matcher()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#sudachipy.Dictionary.pos_of"><code class="docutils literal notranslate"><span class="pre">Dictionary.pos_of()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#sudachipy.Dictionary.pre_tokenizer"><code class="docutils literal notranslate"><span class="pre">Dictionary.pre_tokenizer()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sudachipy.Dictionary.text_normalizer"><code class="docutils literal notranslate"><span class="pre">Dictionary.text_normalizer()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sudachipy.Dictionary.tokenizer"><code class="docutils literal notranslate"><span class="pre">Dictionary.tokenizer()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#textnormalizer">TextNormalizer</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#sudachipy.TextNormalizer"><code class="docutils literal notranslate"><span class="pre">TextNormalizer</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#sudachipy.TextNormalizer.normalize"><code class="docutils literal notranslate"><span class="pre">TextNormalizer.normalize()</span></code></a></li>
 </ul>
 </li>
 </ul>
@@ -96,11 +108,12 @@
 <li class="toctree-l3"><a class="reference internal" href="#sudachipy.Morpheme"><code class="docutils literal notranslate"><span class="pre">Morpheme</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#sudachipy.Morpheme.begin"><code class="docutils literal notranslate"><span class="pre">Morpheme.begin()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#sudachipy.Morpheme.dictionary_form"><code class="docutils literal notranslate"><span class="pre">Morpheme.dictionary_form()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sudachipy.Morpheme.dictionary_form_morpheme"><code class="docutils literal notranslate"><span class="pre">Morpheme.dictionary_form_morpheme()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#sudachipy.Morpheme.dictionary_id"><code class="docutils literal notranslate"><span class="pre">Morpheme.dictionary_id()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#sudachipy.Morpheme.end"><code class="docutils literal notranslate"><span class="pre">Morpheme.end()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#sudachipy.Morpheme.get_word_info"><code class="docutils literal notranslate"><span class="pre">Morpheme.get_word_info()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#sudachipy.Morpheme.is_oov"><code class="docutils literal notranslate"><span class="pre">Morpheme.is_oov()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#sudachipy.Morpheme.normalized_form"><code class="docutils literal notranslate"><span class="pre">Morpheme.normalized_form()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sudachipy.Morpheme.normalized_form_morpheme"><code class="docutils literal notranslate"><span class="pre">Morpheme.normalized_form_morpheme()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#sudachipy.Morpheme.part_of_speech"><code class="docutils literal notranslate"><span class="pre">Morpheme.part_of_speech()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#sudachipy.Morpheme.part_of_speech_id"><code class="docutils literal notranslate"><span class="pre">Morpheme.part_of_speech_id()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#sudachipy.Morpheme.raw_surface"><code class="docutils literal notranslate"><span class="pre">Morpheme.raw_surface()</span></code></a></li>
@@ -108,29 +121,13 @@
 <li class="toctree-l4"><a class="reference internal" href="#sudachipy.Morpheme.split"><code class="docutils literal notranslate"><span class="pre">Morpheme.split()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#sudachipy.Morpheme.surface"><code class="docutils literal notranslate"><span class="pre">Morpheme.surface()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#sudachipy.Morpheme.synonym_group_ids"><code class="docutils literal notranslate"><span class="pre">Morpheme.synonym_group_ids()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sudachipy.Morpheme.user_data"><code class="docutils literal notranslate"><span class="pre">Morpheme.user_data()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#sudachipy.Morpheme.word_id"><code class="docutils literal notranslate"><span class="pre">Morpheme.word_id()</span></code></a></li>
 </ul>
 </li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#wordinfo">WordInfo</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#sudachipy.WordInfo"><code class="docutils literal notranslate"><span class="pre">WordInfo</span></code></a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#sudachipy.WordInfo.a_unit_split"><code class="docutils literal notranslate"><span class="pre">WordInfo.a_unit_split</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#sudachipy.WordInfo.b_unit_split"><code class="docutils literal notranslate"><span class="pre">WordInfo.b_unit_split</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#sudachipy.WordInfo.dictionary_form"><code class="docutils literal notranslate"><span class="pre">WordInfo.dictionary_form</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#sudachipy.WordInfo.dictionary_form_word_id"><code class="docutils literal notranslate"><span class="pre">WordInfo.dictionary_form_word_id</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#sudachipy.WordInfo.head_word_length"><code class="docutils literal notranslate"><span class="pre">WordInfo.head_word_length</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#sudachipy.WordInfo.length"><code class="docutils literal notranslate"><span class="pre">WordInfo.length()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#sudachipy.WordInfo.normalized_form"><code class="docutils literal notranslate"><span class="pre">WordInfo.normalized_form</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#sudachipy.WordInfo.pos_id"><code class="docutils literal notranslate"><span class="pre">WordInfo.pos_id</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#sudachipy.WordInfo.reading_form"><code class="docutils literal notranslate"><span class="pre">WordInfo.reading_form</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#sudachipy.WordInfo.surface"><code class="docutils literal notranslate"><span class="pre">WordInfo.surface</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#sudachipy.WordInfo.synonym_group_ids"><code class="docutils literal notranslate"><span class="pre">WordInfo.synonym_group_ids</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#sudachipy.WordInfo.word_structure"><code class="docutils literal notranslate"><span class="pre">WordInfo.word_structure</span></code></a></li>
-</ul>
-</li>
-</ul>
-</li>
+<li class="toctree-l2"><a class="reference internal" href="#wordinfo">WordInfo</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="sudachipy.dictionary.html">sudachipy.dictionary package</a></li>
@@ -253,6 +250,7 @@ Also, can be an _absolute_ path to a compiled dictionary file.</p></li>
 <span class="sig-name descname"><span class="pre">create</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="positional-only-separator o"><abbr title="Positional-only parameter separator (PEP 570)"><span class="pre">/</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">SplitMode.C</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fields</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">projection</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#sudachipy.Tokenizer" title="sudachipy.Tokenizer"><span class="pre">Tokenizer</span></a></span></span><a class="headerlink" href="#sudachipy.Dictionary.create" title="Link to this definition"></a></dt>
 <dd><p>–</p>
 <p>Creates a sudachi tokenizer.</p>
+<p>This method is deprecated, use <a class="reference internal" href="#sudachipy.Dictionary.tokenizer" title="sudachipy.Dictionary.tokenizer"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Dictionary.tokenizer()</span></code></a> instead.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -266,20 +264,72 @@ See <a class="reference external" href="https://worksapplications.github.io/suda
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="sudachipy.Dictionary.entries">
+<span class="sig-name descname"><span class="pre">entries</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="positional-only-separator o"><abbr title="Positional-only parameter separator (PEP 570)"><span class="pre">/</span></abbr></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Iterator</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#sudachipy.Morpheme" title="sudachipy.Morpheme"><span class="pre">Morpheme</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#sudachipy.Dictionary.entries" title="Link to this definition"></a></dt>
+<dd><p>–</p>
+<p>Iterates over dictionary entries as standalone morphemes.</p>
+<p>This iterates public lexicon entries. It includes entries that are
+referred to from other entries, such as split or constituent units, even
+when they are not indexed for normal lookup. Internal entries
+automatically generated for literal normalized forms are not exposed.
+The iteration order is not part of the public contract.</p>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="sudachipy.Dictionary.lookup">
 <span class="sig-name descname"><span class="pre">lookup</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="positional-only-separator o"><abbr title="Positional-only parameter separator (PEP 570)"><span class="pre">/</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">surface</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#sudachipy.MorphemeList" title="sudachipy.MorphemeList"><span class="pre">MorphemeList</span></a></span></span><a class="headerlink" href="#sudachipy.Dictionary.lookup" title="Link to this definition"></a></dt>
 <dd><p>–</p>
 <p>Look up morphemes in the binary dictionary without performing the analysis.</p>
-<p>All morphemes from the dictionary with the given surface string are returned,
-with the last user dictionary searched first and the system dictionary searched last.
+<p>The given surface is normalized before lookup. All morphemes from the
+dictionary with the normalized surface string are returned, with the last
+user dictionary searched first and the system dictionary searched last.
 Inside a dictionary, morphemes are outputted in-binary-dictionary order.
 Morphemes which are not indexed are not returned.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>surface</strong> (<em>str</em>) – find all morphemes with the given surface</p></li>
+<li><p><strong>surface</strong> (<em>str</em>) – input surface; normalized before indexed lookup.</p></li>
 <li><p><strong>out</strong> (<a class="reference internal" href="#sudachipy.MorphemeList" title="sudachipy.MorphemeList"><em>MorphemeList</em></a><em> | </em><em>None</em>) – if passed, reuse the given morpheme list instead of creating a new one.
 See <a class="reference external" href="https://worksapplications.github.io/sudachi.rs/python/topics/out_param.html">https://worksapplications.github.io/sudachi.rs/python/topics/out_param.html</a> for details.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sudachipy.Dictionary.lookup_all_entries">
+<span class="sig-name descname"><span class="pre">lookup_all_entries</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="positional-only-separator o"><abbr title="Positional-only parameter separator (PEP 570)"><span class="pre">/</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">surface</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#sudachipy.MorphemeList" title="sudachipy.MorphemeList"><span class="pre">MorphemeList</span></a></span></span><a class="headerlink" href="#sudachipy.Dictionary.lookup_all_entries" title="Link to this definition"></a></dt>
+<dd><p>–</p>
+<p>Look up morphemes by scanning all dictionary entries.</p>
+<p>The given surface is normalized before matching. This scans public
+lexicon entries and can find entries which are not indexed for normal
+lookup. This can be slow on large dictionaries; use <cite>lookup()</cite> for
+normal indexed lookup.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>surface</strong> (<em>str</em>) – find all morphemes whose normalized surface matches this value</p></li>
+<li><p><strong>out</strong> (<a class="reference internal" href="#sudachipy.MorphemeList" title="sudachipy.MorphemeList"><em>MorphemeList</em></a><em> | </em><em>None</em>) – if passed, reuse the given morpheme list instead of creating a new one.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sudachipy.Dictionary.oov_morpheme">
+<span class="sig-name descname"><span class="pre">oov_morpheme</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="positional-only-separator o"><abbr title="Positional-only parameter separator (PEP 570)"><span class="pre">/</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">pos_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">surface</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reading</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">normalized_form</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dictionary_form</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#sudachipy.Morpheme" title="sudachipy.Morpheme"><span class="pre">Morpheme</span></a></span></span><a class="headerlink" href="#sudachipy.Dictionary.oov_morpheme" title="Link to this definition"></a></dt>
+<dd><p>–</p>
+<p>Create an out-of-vocabulary morpheme from the POS id and string forms.</p>
+<p>Begin/end are set from the surface. When optional string forms are not
+provided, the surface is used for them.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pos_id</strong> (<em>int</em>) – part-of-speech id of the morpheme</p></li>
+<li><p><strong>surface</strong> (<em>str</em>) – surface of the morpheme</p></li>
+<li><p><strong>reading</strong> (<em>str</em><em> | </em><em>None</em>) – reading form of the morpheme</p></li>
+<li><p><strong>normalized_form</strong> (<em>str</em><em> | </em><em>None</em>) – normalized form of the morpheme</p></li>
+<li><p><strong>dictionary_form</strong> (<em>str</em><em> | </em><em>None</em>) – dictionary form of the morpheme</p></li>
 </ul>
 </dd>
 </dl>
@@ -336,6 +386,64 @@ See <a class="reference external" href="https://github.com/huggingface/tokenizer
 If nothing was passed, simply use surface as token representations.</p></li>
 <li><p><strong>projection</strong> (<em>str</em><em> | </em><em>None</em>) – Projection override for created Tokenizer. See Config.projection for supported values.</p></li>
 </ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sudachipy.Dictionary.text_normalizer">
+<span class="sig-name descname"><span class="pre">text_normalizer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="positional-only-separator o"><abbr title="Positional-only parameter separator (PEP 570)"><span class="pre">/</span></abbr></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#sudachipy.TextNormalizer" title="sudachipy.TextNormalizer"><span class="pre">TextNormalizer</span></a></span></span><a class="headerlink" href="#sudachipy.Dictionary.text_normalizer" title="Link to this definition"></a></dt>
+<dd><p>–</p>
+<p>Creates a text normalizer from this dictionary.</p>
+<p>The returned normalizer applies the same input-text plugins that this
+dictionary uses before tokenization.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sudachipy.Dictionary.tokenizer">
+<span class="sig-name descname"><span class="pre">tokenizer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="positional-only-separator o"><abbr title="Positional-only parameter separator (PEP 570)"><span class="pre">/</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">SplitMode.C</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fields</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">projection</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#sudachipy.Tokenizer" title="sudachipy.Tokenizer"><span class="pre">Tokenizer</span></a></span></span><a class="headerlink" href="#sudachipy.Dictionary.tokenizer" title="Link to this definition"></a></dt>
+<dd><p>–</p>
+<p>Creates a sudachi tokenizer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>mode</strong> (<a class="reference internal" href="#sudachipy.SplitMode" title="sudachipy.SplitMode"><em>SplitMode</em></a><em> | </em><em>str</em><em> | </em><em>None</em>) – sets the analysis mode for this Tokenizer</p></li>
+<li><p><strong>fields</strong> (<em>set</em><em>[</em><em>str</em><em>] </em><em>| </em><em>None</em>) – load only a subset of fields.
+See <a class="reference external" href="https://worksapplications.github.io/sudachi.rs/python/topics/subsetting.html">https://worksapplications.github.io/sudachi.rs/python/topics/subsetting.html</a>.</p></li>
+<li><p><strong>projection</strong> (<em>str</em><em> | </em><em>None</em>) – Projection override for created Tokenizer. See Config.projection for values.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="textnormalizer">
+<h2>TextNormalizer<a class="headerlink" href="#textnormalizer" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">TextNormalizer</span></code> applies input-text plugins to raw input text.
+It does not perform morphological analysis or return morpheme normalized forms.
+Without a dictionary, it uses the default input-text normalization.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="sudachipy.TextNormalizer">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">sudachipy.</span></span><span class="sig-name descname"><span class="pre">TextNormalizer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dictionary</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#sudachipy.TextNormalizer" title="sudachipy.TextNormalizer"><span class="pre">TextNormalizer</span></a></span></span><a class="headerlink" href="#sudachipy.TextNormalizer" title="Link to this definition"></a></dt>
+<dd><p>–</p>
+<p>A text normalizer.</p>
+<p>This applies input-text plugins to raw input text. It does not perform
+morphological analysis or return morpheme normalized forms.</p>
+<p>Create using <code class="docutils literal notranslate"><span class="pre">Dictionary.text_normalizer()</span></code> or by passing a
+<code class="docutils literal notranslate"><span class="pre">Dictionary</span></code> to this class. Without a dictionary, this uses the default
+input-text normalization.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="sudachipy.TextNormalizer.normalize">
+<span class="sig-name descname"><span class="pre">normalize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="positional-only-separator o"><abbr title="Positional-only parameter separator (PEP 570)"><span class="pre">/</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">text</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#sudachipy.TextNormalizer.normalize" title="Link to this definition"></a></dt>
+<dd><p>–</p>
+<p>Normalize text using input-text plugins.</p>
+<p>This normalizes tokenizer input text, not the dictionary-normalized form
+returned by <code class="docutils literal notranslate"><span class="pre">Morpheme.normalized_form()</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>text</strong> (<em>str</em>) – text to normalize.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -452,9 +560,6 @@ Use Tokenizer.tokenize(“”) to create an empty morpheme list.</p>
 
 </dd></dl>
 
-<ul class="simple">
-<li><p>Method <code class="docutils literal notranslate"><span class="pre">Morpheme.get_word_info(self)</span> <span class="pre">-&gt;</span> <span class="pre">WordInfo</span></code> is deprecated.</p></li>
-</ul>
 <dl class="py class">
 <dt class="sig sig-object py" id="sudachipy.Morpheme">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">sudachipy.</span></span><span class="sig-name descname"><span class="pre">Morpheme</span></span><a class="headerlink" href="#sudachipy.Morpheme" title="Link to this definition"></a></dt>
@@ -474,6 +579,17 @@ Use Tokenizer.tokenize(“”) to create an empty morpheme list.</p>
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="sudachipy.Morpheme.dictionary_form_morpheme">
+<span class="sig-name descname"><span class="pre">dictionary_form_morpheme</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="positional-only-separator o"><abbr title="Positional-only parameter separator (PEP 570)"><span class="pre">/</span></abbr></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#sudachipy.Morpheme" title="sudachipy.Morpheme"><span class="pre">Morpheme</span></a></span></span><a class="headerlink" href="#sudachipy.Morpheme.dictionary_form_morpheme" title="Link to this definition"></a></dt>
+<dd><p>–</p>
+<p>Returns the morpheme corresponding to this morpheme’s dictionary form.</p>
+<p>For out-of-vocabulary morphemes, invalid references, and references to
+the same dictionary entry, returns a morpheme equivalent to <code class="docutils literal notranslate"><span class="pre">self</span></code>.
+For a distinct referenced entry, returns a standalone morpheme whose
+begin/end offsets are <code class="docutils literal notranslate"><span class="pre">0..len(surface)</span></code>.</p>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="sudachipy.Morpheme.dictionary_id">
 <span class="sig-name descname"><span class="pre">dictionary_id</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="positional-only-separator o"><abbr title="Positional-only parameter separator (PEP 570)"><span class="pre">/</span></abbr></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#sudachipy.Morpheme.dictionary_id" title="Link to this definition"></a></dt>
 <dd><p>–</p>
@@ -488,17 +604,6 @@ Use Tokenizer.tokenize(“”) to create an empty morpheme list.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="sudachipy.Morpheme.get_word_info">
-<span class="sig-name descname"><span class="pre">get_word_info</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="positional-only-separator o"><abbr title="Positional-only parameter separator (PEP 570)"><span class="pre">/</span></abbr></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#sudachipy.WordInfo" title="sudachipy.WordInfo"><span class="pre">WordInfo</span></a></span></span><a class="headerlink" href="#sudachipy.Morpheme.get_word_info" title="Link to this definition"></a></dt>
-<dd><p>–</p>
-<p>Returns the word info.</p>
-<dl class="simple">
-<dt>..deprecated:: v0.6.0</dt><dd><p>Users should not touch the raw WordInfo.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
 <dt class="sig sig-object py" id="sudachipy.Morpheme.is_oov">
 <span class="sig-name descname"><span class="pre">is_oov</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="positional-only-separator o"><abbr title="Positional-only parameter separator (PEP 570)"><span class="pre">/</span></abbr></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#sudachipy.Morpheme.is_oov" title="Link to this definition"></a></dt>
 <dd><p>–</p>
@@ -510,6 +615,17 @@ Use Tokenizer.tokenize(“”) to create an empty morpheme list.</p>
 <span class="sig-name descname"><span class="pre">normalized_form</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="positional-only-separator o"><abbr title="Positional-only parameter separator (PEP 570)"><span class="pre">/</span></abbr></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#sudachipy.Morpheme.normalized_form" title="Link to this definition"></a></dt>
 <dd><p>–</p>
 <p>Returns the normalized form.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sudachipy.Morpheme.normalized_form_morpheme">
+<span class="sig-name descname"><span class="pre">normalized_form_morpheme</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="positional-only-separator o"><abbr title="Positional-only parameter separator (PEP 570)"><span class="pre">/</span></abbr></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#sudachipy.Morpheme" title="sudachipy.Morpheme"><span class="pre">Morpheme</span></a></span></span><a class="headerlink" href="#sudachipy.Morpheme.normalized_form_morpheme" title="Link to this definition"></a></dt>
+<dd><p>–</p>
+<p>Returns the morpheme corresponding to this morpheme’s normalized form.</p>
+<p>For out-of-vocabulary morphemes, invalid references, and references to
+the same dictionary entry, returns a morpheme equivalent to <code class="docutils literal notranslate"><span class="pre">self</span></code>.
+For a distinct referenced entry, returns a standalone morpheme whose
+begin/end offsets are <code class="docutils literal notranslate"><span class="pre">0..len(surface)</span></code>.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -578,6 +694,13 @@ When False is passed, empty lists are returned instead.</p></li>
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="sudachipy.Morpheme.user_data">
+<span class="sig-name descname"><span class="pre">user_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="positional-only-separator o"><abbr title="Positional-only parameter separator (PEP 570)"><span class="pre">/</span></abbr></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#sudachipy.Morpheme.user_data" title="Link to this definition"></a></dt>
+<dd><p>–</p>
+<p>Returns user-defined data associated with this morpheme.</p>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="sudachipy.Morpheme.word_id">
 <span class="sig-name descname"><span class="pre">word_id</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="positional-only-separator o"><abbr title="Positional-only parameter separator (PEP 570)"><span class="pre">/</span></abbr></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#sudachipy.Morpheme.word_id" title="Link to this definition"></a></dt>
 <dd><p>–</p>
@@ -589,71 +712,6 @@ When False is passed, empty lists are returned instead.</p></li>
 </section>
 <section id="wordinfo">
 <h2>WordInfo<a class="headerlink" href="#wordinfo" title="Link to this heading"></a></h2>
-<dl class="py class">
-<dt class="sig sig-object py" id="sudachipy.WordInfo">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">sudachipy.</span></span><span class="sig-name descname"><span class="pre">WordInfo</span></span><a class="headerlink" href="#sudachipy.WordInfo" title="Link to this definition"></a></dt>
-<dd><dl class="py attribute">
-<dt class="sig sig-object py" id="sudachipy.WordInfo.a_unit_split">
-<span class="sig-name descname"><span class="pre">a_unit_split</span></span><a class="headerlink" href="#sudachipy.WordInfo.a_unit_split" title="Link to this definition"></a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="sudachipy.WordInfo.b_unit_split">
-<span class="sig-name descname"><span class="pre">b_unit_split</span></span><a class="headerlink" href="#sudachipy.WordInfo.b_unit_split" title="Link to this definition"></a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="sudachipy.WordInfo.dictionary_form">
-<span class="sig-name descname"><span class="pre">dictionary_form</span></span><a class="headerlink" href="#sudachipy.WordInfo.dictionary_form" title="Link to this definition"></a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="sudachipy.WordInfo.dictionary_form_word_id">
-<span class="sig-name descname"><span class="pre">dictionary_form_word_id</span></span><a class="headerlink" href="#sudachipy.WordInfo.dictionary_form_word_id" title="Link to this definition"></a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="sudachipy.WordInfo.head_word_length">
-<span class="sig-name descname"><span class="pre">head_word_length</span></span><a class="headerlink" href="#sudachipy.WordInfo.head_word_length" title="Link to this definition"></a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="sudachipy.WordInfo.length">
-<span class="sig-name descname"><span class="pre">length</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#sudachipy.WordInfo.length" title="Link to this definition"></a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="sudachipy.WordInfo.normalized_form">
-<span class="sig-name descname"><span class="pre">normalized_form</span></span><a class="headerlink" href="#sudachipy.WordInfo.normalized_form" title="Link to this definition"></a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="sudachipy.WordInfo.pos_id">
-<span class="sig-name descname"><span class="pre">pos_id</span></span><a class="headerlink" href="#sudachipy.WordInfo.pos_id" title="Link to this definition"></a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="sudachipy.WordInfo.reading_form">
-<span class="sig-name descname"><span class="pre">reading_form</span></span><a class="headerlink" href="#sudachipy.WordInfo.reading_form" title="Link to this definition"></a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="sudachipy.WordInfo.surface">
-<span class="sig-name descname"><span class="pre">surface</span></span><a class="headerlink" href="#sudachipy.WordInfo.surface" title="Link to this definition"></a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="sudachipy.WordInfo.synonym_group_ids">
-<span class="sig-name descname"><span class="pre">synonym_group_ids</span></span><a class="headerlink" href="#sudachipy.WordInfo.synonym_group_ids" title="Link to this definition"></a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="sudachipy.WordInfo.word_structure">
-<span class="sig-name descname"><span class="pre">word_structure</span></span><a class="headerlink" href="#sudachipy.WordInfo.word_structure" title="Link to this definition"></a></dt>
-<dd></dd></dl>
-
-</dd></dl>
-
 </section>
 </section>
 

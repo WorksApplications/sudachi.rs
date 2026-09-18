@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":["MAX_DICTIONARIES"],"mod":["trie","word_id_table","word_infos","word_params"],"struct":["Lexicon","LexiconEntry"]};
+window.SIDEBAR_ITEMS = {"constant":["MAX_DICTIONARIES"],"mod":["strings","trie","word_id_table","word_infos","word_params"],"struct":["Lexicon","LexiconEntry"]};

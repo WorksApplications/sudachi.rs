@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["Mode"],"mod":["created","lattice","mlist","morpheme","node","stateful_tokenizer","stateless_tokenizer"],"struct":["Node"],"trait":["Tokenize"]};
+window.SIDEBAR_ITEMS = {"mod":["created","lattice","mlist","mode","morpheme","node","stateful_tokenizer","stateless_tokenizer"],"struct":["Node"],"trait":["Tokenize"]};

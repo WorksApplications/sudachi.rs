@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["WordInfoError"],"mod":["layout","parse"],"struct":["WordInfo","WordInfoData","WordInfoFixedData","WordInfoRawData","WordInfoRefData","WordInfos"],"trait":["WordInfoResolver"]};

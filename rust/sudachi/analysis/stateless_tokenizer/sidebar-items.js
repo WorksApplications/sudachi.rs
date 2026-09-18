@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["StatelessTokenizer"],"trait":["DictionaryAccess"]};
+window.SIDEBAR_ITEMS = {"struct":["StatelessTokenizer"]};

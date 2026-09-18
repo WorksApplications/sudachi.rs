@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["WordId"]};
+window.SIDEBAR_ITEMS = {"struct":["DictId","EntryId","WordId","WordRef"]};

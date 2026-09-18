@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["Morpheme"]};
+window.SIDEBAR_ITEMS = {"enum":["MorphemeRef","MorphemeSurface"],"struct":["Morpheme","SingleMorpheme"],"trait":["MorphemeView"]};
