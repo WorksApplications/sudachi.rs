@@ -31,7 +31,7 @@ class MyTestCase(unittest.TestCase):
         resource_dir = os.path.join(os.path.dirname(
             os.path.abspath(__file__)), 'resources')
         config_path = os.path.join(resource_dir, 'sudachi_projection.json')
-        with open(config_path) as fi:
+        with open(config_path, encoding='utf-8') as fi:
             config = json.load(fi)
         return config, resource_dir
 
