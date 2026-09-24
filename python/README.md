@@ -13,10 +13,6 @@ This is not a pure Python implementation, but bindings for the
 > v0.7 introduces a new dictionary binary format (V1). When upgrading from v0.6, update the system dictionary and rebuild all user dictionaries against the exact system dictionary that will be used at runtime. If you download dictionaries from a pinned URL, update it. See the [migration guide](docs/migration_guide.md).
 
 > **CAUTION**
-> SudachiDict-* does not provide V1 dictionary yet (we are planning to support V1 from v202610xx).
-> You need to download V1 dictionary binary by yourself and explicitly specify its path.
-
-> **CAUTION**
 > Release v0.7.* is unstable. It may include breaking changes even between patch versions, so please pin the exact version and review release notes carefully before upgrading.
 
 ## TL;DR
