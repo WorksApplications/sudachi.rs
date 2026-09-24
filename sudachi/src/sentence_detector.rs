@@ -392,7 +392,7 @@ fn is_alphabet_or_number(c: char) -> bool {
 fn is_open_parenthesis(c: char) -> bool {
     matches!(
         c,
-        '(' | '{' | '｛' | '[' | '（' | '「' | '【' | '『' | '［' | '≪' | '〔' | '“' | '"'
+        '(' | '{' | '｛' | '[' | '（' | '「' | '【' | '『' | '［' | '≪' | '〔' | '“'
     )
 }
 
@@ -400,7 +400,7 @@ fn is_open_parenthesis(c: char) -> bool {
 fn is_close_parenthesis(c: char) -> bool {
     matches!(
         c,
-        ')' | '}' | ']' | '）' | '」' | '｝' | '】' | '』' | '］' | '〕' | '≫' | '”' | '"'
+        ')' | '}' | ']' | '）' | '」' | '｝' | '】' | '』' | '］' | '〕' | '≫' | '”'
     )
 }
 
@@ -489,11 +489,14 @@ mod tests {
     }
 
     #[test]
-    fn get_eos_with_ascii_quote_legacy_behavior() {
+    fn get_eos_with_ascii_quote() {
+        // ASCII '"' is not a parenthesis (same as sudachi.rs <= 0.6.11 and Sudachi Java)
         let sd = SentenceDetector::new();
-        assert_eq!(sd.get_eos("\"あ。\"", None).unwrap(), -8);
-        assert_eq!(sd.get_eos("あ。\"です。", None).unwrap(), -16);
-        assert_eq!(sd.get_eos("あ。\")え。", None).unwrap(), 8);
+        assert_eq!(sd.get_eos("\"あ。\"", None).unwrap(), 7);
+        assert_eq!(sd.get_eos("あ。\"です。", None).unwrap(), 6);
+        assert_eq!(sd.get_eos("あ。\")え。", None).unwrap(), 6);
+        assert_eq!(sd.get_eos("彼は\"はい\"と言った。次。", None).unwrap(), 29);
+        assert_eq!(sd.get_eos("\"auto\"にします。次。", None).unwrap(), 21);
     }
 
     #[test]
