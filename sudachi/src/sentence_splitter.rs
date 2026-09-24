@@ -124,4 +124,17 @@ mod tests {
         );
         assert_eq!(iter.next(), None)
     }
+
+    #[test]
+    fn split_after_ascii_quotes() {
+        let splitter = SentenceSplitter::new();
+        let sentences: Vec<&str> = splitter
+            .split("彼は\"はい\"と言った。次の文です。三番目の文です。")
+            .map(|(_, s)| s)
+            .collect();
+        assert_eq!(
+            sentences,
+            ["彼は\"はい\"と言った。", "次の文です。", "三番目の文です。"]
+        );
+    }
 }
