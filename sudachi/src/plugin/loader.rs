@@ -71,12 +71,16 @@ fn make_system_specific_name(s: &str) -> Option<String> {
     target_os = "ios",
     target_os = "tvos",
     target_os = "watchos",
-    target_os = "visionos"
+    target_os = "visionos",
+    target_os = "android"
 ))]
 // Apple embedded platforms do not support dynamic library loading (DSO plugins)
 // due to platform security restrictions. Returning None here
 // effectively disables loading plugins from DSOs, while still allowing
 // plugins bundled with the application/binary to work as expected.
+// Android is handled the same way: applications ship native code bundled
+// inside the app package, so resolving external plugin DSOs by
+// platform-specific file name does not apply there either.
 fn make_system_specific_name(_s: &str) -> Option<String> {
     None
 }
