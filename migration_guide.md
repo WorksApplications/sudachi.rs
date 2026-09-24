@@ -14,7 +14,7 @@ sudachi.rs / SudachiPy v0.7 にて辞書のバイナリ形式が V1 形式に変
   - V1 形式バイナリ辞書配布ページ：http://sudachi.s3-website-ap-northeast-1.amazonaws.com/sudachidict/v1
   - V1 形式辞書ソース配布ページ：http://sudachi.s3-website-ap-northeast-1.amazonaws.com/sudachidict-raw/v1
 
-SudachiDict-\* (small/core/full) から取得できるシステム辞書は、バージョン v202610xx (TBA) 以降のみ使用可能です。
+SudachiDict-\* (small/core/full) から取得できるシステム辞書は、バージョン v20260723.1 以降のみ使用可能です。
 それ以前の辞書を使用するには、上記配布ページから取得するか、個別にソースファイルからのビルドが必要です。
 
 ユーザー辞書の再ビルドについてはJava版の[ユーザー辞書移行ガイド](https://github.com/WorksApplications/Sudachi/blob/develop/docs/migrate_user_dictionary.md)を参照してください。
