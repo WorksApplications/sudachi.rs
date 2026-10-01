@@ -13,6 +13,9 @@ WHEEL_REQUIRED = (
     "sudachipy/__init__.py",
     "sudachipy/sudachipy.pyi",
     "sudachipy/resources/sudachi.json",
+)
+
+WHEEL_FORBIDDEN = (
     "sudachipy/resources/char.def",
     "sudachipy/resources/rewrite.def",
     "sudachipy/resources/unk.def",
@@ -66,7 +69,7 @@ def sdist_names(path: Path) -> set[str]:
         for member in tf.getmembers():
             parts = Path(member.name).parts
             if len(parts) > 1:
-                names.add(str(Path(*parts[1:])))
+                names.add(Path(*parts[1:]).as_posix())
         return names
 
 
@@ -75,6 +78,10 @@ def check_wheel(path: Path) -> None:
     for required in WHEEL_REQUIRED:
         if required not in names:
             fail(f"{path.name} is missing {required}")
+
+    for forbidden in WHEEL_FORBIDDEN:
+        if forbidden in names:
+            fail(f"{path.name} contains redundant embedded resource {forbidden}")
 
     if not any(re.fullmatch(r"sudachipy/sudachipy.*\.(so|pyd)", name) for name in names):
         fail(f"{path.name} is missing the compiled sudachipy extension")

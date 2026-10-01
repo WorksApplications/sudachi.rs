@@ -287,7 +287,9 @@ impl PyDictionary {
         if let Some(p) = resource_dir {
             builder = builder.prepend_resolver_root(p);
         }
-        builder = builder.push_resolver_root(get_default_resource_dir(py)?);
+        builder = builder
+            .push_resolver_root(get_default_resource_dir(py)?)
+            .push_embedded();
 
         if dict_type.is_some() {
             errors::warn_deprecation(
