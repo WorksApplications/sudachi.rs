@@ -17,6 +17,7 @@ import os
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 import sudachipy
 from sudachipy import Dictionary, Tokenizer
@@ -218,6 +219,72 @@ class TestDictionary(unittest.TestCase):
                 self.assertEqual("トウキョウト", morphemes[0].reading_form())
             finally:
                 dictionary.close()
+
+    def test_embedded_resources_when_package_contains_only_config(self):
+        resource_dir = Path(__file__).parent / "resources"
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            config_path = temp_path / "sudachi.json"
+            config_path.write_bytes(Path(sudachipy._DEFAULT_SETTINGFILE).read_bytes())
+            config = Config(
+                system=str(resource_dir / "system.dic.test"),
+                user=[],
+                inputTextPlugin=[
+                    {"class": "com.worksap.nlp.sudachi.DefaultInputTextPlugin"}
+                ],
+                oovProviderPlugin=[
+                    {"class": "com.worksap.nlp.sudachi.SimpleOovPlugin",
+                     "oovPOS": ["名詞", "普通名詞", "一般", "*", "*", "*"],
+                     "leftId": 8,
+                     "rightId": 8,
+                     "cost": 6000}
+                ],
+                pathRewritePlugin=[],
+            )
+            with patch.object(sudachipy, "_DEFAULT_SETTINGFILE", str(config_path)), \
+                    patch.object(sudachipy, "_DEFAULT_RESOURCEDIR", str(temp_path)):
+                dictionary = Dictionary(config=config)
+                try:
+                    self.assertEqual("トウキョウト", dictionary.lookup("東京都")[0].reading_form())
+                    text = "ＭＥＮＵＴＥＳＴＸＹＺ"
+                    morphemes = dictionary.tokenizer().tokenize(text)
+                    self.assertEqual(text, "".join(m.surface() for m in morphemes))
+                    self.assertTrue(any(m.is_oov() for m in morphemes))
+                finally:
+                    dictionary.close()
+
+    def test_missing_custom_character_definition_still_fails(self):
+        resource_dir = Path(__file__).parent / "resources"
+        paths = [
+            "missing-custom-char.def",
+            "missing-custom/char.def",
+            str(resource_dir.resolve() / "missing-custom" / "char.def"),
+        ]
+        for path in paths:
+            with self.subTest(path=path), self.assertRaisesRegex(sudachipy.errors.SudachiError, "Config Error"):
+                Dictionary(config=Config(
+                    system=str(resource_dir / "system.dic.test"),
+                    characterDefinitionFile=path,
+                ))
+
+    def test_custom_character_definition_precedes_embedded(self):
+        resource_dir = Path(__file__).parent / "resources"
+        with tempfile.TemporaryDirectory() as temp_dir:
+            (Path(temp_dir) / "char.def").write_text("0xINVALID KANJI\n", encoding="utf-8")
+            with self.assertRaises(sudachipy.errors.SudachiError):
+                Dictionary(resource_dir=temp_dir, config=Config(
+                    system=str(resource_dir / "system.dic.test"),
+                    user=[],
+                    inputTextPlugin=[],
+                    oovProviderPlugin=[
+                        {"class": "com.worksap.nlp.sudachi.SimpleOovPlugin",
+                         "oovPOS": ["名詞", "普通名詞", "一般", "*", "*", "*"],
+                         "leftId": 8,
+                         "rightId": 8,
+                         "cost": 6000}
+                    ],
+                    pathRewritePlugin=[],
+                ))
 
     def test_oov_morpheme(self):
         pos_id1 = 1

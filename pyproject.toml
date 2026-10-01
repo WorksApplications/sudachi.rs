@@ -40,6 +40,12 @@ include = [
     { path = "sudachipy/*.pyi", format = ["sdist", "wheel"] },
     { path = "resources/*", format = "sdist" },
 ]
+# Default definitions are embedded in the extension, but are needed to build it.
+exclude = [
+    { path = "sudachipy/resources/char.def", format = "wheel" },
+    { path = "sudachipy/resources/rewrite.def", format = "wheel" },
+    { path = "sudachipy/resources/unk.def", format = "wheel" },
+]
 
 [tool.cibuildwheel]
 build = "cp310-* cp314t-*"
