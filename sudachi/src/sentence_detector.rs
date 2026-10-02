@@ -56,7 +56,7 @@ impl NonBreakChecker<'_> {
                     Ordering::Greater => Some(true),
                     // end is on boundary candidate,
                     // check that there are more than one character in the matched word
-                    Ordering::Equal => Some(input[i..].chars().nth(1).is_some()),
+                    Ordering::Equal if input[i..eos_byte].chars().nth(1).is_some() => Some(true),
                     _ => None,
                 }
             }) {
