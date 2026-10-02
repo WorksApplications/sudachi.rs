@@ -56,7 +56,7 @@
 <a href=#56 id=56 data-nosnippet>56</a>                    </span>Ordering::Greater =&gt; <span class="prelude-val">Some</span>(<span class="bool-val">true</span>),
 <a href=#57 id=57 data-nosnippet>57</a>                    <span class="comment">// end is on boundary candidate,
 <a href=#58 id=58 data-nosnippet>58</a>                    // check that there are more than one character in the matched word
-<a href=#59 id=59 data-nosnippet>59</a>                    </span>Ordering::Equal =&gt; <span class="prelude-val">Some</span>(input[i..].chars().nth(<span class="number">1</span>).is_some()),
+<a href=#59 id=59 data-nosnippet>59</a>                    </span>Ordering::Equal <span class="kw">if </span>input[i..eos_byte].chars().nth(<span class="number">1</span>).is_some() =&gt; <span class="prelude-val">Some</span>(<span class="bool-val">true</span>),
 <a href=#60 id=60 data-nosnippet>60</a>                    <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
 <a href=#61 id=61 data-nosnippet>61</a>                }
 <a href=#62 id=62 data-nosnippet>62</a>            }) {
@@ -392,7 +392,7 @@
 <a href=#392 id=392 data-nosnippet>392</a></span><span class="kw">fn </span>is_open_parenthesis(c: char) -&gt; bool {
 <a href=#393 id=393 data-nosnippet>393</a>    <span class="macro">matches!</span>(
 <a href=#394 id=394 data-nosnippet>394</a>        c,
-<a href=#395 id=395 data-nosnippet>395</a>        <span class="string">'(' </span>| <span class="string">'{' </span>| <span class="string">'｛' </span>| <span class="string">'[' </span>| <span class="string">'（' </span>| <span class="string">'「' </span>| <span class="string">'【' </span>| <span class="string">'『' </span>| <span class="string">'［' </span>| <span class="string">'≪' </span>| <span class="string">'〔' </span>| <span class="string">'“' </span>| <span class="string">'"'
+<a href=#395 id=395 data-nosnippet>395</a>        <span class="string">'(' </span>| <span class="string">'{' </span>| <span class="string">'｛' </span>| <span class="string">'[' </span>| <span class="string">'（' </span>| <span class="string">'「' </span>| <span class="string">'【' </span>| <span class="string">'『' </span>| <span class="string">'［' </span>| <span class="string">'≪' </span>| <span class="string">'〔' </span>| <span class="string">'“'
 <a href=#396 id=396 data-nosnippet>396</a>    </span>)
 <a href=#397 id=397 data-nosnippet>397</a>}
 <a href=#398 id=398 data-nosnippet>398</a>
@@ -400,7 +400,7 @@
 <a href=#400 id=400 data-nosnippet>400</a></span><span class="kw">fn </span>is_close_parenthesis(c: char) -&gt; bool {
 <a href=#401 id=401 data-nosnippet>401</a>    <span class="macro">matches!</span>(
 <a href=#402 id=402 data-nosnippet>402</a>        c,
-<a href=#403 id=403 data-nosnippet>403</a>        <span class="string">')' </span>| <span class="string">'}' </span>| <span class="string">']' </span>| <span class="string">'）' </span>| <span class="string">'」' </span>| <span class="string">'｝' </span>| <span class="string">'】' </span>| <span class="string">'』' </span>| <span class="string">'］' </span>| <span class="string">'〕' </span>| <span class="string">'≫' </span>| <span class="string">'”' </span>| <span class="string">'"'
+<a href=#403 id=403 data-nosnippet>403</a>        <span class="string">')' </span>| <span class="string">'}' </span>| <span class="string">']' </span>| <span class="string">'）' </span>| <span class="string">'」' </span>| <span class="string">'｝' </span>| <span class="string">'】' </span>| <span class="string">'』' </span>| <span class="string">'］' </span>| <span class="string">'〕' </span>| <span class="string">'≫' </span>| <span class="string">'”'
 <a href=#404 id=404 data-nosnippet>404</a>    </span>)
 <a href=#405 id=405 data-nosnippet>405</a>}
 <a href=#406 id=406 data-nosnippet>406</a>
@@ -489,38 +489,41 @@
 <a href=#489 id=489 data-nosnippet>489</a>    }
 <a href=#490 id=490 data-nosnippet>490</a>
 <a href=#491 id=491 data-nosnippet>491</a>    <span class="attr">#[test]
-<a href=#492 id=492 data-nosnippet>492</a>    </span><span class="kw">fn </span>get_eos_with_ascii_quote_legacy_behavior() {
-<a href=#493 id=493 data-nosnippet>493</a>        <span class="kw">let </span>sd = SentenceDetector::new();
-<a href=#494 id=494 data-nosnippet>494</a>        <span class="macro">assert_eq!</span>(sd.get_eos(<span class="string">"\"あ。\""</span>, <span class="prelude-val">None</span>).unwrap(), -<span class="number">8</span>);
-<a href=#495 id=495 data-nosnippet>495</a>        <span class="macro">assert_eq!</span>(sd.get_eos(<span class="string">"あ。\"です。"</span>, <span class="prelude-val">None</span>).unwrap(), -<span class="number">16</span>);
-<a href=#496 id=496 data-nosnippet>496</a>        <span class="macro">assert_eq!</span>(sd.get_eos(<span class="string">"あ。\")え。"</span>, <span class="prelude-val">None</span>).unwrap(), <span class="number">8</span>);
-<a href=#497 id=497 data-nosnippet>497</a>    }
-<a href=#498 id=498 data-nosnippet>498</a>
-<a href=#499 id=499 data-nosnippet>499</a>    <span class="attr">#[test]
-<a href=#500 id=500 data-nosnippet>500</a>    </span><span class="kw">fn </span>get_eos_with_itemize_header() {
-<a href=#501 id=501 data-nosnippet>501</a>        <span class="kw">let </span>sd = SentenceDetector::new();
-<a href=#502 id=502 data-nosnippet>502</a>        <span class="macro">assert_eq!</span>(sd.get_eos(<span class="string">"1. あいう。えお"</span>, <span class="prelude-val">None</span>).unwrap(), <span class="number">15</span>);
-<a href=#503 id=503 data-nosnippet>503</a>    }
-<a href=#504 id=504 data-nosnippet>504</a>
-<a href=#505 id=505 data-nosnippet>505</a>    <span class="attr">#[test]
-<a href=#506 id=506 data-nosnippet>506</a>    </span><span class="kw">fn </span>get_eos_with_prohibited_bos() {
-<a href=#507 id=507 data-nosnippet>507</a>        <span class="kw">let </span>sd = SentenceDetector::new();
-<a href=#508 id=508 data-nosnippet>508</a>        <span class="macro">assert_eq!</span>(sd.get_eos(<span class="string">"あいう?えお"</span>, <span class="prelude-val">None</span>).unwrap(), <span class="number">10</span>);
-<a href=#509 id=509 data-nosnippet>509</a>        <span class="macro">assert_eq!</span>(sd.get_eos(<span class="string">"あいう?)えお"</span>, <span class="prelude-val">None</span>).unwrap(), <span class="number">11</span>);
-<a href=#510 id=510 data-nosnippet>510</a>        <span class="macro">assert_eq!</span>(sd.get_eos(<span class="string">"あいう?,えお"</span>, <span class="prelude-val">None</span>).unwrap(), <span class="number">11</span>);
-<a href=#511 id=511 data-nosnippet>511</a>    }
-<a href=#512 id=512 data-nosnippet>512</a>
-<a href=#513 id=513 data-nosnippet>513</a>    <span class="attr">#[test]
-<a href=#514 id=514 data-nosnippet>514</a>    </span><span class="kw">fn </span>get_eos_with_continuous_phrase() {
-<a href=#515 id=515 data-nosnippet>515</a>        <span class="kw">let </span>sd = SentenceDetector::new();
-<a href=#516 id=516 data-nosnippet>516</a>        <span class="macro">assert_eq!</span>(sd.get_eos(<span class="string">"あいう?です。"</span>, <span class="prelude-val">None</span>).unwrap(), <span class="number">19</span>);
-<a href=#517 id=517 data-nosnippet>517</a>        <span class="macro">assert_eq!</span>(sd.get_eos(<span class="string">"あいう?って。"</span>, <span class="prelude-val">None</span>).unwrap(), <span class="number">19</span>);
-<a href=#518 id=518 data-nosnippet>518</a>        <span class="macro">assert_eq!</span>(sd.get_eos(<span class="string">"あいう?という。"</span>, <span class="prelude-val">None</span>).unwrap(), <span class="number">22</span>);
-<a href=#519 id=519 data-nosnippet>519</a>        <span class="macro">assert_eq!</span>(sd.get_eos(<span class="string">"あいう?の？です。"</span>, <span class="prelude-val">None</span>).unwrap(), <span class="number">10</span>);
-<a href=#520 id=520 data-nosnippet>520</a>
-<a href=#521 id=521 data-nosnippet>521</a>        <span class="macro">assert_eq!</span>(sd.get_eos(<span class="string">"1.と2.が。"</span>, <span class="prelude-val">None</span>).unwrap(), <span class="number">13</span>);
-<a href=#522 id=522 data-nosnippet>522</a>        <span class="macro">assert_eq!</span>(sd.get_eos(<span class="string">"1.やb.から。"</span>, <span class="prelude-val">None</span>).unwrap(), <span class="number">16</span>);
-<a href=#523 id=523 data-nosnippet>523</a>        <span class="macro">assert_eq!</span>(sd.get_eos(<span class="string">"1.の12.が。"</span>, <span class="prelude-val">None</span>).unwrap(), <span class="number">14</span>);
-<a href=#524 id=524 data-nosnippet>524</a>    }
-<a href=#525 id=525 data-nosnippet>525</a>}
+<a href=#492 id=492 data-nosnippet>492</a>    </span><span class="kw">fn </span>get_eos_with_ascii_quote() {
+<a href=#493 id=493 data-nosnippet>493</a>        <span class="comment">// ASCII '"' is not a parenthesis (same as sudachi.rs &lt;= 0.6.11 and Sudachi Java)
+<a href=#494 id=494 data-nosnippet>494</a>        </span><span class="kw">let </span>sd = SentenceDetector::new();
+<a href=#495 id=495 data-nosnippet>495</a>        <span class="macro">assert_eq!</span>(sd.get_eos(<span class="string">"\"あ。\""</span>, <span class="prelude-val">None</span>).unwrap(), <span class="number">7</span>);
+<a href=#496 id=496 data-nosnippet>496</a>        <span class="macro">assert_eq!</span>(sd.get_eos(<span class="string">"あ。\"です。"</span>, <span class="prelude-val">None</span>).unwrap(), <span class="number">6</span>);
+<a href=#497 id=497 data-nosnippet>497</a>        <span class="macro">assert_eq!</span>(sd.get_eos(<span class="string">"あ。\")え。"</span>, <span class="prelude-val">None</span>).unwrap(), <span class="number">6</span>);
+<a href=#498 id=498 data-nosnippet>498</a>        <span class="macro">assert_eq!</span>(sd.get_eos(<span class="string">"彼は\"はい\"と言った。次。"</span>, <span class="prelude-val">None</span>).unwrap(), <span class="number">29</span>);
+<a href=#499 id=499 data-nosnippet>499</a>        <span class="macro">assert_eq!</span>(sd.get_eos(<span class="string">"\"auto\"にします。次。"</span>, <span class="prelude-val">None</span>).unwrap(), <span class="number">21</span>);
+<a href=#500 id=500 data-nosnippet>500</a>    }
+<a href=#501 id=501 data-nosnippet>501</a>
+<a href=#502 id=502 data-nosnippet>502</a>    <span class="attr">#[test]
+<a href=#503 id=503 data-nosnippet>503</a>    </span><span class="kw">fn </span>get_eos_with_itemize_header() {
+<a href=#504 id=504 data-nosnippet>504</a>        <span class="kw">let </span>sd = SentenceDetector::new();
+<a href=#505 id=505 data-nosnippet>505</a>        <span class="macro">assert_eq!</span>(sd.get_eos(<span class="string">"1. あいう。えお"</span>, <span class="prelude-val">None</span>).unwrap(), <span class="number">15</span>);
+<a href=#506 id=506 data-nosnippet>506</a>    }
+<a href=#507 id=507 data-nosnippet>507</a>
+<a href=#508 id=508 data-nosnippet>508</a>    <span class="attr">#[test]
+<a href=#509 id=509 data-nosnippet>509</a>    </span><span class="kw">fn </span>get_eos_with_prohibited_bos() {
+<a href=#510 id=510 data-nosnippet>510</a>        <span class="kw">let </span>sd = SentenceDetector::new();
+<a href=#511 id=511 data-nosnippet>511</a>        <span class="macro">assert_eq!</span>(sd.get_eos(<span class="string">"あいう?えお"</span>, <span class="prelude-val">None</span>).unwrap(), <span class="number">10</span>);
+<a href=#512 id=512 data-nosnippet>512</a>        <span class="macro">assert_eq!</span>(sd.get_eos(<span class="string">"あいう?)えお"</span>, <span class="prelude-val">None</span>).unwrap(), <span class="number">11</span>);
+<a href=#513 id=513 data-nosnippet>513</a>        <span class="macro">assert_eq!</span>(sd.get_eos(<span class="string">"あいう?,えお"</span>, <span class="prelude-val">None</span>).unwrap(), <span class="number">11</span>);
+<a href=#514 id=514 data-nosnippet>514</a>    }
+<a href=#515 id=515 data-nosnippet>515</a>
+<a href=#516 id=516 data-nosnippet>516</a>    <span class="attr">#[test]
+<a href=#517 id=517 data-nosnippet>517</a>    </span><span class="kw">fn </span>get_eos_with_continuous_phrase() {
+<a href=#518 id=518 data-nosnippet>518</a>        <span class="kw">let </span>sd = SentenceDetector::new();
+<a href=#519 id=519 data-nosnippet>519</a>        <span class="macro">assert_eq!</span>(sd.get_eos(<span class="string">"あいう?です。"</span>, <span class="prelude-val">None</span>).unwrap(), <span class="number">19</span>);
+<a href=#520 id=520 data-nosnippet>520</a>        <span class="macro">assert_eq!</span>(sd.get_eos(<span class="string">"あいう?って。"</span>, <span class="prelude-val">None</span>).unwrap(), <span class="number">19</span>);
+<a href=#521 id=521 data-nosnippet>521</a>        <span class="macro">assert_eq!</span>(sd.get_eos(<span class="string">"あいう?という。"</span>, <span class="prelude-val">None</span>).unwrap(), <span class="number">22</span>);
+<a href=#522 id=522 data-nosnippet>522</a>        <span class="macro">assert_eq!</span>(sd.get_eos(<span class="string">"あいう?の？です。"</span>, <span class="prelude-val">None</span>).unwrap(), <span class="number">10</span>);
+<a href=#523 id=523 data-nosnippet>523</a>
+<a href=#524 id=524 data-nosnippet>524</a>        <span class="macro">assert_eq!</span>(sd.get_eos(<span class="string">"1.と2.が。"</span>, <span class="prelude-val">None</span>).unwrap(), <span class="number">13</span>);
+<a href=#525 id=525 data-nosnippet>525</a>        <span class="macro">assert_eq!</span>(sd.get_eos(<span class="string">"1.やb.から。"</span>, <span class="prelude-val">None</span>).unwrap(), <span class="number">16</span>);
+<a href=#526 id=526 data-nosnippet>526</a>        <span class="macro">assert_eq!</span>(sd.get_eos(<span class="string">"1.の12.が。"</span>, <span class="prelude-val">None</span>).unwrap(), <span class="number">14</span>);
+<a href=#527 id=527 data-nosnippet>527</a>    }
+<a href=#528 id=528 data-nosnippet>528</a>}
 </code></pre></div></section></main></body></html>

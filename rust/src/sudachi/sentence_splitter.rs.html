@@ -124,5 +124,18 @@
 <a href=#124 id=124 data-nosnippet>124</a>        );
 <a href=#125 id=125 data-nosnippet>125</a>        <span class="macro">assert_eq!</span>(iter.next(), <span class="prelude-val">None</span>)
 <a href=#126 id=126 data-nosnippet>126</a>    }
-<a href=#127 id=127 data-nosnippet>127</a>}
+<a href=#127 id=127 data-nosnippet>127</a>
+<a href=#128 id=128 data-nosnippet>128</a>    <span class="attr">#[test]
+<a href=#129 id=129 data-nosnippet>129</a>    </span><span class="kw">fn </span>split_after_ascii_quotes() {
+<a href=#130 id=130 data-nosnippet>130</a>        <span class="kw">let </span>splitter = SentenceSplitter::new();
+<a href=#131 id=131 data-nosnippet>131</a>        <span class="kw">let </span>sentences: Vec&lt;<span class="kw-2">&amp;</span>str&gt; = splitter
+<a href=#132 id=132 data-nosnippet>132</a>            .split(<span class="string">"彼は\"はい\"と言った。次の文です。三番目の文です。"</span>)
+<a href=#133 id=133 data-nosnippet>133</a>            .map(|(<span class="kw">_</span>, s)| s)
+<a href=#134 id=134 data-nosnippet>134</a>            .collect();
+<a href=#135 id=135 data-nosnippet>135</a>        <span class="macro">assert_eq!</span>(
+<a href=#136 id=136 data-nosnippet>136</a>            sentences,
+<a href=#137 id=137 data-nosnippet>137</a>            [<span class="string">"彼は\"はい\"と言った。"</span>, <span class="string">"次の文です。"</span>, <span class="string">"三番目の文です。"</span>]
+<a href=#138 id=138 data-nosnippet>138</a>        );
+<a href=#139 id=139 data-nosnippet>139</a>    }
+<a href=#140 id=140 data-nosnippet>140</a>}
 </code></pre></div></section></main></body></html>
