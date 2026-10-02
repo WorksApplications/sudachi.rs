@@ -58,6 +58,9 @@ const SEED32: u32 = 0x9e_37_79_b9;
 #[cfg(target_pointer_width = "64")]
 const SEED: usize = SEED64 as usize;
 
+#[cfg(target_pointer_width = "32")]
+const SEED: usize = SEED32 as usize;
+
 trait HashWord {
     fn hash_word(&mut self, _: Self);
 }
