@@ -14,7 +14,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, ubuntu-24.04-arm, windows-latest, macos-latest]
+        os: [ubuntu-latest, ubuntu-24.04-arm, windows-latest, windows-11-arm, macos-latest]
 
     steps:
       - uses: actions/checkout@v6.0.2
@@ -35,7 +35,7 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-${{ runner.arch }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Modify version for TestPyPI upload
         run: uv run --no-project --with packaging --with tomlkit python ./python/modify_version_for_testpypi.py
@@ -75,7 +75,7 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-${{ runner.arch }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Modify version for TestPyPI upload
         run: uv run --no-project --with packaging --with tomlkit python ./python/modify_version_for_testpypi.py
@@ -150,7 +150,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, ubuntu-24.04-arm, windows-latest, macos-latest]
+        os: [ubuntu-latest, ubuntu-24.04-arm, windows-latest, windows-11-arm, macos-latest]
         target: ["3.10", "3.11", "3.12", "3.13", "3.14", "3.14t"]
         include:
           - os: "ubuntu-latest"
@@ -161,6 +161,10 @@ jobs:
             python-version: "3.14"
         exclude:
           - os: "windows-latest"
+            target: "3.14t"
+          - os: "windows-11-arm"
+            target: "3.10"
+          - os: "windows-11-arm"
             target: "3.14t"
 
     runs-on: ${{ matrix.os }}

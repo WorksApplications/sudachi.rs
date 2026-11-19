@@ -17,7 +17,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, ubuntu-24.04-arm, windows-latest, macos-latest]
+        os: [ubuntu-latest, ubuntu-24.04-arm, windows-latest, windows-11-arm, macos-latest]
 
     steps:
       - uses: actions/checkout@v6.0.2
@@ -32,7 +32,7 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-${{ runner.arch }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
       - name: cibuildwheel ${{ matrix.os }}
         uses: pypa/cibuildwheel@v3.4.1
@@ -68,7 +68,7 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-${{ runner.arch }}-cargo-${{ hashFiles('**/Cargo.lock') }}
       - name: build sdist
         working-directory: ./python
         run: bash build-sdist.sh

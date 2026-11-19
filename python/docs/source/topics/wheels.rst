@@ -5,7 +5,7 @@ We provide wheel builds for following platforms:
 
 * Linux-amd64
 * Linux-aarch64
-* Windows-x86_64
+* Windows-x86_64, arm64
 * macOS-universal2, x86_64, arm64
 
 Wheels for Linux are supported (we will fix bugs and problems when reported).

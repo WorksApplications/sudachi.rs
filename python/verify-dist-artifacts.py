@@ -42,6 +42,7 @@ EXPECTED_WHEEL_TAGS = {
     "cp310-abi3-manylinux_2_28_aarch64",
     "cp310-abi3-manylinux_2_28_x86_64",
     "cp310-abi3-win_amd64",
+    "cp310-abi3-win_arm64",
     "cp314-cp314t-macosx_10_15_universal2",
     "cp314-cp314t-macosx_10_15_x86_64",
     "cp314-cp314t-macosx_11_0_arm64",
