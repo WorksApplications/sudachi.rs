@@ -6,7 +6,9 @@ Also check [rust changelog](../CHANGELOG.md).
 
 ## [Unreleased]
 
-- 
+### Added
+
+- Provide binary wheels for Windows ARM64.
 
 ## [0.7.0](https://github.com/WorksApplications/sudachi.rs/releases/tag/v0.7.0) (2026-09-18)
 
